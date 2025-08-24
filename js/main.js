@@ -1166,23 +1166,44 @@ surveys: () => {
 // در فایل js/main.js، داخل آبجکت pages
 // کل تابع requests را با این نسخه جایگزین کنید
 
+// در فایل js/main.js، داخل آبجکت pages
+// کل تابع requests را با این نسخه جایگزین کنید
+
 requests: () => {
     const allRequests = (state.requests || []).sort((a, b) => new Date(b.createdAt?.toDate()) - new Date(a.createdAt?.toDate()));
     
+    // [!code ++] ابتدا لیستی از تمام ادمین‌های سیستم را آماده می‌کنیم
+    const admins = state.users.filter(u => u.role === 'admin');
+    
     const requestsHtml = allRequests.map(req => {
-         const statusColors = {
+        const statusColors = {
             'درحال بررسی': 'bg-yellow-100 text-yellow-800',
             'تایید شده': 'bg-green-100 text-green-800',
             'رد شده': 'bg-red-100 text-red-800'
         };
-        // [!code focus:12]
+        
+        // [!code ++] برای هر درخواست، یک منوی کشویی از ادمین‌ها می‌سازیم
+        const adminOptions = admins.map(admin => 
+            `<option value="${admin.firestoreId}" ${req.assignedTo === admin.firestoreId ? 'selected' : ''}>
+                ${admin.name || admin.email}
+            </option>`
+        ).join('');
+
         return `
             <tr class="border-b">
                 <td class="px-4 py-3">${toPersianDate(req.createdAt)}</td>
                 <td class="px-4 py-3 font-semibold">${req.employeeName}</td>
                 <td class="px-4 py-3">${req.requestType}</td>
-                <td class="px-4 py-3 text-sm text-slate-600 max-w-xs truncate">${req.details}</td>
+                <td class="px-4 py-3 text-sm text-slate-600 max-w-xs truncate" title="${req.details}">${req.details}</td>
                 <td class="px-4 py-3"><span class="px-2 py-1 text-xs font-medium rounded-full ${statusColors[req.status] || 'bg-slate-100'}">${req.status}</span></td>
+                
+                <td class="px-4 py-3">
+                    <select data-id="${req.firestoreId}" class="assign-request-select w-full p-1.5 border border-slate-300 rounded-md bg-white text-xs">
+                        <option value="">واگذار نشده</option>
+                        ${adminOptions}
+                    </select>
+                </td>
+
                 <td class="px-4 py-3">
                     ${req.status === 'درحال بررسی' ? `
                         <div class="flex items-center gap-2">
@@ -1207,11 +1228,12 @@ requests: () => {
                             <th class="px-4 py-2 font-semibold">نوع درخواست</th>
                             <th class="px-4 py-2 font-semibold">جزئیات</th>
                             <th class="px-4 py-2 font-semibold">وضعیت</th>
+                            <th class="px-4 py-2 font-semibold">واگذار به</th>
                             <th class="px-4 py-2 font-semibold">عملیات</th>
                         </tr>
                     </thead>
                     <tbody id="requests-table-body">
-                        ${requestsHtml || '<tr><td colspan="6" class="text-center py-8 text-slate-500">هیچ درخواستی ثبت نشده است.</td></tr>'}
+                        ${requestsHtml || '<tr><td colspan="7" class="text-center py-8 text-slate-500">هیچ درخواستی ثبت نشده است.</td></tr>'}
                     </tbody>
                 </table>
             </div>
@@ -2503,9 +2525,33 @@ const setupOrganizationPageListeners = () => {
 };
 // این تابع جدید را به js/main.js اضافه کنید
 
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید جایگزین کنید
+
 const setupRequestsPageListeners = () => {
     const tableBody = document.getElementById('requests-table-body');
     if (!tableBody) return;
+
+    // به جای دو listener جدا، از یک listener برای کل جدول استفاده می‌کنیم
+    tableBody.addEventListener('input', async (e) => {
+        // [!code focus:15]
+        // اگر رویداد مربوط به تغییر منوی کشویی "واگذار به" بود
+        if (e.target.classList.contains('assign-request-select')) {
+            const selectElement = e.target;
+            const requestId = selectElement.dataset.id;
+            const adminUid = selectElement.value; // UID ادمین انتخاب شده
+
+            const requestRef = doc(db, `artifacts/${appId}/public/data/requests`, requestId);
+
+            try {
+                await updateDoc(requestRef, { assignedTo: adminUid || null }); // اگر گزینه‌ی "واگذار نشده" انتخاب شد، مقدار null را ذخیره کن
+                showToast(`درخواست به کاربر مورد نظر واگذار شد.`);
+            } catch (error) {
+                console.error("Error assigning request:", error);
+                showToast("خطا در واگذاری درخواست.", "error");
+            }
+        }
+    });
 
     tableBody.addEventListener('click', async (e) => {
         const approveBtn = e.target.closest('.approve-request-btn');
