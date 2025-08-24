@@ -4344,7 +4344,7 @@ const showDocumentForm = (emp, docIndex = null) => {
             lucide.createIcons();
         });
 
-    </script>
+   
       <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
@@ -4357,4 +4357,4 @@ const showDocumentForm = (emp, docIndex = null) => {
             });
         });
       }
- 
+  </script>
