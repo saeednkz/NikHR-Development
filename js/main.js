@@ -214,33 +214,57 @@ function renderEmployeePortalPage(pageName, employee) {
             </div>
         `;
     } else if (pageName === 'directory') { // [!code ++] بخش جدید برای دایرکتوری
-        const teamCardsHtml = state.teams.map(team => {
-            const leader = state.employees.find(e => e.id === team.leaderId);
-            const members = state.employees.filter(e => team.memberIds?.includes(e.id));
-            
-            return `
-                <div class="bg-white p-6 rounded-xl shadow-md">
-                    <h3 class="text-xl font-bold text-blue-600 mb-2">${team.name}</h3>
-                    <p class="text-sm text-slate-500 mb-4">
+// ...
+const teamCardsHtml = state.teams.map(team => {
+    const leader = state.employees.find(e => e.id === team.leaderId);
+    const members = state.employees.filter(e => team.memberIds?.includes(e.id));
+    
+    // [!code focus:25]
+    return `
+        <div class="bg-white p-6 rounded-xl shadow-md flex flex-col">
+            <div class="flex items-center mb-4">
+                <img src="${team.avatar}" alt="${team.name}" class="w-16 h-16 rounded-full object-cover ml-4 border-2 border-slate-200">
+                <div>
+                    <h3 class="text-xl font-bold text-blue-600">${team.name}</h3>
+                    <p class="text-sm text-slate-500">
                         <span class="font-semibold">رهبر تیم:</span> ${leader ? leader.name : 'نامشخص'}
                     </p>
-                    <div class="border-t pt-4">
-                        <h4 class="font-semibold text-slate-600 mb-3">اعضا (${members.length} نفر):</h4>
-                        <div class="flex flex-wrap gap-4">
-                            ${members.map(member => `
-                                <div class="flex items-center gap-2" title="${member.name} - ${member.jobTitle}">
-                                    <img src="${member.avatar}" alt="${member.name}" class="w-10 h-10 rounded-full object-cover">
-                                    <div>
-                                        <p class="text-sm font-semibold">${member.name}</p>
-                                        <p class="text-xs text-slate-500">${member.jobTitle || ''}</p>
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
                 </div>
-            `;
-        }).join('');
+            </div>
+
+            <div class="border-t pt-4 mb-4">
+                <h4 class="font-semibold text-slate-600 mb-3 text-sm">اهداف کلیدی (OKRs)</h4>
+                <div class="space-y-3">
+                    ${(team.okrs && team.okrs.length > 0) 
+                        ? team.okrs.map(okr => `
+                            <div>
+                                <div class="flex justify-between items-center mb-1 text-xs">
+                                    <span class="text-slate-600">${okr.title}</span>
+                                    <span class="font-medium text-blue-600">${okr.progress}%</span>
+                                </div>
+                                <div class="progress-bar w-full"><div class="progress-bar-fill" style="width: ${okr.progress}%;"></div></div>
+                            </div>
+                        `).join('') 
+                        : '<p class="text-xs text-slate-400">هدفی برای این تیم ثبت نشده است.</p>'
+                    }
+                </div>
+            </div>
+
+            <div class="border-t pt-4 mt-auto">
+                <h4 class="font-semibold text-slate-600 mb-3 text-sm">اعضا (${members.length} نفر):</h4>
+                <div class="flex flex-wrap gap-x-6 gap-y-3">
+                    ${members.map(member => `
+                        <div class="flex items-center gap-2" title="${member.name} - ${member.jobTitle}">
+                            <img src="${member.avatar}" alt="${member.name}" class="w-8 h-8 rounded-full object-cover">
+                            <p class="text-sm font-medium">${member.name}</p>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        </div>
+    `;
+}).join('');
+// ...
 
         contentContainer.innerHTML = `
             <h1 class="text-3xl font-bold text-slate-800 mb-6">دایرکتوری سازمان</h1>
