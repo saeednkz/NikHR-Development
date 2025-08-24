@@ -665,7 +665,78 @@ const calculateAndApplyAnalytics = () => {
         });
 
         console.log("Analytics applied to state.");
+  generateSmartReminders(); // [!code ++] این خط را اضافه کنید
     };
+// این تابع کاملاً جدید را به main.js اضافه کنید
+const generateSmartReminders = async () => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const oneDay = 1000 * 60 * 60 * 24;
+    const batch = writeBatch(db);
+    let hasNewReminders = false;
+    
+    const defaultRule = (state.assignmentRules || []).find(r => r.firestoreId === '_default');
+
+    for (const emp of state.employees) {
+        if (emp.status !== 'فعال') continue;
+        
+        const events = [];
+
+        // رویداد: اتمام قرارداد (در ۹۰ روز آینده)
+        if (emp.contractEndDate) {
+            const endDate = new Date(emp.contractEndDate);
+            const daysUntilEnd = Math.round((endDate - now) / oneDay);
+            if (daysUntilEnd >= 0 && daysUntilEnd <= 90) {
+                events.push({ type: 'تمدید قرارداد', date: endDate, text: `تمدید قرارداد: ${emp.name}`, subtext: `تاریخ اتمام: ${toPersianDate(endDate)}`, icon: 'file-clock', id: `renewal-${emp.id}` });
+            }
+        }
+        // رویداد: تولد (در ۷ روز آینده)
+        if (emp.personalInfo?.birthDate) {
+            const birthDate = new Date(emp.personalInfo.birthDate);
+            const nextBirthday = new Date(now.getFullYear(), birthDate.getMonth(), birthDate.getDate());
+            if (nextBirthday < now) nextBirthday.setFullYear(now.getFullYear() + 1);
+            const daysUntilBirthday = Math.round((nextBirthday - now) / oneDay);
+            if (daysUntilBirthday >= 0 && daysUntilBirthday <= 7) {
+                events.push({ type: 'تولد', date: nextBirthday, text: `تولد: ${emp.name}`, subtext: `در ${daysUntilBirthday} روز دیگر`, icon: 'cake', id: `bday-${emp.id}-${nextBirthday.getFullYear()}` });
+            }
+        }
+        // ... می‌توانید رویدادهای دیگر را هم به همین شکل اضافه کنید
+
+        for (const event of events) {
+            const reminderRef = doc(db, `artifacts/${appId}/public/data/reminders`, event.id);
+            const reminderSnap = await getDoc(reminderRef);
+
+            if (!reminderSnap.exists()) {
+                let assignedUid = null;
+                const applicableRule = (state.assignmentRules || []).find(r => r.itemTypes?.includes(event.type));
+                if (applicableRule) {
+                    assignedUid = applicableRule.assigneeUid;
+                } else if (defaultRule) {
+                    assignedUid = defaultRule.assigneeUid;
+                }
+
+                if (assignedUid) {
+                    batch.set(reminderRef, {
+                        text: event.text,
+                        subtext: event.subtext,
+                        icon: event.icon,
+                        type: event.type,
+                        date: event.date,
+                        assignedTo: assignedUid,
+                        isReadByAssignee: false,
+                        createdAt: serverTimestamp()
+                    });
+                    hasNewReminders = true;
+                }
+            }
+        }
+    }
+
+    if (hasNewReminders) {
+        await batch.commit();
+        console.log("Smart reminders generated and assigned.");
+    }
+};
         // --- تابع هوشمند برای محاسبه ریسک خروج بر اساس مدل امتیازبندی ---
     const calculateAttritionRisk = (employee, allTeams) => {
         let riskScore = 0;
@@ -842,16 +913,16 @@ const calculateAndApplyAnalytics = () => {
         const canEdit = () => state.currentUser?.role === 'admin' || state.currentUser?.role === 'editor';
 // این تابع را به main.js اضافه کنید
 const updateNotificationBell = () => {
-    const bell = document.getElementById('notification-bell');
-    if (!bell || !state.currentUser || state.currentUser.role === 'employee') return;
+    if (!state.currentUser || state.currentUser.role === 'employee') return;
 
     const countContainer = document.getElementById('notification-count');
-    const unreadCount = (state.requests || []).filter(req => 
-        req.assignedTo === state.currentUser.uid && !req.isReadByAssignee
-    ).length;
 
-    if (unreadCount > 0) {
-        countContainer.textContent = unreadCount;
+    const unreadRequests = (state.requests || []).filter(req => req.assignedTo === state.currentUser.uid && !req.isReadByAssignee).length;
+    const unreadReminders = (state.reminders || []).filter(rem => rem.assignedTo === state.currentUser.uid && !rem.isReadByAssignee).length;
+    const totalUnread = unreadRequests + unreadReminders;
+
+    if (totalUnread > 0) {
+        countContainer.textContent = totalUnread;
         countContainer.classList.remove('hidden');
     } else {
         countContainer.classList.add('hidden');
@@ -1395,7 +1466,7 @@ settings: () => {
                 <div>
                     <p class="font-semibold">${rule.ruleName}</p>
                     <p class="text-xs text-slate-500">
-                        برای: ${(rule.requestTypes || []).join('، ')} 
+                       برای: ${(rule.itemTypes || []).join('، ')}
                         <i data-lucide="arrow-left" class="inline-block w-3 h-3"></i> 
                         ${assignee ? assignee.name : 'کاربر حذف شده'}
                     </p>
@@ -2129,153 +2200,45 @@ const renderEngagementGauge = (canvasId, score) => {
         };
 
         // --- PAGE-SPECIFIC LOGIC ---
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید و کامل جایگزین کنید
+
 const renderAllReminders = () => {
-    const allReminders = [];
-    const now = new Date();
-    // برای دقت بیشتر، ساعت را صفر می‌کنیم تا فقط روزها مقایسه شوند
-    now.setHours(0, 0, 0, 0); 
-    const oneDay = 1000 * 60 * 60 * 24;
-
-    // --- بخش ۱: یادآورهای دستی و فیلتر شده ---
-    state.reminders.forEach(reminder => {
-        const eventDate = new Date(reminder.date);
-        eventDate.setHours(0, 0, 0, 0);
-
-        const daysUntilEvent = Math.round((eventDate - now) / oneDay);
-        // اگر کاربر مقداری تعیین نکرده بود، پیش‌فرض ۳۰ روز در نظر گرفته می‌شود
-        const daysBefore = reminder.daysBefore ?? 30; 
-
-        // شرط جدید: فقط اگر زمان رویداد در بازه تعیین شده باشد، نمایش بده
-        if (daysUntilEvent >= 0 && daysUntilEvent <= daysBefore) {
-            allReminders.push({
-                date: eventDate,
-                text: reminder.text,
-                subtext: daysUntilEvent === 0 ? 'امروز' : `در ${daysUntilEvent} روز دیگر`,
-                icon: 'calendar-plus',
-                color: 'indigo'
-            });
-        }
-    });
-
-    // --- بخش ۲: رویدادهای هوشمند و خودکار ---
-    const reminderWindowDays = 30;
-    state.employees.forEach(emp => {
-        if (emp.status !== 'فعال') return;
-
-        // رویداد: اتمام قرارداد (در ۹۰ روز آینده)
-        if (emp.contractEndDate) {
-            const endDate = new Date(emp.contractEndDate);
-            const daysUntilEnd = Math.round((endDate - now) / oneDay);
-            if (daysUntilEnd >= 0 && daysUntilEnd <= 90) {
-                allReminders.push({
-                    date: endDate,
-                    text: `تمدید قرارداد: ${emp.name}`,
-                    subtext: `تاریخ اتمام: ${toPersianDate(endDate)}`,
-                    icon: 'file-clock',
-                    color: 'yellow'
-                });
-            }
-        }
-
-        // رویداد: تولد (در ۳ روز آینده)
-        if (emp.personalInfo?.birthDate) {
-            const birthDate = new Date(emp.personalInfo.birthDate);
-            const nextBirthday = new Date(now.getFullYear(), birthDate.getMonth(), birthDate.getDate());
-            if (nextBirthday < now) {
-                nextBirthday.setFullYear(now.getFullYear() + 1);
-            }
-            const daysUntilBirthday = Math.round((nextBirthday - now) / oneDay);
-            if (daysUntilBirthday >= 0 && daysUntilBirthday <= 3) {
-                allReminders.push({
-                    date: nextBirthday,
-                    text: `تولد: ${emp.name}`,
-                    subtext: `تاریخ تولد: ${toPersianDate(nextBirthday)}`,
-                    icon: 'cake',
-                    color: 'pink'
-                });
-            }
-        }
-
-        // رویداد: سالگرد استخدام (در ۳۰ روز آینده)
-        if (emp.startDate) {
-            const startDate = new Date(emp.startDate);
-            const yearsOfWork = now.getFullYear() - startDate.getFullYear();
-            const nextAnniversary = new Date(now.getFullYear(), startDate.getMonth(), startDate.getDate());
-            if (nextAnniversary < now) {
-                nextAnniversary.setFullYear(now.getFullYear() + 1);
-            }
-            const daysUntilAnniversary = Math.round((nextAnniversary - now) / oneDay);
-            if (daysUntilAnniversary >= 0 && daysUntilAnniversary <= reminderWindowDays && yearsOfWork > 0) {
-                allReminders.push({
-                    date: nextAnniversary,
-                    text: `${yearsOfWork + 1}مین سالگرد استخدام: ${emp.name}`,
-                    subtext: `تاریخ استخدام: ${toPersianDate(emp.startDate)}`,
-                    icon: 'award',
-                    color: 'blue'
-                });
-            }
-        }
-
-        // رویداد: ارزیابی عملکرد معوق (بیش از ۶ ماه گذشته)
-        if (emp.performanceHistory && emp.performanceHistory.length > 0) {
-            const lastReviewDate = new Date(emp.performanceHistory.slice(-1)[0].reviewDate);
-            const monthsSinceReview = (now - lastReviewDate) / (oneDay * 30.44);
-            if (monthsSinceReview > 6) {
-                allReminders.push({
-                    date: new Date(now.getTime() + oneDay), // تاریخ را برای مرتب‌سازی فردا در نظر می‌گیرد
-                    text: `ارزیابی عملکرد معوق: ${emp.name}`,
-                    subtext: `آخرین ارزیابی: ${toPersianDate(lastReviewDate)}`,
-                    icon: 'clipboard-x',
-                    color: 'teal'
-                });
-            }
-        }
+    // اگر کاربری لاگین نکرده باشد، چیزی نمایش نده
+    if (!state.currentUser) return '';
+    
+    // ۱. یادآورها را از state بخوان و فقط آن‌هایی که به کاربر فعلی واگذار شده را فیلتر کن
+    const myReminders = (state.reminders || [])
+        .filter(r => r.assignedTo === state.currentUser.uid)
+        .sort((a, b) => new Date(a.date.toDate()) - new Date(b.date.toDate())); // مرتب‌سازی بر اساس تاریخ
         
-        // رویداد: پیگیری تذکر انضباطی
-        if (emp.disciplinaryHistory && emp.disciplinaryHistory.length > 0) {
-            const lastAction = emp.disciplinaryHistory.slice(-1)[0];
-            if (lastAction.type === 'تذکر') {
-                const actionDate = new Date(lastAction.date);
-                const followupDate = new Date(actionDate.setDate(actionDate.getDate() + 30));
-                const daysUntilFollowup = (followupDate - now) / oneDay;
-                if (daysUntilFollowup >= 0 && daysUntilFollowup <= reminderWindowDays) {
-                    allReminders.push({
-                        date: followupDate,
-                        text: `پیگیری تذکر انضباطی: ${emp.name}`,
-                        subtext: `تاریخ پیگیری: ${toPersianDate(followupDate)}`,
-                        icon: 'message-square-plus',
-                        color: 'gray'
-                    });
-                }
-            }
-        }
-    });
-
-    // --- بخش ۳: مرتب‌سازی و نمایش نهایی ---
-    allReminders.sort((a, b) => a.date - b.date);
-
-    if (allReminders.length === 0) {
-        return '<p class="text-sm text-gray-500 text-center">هیچ یادآوری فعالی وجود ندارد.</p>';
+    // ۲. اگر هیچ یادآوری برای کاربر وجود نداشت، یک پیام نمایش بده
+    if (myReminders.length === 0) {
+        return '<p class="text-sm text-slate-500 text-center">یادآوری برای شما وجود ندارد.</p>';
     }
 
+    // ۳. پالت رنگی برای انواع مختلف یادآورها
     const colorClasses = {
-        yellow: { bg: 'bg-yellow-50', text: 'text-yellow-600' },
-        indigo: { bg: 'bg-indigo-50', text: 'text-indigo-600' },
-        pink: { bg: 'bg-pink-50', text: 'text-pink-600' },
-        blue: { bg: 'bg-blue-50', text: 'text-blue-600' },
-        teal: { bg: 'bg-teal-50', text: 'text-teal-600' },
-        gray: { bg: 'bg-gray-100', text: 'text-gray-600' }
+        'file-clock': { bg: 'bg-yellow-50', text: 'text-yellow-600' },    // تمدید قرارداد
+        'cake': { bg: 'bg-pink-50', text: 'text-pink-600' },              // تولد
+        'award': { bg: 'bg-blue-50', text: 'text-blue-600' },             // سالگرد استخدام
+        'clipboard-x': { bg: 'bg-teal-50', text: 'text-teal-600' },       // ارزیابی معوق
+        'calendar-plus': { bg: 'bg-indigo-50', text: 'text-indigo-600' }, // یادآور دستی
+        'message-square-plus': { bg: 'bg-gray-100', text: 'text-gray-600' } // پیگیری انضباطی
     };
 
-    return allReminders.map(r => {
-        const colors = colorClasses[r.color] || colorClasses.indigo;
-        return `<div class="flex items-start p-3 ${colors.bg} rounded-xl border border-transparent hover:border-blue-200 transition">
-            <i data-lucide="${r.icon}" class="w-5 h-5 ${colors.text} ml-3 mt-1 flex-shrink-0"></i>
-            <div>
-                <p class="font-medium text-sm">${r.text}</p>
-                <p class="text-xs text-gray-500 mt-0.5">${r.subtext || `تاریخ: ${toPersianDate(r.date)}`}</p>
+    // ۴. ساخت HTML نهایی برای نمایش یادآورها
+    return myReminders.map(r => {
+        const colors = colorClasses[r.icon] || colorClasses['calendar-plus']; // انتخاب رنگ بر اساس آیکون
+        return `
+            <div class="flex items-start p-3 ${colors.bg} rounded-xl border border-transparent hover:border-blue-200 transition">
+                <i data-lucide="${r.icon}" class="w-5 h-5 ${colors.text} ml-3 mt-1 flex-shrink-0"></i>
+                <div>
+                    <p class="font-medium text-sm">${r.text}</p>
+                    <p class="text-xs text-slate-500 mt-0.5">${r.subtext || `تاریخ: ${toPersianDate(r.date)}`}</p>
+                </div>
             </div>
-        </div>`;
+        `;
     }).join('');
 };
         const setupDashboardListeners = () => {
@@ -4452,45 +4415,49 @@ const showMyProfileEditForm = (emp) => {
 };
 // این تابع جدید را به js/main.js اضافه کنید
 
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید جایگزین کنید
 const showAssignmentRuleForm = (ruleId = null) => {
     const isEditing = ruleId !== null;
     const rule = isEditing ? state.assignmentRules.find(r => r.firestoreId === ruleId) : {};
-    
+
     modalTitle.innerText = isEditing ? 'ویرایش قانون واگذاری' : 'افزودن قانون واگذاری جدید';
 
     const admins = state.users.filter(u => u.role === 'admin');
-    const requestTypes = ['درخواست مرخصی', 'گواهی اشتغال به کار', 'مساعده حقوق', 'سایر'];
+    // [!code focus:5]
+    // لیست انواع درخواست و یادآورها را کامل می‌کنیم
+    const itemTypes = {
+        'درخواست‌ها': ['درخواست مرخصی', 'گواهی اشتغال به کار', 'مساعده حقوق', 'سایر'],
+        'یادآورها': ['تمدید قرارداد', 'تولد', 'سالگرد استخدام', 'ارزیابی عملکرد معوق']
+    };
 
-    const adminOptions = admins.map(admin => 
-        `<option value="${admin.firestoreId}" ${isEditing && rule.assigneeUid === admin.firestoreId ? 'selected' : ''}>
-            ${admin.name || admin.email}
-        </option>`
-    ).join('');
+    const adminOptions = admins.map(admin => `<option value="${admin.firestoreId}" ${isEditing && rule.assigneeUid === admin.firestoreId ? 'selected' : ''}>${admin.name || admin.email}</option>`).join('');
 
-    const requestTypeCheckboxes = requestTypes.map(type => `
-        <div class="flex items-center">
-            <input type="checkbox" id="type-${type}" value="${type}" class="rule-request-type" 
-                   ${isEditing && rule.requestTypes?.includes(type) ? 'checked' : ''}>
-            <label for="type-${type}" class="mr-2">${type}</label>
-        </div>
-    `).join('');
+    let checkboxesHtml = '';
+    for (const category in itemTypes) {
+        checkboxesHtml += `<div class="md:col-span-2 mt-2"><strong class="text-sm text-slate-500">${category}</strong></div>`;
+        checkboxesHtml += itemTypes[category].map(type => `
+            <div class="flex items-center">
+                <input type="checkbox" id="type-${type}" value="${type}" class="rule-request-type" 
+                       ${isEditing && rule.itemTypes?.includes(type) ? 'checked' : ''}>
+                <label for="type-${type}" class="mr-2">${type}</label>
+            </div>
+        `).join('');
+    }
 
     modalContent.innerHTML = `
         <form id="assignment-rule-form" class="space-y-4">
             <div>
-                <label class="block font-medium mb-1">نام قانون (مثال: قوانین مرخصی)</label>
+                <label class="block font-medium mb-1">نام قانون (مثال: امور اداری)</label>
                 <input type="text" id="rule-name" value="${rule.ruleName || ''}" class="w-full p-2 border rounded-md" required>
             </div>
             <div>
-                <label class="block font-medium mb-1">برای کدام نوع درخواست‌ها اعمال شود؟</label>
-                <div class="grid grid-cols-2 gap-2 mt-2">${requestTypeCheckboxes}</div>
+                <label class="block font-medium mb-1">برای کدام موارد اعمال شود؟</label>
+                <div class="grid grid-cols-2 gap-2 mt-2">${checkboxesHtml}</div>
             </div>
             <div>
                 <label class="block font-medium mb-1">به کدام مدیر واگذار شود؟</label>
-                <select id="rule-assignee" class="w-full p-2 border rounded-md bg-white" required>
-                    <option value="">انتخاب کنید...</option>
-                    ${adminOptions}
-                </select>
+                <select id="rule-assignee" class="w-full p-2 border rounded-md bg-white" required>${adminOptions}</select>
             </div>
             <div class="pt-4 flex justify-end">
                 <button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">ذخیره قانون</button>
@@ -4502,15 +4469,15 @@ const showAssignmentRuleForm = (ruleId = null) => {
     document.getElementById('assignment-rule-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         const selectedTypes = Array.from(document.querySelectorAll('.rule-request-type:checked')).map(cb => cb.value);
-        
+
         if (selectedTypes.length === 0) {
-            showToast("حداقل یک نوع درخواست باید انتخاب شود.", "error");
+            showToast("حداقل یک نوع آیتم باید انتخاب شود.", "error");
             return;
         }
 
         const ruleData = {
             ruleName: document.getElementById('rule-name').value,
-            requestTypes: selectedTypes,
+            itemTypes: selectedTypes, // نام فیلد را به itemTypes تغییر دادیم
             assigneeUid: document.getElementById('rule-assignee').value
         };
 
