@@ -184,36 +184,60 @@ function renderEmployeePortalPage(pageName, employee) {
     const contentContainer = document.getElementById('employee-main-content');
     if (!contentContainer) return;
 
+// در فایل js/main.js
+// داخل تابع renderEmployeePortalPage
+
+// ...
     if (pageName === 'profile') {
-        const contractsHtml = (employee.contractHistory || []).map(c => `
-            <tr>
-                <td class="px-4 py-2">${toPersianDate(c.startDate)}</td>
-                <td class="px-4 py-2">${toPersianDate(c.endDate)}</td>
-                <td class="px-4 py-2">${c.netSalary ? c.netSalary.toLocaleString('fa-IR') + ' ریال' : '-'}</td>
-            </tr>
-        `).join('');
+        // [!code focus:45]
+        const manager = state.teams.find(t => t.memberIds?.includes(employee.id))
+            ? state.employees.find(e => e.id === state.teams.find(t => t.memberIds.includes(employee.id)).leaderId)
+            : null;
+        
+        const performanceHistoryHtml = (employee.performanceHistory || []).sort((a,b) => new Date(b.reviewDate) - new Date(a.reviewDate)).map(review => `
+            <div class="p-4 bg-slate-50 rounded-lg border">
+                <div class="flex justify-between items-center mb-2">
+                    <p class="font-bold text-slate-800">امتیاز کلی: <span class="text-lg text-green-600">${review.overallScore}/5</span></p>
+                    <p class="text-sm text-slate-500">تاریخ: ${toPersianDate(review.reviewDate)}</p>
+                </div>
+                <p class="text-xs text-slate-700 mt-2"><strong>نقاط قوت:</strong> ${review.strengths || '-'}</p>
+            </div>
+        `).join('') || '<p class="text-sm text-slate-500">سابقه‌ای ثبت نشده است.</p>';
 
         contentContainer.innerHTML = `
-            <h1 class="text-3xl font-bold text-slate-800 mb-6">پروفایل من</h1>
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-3xl font-bold text-slate-800">پروفایل من</h1>
+                <button id="edit-my-profile-btn" class="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 flex items-center gap-2">
+                    <i data-lucide="edit-3" class="w-4 h-4"></i>
+                    <span>ویرایش اطلاعات</span>
+                </button>
+            </div>
             <div class="bg-white p-6 rounded-xl shadow-md">
-                <h2 class="text-xl font-semibold text-slate-700 border-b pb-3 mb-4">اطلاعات قرارداد</h2>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                        <thead class="text-right bg-slate-50">
-                            <tr>
-                                <th class="px-4 py-2 font-semibold">تاریخ شروع</th>
-                                <th class="px-4 py-2 font-semibold">تاریخ پایان</th>
-                                <th class="px-4 py-2 font-semibold">حقوق خالص</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${contractsHtml || '<tr><td colspan="3" class="text-center py-4">قراردادی ثبت نشده است.</td></tr>'}
-                        </tbody>
-                    </table>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
+                    <div class="md:col-span-1 text-center">
+                        <img src="${employee.avatar}" alt="${employee.name}" class="w-32 h-32 rounded-full mx-auto object-cover border-4 border-slate-200">
+                        <h2 class="text-xl font-bold mt-4">${employee.name}</h2>
+                        <p class="text-slate-500">${employee.jobTitle || ''}</p>
+                    </div>
+                    <div class="md:col-span-2 grid grid-cols-2 gap-4 content-start">
+                        <div class="bg-slate-50 p-3 rounded-lg"><strong class="block text-slate-500 text-xs">کد پرسنلی</strong> ${employee.id}</div>
+                        <div class="bg-slate-50 p-3 rounded-lg"><strong class="block text-slate-500 text-xs">دپارتمان</strong> ${employee.department || '-'}</div>
+                        <div class="bg-slate-50 p-3 rounded-lg"><strong class="block text-slate-500 text-xs">مدیر مستقیم</strong> ${manager ? manager.name : '-'}</div>
+                        <div class="bg-slate-50 p-3 rounded-lg"><strong class="block text-slate-500 text-xs">تاریخ استخدام</strong> ${toPersianDate(employee.startDate)}</div>
+                        <div class="bg-slate-50 p-3 rounded-lg"><strong class="block text-slate-500 text-xs">ایمیل</strong> ${employee.personalInfo?.email || '-'}</div>
+                        <div class="bg-slate-50 p-3 rounded-lg"><strong class="block text-slate-500 text-xs">شماره تماس</strong> ${employee.personalInfo?.phone || '-'}</div>
+                    </div>
+                </div>
+                <div class="border-t mt-6 pt-6">
+                     <h3 class="text-lg font-semibold text-slate-700 mb-4">آخرین ارزیابی عملکرد</h3>
+                     <div class="space-y-4">${performanceHistoryHtml}</div>
                 </div>
             </div>
         `;
-    } else if (pageName === 'directory') { // [!code ++] بخش جدید برای دایرکتوری
+
+    } 
+// ... بقیه کد تابع ...
+ else if (pageName === 'directory') { // [!code ++] بخش جدید برای دایرکتوری
 // ...
 const teamCardsHtml = state.teams.map(team => {
     const leader = state.employees.find(e => e.id === team.leaderId);
@@ -279,8 +303,19 @@ const teamCardsHtml = state.teams.map(team => {
     lucide.createIcons(); // [!code ++] برای نمایش آیکون‌ها در محتوای جدید
 }
 
+// در فایل js/main.js
+// این بخش را به تابع setupEmployeePortalEventListeners اضافه کنید
+
 function setupEmployeePortalEventListeners(employee) {
     document.getElementById('portal-logout-btn').addEventListener('click', () => signOut(auth));
+    
+    // [!code ++] رویداد کلیک برای دکمه ویرایش پروفایل
+    const editProfileBtn = document.getElementById('edit-my-profile-btn');
+    if (editProfileBtn) {
+        editProfileBtn.addEventListener('click', () => {
+            showMyProfileEditForm(employee);
+        });
+    }
 
     document.querySelectorAll('.employee-nav-item').forEach(link => {
         link.addEventListener('click', (e) => {
@@ -4204,6 +4239,62 @@ const showDocumentForm = (emp, docIndex = null) => {
             }
         });
     };
+// این تابع جدید را به انتهای بخش "EDIT FORM FUNCTIONS" در main.js اضافه کنید
+
+const showMyProfileEditForm = (emp) => {
+    modalTitle.innerText = 'ویرایش اطلاعات پرسنلی';
+    const info = emp.personalInfo || {};
+    
+    modalContent.innerHTML = `
+        <form id="my-profile-edit-form" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div><label class="block font-medium">ایمیل</label><input type="email" id="personal-email" value="${info.email || ''}" class="w-full p-2 border rounded-md"></div>
+                <div><label class="block font-medium">شماره موبایل</label><input type="tel" id="personal-phone" value="${info.phone || ''}" class="w-full p-2 border rounded-md"></div>
+                <div><label class="block font-medium">تاریخ تولد</label><input type="text" id="personal-birthDate" class="w-full p-2 border rounded-md"></div>
+                <div><label class="block font-medium">وضعیت تاهل</label><select id="personal-maritalStatus" class="w-full p-2 border rounded-md"><option value="مجرد" ${info.maritalStatus === 'مجرد' ? 'selected' : ''}>مجرد</option><option value="متاهل" ${info.maritalStatus === 'متاهل' ? 'selected' : ''}>متاهل</option></select></div>
+                <div class="md:col-span-2"><label class="block font-medium">آدرس</label><input type="text" id="personal-address" value="${info.address || ''}" class="w-full p-2 border rounded-md"></div>
+                <hr class="md:col-span-2 my-2">
+                <div><label class="block font-medium">نام مخاطب اضطراری</label><input type="text" id="personal-emergencyContactName" value="${info.emergencyContactName || ''}" class="w-full p-2 border rounded-md"></div>
+                 <div><label class="block font-medium">شماره مخاطب اضطراری</label><input type="tel" id="personal-emergencyContactPhone" value="${info.emergencyContactPhone || ''}" class="w-full p-2 border rounded-md"></div>
+            </div>
+            <div class="pt-6 flex justify-end">
+                <button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">ذخیره تغییرات</button>
+            </div>
+        </form>
+    `;
+
+    openModal(mainModal, mainModalContainer);
+    activatePersianDatePicker('personal-birthDate', info.birthDate);
+
+    document.getElementById('my-profile-edit-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const birthDateValue = document.getElementById('personal-birthDate').value;
+        const gregorianBirthDate = persianToEnglishDate(birthDateValue);
+
+        const updatedInfo = {
+            ...emp.personalInfo, // کپی کردن اطلاعات قبلی برای حفظ فیلدهای غیرقابل ویرایش
+            email: document.getElementById('personal-email').value,
+            phone: document.getElementById('personal-phone').value,
+            birthDate: gregorianBirthDate,
+            maritalStatus: document.getElementById('personal-maritalStatus').value,
+            address: document.getElementById('personal-address').value,
+            emergencyContactName: document.getElementById('personal-emergencyContactName').value,
+            emergencyContactPhone: document.getElementById('personal-emergencyContactPhone').value,
+        };
+
+        try {
+            const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
+            await updateDoc(docRef, { personalInfo: updatedInfo });
+            showToast("اطلاعات شما با موفقیت به‌روزرسانی شد.");
+            closeModal(mainModal, mainModalContainer);
+            renderEmployeePortalPage('profile', { ...emp, personalInfo: updatedInfo }); // رفرش صفحه با اطلاعات جدید
+        } catch (error) {
+            console.error("Error updating profile:", error);
+            showToast("خطا در به‌روزرسانی اطلاعات.", "error");
+        }
+    });
+};
         
         const deleteDocument = async (emp, index) => {
             showConfirmationModal("حذف مدرک", "آیا از حذف این مدرک مطمئن هستید؟", async () => {
