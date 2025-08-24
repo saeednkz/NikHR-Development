@@ -160,6 +160,7 @@ const onDataLoaded = () => {
                 const colRef = collection(db, `artifacts/${appId}/public/data/${colName}`);
                 onSnapshot(colRef, (snapshot) => {
                     state[colName] = snapshot.docs.map(doc => ({ firestoreId: doc.id, ...doc.data() }));
+                  updateNotificationBell();
                     if (initialLoads > 0) {
                         onDataLoaded();
                     } else {
@@ -839,7 +840,23 @@ const calculateAndApplyAnalytics = () => {
         
         const isAdmin = () => state.currentUser?.role === 'admin';
         const canEdit = () => state.currentUser?.role === 'admin' || state.currentUser?.role === 'editor';
+// این تابع را به main.js اضافه کنید
+const updateNotificationBell = () => {
+    const bell = document.getElementById('notification-bell');
+    if (!bell || !state.currentUser || state.currentUser.role === 'employee') return;
 
+    const countContainer = document.getElementById('notification-count');
+    const unreadCount = (state.requests || []).filter(req => 
+        req.assignedTo === state.currentUser.uid && !req.isReadByAssignee
+    ).length;
+
+    if (unreadCount > 0) {
+        countContainer.textContent = unreadCount;
+        countContainer.classList.remove('hidden');
+    } else {
+        countContainer.classList.add('hidden');
+    }
+};
         const calculateDashboardMetrics = () => {
             const totalEmployees = state.employees.length;
             if (totalEmployees === 0) {
@@ -2558,23 +2575,49 @@ const setupOrganizationPageListeners = () => {
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
 
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید و کامل جایگزین کنید
+
 const setupRequestsPageListeners = () => {
+    // بخش ۱: خوانده شده کردن درخواست‌های جدید
+    // این کد چک می‌کند اگر در حال مشاهده "درخواست‌های من" هستیم، آن‌ها را به وضعیت "خوانده شده" تغییر دهد.
+    if (state.requestFilter === 'mine' && state.currentUser) {
+        const unreadRequests = (state.requests || []).filter(req => 
+            req.assignedTo === state.currentUser.uid && !req.isReadByAssignee
+        );
+
+        if (unreadRequests.length > 0) {
+            const batch = writeBatch(db);
+            unreadRequests.forEach(req => {
+                const docRef = doc(db, `artifacts/${appId}/public/data/requests`, req.firestoreId);
+                batch.update(docRef, { isReadByAssignee: true });
+            });
+            batch.commit().catch(err => console.error("Error marking requests as read:", err));
+        }
+    }
+    
+    // بخش ۲: فعال‌سازی دکمه‌های فیلتر ("همه" و "واگذار شده به من")
+    document.querySelectorAll('.request-filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            state.requestFilter = btn.dataset.filter;
+            renderPage('requests'); // صفحه را با فیلتر جدید دوباره رندر می‌کند
+        });
+    });
+
     const tableBody = document.getElementById('requests-table-body');
     if (!tableBody) return;
 
-    // به جای دو listener جدا، از یک listener برای کل جدول استفاده می‌کنیم
+    // بخش ۳: فعال‌سازی منوی کشویی "واگذار به"
     tableBody.addEventListener('input', async (e) => {
-        // [!code focus:15]
-        // اگر رویداد مربوط به تغییر منوی کشویی "واگذار به" بود
         if (e.target.classList.contains('assign-request-select')) {
             const selectElement = e.target;
             const requestId = selectElement.dataset.id;
-            const adminUid = selectElement.value; // UID ادمین انتخاب شده
+            const adminUid = selectElement.value;
 
             const requestRef = doc(db, `artifacts/${appId}/public/data/requests`, requestId);
 
             try {
-                await updateDoc(requestRef, { assignedTo: adminUid || null }); // اگر گزینه‌ی "واگذار نشده" انتخاب شد، مقدار null را ذخیره کن
+                await updateDoc(requestRef, { assignedTo: adminUid || null });
                 showToast(`درخواست به کاربر مورد نظر واگذار شد.`);
             } catch (error) {
                 console.error("Error assigning request:", error);
@@ -2583,6 +2626,7 @@ const setupRequestsPageListeners = () => {
         }
     });
 
+    // بخش ۴: فعال‌سازی دکمه‌های "تایید" و "رد کردن"
     tableBody.addEventListener('click', async (e) => {
         const approveBtn = e.target.closest('.approve-request-btn');
         const rejectBtn = e.target.closest('.reject-request-btn');
@@ -3620,20 +3664,25 @@ const setupTeamProfileModalListeners = (team) => {
         // --- EVENT LISTENERS & INITIALIZATION ---
 // در فایل js/main.js
 
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید و کامل جایگزین کنید
+
 const setupEventListeners = () => {
-    // General App Listeners (رویدادهای عمومی برنامه)
+    // رویدادهای عمومی برنامه (مربوط به مودال اصلی و مودال تایید)
     document.getElementById('closeModal').addEventListener('click', () => closeModal(mainModal, mainModalContainer));
     mainModal.addEventListener('click', (e) => { if (e.target === mainModal) closeModal(mainModal, mainModalContainer); });
-     
-    // Mobile Menu (منوی موبایل)
+    document.getElementById('confirmCancel').addEventListener('click', () => closeModal(confirmModal, confirmModalContainer)); 
+    document.getElementById('confirmAccept').addEventListener('click', () => { confirmCallback(); closeModal(confirmModal, confirmModalContainer); });
+
+    // منوی موبایل
     const menuBtn = document.getElementById('menu-btn'); 
     const sidebar = document.getElementById('sidebar'); 
     const overlay = document.getElementById('sidebar-overlay'); 
     const toggleMenu = () => { sidebar.classList.toggle('translate-x-full'); overlay.classList.toggle('hidden'); };
     menuBtn.addEventListener('click', toggleMenu);
     overlay.addEventListener('click', toggleMenu);
-     
-    // Navigation (ناوبری)
+    
+    // ناوبری (منوی کناری ادمین)
     const handleNavClick = (e) => { 
         const link = e.target.closest('a'); 
         if (link && (link.classList.contains('sidebar-item') || link.classList.contains('sidebar-logo'))) { 
@@ -3645,7 +3694,17 @@ const setupEventListeners = () => {
     };
     document.getElementById('sidebar').addEventListener('click', handleNavClick);
     document.querySelector('header .sidebar-logo')?.addEventListener('click', handleNavClick);
-     
+    
+    // [!code focus:7]
+    // بخش جدید: فعال‌سازی کلیک روی آیکون زنگوله نوتیفیکیشن
+    document.getElementById('notification-bell')?.addEventListener('click', () => {
+        if (state.currentUser && state.currentUser.role !== 'employee') {
+            state.requestFilter = 'mine'; // فیلتر را روی "واگذار شده به من" تنظیم کن
+            navigateTo('requests'); // به صفحه درخواست‌ها برو
+        }
+    });
+    
+    // روتر اصلی برنامه که به تغییرات URL گوش می‌دهد
     window.addEventListener('hashchange', router);
 };
 // کل تابع فعلی را با این کد جایگزین کنید
@@ -4525,6 +4584,7 @@ const showNewRequestForm = (employee) => {
             status: 'درحال بررسی',
             createdAt: serverTimestamp(),
             assignedTo: assignedUid // UID ادمین مسئول در اینجا ثبت می‌شود
+           isReadByAssignee: false // [!code ++] این فیلد را اضافه کنید
         };
 
         try {
