@@ -188,54 +188,71 @@ function renderEmployeePortalPage(pageName, employee) {
 // داخل تابع renderEmployeePortalPage
 
 // ...
-    if (pageName === 'profile') {
-        // [!code focus:45]
-        const manager = state.teams.find(t => t.memberIds?.includes(employee.id))
-            ? state.employees.find(e => e.id === state.teams.find(t => t.memberIds.includes(employee.id)).leaderId)
-            : null;
-        
-        const performanceHistoryHtml = (employee.performanceHistory || []).sort((a,b) => new Date(b.reviewDate) - new Date(a.reviewDate)).map(review => `
-            <div class="p-4 bg-slate-50 rounded-lg border">
-                <div class="flex justify-between items-center mb-2">
-                    <p class="font-bold text-slate-800">امتیاز کلی: <span class="text-lg text-green-600">${review.overallScore}/5</span></p>
-                    <p class="text-sm text-slate-500">تاریخ: ${toPersianDate(review.reviewDate)}</p>
-                </div>
-                <p class="text-xs text-slate-700 mt-2"><strong>نقاط قوت:</strong> ${review.strengths || '-'}</p>
-            </div>
-        `).join('') || '<p class="text-sm text-slate-500">سابقه‌ای ثبت نشده است.</p>';
+// در فایل js/main.js
+// داخل تابع renderEmployeePortalPage
 
-        contentContainer.innerHTML = `
-            <div class="flex justify-between items-center mb-6">
-                <h1 class="text-3xl font-bold text-slate-800">پروفایل من</h1>
-                <button id="edit-my-profile-btn" class="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 flex items-center gap-2">
-                    <i data-lucide="edit-3" class="w-4 h-4"></i>
-                    <span>ویرایش اطلاعات</span>
-                </button>
+if (pageName === 'profile') {
+    // [!code focus:55]
+    const manager = state.teams.find(t => t.memberIds?.includes(employee.id))
+        ? state.employees.find(e => e.id === state.teams.find(t => t.memberIds.includes(employee.id)).leaderId)
+        : null;
+    
+    const performanceHistoryHtml = (employee.performanceHistory || []).sort((a,b) => new Date(b.reviewDate) - new Date(a.reviewDate)).map(review => `
+        <div class="p-4 bg-slate-50 rounded-lg border">
+            <div class="flex justify-between items-center mb-2">
+                <p class="font-bold text-slate-800">امتیاز کلی: <span class="text-lg text-green-600">${review.overallScore}/5</span></p>
+                <p class="text-sm text-slate-500">تاریخ: ${toPersianDate(review.reviewDate)}</p>
             </div>
-            <div class="bg-white p-6 rounded-xl shadow-md">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
-                    <div class="md:col-span-1 text-center">
-                        <img src="${employee.avatar}" alt="${employee.name}" class="w-32 h-32 rounded-full mx-auto object-cover border-4 border-slate-200">
-                        <h2 class="text-xl font-bold mt-4">${employee.name}</h2>
-                        <p class="text-slate-500">${employee.jobTitle || ''}</p>
-                    </div>
-                    <div class="md:col-span-2 grid grid-cols-2 gap-4 content-start">
-                        <div class="bg-slate-50 p-3 rounded-lg"><strong class="block text-slate-500 text-xs">کد پرسنلی</strong> ${employee.id}</div>
-                        <div class="bg-slate-50 p-3 rounded-lg"><strong class="block text-slate-500 text-xs">دپارتمان</strong> ${employee.department || '-'}</div>
-                        <div class="bg-slate-50 p-3 rounded-lg"><strong class="block text-slate-500 text-xs">مدیر مستقیم</strong> ${manager ? manager.name : '-'}</div>
-                        <div class="bg-slate-50 p-3 rounded-lg"><strong class="block text-slate-500 text-xs">تاریخ استخدام</strong> ${toPersianDate(employee.startDate)}</div>
-                        <div class="bg-slate-50 p-3 rounded-lg"><strong class="block text-slate-500 text-xs">ایمیل</strong> ${employee.personalInfo?.email || '-'}</div>
-                        <div class="bg-slate-50 p-3 rounded-lg"><strong class="block text-slate-500 text-xs">شماره تماس</strong> ${employee.personalInfo?.phone || '-'}</div>
-                    </div>
-                </div>
-                <div class="border-t mt-6 pt-6">
-                     <h3 class="text-lg font-semibold text-slate-700 mb-4">آخرین ارزیابی عملکرد</h3>
-                     <div class="space-y-4">${performanceHistoryHtml}</div>
-                </div>
-            </div>
-        `;
+            <p class="text-xs text-slate-700 mt-2"><strong>نقاط قوت:</strong> ${review.strengths || '-'}</p>
+        </div>
+    `).join('') || '<p class="text-sm text-slate-500">سابقه‌ای ثبت نشده است.</p>';
 
-    } 
+    contentContainer.innerHTML = `
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold text-slate-800">پروفایل من</h1>
+            <button id="edit-my-profile-btn" class="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 flex items-center gap-2">
+                <i data-lucide="edit-3" class="w-4 h-4"></i>
+                <span>ویرایش اطلاعات</span>
+            </button>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-1 space-y-6">
+                <div class="bg-white p-6 rounded-xl shadow-md text-center">
+                    <img src="${employee.avatar}" alt="${employee.name}" class="w-32 h-32 rounded-full mx-auto object-cover border-4 border-slate-200">
+                    <h2 class="text-2xl font-bold mt-4">${employee.name}</h2>
+                    <p class="text-slate-500">${employee.jobTitle || ''}</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-lg font-semibold text-slate-700 mb-4">اطلاعات پایه</h3>
+                    <div class="space-y-3 text-sm">
+                        <p><strong class="text-slate-500">کد پرسنلی:</strong> ${employee.id}</p>
+                        <p><strong class="text-slate-500">دپارتمان:</strong> ${employee.department || '-'}</p>
+                        <p><strong class="text-slate-500">مدیر مستقیم:</strong> ${manager ? manager.name : '-'}</p>
+                        <p><strong class="text-slate-500">تاریخ استخدام:</strong> ${toPersianDate(employee.startDate)}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="lg:col-span-2 space-y-6">
+                 <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-lg font-semibold text-slate-700 mb-4">اطلاعات تماس و شخصی</h3>
+                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                        <p><strong class="text-slate-500">ایمیل:</strong> ${employee.personalInfo?.email || '-'}</p>
+                        <p><strong class="text-slate-500">موبایل:</strong> ${employee.personalInfo?.phone || '-'}</p>
+                        <p><strong class="text-slate-500">تاریخ تولد:</strong> ${toPersianDate(employee.personalInfo?.birthDate)}</p>
+                        <p><strong class="text-slate-500">وضعیت تاهل:</strong> ${employee.personalInfo?.maritalStatus || '-'}</p>
+                        <p class="col-span-2"><strong class="text-slate-500">آدرس:</strong> ${employee.personalInfo?.address || '-'}</p>
+                        <p><strong class="text-slate-500">مخاطب اضطراری:</strong> ${employee.personalInfo?.emergencyContactName || '-'}</p>
+                        <p><strong class="text-slate-500">شماره تماس اضطراری:</strong> ${employee.personalInfo?.emergencyContactPhone || '-'}</p>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-lg font-semibold text-slate-700 mb-4">آخرین ارزیابی عملکرد</h3>
+                    <div class="space-y-4">${performanceHistoryHtml}</div>
+                </div>
+            </div>
+        </div>
+    `;
+}
 // ... بقیه کد تابع ...
  else if (pageName === 'directory') { // [!code ++] بخش جدید برای دایرکتوری
 // ...
@@ -4241,6 +4258,8 @@ const showDocumentForm = (emp, docIndex = null) => {
     };
 // این تابع جدید را به انتهای بخش "EDIT FORM FUNCTIONS" در main.js اضافه کنید
 
+// کد کامل و اصلاح شده برای جایگزینی در main.js
+
 const showMyProfileEditForm = (emp) => {
     modalTitle.innerText = 'ویرایش اطلاعات پرسنلی';
     const info = emp.personalInfo || {};
@@ -4255,7 +4274,7 @@ const showMyProfileEditForm = (emp) => {
                 <div class="md:col-span-2"><label class="block font-medium">آدرس</label><input type="text" id="personal-address" value="${info.address || ''}" class="w-full p-2 border rounded-md"></div>
                 <hr class="md:col-span-2 my-2">
                 <div><label class="block font-medium">نام مخاطب اضطراری</label><input type="text" id="personal-emergencyContactName" value="${info.emergencyContactName || ''}" class="w-full p-2 border rounded-md"></div>
-                 <div><label class="block font-medium">شماره مخاطب اضطراری</label><input type="tel" id="personal-emergencyContactPhone" value="${info.emergencyContactPhone || ''}" class="w-full p-2 border rounded-md"></div>
+                <div><label class="block font-medium">شماره مخاطب اضطراری</label><input type="tel" id="personal-emergencyContactPhone" value="${info.emergencyContactPhone || ''}" class="w-full p-2 border rounded-md"></div>
             </div>
             <div class="pt-6 flex justify-end">
                 <button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">ذخیره تغییرات</button>
@@ -4273,7 +4292,7 @@ const showMyProfileEditForm = (emp) => {
         const gregorianBirthDate = persianToEnglishDate(birthDateValue);
 
         const updatedInfo = {
-            ...emp.personalInfo, // کپی کردن اطلاعات قبلی برای حفظ فیلدهای غیرقابل ویرایش
+            ...emp.personalInfo,
             email: document.getElementById('personal-email').value,
             phone: document.getElementById('personal-phone').value,
             birthDate: gregorianBirthDate,
@@ -4288,7 +4307,17 @@ const showMyProfileEditForm = (emp) => {
             await updateDoc(docRef, { personalInfo: updatedInfo });
             showToast("اطلاعات شما با موفقیت به‌روزرسانی شد.");
             closeModal(mainModal, mainModalContainer);
-            renderEmployeePortalPage('profile', { ...emp, personalInfo: updatedInfo }); // رفرش صفحه با اطلاعات جدید
+            
+            //  یک آبجکت جدید از کارمند با اطلاعات بروز شده می‌سازیم
+            const updatedEmployeeData = { ...emp, personalInfo: updatedInfo };
+            
+            // صفحه پروفایل را با داده‌های جدید مجددا رندر می‌کنیم
+            renderEmployeePortalPage('profile', updatedEmployeeData);
+            
+            // [!code ++]
+            //  دکمه ویرایش جدید را دوباره فعال می‌کنیم
+            setupEmployeePortalEventListeners(updatedEmployeeData);
+
         } catch (error) {
             console.error("Error updating profile:", error);
             showToast("خطا در به‌روزرسانی اطلاعات.", "error");
