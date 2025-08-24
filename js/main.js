@@ -4471,6 +4471,9 @@ const showAssignmentRuleForm = (ruleId = null) => {
 };
 // این تابع جدید را به js/main.js اضافه کنید
 
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید جایگزین کنید
+
 const showNewRequestForm = (employee) => {
     modalTitle.innerText = 'ثبت درخواست جدید';
     modalContent.innerHTML = `
@@ -4480,7 +4483,7 @@ const showNewRequestForm = (employee) => {
                 <select id="request-type" class="w-full p-2 border rounded-md" required>
                     <option value="درخواست مرخصی">درخواست مرخصی</option>
                     <option value="گواهی اشتغال به کار">گواهی اشتغال به کار</option>
-                    <option value=" مساعده حقوق"> مساعده حقوق</option>
+                    <option value="مساعده حقوق">مساعده حقوق</option>
                     <option value="سایر">سایر موارد</option>
                 </select>
             </div>
@@ -4497,19 +4500,39 @@ const showNewRequestForm = (employee) => {
 
     document.getElementById('new-request-form').addEventListener('submit', async (e) => {
         e.preventDefault();
+        const requestType = document.getElementById('request-type').value;
+        
+        // [!code focus:15]
+        // --- منطق جدید و هوشمند برای واگذاری ---
+        let assignedUid = null;
+        
+        // ۱. ابتدا در قوانین تعریف شده جستجو کن
+        const applicableRule = (state.assignmentRules || []).find(rule => rule.firestoreId !== '__default__' && rule.requestTypes?.includes(requestType));
+        
+        if (applicableRule) {
+            assignedUid = applicableRule.assigneeUid;
+        } else {
+            // ۲. اگر قانونی پیدا نشد، به سراغ قانون پیش‌فرض برو
+            const defaultRule = (state.assignmentRules || []).find(rule => rule.firestoreId === '__default__');
+            if (defaultRule) {
+                assignedUid = defaultRule.assigneeUid;
+            }
+        }
+
         const requestData = {
             uid: employee.uid,
             employeeId: employee.id,
             employeeName: employee.name,
-            requestType: document.getElementById('request-type').value,
+            requestType: requestType,
             details: document.getElementById('request-details').value,
             status: 'درحال بررسی',
-            createdAt: serverTimestamp()
+            createdAt: serverTimestamp(),
+            assignedTo: assignedUid // UID ادمین مسئول در اینجا ثبت می‌شود
         };
 
         try {
             await addDoc(collection(db, `artifacts/${appId}/public/data/requests`), requestData);
-            showToast("درخواست شما با موفقیت ثبت شد.");
+            showToast("درخواست شما با موفقیت ثبت و واگذار شد.");
             closeModal(mainModal, mainModalContainer);
         } catch (error) {
             console.error("Error submitting request:", error);
