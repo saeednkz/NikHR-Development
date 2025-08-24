@@ -125,15 +125,26 @@ const firebaseConfig = {
         function listenToData() {
             const collectionsToListen = ['employees', 'teams', 'reminders', 'surveyResponses', 'users', 'competencies', 'expenses', 'pettyCashCards', 'chargeHistory'];
             let initialLoads = collectionsToListen.length;
-            const onDataLoaded = () => {
-                initialLoads--;
-                if (initialLoads === 0) {
-                    calculateAndApplyAnalytics();
-                    showDashboard();
-                    router(); 
-                    document.getElementById('loading-overlay').style.display = 'none';
-                }
-            };
+// کد جدید و صحیح ✅
+const onDataLoaded = () => {
+    initialLoads--;
+    if (initialLoads === 0) {
+        calculateAndApplyAnalytics();
+        
+        // --- منطق جدید برای تفکیک نقش ---
+        if (state.currentUser.role === 'admin' || state.currentUser.role === 'editor' || state.currentUser.role === 'viewer') {
+            showDashboard(); // اگر ادمین، ویرایشگر یا مشاهده‌گر بود، داشبورد ادمین را نشان بده
+            router(); 
+        } else if (state.currentUser.role === 'employee') {
+            renderEmployeePortal(); // اگر کارمند بود، تابع جدید پورتال کارمندان را اجرا کن
+        } else {
+            // در صورتی که نقش تعریف نشده بود، صفحه لاگین را نشان بده
+            showLoginPage(); 
+        }
+        
+        document.getElementById('loading-overlay').style.display = 'none';
+    }
+};
             collectionsToListen.forEach(colName => {
                 const colRef = collection(db, `artifacts/${appId}/public/data/${colName}`);
                 onSnapshot(colRef, (snapshot) => {
