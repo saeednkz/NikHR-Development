@@ -99,9 +99,9 @@ async function initializeFirebase() {
         db = getFirestore(app);
         storage = getStorage(app);
 
-        // [!code ++] این خط حیاتی را اضافه کنید!
-        // این دستور، دکمه‌های ورود، ثبت‌نام و خروج را در فایل auth.js فعال می‌کند
-        setupAuthEventListeners(auth); 
+        // ✅ این خط فراموش شده را اینجا اضافه کنید
+        // این دستور، دکمه‌های ورود، ثبت‌نام و خروج را فعال می‌کند
+        setupAuthEventListeners(auth);
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
@@ -112,9 +112,7 @@ async function initializeFirebase() {
                 showLoginPage();
             }
         });
-    } catch (error) { 
-        console.error("Firebase Init Error:", error); 
-    }
+    } catch (error) { console.error("Firebase Init Error:", error); }
 }
 
         async function fetchUserRole(user) {
