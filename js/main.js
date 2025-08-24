@@ -4345,7 +4345,7 @@ const showDocumentForm = (emp, docIndex = null) => {
         });
 
    
-      <script>
+   
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('./sw.js')
@@ -4357,4 +4357,4 @@ const showDocumentForm = (emp, docIndex = null) => {
             });
         });
       }
-  </script>
+
