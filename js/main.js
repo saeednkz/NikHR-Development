@@ -2619,97 +2619,77 @@ const setupRequestsPageListeners = () => {
         }
     });
 };
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید جایگزین کنید
+
 const setupSettingsPageListeners = () => {
     const mainContentArea = document.getElementById('main-content');
     if (!mainContentArea) return;
 
-    // --- منطق جدید برای فعال‌سازی تب‌ها ---
-    const tabs = document.querySelectorAll('.settings-tab');
-    const panes = document.querySelectorAll('.settings-tab-pane');
-    tabs.forEach(tab => {
+    // --- مدیریت تب‌ها ---
+    mainContentArea.querySelectorAll('.settings-tab').forEach(tab => {
         tab.addEventListener('click', () => {
-            tabs.forEach(t => {
-                t.classList.remove('border-blue-600', 'text-blue-600');
-                t.classList.add('border-transparent', 'text-slate-500');
-            });
+            mainContentArea.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('border-blue-600', 'text-blue-600'));
             tab.classList.add('border-blue-600', 'text-blue-600');
-            tab.classList.remove('border-transparent', 'text-slate-500');
-            panes.forEach(pane => {
+            mainContentArea.querySelectorAll('.settings-tab-pane').forEach(pane => {
                 pane.classList.toggle('hidden', pane.id !== `tab-${tab.dataset.tab}`);
             });
         });
     });
 
-    // --- مدیریت رویدادهای کلیک (مثل قبل) ---
+    // --- مدیریت رویدادها با Event Delegation ---
     mainContentArea.addEventListener('click', (e) => {
         const addUserBtn = e.target.closest('#add-user-btn');
         const editUserBtn = e.target.closest('.edit-user-btn');
         const deleteUserBtn = e.target.closest('.delete-user-btn');
         const deleteCompetencyBtn = e.target.closest('.delete-competency-btn');
+        const addRuleBtn = e.target.closest('#add-rule-btn'); // [!code ++]
+        const editRuleBtn = e.target.closest('.edit-rule-btn'); // [!code ++]
+        const deleteRuleBtn = e.target.closest('.delete-rule-btn'); // [!code ++]
         
         if (addUserBtn) showAddUserForm();
-
-        if (editUserBtn) {
-            const user = state.users.find(u => u.firestoreId === editUserBtn.dataset.uid);
-            if(user) showEditUserForm(user);
-        }
-
-        if (deleteUserBtn) {
-            const userToDelete = state.users.find(u => u.firestoreId === deleteUserBtn.dataset.uid);
-            showConfirmationModal('حذف کاربر', `آیا از حذف کاربر "${userToDelete.name || userToDelete.email}" مطمئن هستید؟`, async () => {
+        if (editUserBtn) { /* ... کد قبلی ... */ }
+        if (deleteUserBtn) { /* ... کد قبلی ... */ }
+        if (deleteCompetencyBtn) { /* ... کد قبلی ... */ }
+        
+        // [!code focus:10]
+        if (addRuleBtn) showAssignmentRuleForm();
+        if (editRuleBtn) showAssignmentRuleForm(editRuleBtn.dataset.id);
+        if (deleteRuleBtn) {
+            showConfirmationModal('حذف قانون', 'آیا از حذف این قانون واگذاری مطمئن هستید؟', async () => {
                 try {
-                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/users`, userToDelete.firestoreId));
-                    showToast("اطلاعات کاربر از سیستم حذف شد.");
-                } catch (error) {
-                    console.error("Error deleting user document:", error);
-                    showToast("خطا در حذف اطلاعات کاربر.", "error");
-                }
-            });
-        }
-
-        if (deleteCompetencyBtn) {
-            const competencyId = deleteCompetencyBtn.dataset.id;
-            showConfirmationModal('حذف شایستگی', 'آیا از حذف این شایستگی مطمئن هستید؟', async () => {
-                try {
-                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/competencies`, competencyId));
-                    showToast("شایستگی با موفقیت حذف شد.");
-                } catch (error) {
-                    console.error("Error deleting competency:", error);
-                    showToast("خطا در حذف شایستگی.", "error");
-                }
+                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/assignmentRules`, deleteRuleBtn.dataset.id));
+                    showToast("قانون با موفقیت حذف شد.");
+                } catch (error) { showToast("خطا در حذف قانون.", "error"); }
             });
         }
     });
-
-    // --- مدیریت فرم‌ها و تغییر نقش (مثل قبل) ---
+    
+    // --- مدیریت فرم‌ها و تغییرات دیگر ---
     const addCompetencyForm = document.getElementById('add-competency-form');
-    if (addCompetencyForm) {
-        addCompetencyForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const nameInput = document.getElementById('new-competency-name');
-            if (nameInput.value.trim()) {
-                try {
-                    await addDoc(collection(db, `artifacts/${appId}/public/data/competencies`), { name: nameInput.value.trim() });
-                    showToast("شایستگی جدید اضافه شد.");
-                    nameInput.value = '';
-                } catch (error) {
-                    showToast("خطا در افزودن شایستگی.", "error");
+    if (addCompetencyForm) { /* ... کد قبلی ... */ }
+    
+    document.querySelectorAll('.role-select').forEach(select => { /* ... کد قبلی ... */ });
+
+    // [!code focus:12]
+    // --- رویداد جدید برای واگذاری پیش‌فرض ---
+    const defaultAssigneeSelect = document.getElementById('default-assignee-select');
+    if (defaultAssigneeSelect) {
+        defaultAssigneeSelect.addEventListener('change', async (e) => {
+            const selectedUid = e.target.value;
+            const defaultRuleRef = doc(db, `artifacts/${appId}/public/data/assignmentRules`, '__default__');
+            try {
+                if (selectedUid) {
+                    await setDoc(defaultRuleRef, { assigneeUid: selectedUid, ruleName: 'Default Assignee' });
+                } else {
+                    await deleteDoc(defaultRuleRef);
                 }
+                showToast("واگذاری پیش‌فرض با موفقیت بروزرسانی شد.");
+            } catch (error) {
+                showToast("خطا در بروزرسانی واگذاری پیش‌فرض.", "error");
             }
         });
     }
-    
-    document.querySelectorAll('.role-select').forEach(select => {
-        select.addEventListener('change', async (e) => {
-            try {
-                const userRef = doc(db, `artifacts/${appId}/public/data/users`, e.target.dataset.uid);
-                await updateDoc(userRef, { role: e.target.value });
-                showToast("نقش کاربر با موفقیت تغییر کرد.");
-            } catch (error) {
-                showToast("خطا در تغییر نقش کاربر.", "error");
-            }
-        });
-    });
 };
 const setupAnalyticsPage = () => {
     // --- منطق تب‌ها ---
@@ -4411,6 +4391,81 @@ const showMyProfileEditForm = (emp) => {
         } catch (error) {
             console.error("Error updating profile:", error);
             showToast("خطا در به‌روزرسانی اطلاعات.", "error");
+        }
+    });
+};
+// این تابع جدید را به js/main.js اضافه کنید
+
+const showAssignmentRuleForm = (ruleId = null) => {
+    const isEditing = ruleId !== null;
+    const rule = isEditing ? state.assignmentRules.find(r => r.firestoreId === ruleId) : {};
+    
+    modalTitle.innerText = isEditing ? 'ویرایش قانون واگذاری' : 'افزودن قانون واگذاری جدید';
+
+    const admins = state.users.filter(u => u.role === 'admin');
+    const requestTypes = ['درخواست مرخصی', 'گواهی اشتغال به کار', 'مساعده حقوق', 'سایر'];
+
+    const adminOptions = admins.map(admin => 
+        `<option value="${admin.firestoreId}" ${isEditing && rule.assigneeUid === admin.firestoreId ? 'selected' : ''}>
+            ${admin.name || admin.email}
+        </option>`
+    ).join('');
+
+    const requestTypeCheckboxes = requestTypes.map(type => `
+        <div class="flex items-center">
+            <input type="checkbox" id="type-${type}" value="${type}" class="rule-request-type" 
+                   ${isEditing && rule.requestTypes?.includes(type) ? 'checked' : ''}>
+            <label for="type-${type}" class="mr-2">${type}</label>
+        </div>
+    `).join('');
+
+    modalContent.innerHTML = `
+        <form id="assignment-rule-form" class="space-y-4">
+            <div>
+                <label class="block font-medium mb-1">نام قانون (مثال: قوانین مرخصی)</label>
+                <input type="text" id="rule-name" value="${rule.ruleName || ''}" class="w-full p-2 border rounded-md" required>
+            </div>
+            <div>
+                <label class="block font-medium mb-1">برای کدام نوع درخواست‌ها اعمال شود؟</label>
+                <div class="grid grid-cols-2 gap-2 mt-2">${requestTypeCheckboxes}</div>
+            </div>
+            <div>
+                <label class="block font-medium mb-1">به کدام مدیر واگذار شود؟</label>
+                <select id="rule-assignee" class="w-full p-2 border rounded-md bg-white" required>
+                    <option value="">انتخاب کنید...</option>
+                    ${adminOptions}
+                </select>
+            </div>
+            <div class="pt-4 flex justify-end">
+                <button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">ذخیره قانون</button>
+            </div>
+        </form>
+    `;
+    openModal(mainModal, mainModalContainer);
+
+    document.getElementById('assignment-rule-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const selectedTypes = Array.from(document.querySelectorAll('.rule-request-type:checked')).map(cb => cb.value);
+        
+        if (selectedTypes.length === 0) {
+            showToast("حداقل یک نوع درخواست باید انتخاب شود.", "error");
+            return;
+        }
+
+        const ruleData = {
+            ruleName: document.getElementById('rule-name').value,
+            requestTypes: selectedTypes,
+            assigneeUid: document.getElementById('rule-assignee').value
+        };
+
+        try {
+            const docRef = isEditing ? doc(db, `artifacts/${appId}/public/data/assignmentRules`, ruleId) : doc(collection(db, `artifacts/${appId}/public/data/assignmentRules`));
+            await setDoc(docRef, ruleData, { merge: true });
+            showToast("قانون واگذاری با موفقیت ذخیره شد.");
+            closeModal(mainModal, mainModalContainer);
+        } catch (error) {
+            console.error("Error saving assignment rule:", error);
+            showToast("خطا در ذخیره قانون.", "error");
         }
     });
 };
