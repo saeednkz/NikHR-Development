@@ -333,27 +333,30 @@ function renderEmployeePortalPage(pageName, employee) {
     }
     
     lucide.createIcons();
+  setupEmployeePortalEventListeners(employee);
 }
 
 // در فایل js/main.js
 // این بخش را به تابع setupEmployeePortalEventListeners اضافه کنید
 
+// در فایل js/main.js
+// کل این تابع را با نسخه تمیز شده زیر جایگزین کنید
+
 function setupEmployeePortalEventListeners(employee) {
-    document.getElementById('portal-logout-btn').addEventListener('click', () => signOut(auth));
+    // فعال‌سازی دکمه خروج اصلی پورتال
+    document.getElementById('portal-logout-btn')?.addEventListener('click', () => signOut(auth));
     
-    // [!code ++] رویداد کلیک برای دکمه ویرایش پروفایل
-    const editProfileBtn = document.getElementById('edit-my-profile-btn');
-    if (editProfileBtn) {
-        editProfileBtn.addEventListener('click', () => {
-            showMyProfileEditForm(employee);
-        });
-    }
- const newRequestBtn = document.getElementById('add-new-request-btn');
-    if (newRequestBtn) {
-        newRequestBtn.addEventListener('click', () => {
-            showNewRequestForm(employee);
-        });
-    }
+    // فعال‌سازی دکمه ویرایش پروفایل (اگر در صفحه پروفایل باشیم)
+    document.getElementById('edit-my-profile-btn')?.addEventListener('click', () => {
+        showMyProfileEditForm(employee);
+    });
+
+    // فعال‌سازی دکمه ثبت درخواست جدید (اگر در صفحه درخواست‌ها باشیم)
+    document.getElementById('add-new-request-btn')?.addEventListener('click', () => {
+        showNewRequestForm(employee);
+    });
+
+    // فعال‌سازی لینک‌های منوی کناری
     document.querySelectorAll('.employee-nav-item').forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
