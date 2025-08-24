@@ -166,6 +166,53 @@ const onDataLoaded = () => {
                 });
             });
         }
+// این تابع را به فایل js/main.js اضافه کنید
+
+function renderEmployeePortal() {
+    // ابتدا تمام کانتینرهای دیگر را مخفی می‌کنیم
+    document.getElementById('login-container').classList.add('hidden');
+    document.getElementById('dashboard-container').classList.add('hidden');
+
+    // و کانتینر پورتال کارمندان را نمایش می‌دهیم
+    const portalContainer = document.getElementById('employee-portal-container');
+    portalContainer.classList.remove('hidden');
+
+    const employee = state.employees.find(emp => emp.uid === state.currentUser.uid);
+    const employeeName = employee ? employee.name : state.currentUser.email;
+
+    // ساختار اولیه HTML برای پورتال کارمندان
+    portalContainer.innerHTML = `
+        <div class="min-h-screen bg-slate-100">
+            <header class="bg-white shadow-sm">
+                <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+                    <div class="flex items-center gap-3">
+                        <img src="logo.png" alt="NikHR Logo" class="w-8 h-8">
+                        <h1 class="text-xl font-bold text-slate-800">پورتال کارمندان NikHR</h1>
+                    </div>
+                    <div class="flex items-center gap-4">
+                         <span class="text-sm text-slate-600 hidden sm:block">خوش آمدید، ${employeeName}</span>
+                         <button id="portal-logout-btn" class="text-slate-500 hover:text-red-600" title="خروج">
+                             <i data-lucide="log-out" class="w-5 h-5"></i>
+                         </button>
+                    </div>
+                </div>
+            </header>
+
+            <main class="py-10">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="bg-white p-8 rounded-xl shadow-md text-center">
+                        <h2 class="text-2xl font-bold text-slate-800">داشبورد شما</h2>
+                        <p class="mt-2 text-slate-500">این بخش به زودی با ویجت‌های کاربردی تکمیل خواهد شد.</p>
+                         </div>
+                </div>
+            </main>
+        </div>
+    `;
+
+    // آیکون‌ها و رویداد دکمه خروج را فعال می‌کنیم
+    lucide.createIcons();
+    document.getElementById('portal-logout-btn').addEventListener('click', () => signOut(auth));
+}
         // --- UTILITY & HELPER FUNCTIONS ---
         // --- تابع جدید برای تبدیل تاریخ به شمسی ---
         // --- تابع جدید برای تبدیل اعداد فارسی به انگلیسی ---
