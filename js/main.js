@@ -387,12 +387,12 @@ function renderEmployeePortal() {
     `;
     
     lucide.createIcons();
-    
+
+      // به صورت پیش‌فرض، صفحه پروفایل را نمایش می‌دهیم
+    renderEmployeePortalPage('profile', employee);
     // رویدادهای مربوط به پورتال کارمندان را راه‌اندازی می‌کنیم
     setupEmployeePortalEventListeners(employee);
 
-    // به صورت پیش‌فرض، صفحه پروفایل را نمایش می‌دهیم
-    renderEmployeePortalPage('profile', employee);
 }
         // --- UTILITY & HELPER FUNCTIONS ---
         // --- تابع جدید برای تبدیل تاریخ به شمسی ---
