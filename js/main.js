@@ -1179,11 +1179,13 @@ const showEditUserForm = (user) => {
             </div>
             <div>
                 <label for="edit-user-role" class="block text-sm font-medium text-gray-700">سطح دسترسی</label>
-                <select id="edit-user-role" class="w-full p-2 mt-1 border rounded-md" ${user.firestoreId === state.currentUser.uid ? 'disabled' : ''}>
-                    <option value="viewer" ${user.role === 'viewer' ? 'selected' : ''}>مشاهده‌گر (Viewer)</option>
-                    <option value="editor" ${user.role === 'editor' ? 'selected' : ''}>ویرایشگر (Editor)</option>
-                    <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>مدیر (Admin)</option>
-                </select>
+// ...
+<select id="new-user-role" class="w-full p-2 mt-1 border rounded-md">
+    <option value="viewer">مشاهده‌گر (Viewer)</option>
+    <option value="editor">ویرایشگر (Editor)</option>
+    <option value="admin">مدیر (Admin)</option>
+    <option value="employee">کارمند (Employee)</option> </select>
+// ...
             </div>
             <div class="pt-4 flex justify-end">
                 <button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">ذخیره تغییرات</button>
@@ -3440,11 +3442,13 @@ const showAddUserForm = () => {
             </div>
             <div>
                 <label for="new-user-role" class="block text-sm font-medium text-gray-700">سطح دسترسی</label>
-                <select id="new-user-role" class="w-full p-2 mt-1 border rounded-md">
-                    <option value="viewer">مشاهده‌گر (Viewer)</option>
-                    <option value="editor">ویرایشگر (Editor)</option>
-                    <option value="admin">مدیر (Admin)</option>
-                </select>
+                // ...
+<select id="new-user-role" class="w-full p-2 mt-1 border rounded-md">
+    <option value="viewer">مشاهده‌گر (Viewer)</option>
+    <option value="editor">ویرایشگر (Editor)</option>
+    <option value="admin">مدیر (Admin)</option>
+    <option value="employee">کارمند (Employee)</option> </select>
+// ...
             </div>
             <div class="pt-4 flex justify-end">
                 <button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">افزودن کاربر</button>
