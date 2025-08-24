@@ -7,6 +7,12 @@
             addDoc, getDocs, writeBatch, deleteDoc, updateDoc, query, serverTimestamp
         } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+// وارد کردن توابع مربوط به احراز هویت از فایل auth.js
+import { 
+    showLoginPage, 
+    showDashboard, 
+    setupAuthEventListeners 
+} from './auth.js';
         
         // --- SURVEY TEMPLATES (COMPREHENSIVE & STANDARD) ---
         const surveyTemplates = {
