@@ -90,6 +90,8 @@ const firebaseConfig = {
 
 // این کد باید در فایل js/main.js شما جایگزین تابع فعلی شود
 
+// این کد باید در فایل js/main.js شما جایگزین تابع فعلی شود
+
 async function initializeFirebase() {
     try {
         app = initializeApp(firebaseConfig);
