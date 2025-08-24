@@ -4530,6 +4530,9 @@ const showAssignmentRuleForm = (ruleId = null) => {
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
 
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید و کامل جایگزین کنید
+
 const showNewRequestForm = (employee) => {
     modalTitle.innerText = 'ثبت درخواست جدید';
     modalContent.innerHTML = `
@@ -4558,18 +4561,14 @@ const showNewRequestForm = (employee) => {
         e.preventDefault();
         const requestType = document.getElementById('request-type').value;
         
-        // [!code focus:15]
-        // --- منطق جدید و هوشمند برای واگذاری ---
         let assignedUid = null;
         
-        // ۱. ابتدا در قوانین تعریف شده جستجو کن
-        const applicableRule = (state.assignmentRules || []).find(rule => rule.firestoreId !== '__default__' && rule.requestTypes?.includes(requestType));
+        const applicableRule = (state.assignmentRules || []).find(rule => rule.firestoreId !== '_default' && rule.requestTypes?.includes(requestType));
         
         if (applicableRule) {
             assignedUid = applicableRule.assigneeUid;
         } else {
-            // ۲. اگر قانونی پیدا نشد، به سراغ قانون پیش‌فرض برو
-            const defaultRule = (state.assignmentRules || []).find(rule => rule.firestoreId === '__default__');
+            const defaultRule = (state.assignmentRules || []).find(rule => rule.firestoreId === '_default');
             if (defaultRule) {
                 assignedUid = defaultRule.assigneeUid;
             }
@@ -4583,8 +4582,8 @@ const showNewRequestForm = (employee) => {
             details: document.getElementById('request-details').value,
             status: 'درحال بررسی',
             createdAt: serverTimestamp(),
-            assignedTo: assignedUid // UID ادمین مسئول در اینجا ثبت می‌شود
-           isReadByAssignee: false // [!code ++] این فیلد را اضافه کنید
+            assignedTo: assignedUid, // [!code ++] ویرگول در این خط اضافه شد
+            isReadByAssignee: false
         };
 
         try {
