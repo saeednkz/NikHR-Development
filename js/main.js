@@ -1326,15 +1326,16 @@ analytics: () => {
 // در فایل js/main.js، داخل آبجکت pages
 // کل این تابع را جایگزین نسخه فعلی کنید
 
+// در فایل js/main.js، داخل آبجکت pages
+// کل این تابع را جایگزین نسخه فعلی کنید
+
 settings: () => {
     if (!isAdmin()) {
         return `<div class="text-center p-10 card"><i data-lucide="lock" class="mx-auto w-16 h-16 text-red-500"></i><h2 class="mt-4 text-xl font-semibold text-slate-700">دسترسی غیر مجاز</h2><p class="mt-2 text-slate-500">شما برای مشاهده این صفحه دسترسی لازم را ندارید.</p></div>`;
     }
 
-    // --- آماده‌سازی داده‌ها برای نمایش ---
     const admins = state.users.filter(u => u.role === 'admin');
 
-    // بخش کاربران
     const usersHtml = state.users.map(user => {
         const userInitial = user.name ? user.name.substring(0, 1) : user.email.substring(0, 1).toUpperCase();
         const isCurrentUser = user.firestoreId === state.currentUser.uid;
@@ -1363,7 +1364,6 @@ settings: () => {
         `;
     }).join('');
 
-    // بخش شایستگی‌ها
     const competenciesHtml = (state.competencies || []).map(c => `
         <div class="inline-flex items-center bg-slate-100 text-slate-700 text-sm font-medium px-3 py-1.5 rounded-full">
             <span>${c.name}</span>
@@ -1371,9 +1371,7 @@ settings: () => {
         </div>
     `).join('') || '<p class="text-sm text-slate-500">هنوز شایستگی‌ای تعریف نشده است.</p>';
     
-    // [!code focus:25]
-    // --- بخش جدید: قوانین واگذاری ---
-    const rulesHtml = (state.assignmentRules || []).filter(r => r.firestoreId !== '__default__').map(rule => {
+    const rulesHtml = (state.assignmentRules || []).filter(r => r.firestoreId !== '_default').map(rule => {
         const assignee = admins.find(a => a.firestoreId === rule.assigneeUid);
         return `
             <div class="p-3 bg-slate-100 rounded-lg flex justify-between items-center">
@@ -1393,21 +1391,19 @@ settings: () => {
         `;
     }).join('');
 
-    const defaultRule = (state.assignmentRules || []).find(r => r.firestoreId === '__default__');
-
+    const defaultRule = (state.assignmentRules || []).find(r => r.firestoreId === '_default'); // [!code --]
+    
     return `
         <div>
             <h1 class="text-3xl font-bold text-slate-800">تنظیمات سیستم</h1>
             <p class="text-sm text-slate-500 mt-1 mb-6">مدیریت کاربران، دسترسی‌ها و پیکربندی‌های اصلی سازمان</p>
         </div>
-
         <div class="border-b border-slate-200 mb-6">
             <nav id="settings-tabs" class="flex -mb-px space-x-6 space-x-reverse" aria-label="Tabs">
                 <button data-tab="users" class="settings-tab shrink-0 border-b-2 font-semibold px-1 py-3 text-sm border-blue-600 text-blue-600">مدیریت کاربران و دسترسی</button>
                 <button data-tab="configs" class="settings-tab shrink-0 border-b-2 font-semibold px-1 py-3 text-sm border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300">پیکربندی سازمان</button>
             </nav>
         </div>
-
         <div id="settings-tab-content">
             <div id="tab-users" class="settings-tab-pane">
                 <div class="card p-0">
@@ -1418,7 +1414,6 @@ settings: () => {
                     <div id="users-list-container" class="p-5 grid grid-cols-1 xl:grid-cols-2 gap-4">${usersHtml}</div>
                 </div>
             </div>
-
             <div id="tab-configs" class="settings-tab-pane hidden space-y-6">
                 <div class="card p-6">
                     <h3 class="font-semibold text-lg mb-4 flex items-center"><i data-lucide="star" class="ml-2 text-amber-500"></i>مدیریت شایستگی‌ها</h3>
@@ -1428,14 +1423,12 @@ settings: () => {
                         <button type="submit" class="bg-slate-800 text-white py-2 px-4 rounded-lg hover:bg-slate-900 shrink-0">افزودن</button>
                     </form>
                 </div>
-                
                 <div class="card p-6">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="font-semibold text-lg flex items-center"><i data-lucide="git-branch-plus" class="ml-2 text-purple-500"></i>قوانین واگذاری هوشمند</h3>
                         <button id="add-rule-btn" class="bg-blue-600 text-white text-sm py-2 px-4 rounded-lg hover:bg-blue-700">افزودن قانون جدید</button>
                     </div>
                     <div id="rules-list" class="space-y-3">${rulesHtml || '<p class="text-center text-sm text-slate-400">قانونی تعریف نشده است.</p>'}</div>
-                    
                     <div class="mt-6 border-t pt-4">
                          <h4 class="font-semibold text-md mb-2">واگذاری پیش‌فرض</h4>
                          <p class="text-sm text-slate-500 mb-2">درخواست‌هایی که با هیچ قانونی مطابقت ندارند به صورت پیش‌فرض به کاربر زیر واگذار می‌شوند:</p>
@@ -2622,11 +2615,13 @@ const setupRequestsPageListeners = () => {
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
 
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید جایگزین کنید
+
 const setupSettingsPageListeners = () => {
     const mainContentArea = document.getElementById('main-content');
     if (!mainContentArea) return;
 
-    // --- مدیریت تب‌ها ---
     mainContentArea.querySelectorAll('.settings-tab').forEach(tab => {
         tab.addEventListener('click', () => {
             mainContentArea.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('border-blue-600', 'text-blue-600'));
@@ -2637,22 +2632,23 @@ const setupSettingsPageListeners = () => {
         });
     });
 
-    // --- مدیریت رویدادها با Event Delegation ---
     mainContentArea.addEventListener('click', (e) => {
         const addUserBtn = e.target.closest('#add-user-btn');
         const editUserBtn = e.target.closest('.edit-user-btn');
         const deleteUserBtn = e.target.closest('.delete-user-btn');
         const deleteCompetencyBtn = e.target.closest('.delete-competency-btn');
-        const addRuleBtn = e.target.closest('#add-rule-btn'); // [!code ++]
-        const editRuleBtn = e.target.closest('.edit-rule-btn'); // [!code ++]
-        const deleteRuleBtn = e.target.closest('.delete-rule-btn'); // [!code ++]
+        const addRuleBtn = e.target.closest('#add-rule-btn');
+        const editRuleBtn = e.target.closest('.edit-rule-btn');
+        const deleteRuleBtn = e.target.closest('.delete-rule-btn');
         
         if (addUserBtn) showAddUserForm();
-        if (editUserBtn) { /* ... کد قبلی ... */ }
+        if (editUserBtn) {
+            const user = state.users.find(u => u.firestoreId === editUserBtn.dataset.uid);
+            if(user) showEditUserForm(user);
+        }
         if (deleteUserBtn) { /* ... کد قبلی ... */ }
         if (deleteCompetencyBtn) { /* ... کد قبلی ... */ }
         
-        // [!code focus:10]
         if (addRuleBtn) showAssignmentRuleForm();
         if (editRuleBtn) showAssignmentRuleForm(editRuleBtn.dataset.id);
         if (deleteRuleBtn) {
@@ -2665,19 +2661,19 @@ const setupSettingsPageListeners = () => {
         }
     });
     
-    // --- مدیریت فرم‌ها و تغییرات دیگر ---
     const addCompetencyForm = document.getElementById('add-competency-form');
     if (addCompetencyForm) { /* ... کد قبلی ... */ }
     
     document.querySelectorAll('.role-select').forEach(select => { /* ... کد قبلی ... */ });
 
     // [!code focus:12]
-    // --- رویداد جدید برای واگذاری پیش‌فرض ---
+    // رویداد اصلاح شده برای واگذاری پیش‌فرض
     const defaultAssigneeSelect = document.getElementById('default-assignee-select');
     if (defaultAssigneeSelect) {
         defaultAssigneeSelect.addEventListener('change', async (e) => {
             const selectedUid = e.target.value;
-            const defaultRuleRef = doc(db, `artifacts/${appId}/public/data/assignmentRules`, '__default__');
+            const defaultRuleRef = doc(db, `artifacts/${appId}/public/data/assignmentRules`, '_default'); // [!code --]
+
             try {
                 if (selectedUid) {
                     await setDoc(defaultRuleRef, { assigneeUid: selectedUid, ruleName: 'Default Assignee' });
@@ -2686,6 +2682,7 @@ const setupSettingsPageListeners = () => {
                 }
                 showToast("واگذاری پیش‌فرض با موفقیت بروزرسانی شد.");
             } catch (error) {
+                console.error("Error setting default assignee:", error);
                 showToast("خطا در بروزرسانی واگذاری پیش‌فرض.", "error");
             }
         });
