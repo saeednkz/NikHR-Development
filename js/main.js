@@ -132,7 +132,7 @@ async function initializeFirebase() {
         }
 
         function listenToData() {
-            const collectionsToListen = ['employees', 'teams', 'reminders', 'surveyResponses', 'users', 'competencies', 'expenses', 'pettyCashCards', 'chargeHistory'];
+            const collectionsToListen = ['employees', 'teams', 'reminders', 'surveyResponses', 'users', 'competencies', 'expenses', 'pettyCashCards', 'chargeHistory', 'requests'];
             let initialLoads = collectionsToListen.length;
 // کد جدید و صحیح ✅
 const onDataLoaded = () => {
@@ -180,144 +180,159 @@ const onDataLoaded = () => {
 // در فایل js/main.js
 // تابع renderEmployeePortalPage را با این نسخه جایگزین کنید
 
+// در فایل js/main.js
+// کل این تابع را جایگزین نسخه فعلی کنید
+
 function renderEmployeePortalPage(pageName, employee) {
     const contentContainer = document.getElementById('employee-main-content');
     if (!contentContainer) return;
 
-// در فایل js/main.js
-// داخل تابع renderEmployeePortalPage
-
-// ...
-// در فایل js/main.js
-// داخل تابع renderEmployeePortalPage
-
-if (pageName === 'profile') {
-    // [!code focus:55]
-    const manager = state.teams.find(t => t.memberIds?.includes(employee.id))
-        ? state.employees.find(e => e.id === state.teams.find(t => t.memberIds.includes(employee.id)).leaderId)
-        : null;
-    
-    const performanceHistoryHtml = (employee.performanceHistory || []).sort((a,b) => new Date(b.reviewDate) - new Date(a.reviewDate)).map(review => `
-        <div class="p-4 bg-slate-50 rounded-lg border">
-            <div class="flex justify-between items-center mb-2">
-                <p class="font-bold text-slate-800">امتیاز کلی: <span class="text-lg text-green-600">${review.overallScore}/5</span></p>
-                <p class="text-sm text-slate-500">تاریخ: ${toPersianDate(review.reviewDate)}</p>
+    if (pageName === 'profile') {
+        // این بخش کد پروفایل شماست که قبلاً نوشتیم و دست نخورده باقی می‌ماند
+        const manager = state.teams.find(t => t.memberIds?.includes(employee.id))
+            ? state.employees.find(e => e.id === state.teams.find(t => t.memberIds.includes(employee.id)).leaderId)
+            : null;
+        
+        const performanceHistoryHtml = (employee.performanceHistory || []).sort((a,b) => new Date(b.reviewDate) - new Date(a.reviewDate)).map(review => `
+            <div class="p-4 bg-slate-50 rounded-lg border">
+                <div class="flex justify-between items-center mb-2">
+                    <p class="font-bold text-slate-800">امتیاز کلی: <span class="text-lg text-green-600">${review.overallScore}/5</span></p>
+                    <p class="text-sm text-slate-500">تاریخ: ${toPersianDate(review.reviewDate)}</p>
+                </div>
+                <p class="text-xs text-slate-700 mt-2"><strong>نقاط قوت:</strong> ${review.strengths || '-'}</p>
             </div>
-            <p class="text-xs text-slate-700 mt-2"><strong>نقاط قوت:</strong> ${review.strengths || '-'}</p>
-        </div>
-    `).join('') || '<p class="text-sm text-slate-500">سابقه‌ای ثبت نشده است.</p>';
-
-    contentContainer.innerHTML = `
-        <div class="flex justify-between items-center mb-6">
-            <h1 class="text-3xl font-bold text-slate-800">پروفایل من</h1>
-            <button id="edit-my-profile-btn" class="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 flex items-center gap-2">
-                <i data-lucide="edit-3" class="w-4 h-4"></i>
-                <span>ویرایش اطلاعات</span>
-            </button>
-        </div>
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="lg:col-span-1 space-y-6">
-                <div class="bg-white p-6 rounded-xl shadow-md text-center">
-                    <img src="${employee.avatar}" alt="${employee.name}" class="w-32 h-32 rounded-full mx-auto object-cover border-4 border-slate-200">
-                    <h2 class="text-2xl font-bold mt-4">${employee.name}</h2>
-                    <p class="text-slate-500">${employee.jobTitle || ''}</p>
-                </div>
-                <div class="bg-white p-6 rounded-xl shadow-md">
-                    <h3 class="text-lg font-semibold text-slate-700 mb-4">اطلاعات پایه</h3>
-                    <div class="space-y-3 text-sm">
-                        <p><strong class="text-slate-500">کد پرسنلی:</strong> ${employee.id}</p>
-                        <p><strong class="text-slate-500">دپارتمان:</strong> ${employee.department || '-'}</p>
-                        <p><strong class="text-slate-500">مدیر مستقیم:</strong> ${manager ? manager.name : '-'}</p>
-                        <p><strong class="text-slate-500">تاریخ استخدام:</strong> ${toPersianDate(employee.startDate)}</p>
-                    </div>
-                </div>
-            </div>
-            <div class="lg:col-span-2 space-y-6">
-                 <div class="bg-white p-6 rounded-xl shadow-md">
-                    <h3 class="text-lg font-semibold text-slate-700 mb-4">اطلاعات تماس و شخصی</h3>
-                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                        <p><strong class="text-slate-500">ایمیل:</strong> ${employee.personalInfo?.email || '-'}</p>
-                        <p><strong class="text-slate-500">موبایل:</strong> ${employee.personalInfo?.phone || '-'}</p>
-                        <p><strong class="text-slate-500">تاریخ تولد:</strong> ${toPersianDate(employee.personalInfo?.birthDate)}</p>
-                        <p><strong class="text-slate-500">وضعیت تاهل:</strong> ${employee.personalInfo?.maritalStatus || '-'}</p>
-                        <p class="col-span-2"><strong class="text-slate-500">آدرس:</strong> ${employee.personalInfo?.address || '-'}</p>
-                        <p><strong class="text-slate-500">مخاطب اضطراری:</strong> ${employee.personalInfo?.emergencyContactName || '-'}</p>
-                        <p><strong class="text-slate-500">شماره تماس اضطراری:</strong> ${employee.personalInfo?.emergencyContactPhone || '-'}</p>
-                    </div>
-                </div>
-                <div class="bg-white p-6 rounded-xl shadow-md">
-                    <h3 class="text-lg font-semibold text-slate-700 mb-4">آخرین ارزیابی عملکرد</h3>
-                    <div class="space-y-4">${performanceHistoryHtml}</div>
-                </div>
-            </div>
-        </div>
-    `;
-}
-// ... بقیه کد تابع ...
- else if (pageName === 'directory') { // [!code ++] بخش جدید برای دایرکتوری
-// ...
-const teamCardsHtml = state.teams.map(team => {
-    const leader = state.employees.find(e => e.id === team.leaderId);
-    const members = state.employees.filter(e => team.memberIds?.includes(e.id));
-    
-    // [!code focus:25]
-    return `
-        <div class="bg-white p-6 rounded-xl shadow-md flex flex-col">
-            <div class="flex items-center mb-4">
-                <img src="${team.avatar}" alt="${team.name}" class="w-16 h-16 rounded-full object-cover ml-4 border-2 border-slate-200">
-                <div>
-                    <h3 class="text-xl font-bold text-blue-600">${team.name}</h3>
-                    <p class="text-sm text-slate-500">
-                        <span class="font-semibold">رهبر تیم:</span> ${leader ? leader.name : 'نامشخص'}
-                    </p>
-                </div>
-            </div>
-
-            <div class="border-t pt-4 mb-4">
-                <h4 class="font-semibold text-slate-600 mb-3 text-sm">اهداف کلیدی (OKRs)</h4>
-                <div class="space-y-3">
-                    ${(team.okrs && team.okrs.length > 0) 
-                        ? team.okrs.map(okr => `
-                            <div>
-                                <div class="flex justify-between items-center mb-1 text-xs">
-                                    <span class="text-slate-600">${okr.title}</span>
-                                    <span class="font-medium text-blue-600">${okr.progress}%</span>
-                                </div>
-                                <div class="progress-bar w-full"><div class="progress-bar-fill" style="width: ${okr.progress}%;"></div></div>
-                            </div>
-                        `).join('') 
-                        : '<p class="text-xs text-slate-400">هدفی برای این تیم ثبت نشده است.</p>'
-                    }
-                </div>
-            </div>
-
-            <div class="border-t pt-4 mt-auto">
-                <h4 class="font-semibold text-slate-600 mb-3 text-sm">اعضا (${members.length} نفر):</h4>
-                <div class="flex flex-wrap gap-x-6 gap-y-3">
-                    ${members.map(member => `
-                        <div class="flex items-center gap-2" title="${member.name} - ${member.jobTitle}">
-                            <img src="${member.avatar}" alt="${member.name}" class="w-8 h-8 rounded-full object-cover">
-                            <p class="text-sm font-medium">${member.name}</p>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-        </div>
-    `;
-}).join('');
-// ...
+        `).join('') || '<p class="text-sm text-slate-500">سابقه‌ای ثبت نشده است.</p>';
 
         contentContainer.innerHTML = `
-            <h1 class="text-3xl font-bold text-slate-800 mb-6">دایرکتوری سازمان</h1>
-            <div class="space-y-6">
-                ${teamCardsHtml || '<p>هنوز تیمی در سازمان ثبت نشده است.</p>'}
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-3xl font-bold text-slate-800">پروفایل من</h1>
+                <button id="edit-my-profile-btn" class="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 flex items-center gap-2">
+                    <i data-lucide="edit-3" class="w-4 h-4"></i>
+                    <span>ویرایش اطلاعات</span>
+                </button>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-1 space-y-6">
+                    <div class="bg-white p-6 rounded-xl shadow-md text-center">
+                        <img src="${employee.avatar}" alt="${employee.name}" class="w-32 h-32 rounded-full mx-auto object-cover border-4 border-slate-200">
+                        <h2 class="text-2xl font-bold mt-4">${employee.name}</h2>
+                        <p class="text-slate-500">${employee.jobTitle || ''}</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-md">
+                        <h3 class="text-lg font-semibold text-slate-700 mb-4">اطلاعات پایه</h3>
+                        <div class="space-y-3 text-sm">
+                            <p><strong class="text-slate-500">کد پرسنلی:</strong> ${employee.id}</p>
+                            <p><strong class="text-slate-500">دپارتمان:</strong> ${employee.department || '-'}</p>
+                            <p><strong class="text-slate-500">مدیر مستقیم:</strong> ${manager ? manager.name : '-'}</p>
+                            <p><strong class="text-slate-500">تاریخ استخدام:</strong> ${toPersianDate(employee.startDate)}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="lg:col-span-2 space-y-6">
+                     <div class="bg-white p-6 rounded-xl shadow-md">
+                        <h3 class="text-lg font-semibold text-slate-700 mb-4">اطلاعات تماس و شخصی</h3>
+                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                            <p><strong class="text-slate-500">ایمیل:</strong> ${employee.personalInfo?.email || '-'}</p>
+                            <p><strong class="text-slate-500">موبایل:</strong> ${employee.personalInfo?.phone || '-'}</p>
+                            <p><strong class="text-slate-500">تاریخ تولد:</strong> ${toPersianDate(employee.personalInfo?.birthDate)}</p>
+                            <p><strong class="text-slate-500">وضعیت تاهل:</strong> ${employee.personalInfo?.maritalStatus || '-'}</p>
+                            <p class="col-span-2"><strong class="text-slate-500">آدرس:</strong> ${employee.personalInfo?.address || '-'}</p>
+                            <p><strong class="text-slate-500">مخاطب اضطراری:</strong> ${employee.personalInfo?.emergencyContactName || '-'}</p>
+                            <p><strong class="text-slate-500">شماره تماس اضطراری:</strong> ${employee.personalInfo?.emergencyContactPhone || '-'}</p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-md">
+                        <h3 class="text-lg font-semibold text-slate-700 mb-4">آخرین ارزیابی عملکرد</h3>
+                        <div class="space-y-4">${performanceHistoryHtml}</div>
+                    </div>
+                </div>
             </div>
         `;
-    } else { // برای صفحات دیگر مثل «درخواست‌های من»
-        contentContainer.innerHTML = `<h1 class="text-3xl font-bold">${pageName === 'requests' ? 'درخواست‌های من' : pageName}</h1><p>این بخش به زودی آماده می‌شود.</p>`;
+    } else if (pageName === 'directory') {
+        // این بخش کد دایرکتوری شماست که قبلاً نوشتیم و دست نخورده باقی می‌ماند
+        const teamCardsHtml = state.teams.map(team => {
+            const leader = state.employees.find(e => e.id === team.leaderId);
+            const members = state.employees.filter(e => team.memberIds?.includes(e.id));
+            return `
+                <div class="bg-white p-6 rounded-xl shadow-md flex flex-col">
+                    <div class="flex items-center mb-4">
+                        <img src="${team.avatar}" alt="${team.name}" class="w-16 h-16 rounded-full object-cover ml-4 border-2 border-slate-200">
+                        <div>
+                            <h3 class="text-xl font-bold text-blue-600">${team.name}</h3>
+                            <p class="text-sm text-slate-500"><span class="font-semibold">رهبر تیم:</span> ${leader ? leader.name : 'نامشخص'}</p>
+                        </div>
+                    </div>
+                    <div class="border-t pt-4 mb-4">
+                        <h4 class="font-semibold text-slate-600 mb-3 text-sm">اهداف کلیدی (OKRs)</h4>
+                        <div class="space-y-3">
+                            ${(team.okrs && team.okrs.length > 0) 
+                                ? team.okrs.map(okr => `<div><div class="flex justify-between items-center mb-1 text-xs"><span class="text-slate-600">${okr.title}</span><span class="font-medium text-blue-600">${okr.progress}%</span></div><div class="progress-bar w-full"><div class="progress-bar-fill" style="width: ${okr.progress}%;"></div></div></div>`).join('') 
+                                : '<p class="text-xs text-slate-400">هدفی برای این تیم ثبت نشده است.</p>'
+                            }
+                        </div>
+                    </div>
+                    <div class="border-t pt-4 mt-auto">
+                        <h4 class="font-semibold text-slate-600 mb-3 text-sm">اعضا (${members.length} نفر):</h4>
+                        <div class="flex flex-wrap gap-x-6 gap-y-3">
+                            ${members.map(member => `<div class="flex items-center gap-2" title="${member.name} - ${member.jobTitle}"><img src="${member.avatar}" alt="${member.name}" class="w-8 h-8 rounded-full object-cover"><p class="text-sm font-medium">${member.name}</p></div>`).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        contentContainer.innerHTML = `<h1 class="text-3xl font-bold text-slate-800 mb-6">دایرکتوری سازمان</h1><div class="space-y-6">${teamCardsHtml || '<p>هنوز تیمی در سازمان ثبت نشده است.</p>'}</div>`;
+    
+    } else if (pageName === 'requests') { // [!code ++] این بلوک جدید برای درخواست‌ها است
+        const myRequests = (state.requests || []).filter(req => req.uid === employee.uid)
+            .sort((a, b) => new Date(b.createdAt?.toDate()) - new Date(a.createdAt?.toDate()));
+
+        const requestsHtml = myRequests.map(req => {
+            const statusColors = {
+                'درحال بررسی': 'bg-yellow-100 text-yellow-800',
+                'تایید شده': 'bg-green-100 text-green-800',
+                'رد شده': 'bg-red-100 text-red-800'
+            };
+            return `
+                <tr class="border-b">
+                    <td class="px-4 py-3">${toPersianDate(req.createdAt)}</td>
+                    <td class="px-4 py-3">${req.requestType}</td>
+                    <td class="px-4 py-3 text-sm text-slate-600">${req.details}</td>
+                    <td class="px-4 py-3"><span class="px-2 py-1 text-xs font-medium rounded-full ${statusColors[req.status] || 'bg-slate-100'}">${req.status}</span></td>
+                </tr>
+            `;
+        }).join('');
+
+        contentContainer.innerHTML = `
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-3xl font-bold text-slate-800">درخواست‌های من</h1>
+                <button id="add-new-request-btn" class="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 flex items-center gap-2">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                    <span>ثبت درخواست جدید</span>
+                </button>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-md">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="text-right bg-slate-50">
+                            <tr>
+                                <th class="px-4 py-2 font-semibold">تاریخ ثبت</th>
+                                <th class="px-4 py-2 font-semibold">نوع درخواست</th>
+                                <th class="px-4 py-2 font-semibold">جزئیات</th>
+                                <th class="px-4 py-2 font-semibold">وضعیت</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${requestsHtml || '<tr><td colspan="4" class="text-center py-8 text-slate-500">شما هنوز درخواستی ثبت نکرده‌اید.</td></tr>'}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    } else {
+        contentContainer.innerHTML = `<h1>صفحه مورد نظر یافت نشد.</h1>`;
     }
     
-    lucide.createIcons(); // [!code ++] برای نمایش آیکون‌ها در محتوای جدید
+    lucide.createIcons();
 }
 
 // در فایل js/main.js
@@ -333,7 +348,12 @@ function setupEmployeePortalEventListeners(employee) {
             showMyProfileEditForm(employee);
         });
     }
-
+ const newRequestBtn = document.getElementById('add-new-request-btn');
+    if (newRequestBtn) {
+        newRequestBtn.addEventListener('click', () => {
+            showNewRequestForm(employee);
+        });
+    }
     document.querySelectorAll('.employee-nav-item').forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
@@ -4321,6 +4341,54 @@ const showMyProfileEditForm = (emp) => {
         } catch (error) {
             console.error("Error updating profile:", error);
             showToast("خطا در به‌روزرسانی اطلاعات.", "error");
+        }
+    });
+};
+// این تابع جدید را به js/main.js اضافه کنید
+
+const showNewRequestForm = (employee) => {
+    modalTitle.innerText = 'ثبت درخواست جدید';
+    modalContent.innerHTML = `
+        <form id="new-request-form" class="space-y-4">
+            <div>
+                <label class="block font-medium mb-1">نوع درخواست</label>
+                <select id="request-type" class="w-full p-2 border rounded-md" required>
+                    <option value="درخواست مرخصی">درخواست مرخصی</option>
+                    <option value="گواهی اشتغال به کار">گواهی اشتغال به کار</option>
+                    <option value=" مساعده حقوق"> مساعده حقوق</option>
+                    <option value="سایر">سایر موارد</option>
+                </select>
+            </div>
+            <div>
+                <label class="block font-medium mb-1">جزئیات (شامل تاریخ‌ها، توضیحات و...)</label>
+                <textarea id="request-details" rows="5" class="w-full p-2 border rounded-md" required></textarea>
+            </div>
+            <div class="pt-4 flex justify-end">
+                <button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">ارسال درخواست</button>
+            </div>
+        </form>
+    `;
+    openModal(mainModal, mainModalContainer);
+
+    document.getElementById('new-request-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const requestData = {
+            uid: employee.uid,
+            employeeId: employee.id,
+            employeeName: employee.name,
+            requestType: document.getElementById('request-type').value,
+            details: document.getElementById('request-details').value,
+            status: 'درحال بررسی',
+            createdAt: serverTimestamp()
+        };
+
+        try {
+            await addDoc(collection(db, `artifacts/${appId}/public/data/requests`), requestData);
+            showToast("درخواست شما با موفقیت ثبت شد.");
+            closeModal(mainModal, mainModalContainer);
+        } catch (error) {
+            console.error("Error submitting request:", error);
+            showToast("خطا در ثبت درخواست.", "error");
         }
     });
 };
