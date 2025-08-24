@@ -88,23 +88,32 @@ const firebaseConfig = {
         
 
 
-        async function initializeFirebase() {
-            try {
-                app = initializeApp(firebaseConfig);
-                auth = getAuth(app);
-                db = getFirestore(app);
-                storage = getStorage(app);
-                onAuthStateChanged(auth, async (user) => {
-                    if (user) {
-                        await fetchUserRole(user);
-                        listenToData();
-                    } else {
-                        state.currentUser = null;
-                        showLoginPage();
-                    }
-                });
-            } catch (error) { console.error("Firebase Init Error:", error); }
-        }
+// این کد باید در فایل js/main.js شما جایگزین تابع فعلی شود
+
+async function initializeFirebase() {
+    try {
+        app = initializeApp(firebaseConfig);
+        auth = getAuth(app);
+        db = getFirestore(app);
+        storage = getStorage(app);
+
+        // [!code ++] این خط حیاتی را اضافه کنید!
+        // این دستور، دکمه‌های ورود، ثبت‌نام و خروج را در فایل auth.js فعال می‌کند
+        setupAuthEventListeners(auth); 
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                await fetchUserRole(user);
+                listenToData();
+            } else {
+                state.currentUser = null;
+                showLoginPage();
+            }
+        });
+    } catch (error) { 
+        console.error("Firebase Init Error:", error); 
+    }
+}
 
         async function fetchUserRole(user) {
             const userRef = doc(db, `artifacts/${appId}/public/data/users`, user.uid);
