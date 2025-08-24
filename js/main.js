@@ -177,6 +177,9 @@ const onDataLoaded = () => {
         }
 // این دو تابع جدید را به فایل js/main.js اضافه کنید
 
+// در فایل js/main.js
+// تابع renderEmployeePortalPage را با این نسخه جایگزین کنید
+
 function renderEmployeePortalPage(pageName, employee) {
     const contentContainer = document.getElementById('employee-main-content');
     if (!contentContainer) return;
@@ -210,9 +213,46 @@ function renderEmployeePortalPage(pageName, employee) {
                 </div>
             </div>
         `;
-    } else {
-        contentContainer.innerHTML = `<h1 class="text-3xl font-bold">${pageName}</h1><p>این بخش به زودی آماده می‌شود.</p>`;
+    } else if (pageName === 'directory') { // [!code ++] بخش جدید برای دایرکتوری
+        const teamCardsHtml = state.teams.map(team => {
+            const leader = state.employees.find(e => e.id === team.leaderId);
+            const members = state.employees.filter(e => team.memberIds?.includes(e.id));
+            
+            return `
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-xl font-bold text-blue-600 mb-2">${team.name}</h3>
+                    <p class="text-sm text-slate-500 mb-4">
+                        <span class="font-semibold">رهبر تیم:</span> ${leader ? leader.name : 'نامشخص'}
+                    </p>
+                    <div class="border-t pt-4">
+                        <h4 class="font-semibold text-slate-600 mb-3">اعضا (${members.length} نفر):</h4>
+                        <div class="flex flex-wrap gap-4">
+                            ${members.map(member => `
+                                <div class="flex items-center gap-2" title="${member.name} - ${member.jobTitle}">
+                                    <img src="${member.avatar}" alt="${member.name}" class="w-10 h-10 rounded-full object-cover">
+                                    <div>
+                                        <p class="text-sm font-semibold">${member.name}</p>
+                                        <p class="text-xs text-slate-500">${member.jobTitle || ''}</p>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        contentContainer.innerHTML = `
+            <h1 class="text-3xl font-bold text-slate-800 mb-6">دایرکتوری سازمان</h1>
+            <div class="space-y-6">
+                ${teamCardsHtml || '<p>هنوز تیمی در سازمان ثبت نشده است.</p>'}
+            </div>
+        `;
+    } else { // برای صفحات دیگر مثل «درخواست‌های من»
+        contentContainer.innerHTML = `<h1 class="text-3xl font-bold">${pageName === 'requests' ? 'درخواست‌های من' : pageName}</h1><p>این بخش به زودی آماده می‌شود.</p>`;
     }
+    
+    lucide.createIcons(); // [!code ++] برای نمایش آیکون‌ها در محتوای جدید
 }
 
 function setupEmployeePortalEventListeners(employee) {
