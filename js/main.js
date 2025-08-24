@@ -1163,8 +1163,11 @@ surveys: () => {
 // در فایل js/main.js، داخل آبجکت pages
 // pages.expenses را حذف کرده و این را جایگزین کنید
 
+// در فایل js/main.js، داخل آبجکت pages
+// کل تابع requests را با این نسخه جایگزین کنید
+
 requests: () => {
-    const allRequests = state.requests.sort((a, b) => new Date(b.createdAt.toDate()) - new Date(a.createdAt.toDate()));
+    const allRequests = (state.requests || []).sort((a, b) => new Date(b.createdAt?.toDate()) - new Date(a.createdAt?.toDate()));
     
     const requestsHtml = allRequests.map(req => {
          const statusColors = {
@@ -1172,13 +1175,22 @@ requests: () => {
             'تایید شده': 'bg-green-100 text-green-800',
             'رد شده': 'bg-red-100 text-red-800'
         };
+        // [!code focus:12]
         return `
             <tr class="border-b">
                 <td class="px-4 py-3">${toPersianDate(req.createdAt)}</td>
                 <td class="px-4 py-3 font-semibold">${req.employeeName}</td>
                 <td class="px-4 py-3">${req.requestType}</td>
-                <td class="px-4 py-3 text-sm text-slate-600">${req.details}</td>
+                <td class="px-4 py-3 text-sm text-slate-600 max-w-xs truncate">${req.details}</td>
                 <td class="px-4 py-3"><span class="px-2 py-1 text-xs font-medium rounded-full ${statusColors[req.status] || 'bg-slate-100'}">${req.status}</span></td>
+                <td class="px-4 py-3">
+                    ${req.status === 'درحال بررسی' ? `
+                        <div class="flex items-center gap-2">
+                            <button class="approve-request-btn p-2 text-green-600 hover:bg-green-100 rounded-full" data-id="${req.firestoreId}" title="تایید"><i data-lucide="check-circle" class="w-5 h-5"></i></button>
+                            <button class="reject-request-btn p-2 text-red-600 hover:bg-red-100 rounded-full" data-id="${req.firestoreId}" title="رد کردن"><i data-lucide="x-circle" class="w-5 h-5"></i></button>
+                        </div>
+                    ` : ''}
+                </td>
             </tr>
         `;
     }).join('');
@@ -1195,10 +1207,11 @@ requests: () => {
                             <th class="px-4 py-2 font-semibold">نوع درخواست</th>
                             <th class="px-4 py-2 font-semibold">جزئیات</th>
                             <th class="px-4 py-2 font-semibold">وضعیت</th>
+                            <th class="px-4 py-2 font-semibold">عملیات</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        ${requestsHtml || '<tr><td colspan="5" class="text-center py-8 text-slate-500">هیچ درخواستی ثبت نشده است.</td></tr>'}
+                    <tbody id="requests-table-body">
+                        ${requestsHtml || '<tr><td colspan="6" class="text-center py-8 text-slate-500">هیچ درخواستی ثبت نشده است.</td></tr>'}
                     </tbody>
                 </table>
             </div>
@@ -1790,7 +1803,7 @@ const viewTeamProfile = (teamId) => {
                 if (pageName === 'talent') { renderEmployeeTable(); setupTalentPageListeners(); }
                 if (pageName === 'organization') { setupOrganizationPageListeners(); }
                 if (pageName === 'surveys') { setupSurveysPageListeners(); }
-                if (pageName === 'expenses') { setupExpensesPageListeners(); }
+                if (pageName === 'requests') { setupRequestsPageListeners(); }
                 if (pageName === 'analytics') { setupAnalyticsPage(); }
                 if (pageName === 'settings') {
                     if(isAdmin()) {
@@ -2487,6 +2500,41 @@ const setupOrganizationPageListeners = () => {
             }
         });
     }
+};
+// این تابع جدید را به js/main.js اضافه کنید
+
+const setupRequestsPageListeners = () => {
+    const tableBody = document.getElementById('requests-table-body');
+    if (!tableBody) return;
+
+    tableBody.addEventListener('click', async (e) => {
+        const approveBtn = e.target.closest('.approve-request-btn');
+        const rejectBtn = e.target.closest('.reject-request-btn');
+        
+        let targetButton = null;
+        let newStatus = '';
+
+        if (approveBtn) {
+            targetButton = approveBtn;
+            newStatus = 'تایید شده';
+        } else if (rejectBtn) {
+            targetButton = rejectBtn;
+            newStatus = 'رد شده';
+        }
+
+        if (targetButton) {
+            const requestId = targetButton.dataset.id;
+            const requestRef = doc(db, `artifacts/${appId}/public/data/requests`, requestId);
+
+            try {
+                await updateDoc(requestRef, { status: newStatus });
+                showToast(`وضعیت درخواست به «${newStatus}» تغییر کرد.`);
+            } catch (error) {
+                console.error("Error updating request status:", error);
+                showToast("خطا در بروزرسانی وضعیت.", "error");
+            }
+        }
+    });
 };
 const setupSettingsPageListeners = () => {
     const mainContentArea = document.getElementById('main-content');
