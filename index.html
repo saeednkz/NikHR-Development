@@ -201,6 +201,7 @@
                     <a href="#organization" class="sidebar-item block py-3 px-4 rounded-r-lg flex items-center space-x-3 space-x-reverse"><i data-lucide="building-2"></i><span>سازمان</span></a>
                     <a href="#surveys" class="sidebar-item block py-3 px-4 rounded-r-lg flex items-center space-x-3 space-x-reverse"><i data-lucide="clipboard-list"></i><span>نظرسنجی‌ها</span></a>
                    <a href="#requests" class="sidebar-item block py-3 px-4 rounded-r-lg flex items-center space-x-3 space-x-reverse"><i data-lucide="archive"></i><span>درخواست‌ها</span></a>
+                   <a href="#tasks" class="sidebar-item block py-3 px-4 rounded-r-lg flex items-center space-x-3 space-x-reverse"><i data-lucide="clipboard-check"></i><span>وظایف من</span></a>
                     <a href="#analytics" class="sidebar-item block py-3 px-4 rounded-r-lg flex items-center space-x-3 space-x-reverse"><i data-lucide="bar-chart-3"></i><span>تحلیل هوشمند</span></a>
                     <a href="#settings" id="settings-nav-link" class="sidebar-item block py-3 px-4 rounded-r-lg flex items-center space-x-3 space-x-reverse"><i data-lucide="settings"></i><span>تنظیمات</span></a>
                 </nav>
@@ -220,14 +221,22 @@
                 <i data-lucide="menu" class="w-6 h-6"></i>
             </button>
         </div>
-
+        
         <div class="flex-grow"></div>
 
         <div class="flex items-center gap-4">
-            <div id="notification-bell" class="relative cursor-pointer p-2 rounded-full hover:bg-slate-100">
-                <i data-lucide="bell" class="text-slate-600"></i>
-                <span id="notification-count" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full border-2 border-white"></span>
+            <div id="notification-bell-wrapper" class="relative">
+                <button id="notification-bell-btn" class="relative cursor-pointer p-2 rounded-full hover:bg-slate-100">
+                    <i data-lucide="bell" class="text-slate-600"></i>
+                    <span id="notification-count" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full border-2 border-white"></span>
+                </button>
+                <div id="notification-dropdown" class="hidden absolute left-0 mt-2 w-80 bg-white rounded-lg shadow-xl border z-50">
+                    <div class="p-3 font-bold border-b">اعلان‌ها</div>
+                    <div id="notification-list" class="max-h-96 overflow-y-auto">
+                        </div>
+                </div>
             </div>
+
             <span id="user-email" class="text-sm text-slate-600 hidden sm:block"></span>
             </div>
     </header>
