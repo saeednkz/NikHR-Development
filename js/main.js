@@ -175,52 +175,125 @@ const onDataLoaded = () => {
                 });
             });
         }
+// این دو تابع جدید را به فایل js/main.js اضافه کنید
+
+function renderEmployeePortalPage(pageName, employee) {
+    const contentContainer = document.getElementById('employee-main-content');
+    if (!contentContainer) return;
+
+    if (pageName === 'profile') {
+        const contractsHtml = (employee.contractHistory || []).map(c => `
+            <tr>
+                <td class="px-4 py-2">${toPersianDate(c.startDate)}</td>
+                <td class="px-4 py-2">${toPersianDate(c.endDate)}</td>
+                <td class="px-4 py-2">${c.netSalary ? c.netSalary.toLocaleString('fa-IR') + ' ریال' : '-'}</td>
+            </tr>
+        `).join('');
+
+        contentContainer.innerHTML = `
+            <h1 class="text-3xl font-bold text-slate-800 mb-6">پروفایل من</h1>
+            <div class="bg-white p-6 rounded-xl shadow-md">
+                <h2 class="text-xl font-semibold text-slate-700 border-b pb-3 mb-4">اطلاعات قرارداد</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="text-right bg-slate-50">
+                            <tr>
+                                <th class="px-4 py-2 font-semibold">تاریخ شروع</th>
+                                <th class="px-4 py-2 font-semibold">تاریخ پایان</th>
+                                <th class="px-4 py-2 font-semibold">حقوق خالص</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${contractsHtml || '<tr><td colspan="3" class="text-center py-4">قراردادی ثبت نشده است.</td></tr>'}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    } else {
+        contentContainer.innerHTML = `<h1 class="text-3xl font-bold">${pageName}</h1><p>این بخش به زودی آماده می‌شود.</p>`;
+    }
+}
+
+function setupEmployeePortalEventListeners(employee) {
+    document.getElementById('portal-logout-btn').addEventListener('click', () => signOut(auth));
+
+    document.querySelectorAll('.employee-nav-item').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.querySelectorAll('.employee-nav-item').forEach(item => item.classList.remove('active'));
+            link.classList.add('active');
+            const pageName = link.getAttribute('href').substring(1);
+            renderEmployeePortalPage(pageName, employee);
+        });
+    });
+}
 // این تابع را به فایل js/main.js اضافه کنید
+
+// در فایل js/main.js
+// کل تابع renderEmployeePortal را با این نسخه جایگزین کنید
 
 function renderEmployeePortal() {
     // ابتدا تمام کانتینرهای دیگر را مخفی می‌کنیم
     document.getElementById('login-container').classList.add('hidden');
     document.getElementById('dashboard-container').classList.add('hidden');
-
-    // و کانتینر پورتال کارمندان را نمایش می‌دهیم
+    
     const portalContainer = document.getElementById('employee-portal-container');
     portalContainer.classList.remove('hidden');
 
     const employee = state.employees.find(emp => emp.uid === state.currentUser.uid);
-    const employeeName = employee ? employee.name : state.currentUser.email;
+    
+    // اگر به هر دلیلی پروفایل کارمند پیدا نشد، یک پیام خطا نمایش بده
+    if (!employee) {
+        portalContainer.innerHTML = `<div class="text-center p-10"><h2 class="text-xl font-bold text-red-600">خطا</h2><p class="mt-2 text-slate-500">پروفایل پرسنلی شما یافت نشد. لطفاً با مدیر سیستم تماس بگیرید.</p></div>`;
+        return;
+    }
 
-    // ساختار اولیه HTML برای پورتال کارمندان
+    const employeeName = employee.name || state.currentUser.email;
+
+    // ساختار جدید HTML برای پورتال کارمندان با منو و محتوا
     portalContainer.innerHTML = `
-        <div class="min-h-screen bg-slate-100">
-            <header class="bg-white shadow-sm">
-                <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-                    <div class="flex items-center gap-3">
-                        <img src="logo.png" alt="NikHR Logo" class="w-8 h-8">
-                        <h1 class="text-xl font-bold text-slate-800">پورتال کارمندان NikHR</h1>
-                    </div>
-                    <div class="flex items-center gap-4">
-                         <span class="text-sm text-slate-600 hidden sm:block">خوش آمدید، ${employeeName}</span>
-                         <button id="portal-logout-btn" class="text-slate-500 hover:text-red-600" title="خروج">
-                             <i data-lucide="log-out" class="w-5 h-5"></i>
-                         </button>
-                    </div>
+        <div class="flex h-screen bg-slate-100">
+            <aside class="w-64 bg-white shadow-md p-4 flex flex-col">
+                <div class="text-center mb-10">
+                    <img src="${employee.avatar}" alt="Avatar" class="w-24 h-24 rounded-full mx-auto object-cover border-4 border-slate-200">
+                    <h2 class="mt-4 text-lg font-bold text-slate-800">${employeeName}</h2>
+                    <p class="text-sm text-slate-500">${employee.jobTitle || 'بدون عنوان شغلی'}</p>
                 </div>
-            </header>
+                <nav id="employee-portal-nav" class="flex flex-col gap-2">
+                    <a href="#profile" class="employee-nav-item active flex items-center gap-3 px-4 py-2 rounded-lg text-slate-700 hover:bg-blue-50 hover:text-blue-600">
+                        <i data-lucide="user"></i>
+                        <span>پروفایل من</span>
+                    </a>
+                    <a href="#requests" class="employee-nav-item flex items-center gap-3 px-4 py-2 rounded-lg text-slate-700 hover:bg-blue-50 hover:text-blue-600">
+                        <i data-lucide="send"></i>
+                        <span>درخواست‌های من</span>
+                    </a>
+                     <a href="#directory" class="employee-nav-item flex items-center gap-3 px-4 py-2 rounded-lg text-slate-700 hover:bg-blue-50 hover:text-blue-600">
+                        <i data-lucide="users"></i>
+                        <span>دایرکتوری سازمان</span>
+                    </a>
+                </nav>
+                <div class="mt-auto">
+                    <button id="portal-logout-btn" class="w-full flex items-center justify-center gap-3 px-4 py-2 rounded-lg text-red-600 hover:bg-red-50">
+                        <i data-lucide="log-out"></i>
+                        <span>خروج</span>
+                    </button>
+                </div>
+            </aside>
 
-            <main class="py-10">
-                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div class="bg-white p-8 rounded-xl shadow-md text-center">
-                        <h2 class="text-2xl font-bold text-slate-800">داشبورد شما</h2>
-                        <p class="mt-2 text-slate-500">این بخش به زودی با ویجت‌های کاربردی تکمیل خواهد شد.</p>
-                         </div>
-                </div>
-            </main>
+            <main id="employee-main-content" class="flex-1 p-6 sm:p-10 overflow-y-auto">
+                </main>
         </div>
     `;
-
-    // آیکون‌ها و رویداد دکمه خروج را فعال می‌کنیم
+    
     lucide.createIcons();
-    document.getElementById('portal-logout-btn').addEventListener('click', () => signOut(auth));
+    
+    // رویدادهای مربوط به پورتال کارمندان را راه‌اندازی می‌کنیم
+    setupEmployeePortalEventListeners(employee);
+
+    // به صورت پیش‌فرض، صفحه پروفایل را نمایش می‌دهیم
+    renderEmployeePortalPage('profile', employee);
 }
         // --- UTILITY & HELPER FUNCTIONS ---
         // --- تابع جدید برای تبدیل تاریخ به شمسی ---
