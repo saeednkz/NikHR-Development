@@ -1,4 +1,4 @@
-    <script type="module">
+  
         // --- ALL JAVASCRIPT CODE STARTS HERE ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -4357,4 +4357,4 @@ const showDocumentForm = (emp, docIndex = null) => {
             });
         });
       }
-    </script>
+ 
