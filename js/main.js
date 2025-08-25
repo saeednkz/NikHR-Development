@@ -757,20 +757,21 @@ const persianToEnglishDate = (persianDateStr) => {
     }
 };
 // --- نسخه نهایی با استراتژی Lazy Initialization (ساخت تقویم فقط در زمان کلیک) ---
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید جایگزین کنید
+
 const activatePersianDatePicker = (elementId, initialValue = null) => {
     const input = $(`#${elementId}`);
     if (!input.length) return;
 
-    // ۱. هر نمونه‌ی قبلی را برای اطمینان ۱۰۰٪ پاک می‌کنیم
+    // پاک کردن نمونه‌های قبلی
     try {
         if (input.data('datepicker')) {
             input.persianDatepicker('destroy');
         }
     } catch (e) { /* Ignore */ }
-    // هر event listener کلیک قبلی را هم حذف می‌کنیم
     input.off('click');
 
-    // ۲. فیلد را فقط خواندنی کرده و مقدار صحیح را مثل یک متن ساده در آن قرار می‌دهیم
     input.attr('readonly', true).css('background-color', '#fff').val('');
     if (initialValue) {
         const persianDateString = toPersianDate(initialValue);
@@ -779,17 +780,12 @@ const activatePersianDatePicker = (elementId, initialValue = null) => {
         }
     }
     
-    // ۳. *** تغییر نهایی و حیاتی: تقویم را الان نمی‌سازیم! ***
-    // به جای آن، منتظر می‌مانیم تا کاربر روی فیلد کلیک کند.
-    // از .one() استفاده می‌کنیم تا این کد فقط "یک بار" برای هر فیلد اجرا شود.
     input.one('click', function() {
-        // در لحظه کلیک، تقویم ساخته و بلافاصله باز می‌شود
         $(this).persianDatepicker({
             format: 'YYYY/MM/DD',
             autoClose: true,
-            observer: false,
-            // کتابخانه مقدار اولیه را از خود فیلد می‌خواند که ما قبلاً درست تنظیم کردیم
-        }).pdp.show(); 
+            observer: false, // <-- تنظیمات به اینجا منتقل شد
+        }).pdp.show();
     });
 };
         // --- تابع جدید برای ساخت دکمه‌های صفحه‌بندی ---
