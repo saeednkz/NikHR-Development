@@ -208,6 +208,9 @@ function listenToData() {
 // در فایل js/main.js
 // کل این تابع را با نسخه نهایی زیر جایگزین کنید
 
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید و کامل جایگزین کنید
+
 function renderEmployeePortalPage(pageName, employee) {
     const contentContainer = document.getElementById('employee-main-content');
     if (!contentContainer) return;
@@ -257,13 +260,18 @@ function renderEmployeePortalPage(pageName, employee) {
                      <div class="bg-white p-6 rounded-xl shadow-md">
                         <h3 class="text-lg font-semibold text-slate-700 mb-4">اطلاعات تماس و شخصی</h3>
                          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                            <p><strong class="text-slate-500">ایمیل:</strong> ${employee.personalInfo?.email || '-'}</p>
-                            <p><strong class="text-slate-500">موبایل:</strong> ${employee.personalInfo?.phone || '-'}</p>
-                            <p><strong class="text-slate-500">تاریخ تولد:</strong> ${toPersianDate(employee.personalInfo?.birthDate)}</p>
-                            <p><strong class="text-slate-500">وضعیت تاهل:</strong> ${employee.personalInfo?.maritalStatus || '-'}</p>
-                            <p class="col-span-2"><strong class="text-slate-500">آدرس:</strong> ${employee.personalInfo?.address || '-'}</p>
-                            <p><strong class="text-slate-500">مخاطب اضطراری:</strong> ${employee.personalInfo?.emergencyContactName || '-'}</p>
-                            <p><strong class="text-slate-500">شماره تماس اضطراری:</strong> ${employee.personalInfo?.emergencyContactPhone || '-'}</p>
+                            <p><strong>جنسیت:</strong> ${employee.gender || '-'}</p>
+                            <p><strong>ایمیل:</strong> ${employee.personalInfo?.email || '-'}</p>
+                            <p><strong>شماره تماس:</strong> ${employee.personalInfo?.phone || '-'}</p>
+                            <p><strong>تاریخ تولد:</strong> ${toPersianDate(employee.personalInfo?.birthDate)}</p>
+                            <p><strong>کد ملی:</strong> ${employee.personalInfo?.nationalId || '-'}</p>
+                            <p class="md:col-span-2"><strong>آدرس:</strong> ${employee.personalInfo?.address || '-'}</p>
+                            <p><strong>کد پستی:</strong> ${employee.personalInfo?.postalCode || '-'}</p>
+                            <p><strong>شماره ثابت:</strong> ${employee.personalInfo?.landline || '-'}</p>
+                            <p class="md:col-span-2"><strong>مدرک تحصیلی:</strong> ${employee.personalInfo?.education || '-'}</p>
+                            <p><strong>وضعیت نظام وظیفه:</strong> ${employee.personalInfo?.militaryStatus || '-'}</p>
+                            <p><strong>وضعیت تاهل:</strong> ${employee.personalInfo?.maritalStatus || '-'}</p>
+                            <p><strong>مخاطب اضطراری:</strong> ${employee.personalInfo?.emergencyContactName || '-'}</p>
                         </div>
                     </div>
                     <div class="bg-white p-6 rounded-xl shadow-md">
@@ -367,7 +375,45 @@ function renderEmployeePortalPage(pageName, employee) {
                 </div>
             </div>
         `;
-    } 
+    }
+    // --- بخش جدید: اسناد سازمان ---
+    else if (pageName === 'documents') {
+        const documentsByCategory = (state.companyDocuments || []).reduce((acc, doc) => {
+            const category = doc.category || 'عمومی';
+            if (!acc[category]) {
+                acc[category] = [];
+            }
+            acc[category].push(doc);
+            return acc;
+        }, {});
+
+        const documentsHtml = Object.keys(documentsByCategory).map(category => {
+            const docsInCategory = documentsByCategory[category];
+            return `
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-slate-600 border-b pb-2 mb-3">${category}</h3>
+                    <div class="space-y-2">
+                        ${docsInCategory.map(doc => `
+                            <a href="${doc.fileUrl}" target="_blank" class="flex justify-between items-center bg-slate-50 p-3 rounded-lg hover:bg-slate-100 transition">
+                                <div class="flex items-center gap-3 text-blue-600">
+                                    <i data-lucide="file-text" class="w-5 h-5"></i>
+                                    <span class="font-semibold">${doc.title}</span>
+                                </div>
+                                <i data-lucide="download" class="w-5 h-5 text-slate-400"></i>
+                            </a>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        contentContainer.innerHTML = `
+            <h1 class="text-3xl font-bold text-slate-800 mb-6">اسناد و فایل‌های سازمان</h1>
+            <div class="bg-white p-6 rounded-xl shadow-md">
+                ${documentsHtml || '<p class="text-center text-slate-500 py-8">هنوز سندی در سیستم بارگذاری نشده است.</p>'}
+            </div>
+        `;
+    }
     // --- بخش پیش‌فرض ---
     else {
         contentContainer.innerHTML = `<h1>صفحه مورد نظر یافت نشد.</h1>`;
@@ -3737,8 +3783,12 @@ const setupTeamProfileModalListeners = (team) => {
             });
         };
 // این تابع جدید را به js/main.js اضافه کنید
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید جایگزین کنید
+
 const showDocumentUploadForm = () => {
     modalTitle.innerText = 'آپلود سند جدید';
+    // [!code focus:8]
     modalContent.innerHTML = `
         <form id="upload-document-form" class="space-y-4">
             <div>
@@ -3746,8 +3796,14 @@ const showDocumentUploadForm = () => {
                 <input type="text" id="doc-title" class="w-full p-2 border rounded-md" required>
             </div>
             <div>
-                <label class="block font-medium mb-1">دسته‌بندی (مثال: آیین‌نامه‌ها، فرم‌ها)</label>
-                <input type="text" id="doc-category" class="w-full p-2 border rounded-md" required>
+                <label class="block font-medium mb-1">دسته‌بندی</label>
+                <select id="doc-category" class="w-full p-2 border rounded-md bg-white" required>
+                    <option value="آیین‌نامه‌ها و قوانین">آیین‌نامه‌ها و قوانین</option>
+                    <option value="فرم‌های اداری">فرم‌های اداری</option>
+                    <option value="فرهنگ سازمانی">فرهنگ سازمانی</option>
+                    <option value="چارت سازمانی">چارت سازمانی</option>
+                    <option value="عمومی">عمومی</option>
+                </select>
             </div>
             <div>
                 <label class="block font-medium mb-1">فایل (حداکثر ۱۰ مگابایت)</label>
@@ -3782,7 +3838,7 @@ const showDocumentUploadForm = () => {
 
             const docData = {
                 title: document.getElementById('doc-title').value,
-                category: document.getElementById('doc-category').value,
+                category: document.getElementById('doc-category').value, // خواندن از select
                 fileUrl: downloadURL,
                 fileName: file.name,
                 uploadedAt: serverTimestamp()
