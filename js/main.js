@@ -49,6 +49,7 @@ import {
 
         const state = { employees: [], teams: [], reminders: [], surveyResponses: [], users: [], competencies: [], expenses: [], pettyCashCards: [], chargeHistory: [], dashboardMetrics: {}, orgAnalytics: {}, currentPage: 'dashboard', currentPageTalent: 1, currentUser: null, };
         let charts = {};
+let activeListeners = []; // [!code ++] این خط را اضافه کنید
         // این کد را نزدیک به تعریف state قرار دهید
 // پالت رنگی قبلی را با این پالت جدید جایگزین کنید
 // این پالت رنگی را جایگزین پالت قبلی کنید
@@ -60,6 +61,12 @@ const teamColorPalette = [
     'border-pink-500',
     'border-teal-500'
 ];
+// این تابع جدید را به js/main.js اضافه کنید
+const detachAllListeners = () => {
+    console.log(`Detaching ${activeListeners.length} active listeners...`);
+    activeListeners.forEach(unsubscribe => unsubscribe());
+    activeListeners = []; // آرایه را خالی می‌کنیم
+};
         const surveyVisualsPalette = [
     { icon: 'clipboard-list', color: 'text-sky-500', bg: 'bg-sky-100' },
     { icon: 'zap', color: 'text-amber-500', bg: 'bg-amber-100' },
@@ -93,17 +100,16 @@ const firebaseConfig = {
 
 // این کد باید در فایل js/main.js شما جایگزین تابع فعلی شود
 
+// کل این تابع را با نسخه جدید جایگزین کنید
 async function initializeFirebase() {
     try {
         app = initializeApp(firebaseConfig);
         auth = getAuth(app);
         db = getFirestore(app);
         storage = getStorage(app);
-      functions = getFunctions(app); 
-
-        // ✅ این خط فراموش شده را اینجا اضافه کنید
-        // این دستور، دکمه‌های ورود، ثبت‌نام و خروج را فعال می‌کند
-        setupAuthEventListeners(auth);
+        functions = getFunctions(app);
+        
+        setupAuthEventListeners(auth); 
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
@@ -111,10 +117,14 @@ async function initializeFirebase() {
                 listenToData();
             } else {
                 state.currentUser = null;
+                detachAllListeners(); // [!code ++] مهم: اینجا شنونده‌ها را خاموش می‌کنیم
                 showLoginPage();
+                document.getElementById('loading-overlay').style.display = 'none';
             }
         });
-    } catch (error) { console.error("Firebase Init Error:", error); }
+    } catch (error) { 
+        console.error("Firebase Init Error:", error); 
+    }
 }
 
         async function fetchUserRole(user) {
@@ -133,53 +143,57 @@ async function initializeFirebase() {
             }
         }
 
-        function listenToData() {
-            const collectionsToListen = ['employees', 'teams', 'reminders', 'surveyResponses', 
-        'users', 'competencies', 'expenses', 'pettyCashCards', 
-        'chargeHistory', 'requests', 'assignmentRules', 'companyDocuments'];
-            let initialLoads = collectionsToListen.length;
-// کد جدید و صحیح ✅
-const onDataLoaded = () => {
-    initialLoads--;
-    if (initialLoads === 0) {
-        calculateAndApplyAnalytics();
-        
-        // --- منطق جدید برای تفکیک نقش ---
-        if (state.currentUser.role === 'admin' || state.currentUser.role === 'editor' || state.currentUser.role === 'viewer') {
-            showDashboard(); // اگر ادمین، ویرایشگر یا مشاهده‌گر بود، داشبورد ادمین را نشان بده
-            router(); 
-        } else if (state.currentUser.role === 'employee') {
-            renderEmployeePortal(); // اگر کارمند بود، تابع جدید پورتال کارمندان را اجرا کن
-        } else {
-            // در صورتی که نقش تعریف نشده بود، صفحه لاگین را نشان بده
-            showLoginPage(); 
+// کل این تابع را با نسخه جدید جایگزین کنید
+function listenToData() {
+    detachAllListeners(); // ابتدا شنونده‌های قبلی را پاک می‌کنیم (برای اطمینان)
+    
+    const collectionsToListen = [
+        'employees', 'teams', 'reminders', 'surveyResponses', 'users', 
+        'competencies', 'expenses', 'pettyCashCards', 'chargeHistory', 
+        'requests', 'assignmentRules', 'companyDocuments'
+    ];
+    let initialLoads = collectionsToListen.length;
+
+    const onDataLoaded = () => {
+        initialLoads--;
+        if (initialLoads === 0) {
+            calculateAndApplyAnalytics();
+            if (state.currentUser.role === 'employee') {
+                renderEmployeePortal();
+            } else {
+                showDashboard();
+                router();
+            }
+            document.getElementById('loading-overlay').style.display = 'none';
         }
+    };
+
+    collectionsToListen.forEach(colName => {
+        const colRef = collection(db, `artifacts/${appId}/public/data/${colName}`);
+        // [!code focus:4]
+        // شنونده جدید را در لیست ذخیره می‌کنیم
+        const unsubscribe = onSnapshot(colRef, (snapshot) => {
+            state[colName] = snapshot.docs.map(doc => ({ firestoreId: doc.id, ...doc.data() }));
+            
+            updateNotificationBell();
+
+            if (initialLoads > 0) {
+                onDataLoaded();
+            } else {
+                calculateAndApplyAnalytics();
+                if (state.currentUser.role === 'employee') {
+                    // اگر کارمند در حال جابجایی بین صفحات پورتال باشد، صفحه را دوباره رندر نکن
+                } else if (!window.location.hash.startsWith('#survey-taker')) {
+                    renderPage(state.currentPage);
+                }
+            }
+        }, (error) => {
+            console.error(`Error listening to ${colName}:`, error);
+        });
         
-        document.getElementById('loading-overlay').style.display = 'none';
-    }
-};
-            collectionsToListen.forEach(colName => {
-                const colRef = collection(db, `artifacts/${appId}/public/data/${colName}`);
-                onSnapshot(colRef, (snapshot) => {
-                    state[colName] = snapshot.docs.map(doc => ({ firestoreId: doc.id, ...doc.data() }));
-                  updateNotificationBell();
-                    if (initialLoads > 0) {
-                        onDataLoaded();
-                    } else {
-                        calculateAndApplyAnalytics();
-                        if (!window.location.hash.startsWith('#survey-taker')) {
-                            renderPage(state.currentPage);
-                        }
-                    }
-                }, (error) => {
-                    console.error(`Error listening to ${colName}:`, error);
-                    if (['competencies', 'expenses', 'pettyCashCards', 'chargeHistory'].includes(colName)) {
-                        state[colName] = [];
-                        if (initialLoads > 0) onDataLoaded();
-                    }
-                });
-            });
-        }
+        activeListeners.push(unsubscribe); // اضافه کردن به لیست
+    });
+}
 // این دو تابع جدید را به فایل js/main.js اضافه کنید
 
 // در فایل js/main.js
