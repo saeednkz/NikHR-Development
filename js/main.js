@@ -1409,7 +1409,7 @@ tasks: () => {
             </table>
         </div>
     `;
-},,
+},
 analytics: () => {
     return `
         <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
