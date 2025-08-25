@@ -137,7 +137,27 @@
             </form>
         </div>
     </div>
-    <div id="signup-container" class="hidden"></div>
+    
+    <div id="signup-container" class="hidden min-h-screen flex items-center justify-center bg-slate-100">
+        <div class="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
+            <div class="text-center">
+                <i data-lucide="user-plus" class="mx-auto w-12 h-12 text-indigo-500"></i>
+                <h2 class="mt-4 text-2xl font-bold text-gray-900">ایجاد حساب کاربری جدید</h2>
+            </div>
+            <form id="signup-form" class="space-y-6">
+                <div>
+                    <label for="signup-email" class="text-sm font-medium text-gray-700">آدرس ایمیل</label>
+                    <input id="signup-email" name="email" type="email" required class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label for="signup-password" class="text-sm font-medium text-gray-700">رمز عبور</label>
+                    <input id="signup-password" name="password" type="password" required class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500">
+                </div>
+                <button type="submit" class="w-full px-4 py-2 font-semibold text-white bg-indigo-600 rounded-md hover:bg-indigo-700">ثبت نام</button>
+            </form>
+            <p class="text-sm text-center text-gray-600">قبلا ثبت نام کرده‌اید؟ <a href="#" id="show-login" class="font-medium text-indigo-600 hover:underline">وارد شوید</a></p>
+        </div>
+    </div>
 
     <div id="dashboard-container" class="hidden md:flex h-screen">
         <aside id="sidebar" class="sidebar w-64 space-y-6 py-7 px-2 fixed inset-y-0 right-0 transform translate-x-full md:relative md:translate-x-0 transition duration-300 ease-in-out z-30 flex flex-col !bg-gray-800">
@@ -217,6 +237,7 @@
     <div id="toast-container"></div>
     <input type="file" id="image-upload-input" class="hidden" accept="image/*">
 
+    <script type="module" src="js/auth.js"></script>
     <script type="module" src="js/main.js"></script>
 </body>
 </html>
