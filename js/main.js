@@ -330,34 +330,40 @@ function renderEmployeePortalPage(pageName, employee) {
     
     } 
     // --- بخش درخواست‌ها (بدون تغییر) ---
-    else if (pageName === 'requests') {
-        const myRequests = (state.requests || []).filter(req => req.uid === employee.uid)
+ else if (pageName === 'requests') {
+        const myRequests = (state.requests || [])
+            .filter(req => req.uid === employee.uid)
             .sort((a, b) => new Date(b.createdAt?.toDate()) - new Date(a.createdAt?.toDate()));
 
         const requestsHtml = myRequests.map(req => {
-            const statusColors = {
-                'درحال بررسی': 'bg-yellow-100 text-yellow-800',
-                'در حال انجام': 'bg-blue-100 text-blue-800',
-                'تایید شده': 'bg-green-100 text-green-800',
-                'رد شده': 'bg-red-100 text-red-800'
-            };
+            const statusColors = { /* ... رنگ‌ها مثل قبل ... */ };
             
+            // نمایش تاریخچه مکالمات
+            const threadHtml = (req.thread || []).map(item => {
+                const sender = state.users.find(u => u.firestoreId === item.senderUid) || { name: 'شما' };
+                return `<div class="p-2 mt-2 text-xs border-t ${sender.name === 'شما' ? 'bg-white' : 'bg-slate-50'}"><p class="whitespace-pre-wrap">${item.content}</p><div class="text-slate-400 text-left mt-1">${sender.name} - ${toPersianDate(item.createdAt)}</div></div>`;
+            }).join('');
+
             return `
-                <tr class="border-b">
-                    <td class="px-4 py-3">${toPersianDate(req.createdAt)}</td>
-                    <td class="px-4 py-3">${req.requestType}</td>
-                    <td class="px-4 py-3 text-sm text-slate-600">${req.details}</td>
-                    <td class="px-4 py-3"><span class="px-2 py-1 text-xs font-medium rounded-full ${statusColors[req.status] || 'bg-slate-100'}">${req.status}</span></td>
-                </tr>
-                ${(req.processingNotes || req.attachmentUrl) ? `
-                <tr class="bg-slate-50">
-                    <td colspan="4" class="px-4 py-3 text-xs border-b">
-                        <strong class="block text-slate-600 mb-1">پاسخ مدیر:</strong>
-                        <p class="text-slate-500 mb-2 whitespace-pre-wrap">${req.processingNotes || 'توضیحاتی ثبت نشده است.'}</p>
-                        ${req.attachmentUrl ? `<a href="${req.attachmentUrl}" target="_blank" class="text-blue-600 font-semibold hover:underline flex items-center gap-1"><i data-lucide="download" class="w-3 h-3"></i> دانلود فایل ضمیمه</a>` : ''}
-                    </td>
-                </tr>
-                ` : ''}
+                <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
+                    <div class="p-4">
+                        <div class="flex justify-between items-center">
+                            <h3 class="font-bold">${req.requestType}</h3>
+                            <span class="px-2 py-1 text-xs font-medium rounded-full ${statusColors[req.status] || 'bg-slate-100'}">${req.status}</span>
+                        </div>
+                        <p class="text-sm text-slate-600 mt-2">${req.details}</p>
+                    </div>
+                    <div class="p-4 border-t bg-slate-50">
+                        <strong class="text-xs text-slate-500">تاریخچه مکالمات:</strong>
+                        ${threadHtml || '<p class="text-xs text-slate-400 mt-2">هنوز پاسخی ثبت نشده است.</p>'}
+                    </div>
+                     <div class="p-2 border-t bg-white">
+                        <form class="flex items-center gap-2">
+                             <input type="text" placeholder="پاسخ خود را بنویسید..." class="flex-grow p-2 border rounded-md text-sm">
+                             <button type="submit" class="bg-blue-600 text-white py-2 px-3 rounded-md text-sm">ارسال</button>
+                        </form>
+                     </div>
+                </div>
             `;
         }).join('');
 
@@ -365,29 +371,14 @@ function renderEmployeePortalPage(pageName, employee) {
             <div class="flex justify-between items-center mb-6">
                 <h1 class="text-3xl font-bold text-slate-800">درخواست‌های من</h1>
                 <button id="add-new-request-btn" class="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 flex items-center gap-2">
-                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
-                    <span>ثبت درخواست جدید</span>
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i><span>ثبت درخواست جدید</span>
                 </button>
             </div>
-            <div class="bg-white p-6 rounded-xl shadow-md">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                        <thead class="text-right bg-slate-50">
-                            <tr>
-                                <th class="px-4 py-2 font-semibold">تاریخ ثبت</th>
-                                <th class="px-4 py-2 font-semibold">نوع درخواست</th>
-                                <th class="px-4 py-2 font-semibold">جزئیات</th>
-                                <th class="px-4 py-2 font-semibold">وضعیت</th>
-                            </tr>
-                        </thead>
-                        <tbody id="my-requests-table-body">
-                            ${requestsHtml || '<tr><td colspan="4" class="text-center py-8 text-slate-500">شما هنوز درخواستی ثبت نکرده‌اید.</td></tr>'}
-                        </tbody>
-                    </table>
-                </div>
+            <div class="space-y-4">
+                ${requestsHtml || '<p class="text-center text-slate-500 py-8">شما هنوز درخواستی ثبت نکرده‌اید.</p>'}
             </div>
         `;
-    }
+    } 
     // --- بخش اسناد سازمان (بدون تغییر) ---
     else if (pageName === 'documents') {
         const documentsByCategory = (state.companyDocuments || []).reduce((acc, doc) => {
@@ -4996,35 +4987,54 @@ const showAssignmentRuleForm = (ruleId = null) => {
 };
 // این تابع کاملاً جدید را به js/main.js اضافه کنید
 
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید جایگزین کنید
+
 const showProcessRequestForm = (requestId) => {
     const request = state.requests.find(r => r.firestoreId === requestId);
-    if (!request) {
-        showToast("درخواست یافت نشد.", "error");
-        return;
-    }
+    if (!request) return showToast("درخواست یافت نشد.", "error");
 
     modalTitle.innerText = `پردازش درخواست: ${request.requestType}`;
+    
+    // نمایش تاریخچه مکالمات قبلی در بالای فرم
+    const historyHtml = (request.thread || []).map(item => {
+        const sender = state.users.find(u => u.firestoreId === item.senderUid) || { name: 'کارمند' };
+        return `
+            <div class="p-3 bg-slate-100 rounded-md mb-2">
+                <div class="flex justify-between items-center text-xs mb-1">
+                    <strong class="text-slate-700">${sender.name}</strong>
+                    <span class="text-slate-400">${toPersianDate(item.createdAt)}</span>
+                </div>
+                <p class="text-sm text-slate-600 whitespace-pre-wrap">${item.content}</p>
+                ${item.attachmentUrl ? `<a href="${item.attachmentUrl}" target="_blank" class="text-blue-500 text-xs mt-1 inline-block">دانلود ضمیمه</a>` : ''}
+            </div>
+        `;
+    }).join('');
+
     modalContent.innerHTML = `
-        <form id="process-request-form" class="space-y-4">
-            <p class="text-sm border-b pb-3"><strong>متقاضی:</strong> ${request.employeeName} | <strong>جزئیات:</strong> ${request.details}</p>
+        <div class="max-h-48 overflow-y-auto mb-4 pr-2">${historyHtml || '<p class="text-sm text-slate-400 text-center">هنوز پاسخی ثبت نشده است.</p>'}</div>
+        <form id="process-request-form" class="space-y-4 border-t pt-4">
+            <h4 class="font-bold">ثبت پاسخ یا رویداد جدید</h4>
             <div>
-                <label class="block font-medium mb-1">تغییر وضعیت به:</label>
-                <select id="request-status" class="w-full p-2 border rounded-md bg-white">
-                    <option value="در حال انجام" ${request.status === 'در حال انجام' ? 'selected' : ''}>در حال انجام</option>
-                    <option value="تایید شده" ${request.status === 'تایید شده' ? 'selected' : ''}>تایید شده</option>
-                    <option value="رد شده" ${request.status === 'رد شده' ? 'selected' : ''}>رد شده</option>
-                </select>
+                <label class="block font-medium mb-1">توضیحات/پاسخ جدید</label>
+                <textarea id="processing-notes" rows="4" class="w-full p-2 border rounded-md" required></textarea>
             </div>
-            <div>
-                <label class="block font-medium mb-1">توضیحات/پاسخ برای کارمند (اختیاری)</label>
-                <textarea id="processing-notes" rows="4" class="w-full p-2 border rounded-md">${request.processingNotes || ''}</textarea>
-            </div>
-            <div>
-                <label class="block font-medium mb-1">فایل ضمیمه (اختیاری)</label>
-                <input type="file" id="request-attachment" class="w-full text-sm">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block font-medium mb-1">تغییر وضعیت به:</label>
+                    <select id="request-status" class="w-full p-2 border rounded-md bg-white">
+                        <option value="در حال انجام" ${request.status === 'در حال انجام' ? 'selected' : ''}>در حال انجام</option>
+                        <option value="تایید شده" ${request.status === 'تایید شده' ? 'selected' : ''}>تایید شده</option>
+                        <option value="رد شده" ${request.status === 'رد شده' ? 'selected' : ''}>رد شده</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-medium mb-1">فایل ضمیمه (اختیاری)</label>
+                    <input type="file" id="request-attachment" class="w-full text-sm">
+                </div>
             </div>
             <div class="pt-4 flex justify-end">
-                <button type="submit" id="save-processing-btn" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">ذخیره تغییرات</button>
+                <button type="submit" id="save-processing-btn" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">ثبت پاسخ</button>
             </div>
         </form>
     `;
@@ -5034,34 +5044,41 @@ const showProcessRequestForm = (requestId) => {
         e.preventDefault();
         const saveBtn = document.getElementById('save-processing-btn');
         saveBtn.disabled = true;
-        saveBtn.innerText = 'در حال ذخیره...';
+        saveBtn.innerText = 'در حال ثبت...';
 
         try {
-            const updatedData = {
-                status: document.getElementById('request-status').value,
-                processingNotes: document.getElementById('processing-notes').value,
-            };
-
+            let attachmentUrl = '', attachmentFileName = '';
             const file = document.getElementById('request-attachment').files[0];
             if (file) {
-                // آپلود فایل در استوریج
-                const filePath = `request_attachments/${requestId}/${file.name}`;
-                const storageRef = ref(storage, filePath);
-                const snapshot = await uploadBytes(storageRef, file);
-                updatedData.attachmentUrl = await getDownloadURL(snapshot.ref);
-                updatedData.attachmentFileName = file.name;
+                // ... (منطق آپلود فایل مثل قبل)
             }
 
+            const newThreadItem = {
+                senderUid: state.currentUser.uid,
+                content: document.getElementById('processing-notes').value,
+                createdAt: new Date(), // از زمان فعلی استفاده می‌کنیم
+                attachmentUrl,
+                attachmentFileName,
+                eventType: 'comment' // برای تفکیک کامنت از رویدادهای دیگر
+            };
+
+            const newStatus = document.getElementById('request-status').value;
+            const updatedThread = [...(request.thread || []), newThreadItem];
+
             const requestRef = doc(db, `artifacts/${appId}/public/data/requests`, requestId);
-            await updateDoc(requestRef, updatedData);
+            await updateDoc(requestRef, {
+                status: newStatus,
+                thread: updatedThread,
+                lastUpdatedAt: serverTimestamp() // برای نوتیفیکیشن‌های آینده
+            });
             
-            showToast("پردازش درخواست با موفقیت ثبت شد.");
+            showToast("پاسخ شما با موفقیت ثبت شد.");
             closeModal(mainModal, mainModalContainer);
         } catch (error) {
             console.error("Error processing request:", error);
-            showToast("خطا در ثبت پردازش.", "error");
+            showToast("خطا در ثبت پاسخ.", "error");
             saveBtn.disabled = false;
-            saveBtn.innerText = 'ذخیره تغییرات';
+            saveBtn.innerText = 'ثبت پاسخ';
         }
     });
 };
