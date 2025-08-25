@@ -189,6 +189,9 @@ const onDataLoaded = () => {
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید و کامل جایگزین کنید
 
+// در فایل js/main.js
+// کل این تابع را با نسخه نهایی زیر جایگزین کنید
+
 function renderEmployeePortalPage(pageName, employee) {
     const contentContainer = document.getElementById('employee-main-content');
     if (!contentContainer) return;
