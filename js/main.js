@@ -2308,39 +2308,48 @@ const renderEngagementGauge = (canvasId, score) => {
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید و کامل جایگزین کنید
 
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید جایگزین کنید
 const renderAllReminders = () => {
-    // ۱. تمام یادآورها را از state بخوان، بر اساس تاریخ مرتب کن و ۵ مورد اول را انتخاب کن
     const allUpcomingReminders = (state.reminders || [])
         .sort((a, b) => new Date(a.date.toDate()) - new Date(b.date.toDate()))
-        .slice(0, 5); // فقط ۵ یادآور نزدیک را برای نمایش در داشبورد انتخاب می‌کنیم
+        .slice(0, 5); 
 
-    // ۲. اگر هیچ یادآوری وجود نداشت، یک پیام نمایش بده
     if (allUpcomingReminders.length === 0) {
         return '<p class="text-sm text-slate-500 text-center">هیچ یادآوری فعالی وجود ندارد.</p>';
     }
 
-    // ۳. پالت رنگی برای انواع مختلف یادآورها
     const colorClasses = {
-        'file-clock': { bg: 'bg-yellow-50', text: 'text-yellow-600' },    // تمدید قرارداد
-        'cake': { bg: 'bg-pink-50', text: 'text-pink-600' },              // تولد
-        'award': { bg: 'bg-blue-50', text: 'text-blue-600' },             // سالگرد استخدام
-        'clipboard-x': { bg: 'bg-teal-50', text: 'text-teal-600' },       // ارزیابی معوق
-        'calendar-plus': { bg: 'bg-indigo-50', text: 'text-indigo-600' }, // یادآور دستی
-        'message-square-plus': { bg: 'bg-gray-100', text: 'text-gray-600' } // پیگیری انضباطی
+        'file-clock': { bg: 'bg-yellow-50', text: 'text-yellow-600' },
+        'cake': { bg: 'bg-pink-50', text: 'text-pink-600' },
+        'award': { bg: 'bg-blue-50', text: 'text-blue-600' },
+        'clipboard-x': { bg: 'bg-teal-50', text: 'text-teal-600' },
+        'calendar-plus': { bg: 'bg-indigo-50', text: 'text-indigo-600' },
+        'message-square-plus': { bg: 'bg-gray-100', text: 'text-gray-600' }
     };
 
-    // ۴. ساخت HTML نهایی برای نمایش یادآورها
     return allUpcomingReminders.map(r => {
         const colors = colorClasses[r.icon] || colorClasses['calendar-plus'];
         const assignee = state.users.find(u => u.firestoreId === r.assignedTo);
-        const subtext = assignee ? `${r.subtext} (به ${assignee.name} واگذار شده)` : r.subtext;
+        
+        // [!code focus:12]
+        // بخش جدید برای نمایش وضعیت و یادداشت‌ها
+        let statusHtml = '';
+        if (r.status === 'انجام شده') {
+            statusHtml = `<p class="mt-1 text-xs text-green-600 font-semibold border-t border-green-200 pt-1">انجام شد: ${r.processingNotes || ''}</p>`;
+        } else if (r.status === 'در حال انجام') {
+            statusHtml = `<p class="mt-1 text-xs text-blue-600 font-semibold border-t border-blue-200 pt-1">در حال انجام توسط ${assignee ? assignee.name : ''}...</p>`;
+        } else if (assignee) {
+             statusHtml = `<p class="mt-1 text-xs text-slate-500 border-t border-slate-200 pt-1">به ${assignee.name} واگذار شده</p>`;
+        }
 
         return `
-            <div class="flex items-start p-3 ${colors.bg} rounded-xl border border-transparent hover:border-blue-200 transition">
+            <div class="flex items-start p-3 ${colors.bg} rounded-xl">
                 <i data-lucide="${r.icon}" class="w-5 h-5 ${colors.text} ml-3 mt-1 flex-shrink-0"></i>
-                <div>
+                <div class="w-full">
                     <p class="font-medium text-sm">${r.text}</p>
-                    <p class="text-xs text-slate-500 mt-0.5">${subtext || `تاریخ: ${toPersianDate(r.date)}`}</p>
+                    <p class="text-xs text-slate-500 mt-0.5">${r.subtext || `تاریخ: ${toPersianDate(r.date)}`}</p>
+                    ${statusHtml}
                 </div>
             </div>
         `;
@@ -4716,6 +4725,8 @@ const showProcessRequestForm = (requestId) => {
     });
 };
 // این تابع کاملاً جدید را به js/main.js اضافه کنید
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید جایگزین کنید
 const showProcessReminderForm = (reminderId) => {
     const reminder = state.reminders.find(r => r.firestoreId === reminderId);
     if (!reminder) return showToast("یادآور یافت نشد.", "error");
@@ -4733,7 +4744,7 @@ const showProcessReminderForm = (reminderId) => {
                 </select>
             </div>
             <div>
-                <label class="block font-medium mb-1">یادداشت پردازش (اختیاری)</label>
+                <label class="block font-medium mb-1">یادداشت پردازش (این یادداشت در داشبورد برای سایر مدیران قابل مشاهده است)</label>
                 <textarea id="processing-notes" rows="4" class="w-full p-2 border rounded-md">${reminder.processingNotes || ''}</textarea>
             </div>
             <div class="pt-4 flex justify-end">
@@ -4753,7 +4764,10 @@ const showProcessReminderForm = (reminderId) => {
             });
             showToast("وضعیت یادآور با موفقیت بروزرسانی شد.");
             closeModal(mainModal, mainModalContainer);
-        } catch (error) { showToast("خطا در بروزرسانی یادآور.", "error"); }
+        } catch (error) {
+            console.error("Error updating reminder:", error);
+            showToast("خطا در بروزرسانی یادآور.", "error");
+        }
     });
 };
 // این تابع جدید را به js/main.js اضافه کنید
