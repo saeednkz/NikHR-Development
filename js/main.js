@@ -272,16 +272,51 @@ const renderBirthdaysWidget = (currentEmployee) => {
         </div>
     `;
 };
+// این تابع جدید را به js/main.js اضافه کنید
+const renderMyBirthdayWishesWidget = (employee) => {
+    const today = new Date();
+    const birthDate = new Date(employee.personalInfo?.birthDate);
+
+    // چک می‌کنیم آیا امروز تولد کارمند است یا نه
+    if (!employee.personalInfo?.birthDate || birthDate.getMonth() !== today.getMonth() || birthDate.getDate() !== today.getDate()) {
+        return ''; // اگر تولدش نبود، چیزی نمایش نده
+    }
+
+    const myWishes = (state.birthdayWishes || [])
+        .filter(wish => wish.targetUid === employee.uid)
+        .sort((a, b) => new Date(b.createdAt?.toDate()) - new Date(a.createdAt?.toDate()));
+
+    if (myWishes.length === 0) {
+        return ''; // اگر تبریکی دریافت نکرده بود، چیزی نمایش نده
+    }
+
+    return `
+        <div class="bg-white p-6 rounded-xl shadow-md">
+            <h3 class="text-lg font-semibold text-slate-700 mb-4 flex items-center">
+                <i data-lucide="gift" class="ml-2 text-rose-500"></i>
+                تبریک‌های تولد شما!
+            </h3>
+            <div class="space-y-3 max-h-60 overflow-y-auto pr-2">
+                ${myWishes.map(wish => `
+                    <div class="p-3 bg-rose-50 rounded-lg">
+                        <p class="text-sm text-slate-700">${wish.message}</p>
+                        <p class="text-xs text-rose-800 font-semibold text-left mt-2">- ${wish.wisherName}</p>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+};
 function renderEmployeePortalPage(pageName, employee) {
     const contentContainer = document.getElementById('employee-main-content');
     if (!contentContainer) return;
 
-    // --- بخش پروفایل (بدون تغییر) ---
- if (pageName === 'profile') {
+    // --- بخش پروفایل (با تغییرات جدید) ---
+    if (pageName === 'profile') {
         const manager = state.teams.find(t => t.memberIds?.includes(employee.id))
             ? state.employees.find(e => e.id === state.teams.find(t => t.memberIds.includes(employee.id)).leaderId)
             : null;
-        
+
         const performanceHistoryHtml = (employee.performanceHistory || []).sort((a,b) => new Date(b.reviewDate) - new Date(a.reviewDate)).map(review => `
             <div class="p-4 bg-slate-50 rounded-lg border">
                 <div class="flex justify-between items-center mb-2">
@@ -295,8 +330,9 @@ function renderEmployeePortalPage(pageName, employee) {
         contentContainer.innerHTML = `
             <h1 class="text-3xl font-bold text-slate-800 mb-6">داشبورد شما</h1>
             <div class="space-y-6">
+                ${renderMyBirthdayWishesWidget(employee)}
                 ${renderBirthdaysWidget(employee)}
-            
+
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div class="lg:col-span-1 space-y-6">
                         <div class="bg-white p-6 rounded-xl shadow-md text-center">
@@ -340,7 +376,7 @@ function renderEmployeePortalPage(pageName, employee) {
                 </div>
             </div>
         `;
-    } 
+    }
     // --- بخش دایرکتوری (بدون تغییر) ---
     else if (pageName === 'directory') {
         const teamCardsHtml = state.teams.map(team => {
