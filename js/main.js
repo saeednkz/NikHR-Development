@@ -2429,6 +2429,8 @@ document.getElementById('addReminderBtn')?.addEventListener('click', async () =>
 // این تابع جدید را به main.js اضافه کنید (کنار بقیه setup...Listeners)
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید جایگزین کنید
 const setupAnnouncementsPageListeners = () => {
     document.getElementById('add-announcement-btn')?.addEventListener('click', showAnnouncementForm);
 
@@ -3679,6 +3681,8 @@ const showEmployeeForm = (employeeId = null) => {
 };
 // این تابع جدید را به js/main.js اضافه کنید
 
+// این تابع جدید را به js/main.js اضافه کنید
+
 const showAnnouncementForm = () => {
     modalTitle.innerText = 'ارسال پیام یا اعلان جدید';
     
@@ -3709,11 +3713,11 @@ const showAnnouncementForm = () => {
                 </select>
             </div>
             <div id="target-details-container" class="hidden p-2 border rounded-md max-h-40 overflow-y-auto">
-                <div id="target-teams-list" class="hidden space-y-1">${teamOptions}</div>
-                <div id="target-users-list" class="hidden space-y-1">${userOptions}</div>
+                <div id="target-teams-list" class="hidden grid grid-cols-2 gap-2">${teamOptions}</div>
+                <div id="target-users-list" class="hidden grid grid-cols-2 gap-2">${userOptions}</div>
                 <div id="target-roles-list" class="hidden space-y-1">
-                    <div class="flex items-center"><input type="checkbox" id="role-admin" value="admin" class="target-checkbox-roles"><label for="role-admin" class="mr-2">همه مدیران</label></div>
-                    <div class="flex items-center"><input type="checkbox" id="role-employee" value="employee" class="target-checkbox-roles"><label for="role-employee" class="mr-2">همه کارمندان</label></div>
+                    <div class="flex items-center"><input type="checkbox" id="role-admin" value="admin" class="target-checkbox-roles"><label for="role-admin" class="mr-2">همه مدیران (Admin)</label></div>
+                    <div class="flex items-center"><input type="checkbox" id="role-employee" value="employee" class="target-checkbox-roles"><label for="role-employee" class="mr-2">همه کارمندان (Employee)</label></div>
                 </div>
             </div>
             <div class="pt-4 flex justify-end">
@@ -3723,7 +3727,6 @@ const showAnnouncementForm = () => {
     `;
     openModal(mainModal, mainModalContainer);
 
-    // منطق نمایش بخش انتخاب گیرندگان
     const targetTypeSelect = document.getElementById('target-type');
     const detailsContainer = document.getElementById('target-details-container');
     const targetLists = {
@@ -3743,12 +3746,55 @@ const showAnnouncementForm = () => {
         }
     });
 
-    // منطق ذخیره‌سازی
     document.getElementById('announcement-form').addEventListener('submit', async (e) => {
         e.preventDefault();
-        // ... (منطق ذخیره‌سازی در قدم بعدی کامل می‌شود)
-        alert("فرم با موفقیت به منطق ذخیره‌سازی متصل خواهد شد.");
-        closeModal(mainModal, mainModalContainer);
+        const saveBtn = document.getElementById('submit-announcement-btn');
+        saveBtn.disabled = true;
+        saveBtn.innerText = 'در حال ارسال...';
+
+        try {
+            let attachmentUrl = '', attachmentFileName = '';
+            const file = document.getElementById('announcement-attachment').files[0];
+            if (file) {
+                const filePath = `announcements/${Date.now()}_${file.name}`;
+                const storageRef = ref(storage, filePath);
+                const snapshot = await uploadBytes(storageRef, file);
+                attachmentUrl = await getDownloadURL(snapshot.ref);
+                attachmentFileName = file.name;
+            }
+
+            const targets = { type: document.getElementById('target-type').value };
+            if (targets.type === 'teams') {
+                targets.teamIds = Array.from(document.querySelectorAll('.target-checkbox-teams:checked')).map(cb => cb.value);
+                targets.teamNames = Array.from(document.querySelectorAll('.target-checkbox-teams:checked')).map(cb => cb.dataset.name);
+            } else if (targets.type === 'users') {
+                targets.userIds = Array.from(document.querySelectorAll('.target-checkbox-users:checked')).map(cb => cb.value);
+                targets.userNames = Array.from(document.querySelectorAll('.target-checkbox-users:checked')).map(cb => cb.dataset.name);
+            } else if (targets.type === 'roles') {
+                targets.roles = Array.from(document.querySelectorAll('.target-checkbox-roles:checked')).map(cb => cb.value);
+            }
+
+            const announcementData = {
+                title: document.getElementById('announcement-title').value,
+                content: document.getElementById('announcement-content').value,
+                attachmentUrl,
+                attachmentFileName,
+                targets,
+                senderUid: state.currentUser.uid,
+                senderName: state.currentUser.name || state.currentUser.email,
+                createdAt: serverTimestamp()
+            };
+            
+            await addDoc(collection(db, `artifacts/${appId}/public/data/announcements`), announcementData);
+            showToast("پیام با موفقیت ارسال شد.");
+            closeModal(mainModal, mainModalContainer);
+
+        } catch (error) {
+            console.error("Error sending announcement:", error);
+            showToast("خطا در ارسال پیام.", "error");
+            saveBtn.disabled = false;
+            saveBtn.innerText = 'ارسال';
+        }
     });
 };
         const showPettyCashManagementModal = () => {
