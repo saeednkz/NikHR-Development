@@ -2427,13 +2427,23 @@ document.getElementById('addReminderBtn')?.addEventListener('click', async () =>
 });
 };
 // این تابع جدید را به main.js اضافه کنید (کنار بقیه setup...Listeners)
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید جایگزین کنید
 const setupAnnouncementsPageListeners = () => {
-    document.getElementById('add-announcement-btn')?.addEventListener('click', () => {
-        // در مرحله بعد، تابع showAnnouncementForm را خواهیم ساخت.
-        alert('فرم ارسال پیام در مرحله بعد ساخته می‌شود.');
-    });
+    document.getElementById('add-announcement-btn')?.addEventListener('click', showAnnouncementForm);
 
-    // منطق حذف پیام (در آینده تکمیل می‌شود)
+    document.getElementById('announcements-table-body')?.addEventListener('click', (e) => {
+        const deleteBtn = e.target.closest('.delete-announcement-btn');
+        if (deleteBtn) {
+            const docId = deleteBtn.dataset.id;
+            showConfirmationModal('حذف پیام', 'آیا از حذف این پیام مطمئن هستید؟ این عمل غیرقابل بازگشت است.', async () => {
+                try {
+                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/announcements`, docId));
+                    showToast("پیام با موفقیت حذف شد.");
+                } catch (error) { showToast("خطا در حذف پیام.", "error"); }
+            });
+        }
+    });
 };
 const renderEmployeeTable = () => {
     const TALENT_PAGE_SIZE = 12;
@@ -3665,6 +3675,80 @@ const showEmployeeForm = (employeeId = null) => {
                 saveBtn.innerText = 'ذخیره';
             }
         }
+    });
+};
+// این تابع جدید را به js/main.js اضافه کنید
+
+const showAnnouncementForm = () => {
+    modalTitle.innerText = 'ارسال پیام یا اعلان جدید';
+    
+    const teamOptions = state.teams.map(t => `<div class="flex items-center"><input type="checkbox" id="team-${t.firestoreId}" value="${t.firestoreId}" data-name="${t.name}" class="target-checkbox-teams"><label for="team-${t.firestoreId}" class="mr-2">${t.name}</label></div>`).join('');
+    const userOptions = state.employees.map(e => `<div class="flex items-center"><input type="checkbox" id="user-${e.firestoreId}" value="${e.firestoreId}" data-name="${e.name}" class="target-checkbox-users"><label for="user-${e.firestoreId}" class="mr-2">${e.name}</label></div>`).join('');
+
+    modalContent.innerHTML = `
+        <form id="announcement-form" class="space-y-4">
+            <div>
+                <label class="block font-medium mb-1">عنوان پیام</label>
+                <input type="text" id="announcement-title" class="w-full p-2 border rounded-md" required>
+            </div>
+            <div>
+                <label class="block font-medium mb-1">متن پیام</label>
+                <textarea id="announcement-content" rows="6" class="w-full p-2 border rounded-md" required></textarea>
+            </div>
+            <div>
+                <label class="block font-medium mb-1">فایل ضمیمه (اختیاری)</label>
+                <input type="file" id="announcement-attachment" class="w-full text-sm">
+            </div>
+            <div>
+                <label class="block font-medium mb-1">گیرندگان</label>
+                <select id="target-type" class="w-full p-2 border rounded-md bg-white">
+                    <option value="public">عمومی (تمام کارمندان)</option>
+                    <option value="teams">یک یا چند تیم خاص</option>
+                    <option value="users">یک یا چند فرد خاص</option>
+                    <option value="roles">یک نقش خاص (مثلاً همه مدیران)</option>
+                </select>
+            </div>
+            <div id="target-details-container" class="hidden p-2 border rounded-md max-h-40 overflow-y-auto">
+                <div id="target-teams-list" class="hidden space-y-1">${teamOptions}</div>
+                <div id="target-users-list" class="hidden space-y-1">${userOptions}</div>
+                <div id="target-roles-list" class="hidden space-y-1">
+                    <div class="flex items-center"><input type="checkbox" id="role-admin" value="admin" class="target-checkbox-roles"><label for="role-admin" class="mr-2">همه مدیران</label></div>
+                    <div class="flex items-center"><input type="checkbox" id="role-employee" value="employee" class="target-checkbox-roles"><label for="role-employee" class="mr-2">همه کارمندان</label></div>
+                </div>
+            </div>
+            <div class="pt-4 flex justify-end">
+                <button type="submit" id="submit-announcement-btn" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">ارسال</button>
+            </div>
+        </form>
+    `;
+    openModal(mainModal, mainModalContainer);
+
+    // منطق نمایش بخش انتخاب گیرندگان
+    const targetTypeSelect = document.getElementById('target-type');
+    const detailsContainer = document.getElementById('target-details-container');
+    const targetLists = {
+        teams: document.getElementById('target-teams-list'),
+        users: document.getElementById('target-users-list'),
+        roles: document.getElementById('target-roles-list'),
+    };
+
+    targetTypeSelect.addEventListener('change', (e) => {
+        const selectedType = e.target.value;
+        Object.values(targetLists).forEach(list => list.classList.add('hidden'));
+        if (targetLists[selectedType]) {
+            detailsContainer.classList.remove('hidden');
+            targetLists[selectedType].classList.remove('hidden');
+        } else {
+            detailsContainer.classList.add('hidden');
+        }
+    });
+
+    // منطق ذخیره‌سازی
+    document.getElementById('announcement-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        // ... (منطق ذخیره‌سازی در قدم بعدی کامل می‌شود)
+        alert("فرم با موفقیت به منطق ذخیره‌سازی متصل خواهد شد.");
+        closeModal(mainModal, mainModalContainer);
     });
 };
         const showPettyCashManagementModal = () => {
