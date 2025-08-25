@@ -176,6 +176,12 @@ function listenToData() {
             state[colName] = snapshot.docs.map(doc => ({ firestoreId: doc.id, ...doc.data() }));
             
             updateNotificationBell();
+           if (state.currentUser && state.currentUser.role === 'employee') {
+        const employeeProfile = state.employees.find(e => e.uid === state.currentUser.uid);
+        if (employeeProfile) {
+            updateEmployeeNotificationBell(employeeProfile); // [!code ++]
+        }
+    }
 
             if (initialLoads > 0) {
                 onDataLoaded();
@@ -214,11 +220,14 @@ function listenToData() {
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید و کامل جایگزین کنید
 
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید و کامل جایگزین کنید
+
 function renderEmployeePortalPage(pageName, employee) {
     const contentContainer = document.getElementById('employee-main-content');
     if (!contentContainer) return;
 
-    // --- بخش پروفایل ---
+    // --- بخش پروفایل (بدون تغییر) ---
     if (pageName === 'profile') {
         const manager = state.teams.find(t => t.memberIds?.includes(employee.id))
             ? state.employees.find(e => e.id === state.teams.find(t => t.memberIds.includes(employee.id)).leaderId)
@@ -285,7 +294,7 @@ function renderEmployeePortalPage(pageName, employee) {
             </div>
         `;
     } 
-    // --- بخش دایرکتوری ---
+    // --- بخش دایرکتوری (بدون تغییر) ---
     else if (pageName === 'directory') {
         const teamCardsHtml = state.teams.map(team => {
             const leader = state.employees.find(e => e.id === team.leaderId);
@@ -320,7 +329,7 @@ function renderEmployeePortalPage(pageName, employee) {
         contentContainer.innerHTML = `<h1 class="text-3xl font-bold text-slate-800 mb-6">دایرکتوری سازمان</h1><div class="space-y-6">${teamCardsHtml || '<p>هنوز تیمی در سازمان ثبت نشده است.</p>'}</div>`;
     
     } 
-    // --- بخش درخواست‌ها ---
+    // --- بخش درخواست‌ها (بدون تغییر) ---
     else if (pageName === 'requests') {
         const myRequests = (state.requests || []).filter(req => req.uid === employee.uid)
             .sort((a, b) => new Date(b.createdAt?.toDate()) - new Date(a.createdAt?.toDate()));
@@ -379,13 +388,11 @@ function renderEmployeePortalPage(pageName, employee) {
             </div>
         `;
     }
-    // --- بخش اسناد سازمان ---
+    // --- بخش اسناد سازمان (بدون تغییر) ---
     else if (pageName === 'documents') {
         const documentsByCategory = (state.companyDocuments || []).reduce((acc, doc) => {
             const category = doc.category || 'عمومی';
-            if (!acc[category]) {
-                acc[category] = [];
-            }
+            if (!acc[category]) { acc[category] = []; }
             acc[category].push(doc);
             return acc;
         }, {});
@@ -396,29 +403,22 @@ function renderEmployeePortalPage(pageName, employee) {
                 <div class="mb-6">
                     <h3 class="text-lg font-semibold text-slate-600 border-b pb-2 mb-3">${category}</h3>
                     <div class="space-y-2">
-                        ${docsInCategory.map(doc => `
-                            <a href="${doc.fileUrl}" target="_blank" class="flex justify-between items-center bg-slate-50 p-3 rounded-lg hover:bg-slate-100 transition">
-                                <div class="flex items-center gap-3 text-blue-600">
-                                    <i data-lucide="file-text" class="w-5 h-5"></i>
-                                    <span class="font-semibold">${doc.title}</span>
-                                </div>
-                                <i data-lucide="download" class="w-5 h-5 text-slate-400"></i>
-                            </a>
-                        `).join('')}
+                        ${docsInCategory.map(doc => `<a href="${doc.fileUrl}" target="_blank" class="flex justify-between items-center bg-slate-50 p-3 rounded-lg hover:bg-slate-100 transition"><div class="flex items-center gap-3 text-blue-600"><i data-lucide="file-text" class="w-5 h-5"></i><span class="font-semibold">${doc.title}</span></div><i data-lucide="download" class="w-5 h-5 text-slate-400"></i></a>`).join('')}
                     </div>
                 </div>
             `;
         }).join('');
 
-        contentContainer.innerHTML = `
-            <h1 class="text-3xl font-bold text-slate-800 mb-6">اسناد و فایل‌های سازمان</h1>
-            <div class="bg-white p-6 rounded-xl shadow-md">
-                ${documentsHtml || '<p class="text-center text-slate-500 py-8">هنوز سندی در سیستم بارگذاری نشده است.</p>'}
-            </div>
-        `;
+        contentContainer.innerHTML = `<h1 class="text-3xl font-bold text-slate-800 mb-6">اسناد و فایل‌های سازمان</h1><div class="bg-white p-6 rounded-xl shadow-md">${documentsHtml || '<p class="text-center text-slate-500 py-8">هنوز سندی در سیستم بارگذاری نشده است.</p>'}</div>`;
     }
-    // --- بخش صندوق پیام (اینباکس) ---
+    // --- بخش صندوق پیام (اینباکس) با تغییر جدید ---
     else if (pageName === 'inbox') {
+        // [!code focus:4]
+        // این کد جدید است که در ابتدای این بخش اضافه می‌شود
+        // زمان بازدید از اینباکس را در پروفایل کاربر آپدیت کن
+        const employeeRef = doc(db, `artifacts/${appId}/public/data/employees`, employee.firestoreId);
+        updateDoc(employeeRef, { "personalInfo.lastCheckedInbox": serverTimestamp() });
+    
         const myTeam = state.teams.find(team => team.memberIds?.includes(employee.id));
         const myTeamId = myTeam ? myTeam.firestoreId : null;
 
@@ -466,21 +466,21 @@ function renderEmployeePortalPage(pageName, employee) {
 // در فایل js/main.js
 // کل این تابع را با نسخه تمیز شده زیر جایگزین کنید
 
+// کل این تابع را با نسخه جدید جایگزین کنید
 function setupEmployeePortalEventListeners(employee) {
-    // فعال‌سازی دکمه خروج اصلی پورتال
     document.getElementById('portal-logout-btn')?.addEventListener('click', () => signOut(auth));
     
-    // فعال‌سازی دکمه ویرایش پروفایل (اگر در صفحه پروفایل باشیم)
     document.getElementById('edit-my-profile-btn')?.addEventListener('click', () => {
         showMyProfileEditForm(employee);
     });
 
-    // فعال‌سازی دکمه ثبت درخواست جدید (اگر در صفحه درخواست‌ها باشیم)
-    document.getElementById('add-new-request-btn')?.addEventListener('click', () => {
-        showNewRequestForm(employee);
+    // [!code focus:6]
+    // فعال‌سازی کلیک روی زنگوله نوتیفیکیشن کارمند
+    document.getElementById('portal-notification-bell-btn')?.addEventListener('click', () => {
+        // با کلیک، مستقیم به صفحه اینباکس برو
+        document.querySelector('.employee-nav-item[href="#inbox"]').click();
     });
 
-    // فعال‌سازی لینک‌های منوی کناری
     document.querySelectorAll('.employee-nav-item').forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
@@ -496,6 +496,9 @@ function setupEmployeePortalEventListeners(employee) {
 // در فایل js/main.js
 // کل تابع renderEmployeePortal را با این نسخه جایگزین کنید
 
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید و کامل جایگزین کنید
+
 function renderEmployeePortal() {
     // ابتدا تمام کانتینرهای دیگر را مخفی می‌کنیم
     document.getElementById('login-container').classList.add('hidden');
@@ -506,7 +509,6 @@ function renderEmployeePortal() {
 
     const employee = state.employees.find(emp => emp.uid === state.currentUser.uid);
     
-    // اگر به هر دلیلی پروفایل کارمند پیدا نشد، یک پیام خطا نمایش بده
     if (!employee) {
         portalContainer.innerHTML = `<div class="text-center p-10"><h2 class="text-xl font-bold text-red-600">خطا</h2><p class="mt-2 text-slate-500">پروفایل پرسنلی شما یافت نشد. لطفاً با مدیر سیستم تماس بگیرید.</p></div>`;
         return;
@@ -514,7 +516,6 @@ function renderEmployeePortal() {
 
     const employeeName = employee.name || state.currentUser.email;
 
-    // ساختار جدید HTML برای پورتال کارمندان با منو و محتوا
     portalContainer.innerHTML = `
         <div class="flex h-screen bg-slate-100">
             <aside class="w-64 bg-white shadow-md p-4 flex flex-col">
@@ -532,17 +533,18 @@ function renderEmployeePortal() {
                         <i data-lucide="send"></i>
                         <span>درخواست‌های من</span>
                     </a>
-                     <a href="#directory" class="employee-nav-item flex items-center gap-3 px-4 py-2 rounded-lg text-slate-700 hover:bg-blue-50 hover:text-blue-600">
+                    <a href="#directory" class="employee-nav-item flex items-center gap-3 px-4 py-2 rounded-lg text-slate-700 hover:bg-blue-50 hover:text-blue-600">
                         <i data-lucide="users"></i>
                         <span>دایرکتوری سازمان</span>
                     </a>
                     <a href="#documents" class="employee-nav-item flex items-center gap-3 px-4 py-2 rounded-lg text-slate-700 hover:bg-blue-50 hover:text-blue-600">
-    <i data-lucide="folder-kanban"></i>
-    <span>اسناد سازمان</span>
-    <a href="#inbox" class="employee-nav-item flex items-center gap-3 px-4 py-2 rounded-lg text-slate-700 hover:bg-blue-50 hover:text-blue-600">
-    <i data-lucide="inbox"></i>
-    <span>صندوق پیام</span>
-</a>
+                        <i data-lucide="folder-kanban"></i>
+                        <span>اسناد سازمان</span>
+                    </a>
+                    <a href="#inbox" class="employee-nav-item flex items-center gap-3 px-4 py-2 rounded-lg text-slate-700 hover:bg-blue-50 hover:text-blue-600">
+                        <i data-lucide="inbox"></i>
+                        <span>صندوق پیام</span>
+                    </a>
                 </nav>
                 <div class="mt-auto">
                     <button id="portal-logout-btn" class="w-full flex items-center justify-center gap-3 px-4 py-2 rounded-lg text-red-600 hover:bg-red-50">
@@ -552,18 +554,33 @@ function renderEmployeePortal() {
                 </div>
             </aside>
 
-            <main id="employee-main-content" class="flex-1 p-6 sm:p-10 overflow-y-auto">
-                </main>
+            <div class="flex-1 flex flex-col h-screen overflow-y-hidden">
+                <header class="bg-white shadow-sm">
+                    <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+                        <div class="flex items-center gap-3">
+                            <img src="logo.png" alt="NikHR Logo" class="w-8 h-8">
+                            <h1 class="text-xl font-bold text-slate-800">پورتال کارمندان</h1>
+                        </div>
+                        <div class="flex items-center gap-4">
+                             <div id="portal-notification-bell-wrapper" class="relative">
+                                <button id="portal-notification-bell-btn" class="relative cursor-pointer p-2 rounded-full hover:bg-slate-100">
+                                    <i data-lucide="bell" class="text-slate-600"></i>
+                                    <span id="portal-notification-count" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full border-2 border-white"></span>
+                                </button>
+                            </div>
+                             <span class="text-sm text-slate-600 hidden sm:block">خوش آمدید، ${employeeName}</span>
+                        </div>
+                    </div>
+                </header>
+
+                <main id="employee-main-content" class="flex-1 p-6 sm:p-10 overflow-y-auto"></main>
+            </div>
         </div>
     `;
     
     lucide.createIcons();
-
-      // به صورت پیش‌فرض، صفحه پروفایل را نمایش می‌دهیم
     renderEmployeePortalPage('profile', employee);
-    // رویدادهای مربوط به پورتال کارمندان را راه‌اندازی می‌کنیم
     setupEmployeePortalEventListeners(employee);
-
 }
         // --- UTILITY & HELPER FUNCTIONS ---
         // --- تابع جدید برای تبدیل تاریخ به شمسی ---
@@ -1135,7 +1152,32 @@ const updateNotificationBell = () => {
 
         // --- PAGE TEMPLATES & RENDERING ---
         const mainContent = document.getElementById('main-content');
-        
+     const updateEmployeeNotificationBell = (employee) => {
+    const countContainer = document.getElementById('portal-notification-count');
+    if (!countContainer || !employee) return;
+
+    const lastChecked = employee.personalInfo?.lastCheckedInbox?.toDate() || new Date(0);
+
+    const myTeam = state.teams.find(team => team.memberIds?.includes(employee.id));
+    const myTeamId = myTeam ? myTeam.firestoreId : null;
+
+    const unreadCount = (state.announcements || []).filter(msg => {
+        if (msg.createdAt.toDate() <= lastChecked) return false; // پیام قدیمی است
+        const targets = msg.targets;
+        if (targets.type === 'public') return true;
+        if (targets.type === 'roles' && targets.roles?.includes('employee')) return true;
+        if (targets.type === 'users' && targets.userIds?.includes(employee.firestoreId)) return true;
+        if (targets.type === 'teams' && targets.teamIds?.includes(myTeamId)) return true;
+        return false;
+    }).length;
+
+    if (unreadCount > 0) {
+        countContainer.textContent = unreadCount;
+        countContainer.classList.remove('hidden');
+    } else {
+        countContainer.classList.add('hidden');
+    }
+};   
 const pages = {
     dashboard: () => {
         calculateDashboardMetrics();
