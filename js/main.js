@@ -136,7 +136,7 @@ async function initializeFirebase() {
         function listenToData() {
             const collectionsToListen = ['employees', 'teams', 'reminders', 'surveyResponses', 
         'users', 'competencies', 'expenses', 'pettyCashCards', 
-        'chargeHistory', 'requests', 'assignmentRules'];
+        'chargeHistory', 'requests', 'assignmentRules', 'companyDocuments'];
             let initialLoads = collectionsToListen.length;
 // کد جدید و صحیح ✅
 const onDataLoaded = () => {
@@ -439,6 +439,10 @@ function renderEmployeePortal() {
                         <i data-lucide="users"></i>
                         <span>دایرکتوری سازمان</span>
                     </a>
+                    <a href="#documents" class="employee-nav-item flex items-center gap-3 px-4 py-2 rounded-lg text-slate-700 hover:bg-blue-50 hover:text-blue-600">
+    <i data-lucide="folder-kanban"></i>
+    <span>اسناد سازمان</span>
+</a>
                 </nav>
                 <div class="mt-auto">
                     <button id="portal-logout-btn" class="w-full flex items-center justify-center gap-3 px-4 py-2 rounded-lg text-red-600 hover:bg-red-50">
