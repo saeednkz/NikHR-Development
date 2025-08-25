@@ -4761,23 +4761,42 @@ const showProcessReminderForm = (reminderId) => {
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید و کامل جایگزین کنید
 
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید جایگزین کنید
+
 const showNewRequestForm = (employee) => {
     modalTitle.innerText = 'ثبت درخواست جدید';
     modalContent.innerHTML = `
         <form id="new-request-form" class="space-y-4">
             <div>
                 <label class="block font-medium mb-1">نوع درخواست</label>
-                <select id="request-type" class="w-full p-2 border rounded-md" required>
+                <select id="request-type" class="w-full p-2 border rounded-md bg-white" required>
                     <option value="درخواست مرخصی">درخواست مرخصی</option>
                     <option value="گواهی اشتغال به کار">گواهی اشتغال به کار</option>
                     <option value="مساعده حقوق">مساعده حقوق</option>
                     <option value="سایر">سایر موارد</option>
                 </select>
             </div>
-            <div>
-                <label class="block font-medium mb-1">جزئیات (شامل تاریخ‌ها، توضیحات و...)</label>
-                <textarea id="request-details" rows="5" class="w-full p-2 border rounded-md" required></textarea>
+
+            <div id="leave-request-fields" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block font-medium mb-1">تاریخ شروع</label>
+                        <input type="text" id="leave-start-date" class="w-full p-2 border rounded-md">
+                    </div>
+                    <div>
+                        <label class="block font-medium mb-1">تاریخ پایان</label>
+                        <input type="text" id="leave-end-date" class="w-full p-2 border rounded-md">
+                    </div>
+                </div>
+                 <div id="leave-duration" class="text-sm text-center font-semibold text-blue-600 bg-blue-50 p-2 rounded-md hidden"></div>
             </div>
+
+            <div id="generic-request-fields">
+                <label class="block font-medium mb-1">جزئیات</label>
+                <textarea id="request-details" rows="5" class="w-full p-2 border rounded-md"></textarea>
+            </div>
+
             <div class="pt-4 flex justify-end">
                 <button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">ارسال درخواست</button>
             </div>
@@ -4785,44 +4804,118 @@ const showNewRequestForm = (employee) => {
     `;
     openModal(mainModal, mainModalContainer);
 
-    document.getElementById('new-request-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const requestType = document.getElementById('request-type').value;
-        
-        let assignedUid = null;
-        
-        const applicableRule = (state.assignmentRules || []).find(rule => rule.firestoreId !== '_default' && rule.requestTypes?.includes(requestType));
-        
-        if (applicableRule) {
-            assignedUid = applicableRule.assigneeUid;
+    // --- منطق جدید برای مدیریت فرم هوشمند ---
+    const requestTypeSelect = document.getElementById('request-type');
+    const leaveFields = document.getElementById('leave-request-fields');
+    const genericFields = document.getElementById('generic-request-fields');
+    const leaveStartDate = document.getElementById('leave-start-date');
+    const leaveEndDate = document.getElementById('leave-end-date');
+    const leaveDurationDiv = document.getElementById('leave-duration');
+
+    const toggleFormFields = () => {
+        if (requestTypeSelect.value === 'درخواست مرخصی') {
+            leaveFields.style.display = 'block';
+            genericFields.style.display = 'none';
+            document.getElementById('request-details').required = false;
+            leaveStartDate.required = true;
+            leaveEndDate.required = true;
         } else {
-            const defaultRule = (state.assignmentRules || []).find(rule => rule.firestoreId === '_default');
-            if (defaultRule) {
-                assignedUid = defaultRule.assigneeUid;
+            leaveFields.style.display = 'none';
+            genericFields.style.display = 'block';
+            document.getElementById('request-details').required = true;
+            leaveStartDate.required = false;
+            leaveEndDate.required = false;
+        }
+    };
+
+    requestTypeSelect.addEventListener('change', toggleFormFields);
+
+    // فعال‌سازی تقویم‌های شمسی
+    activatePersianDatePicker('leave-start-date');
+    activatePersianDatePicker('leave-end-date');
+
+    // محاسبه خودکار تعداد روزهای مرخصی
+    $('#leave-start-date, #leave-end-date').on('change', function() {
+        const startVal = persianToEnglishDate($('#leave-start-date').val());
+        const endVal = persianToEnglishDate($('#leave-end-date').val());
+
+        if (startVal && endVal) {
+            const startDate = new Date(startVal);
+            const endDate = new Date(endVal);
+            if (endDate >= startDate) {
+                const duration = Math.round((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+                leaveDurationDiv.textContent = `مجموع: ${duration} روز`;
+                leaveDurationDiv.classList.remove('hidden');
+            } else {
+                leaveDurationDiv.classList.add('hidden');
             }
         }
-
-        const requestData = {
-            uid: employee.uid,
-            employeeId: employee.id,
-            employeeName: employee.name,
-            requestType: requestType,
-            details: document.getElementById('request-details').value,
-            status: 'درحال بررسی',
-            createdAt: serverTimestamp(),
-            assignedTo: assignedUid, // [!code ++] ویرگول در این خط اضافه شد
-            isReadByAssignee: false
-        };
-
-        try {
-            await addDoc(collection(db, `artifacts/${appId}/public/data/requests`), requestData);
-            showToast("درخواست شما با موفقیت ثبت و واگذار شد.");
-            closeModal(mainModal, mainModalContainer);
-        } catch (error) {
-            console.error("Error submitting request:", error);
-            showToast("خطا در ثبت درخواست.", "error");
-        }
     });
+
+    toggleFormFields(); // اجرای اولیه برای تنظیم فرم
+
+  // در فایل js/main.js، داخل تابع showNewRequestForm
+// کل این بلوک addEventListener را با نسخه جدید جایگزین کنید
+
+document.getElementById('new-request-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const requestType = document.getElementById('request-type').value;
+
+    let requestDataPayload = {}; // داده‌های اختصاصی هر نوع درخواست (مثل تاریخ شروع و پایان)
+    let requestDetailsText = document.getElementById('request-details').value;
+
+    // ۱. اگر نوع درخواست "مرخصی" بود، داده‌های مربوط به آن را بخوان
+    if (requestType === 'درخواست مرخصی') {
+        const startDateInput = document.getElementById('leave-start-date');
+        const endDateInput = document.getElementById('leave-end-date');
+        const startDate = persianToEnglishDate(startDateInput.value);
+        const endDate = persianToEnglishDate(endDateInput.value);
+
+        if (!startDate || !endDate || new Date(endDate) < new Date(startDate)) {
+            showToast("لطفاً تاریخ شروع و پایان مرخصی را به درستی وارد کنید.", "error");
+            return;
+        }
+        const duration = Math.round((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24)) + 1;
+        
+        requestDataPayload = { startDate, endDate, duration };
+        // یک متن جزئیات کامل و خوانا برای نمایش به ادمین می‌سازیم
+        requestDetailsText = `درخواست مرخصی از تاریخ ${startDateInput.value} تا ${endDateInput.value} (مجموع: ${duration} روز)`;
+    }
+    
+    // ۲. قوانین واگذاری هوشمند را اعمال کن (این منطق بدون تغییر است)
+    let assignedUid = null;
+    const applicableRule = (state.assignmentRules || []).find(rule => rule.itemTypes?.includes(requestType));
+    if (applicableRule) {
+        assignedUid = applicableRule.assigneeUid;
+    } else {
+        const defaultRule = (state.assignmentRules || []).find(rule => rule.firestoreId === '_default');
+        if (defaultRule) { assignedUid = defaultRule.assigneeUid; }
+    }
+
+    // ۳. آبجکت نهایی داده برای ذخیره در دیتابیس را بساز
+    const finalRequestData = {
+        uid: employee.uid,
+        employeeId: employee.id,
+        employeeName: employee.name,
+        requestType: requestType,
+        details: requestDetailsText,
+        ...requestDataPayload, // اضافه کردن داده‌های اختصاصی مرخصی در اینجا
+        status: 'درحال بررسی',
+        createdAt: serverTimestamp(),
+        assignedTo: assignedUid,
+        isReadByAssignee: false
+    };
+
+    // ۴. داده‌ها را در دیتابیس ذخیره کن
+    try {
+        await addDoc(collection(db, `artifacts/${appId}/public/data/requests`), finalRequestData);
+        showToast("درخواست شما با موفقیت ثبت شد.");
+        closeModal(mainModal, mainModalContainer);
+    } catch (error) {
+        console.error("Error submitting request:", error);
+        showToast("خطا در ثبت درخواست.", "error");
+    }
+});
 };
         
         const deleteDocument = async (emp, index) => {
