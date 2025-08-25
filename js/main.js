@@ -211,6 +211,9 @@ function listenToData() {
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید و کامل جایگزین کنید
 
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید و کامل جایگزین کنید
+
 function renderEmployeePortalPage(pageName, employee) {
     const contentContainer = document.getElementById('employee-main-content');
     if (!contentContainer) return;
@@ -376,7 +379,7 @@ function renderEmployeePortalPage(pageName, employee) {
             </div>
         `;
     }
-    // --- بخش جدید: اسناد سازمان ---
+    // --- بخش اسناد سازمان ---
     else if (pageName === 'documents') {
         const documentsByCategory = (state.companyDocuments || []).reduce((acc, doc) => {
             const category = doc.category || 'عمومی';
@@ -414,7 +417,40 @@ function renderEmployeePortalPage(pageName, employee) {
             </div>
         `;
     }
-      if (pageName === 'announcements') { setupAnnouncementsPageListeners(); } // [!code ++]
+    // --- بخش صندوق پیام (اینباکس) ---
+    else if (pageName === 'inbox') {
+        const myTeam = state.teams.find(team => team.memberIds?.includes(employee.id));
+        const myTeamId = myTeam ? myTeam.firestoreId : null;
+
+        const myMessages = (state.announcements || [])
+            .filter(msg => {
+                const targets = msg.targets;
+                if (targets.type === 'public') return true;
+                if (targets.type === 'roles' && targets.roles?.includes('employee')) return true;
+                if (targets.type === 'users' && targets.userIds?.includes(employee.firestoreId)) return true;
+                if (targets.type === 'teams' && targets.teamIds?.includes(myTeamId)) return true;
+                return false;
+            })
+            .sort((a, b) => new Date(b.createdAt?.toDate()) - new Date(a.createdAt?.toDate()));
+
+        const messagesHtml = myMessages.map(msg => `
+            <div class="p-4 border rounded-lg bg-white shadow-sm">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="font-bold text-slate-800">${msg.title}</h3>
+                    <span class="text-xs text-slate-400">${toPersianDate(msg.createdAt)}</span>
+                </div>
+                <p class="text-sm text-slate-600 whitespace-pre-wrap">${msg.content}</p>
+                ${msg.attachmentUrl ? `<a href="${msg.attachmentUrl}" target="_blank" class="inline-block mt-3 text-sm text-blue-600 font-semibold hover:underline">دانلود فایل ضمیمه</a>` : ''}
+            </div>
+        `).join('');
+
+        contentContainer.innerHTML = `
+            <h1 class="text-3xl font-bold text-slate-800 mb-6">صندوق پیام</h1>
+            <div class="space-y-4">
+                ${messagesHtml || '<p class="text-center text-slate-500 py-8">شما هیچ پیام جدیدی ندارید.</p>'}
+            </div>
+        `;
+    }
     // --- بخش پیش‌فرض ---
     else {
         contentContainer.innerHTML = `<h1>صفحه مورد نظر یافت نشد.</h1>`;
@@ -503,6 +539,9 @@ function renderEmployeePortal() {
                     <a href="#documents" class="employee-nav-item flex items-center gap-3 px-4 py-2 rounded-lg text-slate-700 hover:bg-blue-50 hover:text-blue-600">
     <i data-lucide="folder-kanban"></i>
     <span>اسناد سازمان</span>
+    <a href="#inbox" class="employee-nav-item flex items-center gap-3 px-4 py-2 rounded-lg text-slate-700 hover:bg-blue-50 hover:text-blue-600">
+    <i data-lucide="inbox"></i>
+    <span>صندوق پیام</span>
 </a>
                 </nav>
                 <div class="mt-auto">
