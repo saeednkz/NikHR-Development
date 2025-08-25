@@ -186,12 +186,15 @@ const onDataLoaded = () => {
 // در فایل js/main.js
 // کل این تابع را جایگزین نسخه فعلی کنید
 
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید و کامل جایگزین کنید
+
 function renderEmployeePortalPage(pageName, employee) {
     const contentContainer = document.getElementById('employee-main-content');
     if (!contentContainer) return;
 
+    // --- بخش پروفایل ---
     if (pageName === 'profile') {
-        // این بخش کد پروفایل شماست که قبلاً نوشتیم و دست نخورده باقی می‌ماند
         const manager = state.teams.find(t => t.memberIds?.includes(employee.id))
             ? state.employees.find(e => e.id === state.teams.find(t => t.memberIds.includes(employee.id)).leaderId)
             : null;
@@ -251,8 +254,9 @@ function renderEmployeePortalPage(pageName, employee) {
                 </div>
             </div>
         `;
-    } else if (pageName === 'directory') {
-        // این بخش کد دایرکتوری شماست که قبلاً نوشتیم و دست نخورده باقی می‌ماند
+    } 
+    // --- بخش دایرکتوری ---
+    else if (pageName === 'directory') {
         const teamCardsHtml = state.teams.map(team => {
             const leader = state.employees.find(e => e.id === team.leaderId);
             const members = state.employees.filter(e => team.memberIds?.includes(e.id));
@@ -285,17 +289,20 @@ function renderEmployeePortalPage(pageName, employee) {
         }).join('');
         contentContainer.innerHTML = `<h1 class="text-3xl font-bold text-slate-800 mb-6">دایرکتوری سازمان</h1><div class="space-y-6">${teamCardsHtml || '<p>هنوز تیمی در سازمان ثبت نشده است.</p>'}</div>`;
     
-    } else if (pageName === 'requests') { // [!code ++] این بلوک جدید برای درخواست‌ها است
+    } 
+    // --- بخش درخواست‌ها ---
+    else if (pageName === 'requests') {
         const myRequests = (state.requests || []).filter(req => req.uid === employee.uid)
             .sort((a, b) => new Date(b.createdAt?.toDate()) - new Date(a.createdAt?.toDate()));
 
         const requestsHtml = myRequests.map(req => {
             const statusColors = {
                 'درحال بررسی': 'bg-yellow-100 text-yellow-800',
-              'در حال انجام': 'bg-blue-100 text-blue-800', // [!code ++]
+                'در حال انجام': 'bg-blue-100 text-blue-800',
                 'تایید شده': 'bg-green-100 text-green-800',
                 'رد شده': 'bg-red-100 text-red-800'
             };
+            
             return `
                 <tr class="border-b">
                     <td class="px-4 py-3">${toPersianDate(req.createdAt)}</td>
@@ -303,6 +310,15 @@ function renderEmployeePortalPage(pageName, employee) {
                     <td class="px-4 py-3 text-sm text-slate-600">${req.details}</td>
                     <td class="px-4 py-3"><span class="px-2 py-1 text-xs font-medium rounded-full ${statusColors[req.status] || 'bg-slate-100'}">${req.status}</span></td>
                 </tr>
+                ${(req.processingNotes || req.attachmentUrl) ? `
+                <tr class="bg-slate-50">
+                    <td colspan="4" class="px-4 py-3 text-xs border-b">
+                        <strong class="block text-slate-600 mb-1">پاسخ مدیر:</strong>
+                        <p class="text-slate-500 mb-2 whitespace-pre-wrap">${req.processingNotes || 'توضیحاتی ثبت نشده است.'}</p>
+                        ${req.attachmentUrl ? `<a href="${req.attachmentUrl}" target="_blank" class="text-blue-600 font-semibold hover:underline flex items-center gap-1"><i data-lucide="download" class="w-3 h-3"></i> دانلود فایل ضمیمه</a>` : ''}
+                    </td>
+                </tr>
+                ` : ''}
             `;
         }).join('');
 
@@ -325,19 +341,21 @@ function renderEmployeePortalPage(pageName, employee) {
                                 <th class="px-4 py-2 font-semibold">وضعیت</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="my-requests-table-body">
                             ${requestsHtml || '<tr><td colspan="4" class="text-center py-8 text-slate-500">شما هنوز درخواستی ثبت نکرده‌اید.</td></tr>'}
                         </tbody>
                     </table>
                 </div>
             </div>
         `;
-    } else {
+    } 
+    // --- بخش پیش‌فرض ---
+    else {
         contentContainer.innerHTML = `<h1>صفحه مورد نظر یافت نشد.</h1>`;
     }
     
     lucide.createIcons();
-  setupEmployeePortalEventListeners(employee);
+    setupEmployeePortalEventListeners(employee);
 }
 
 // در فایل js/main.js
@@ -2690,6 +2708,8 @@ const setupRequestsPageListeners = () => {
     });
 };
 // این تابع جدید را به js/main.js اضافه کنید
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید جایگزین کنید
 const setupTasksPageListeners = () => {
     const tableBody = document.getElementById('tasks-table-body');
     if (!tableBody) return;
@@ -4730,9 +4750,7 @@ const showProcessReminderForm = (reminderId) => {
             });
             showToast("وضعیت یادآور با موفقیت بروزرسانی شد.");
             closeModal(mainModal, mainModalContainer);
-        } catch (error) {
-            showToast("خطا در بروزرسانی یادآور.", "error");
-        }
+        } catch (error) { showToast("خطا در بروزرسانی یادآور.", "error"); }
     });
 };
 // این تابع جدید را به js/main.js اضافه کنید
