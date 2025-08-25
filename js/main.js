@@ -1352,20 +1352,41 @@ requests: () => {
 },
   // در فایل js/main.js، به آبجکت pages این بخش جدید را اضافه کنید
 
+// در فایل js/main.js، داخل آبجکت pages
+// کل این تابع را با نسخه جدید جایگزین کنید
 tasks: () => {
     if (!state.currentUser) return '';
+    const admins = state.users.filter(u => u.role === 'admin');
     const myTasks = (state.reminders || [])
         .filter(r => r.assignedTo === state.currentUser.uid)
         .sort((a, b) => new Date(a.date.toDate()) - new Date(b.date.toDate()));
 
-    const tasksHtml = myTasks.map(task => `
-        <tr class="border-b">
-            <td class="px-4 py-3">${toPersianDate(task.date)}</td>
-            <td class="px-4 py-3">${task.type}</td>
-            <td class="px-4 py-3 text-sm">${task.text}</td>
-            <td class="px-4 py-3">${task.isReadByAssignee ? 'خوانده شده' : 'جدید'}</td>
-        </tr>
-    `).join('');
+    const tasksHtml = myTasks.map(task => {
+        const statusColors = {
+            'جدید': 'bg-yellow-100 text-yellow-800',
+            'در حال انجام': 'bg-blue-100 text-blue-800',
+            'انجام شده': 'bg-green-100 text-green-800'
+        };
+
+        const adminOptions = admins.map(admin => `<option value="${admin.firestoreId}" ${task.assignedTo === admin.firestoreId ? 'selected' : ''}>${admin.name || admin.email}</option>`).join('');
+
+        return `
+            <tr class="border-b">
+                <td class="px-4 py-3">${toPersianDate(task.date)}</td>
+                <td class="px-4 py-3">${task.type}</td>
+                <td class="px-4 py-3 text-sm">${task.text}</td>
+                <td class="px-4 py-3"><span class="px-2 py-1 text-xs font-medium rounded-full ${statusColors[task.status] || 'bg-slate-100'}">${task.status}</span></td>
+                <td class="px-4 py-3">
+                    <select data-id="${task.firestoreId}" class="assign-reminder-select w-full p-1.5 border border-slate-300 rounded-lg bg-white text-xs">
+                        ${adminOptions}
+                    </select>
+                </td>
+                <td class="px-4 py-3">
+                    <button class="process-reminder-btn text-sm bg-slate-700 text-white py-1 px-3 rounded-md hover:bg-slate-800" data-id="${task.firestoreId}">پردازش</button>
+                </td>
+            </tr>
+        `;
+    }).join('');
 
     return `
         <h1 class="text-3xl font-bold text-slate-800 mb-6">وظایف من</h1>
@@ -1378,15 +1399,17 @@ tasks: () => {
                         <th class="px-4 py-2 font-semibold">نوع</th>
                         <th class="px-4 py-2 font-semibold">عنوان</th>
                         <th class="px-4 py-2 font-semibold">وضعیت</th>
+                        <th class="px-4 py-2 font-semibold">واگذار به</th>
+                        <th class="px-4 py-2 font-semibold">عملیات</th>
                     </tr>
                 </thead>
-                <tbody>
-                    ${tasksHtml || '<tr><td colspan="4" class="text-center py-8 text-slate-500">هیچ وظیفه‌ای به شما واگذار نشده است.</td></tr>'}
+                <tbody id="tasks-table-body">
+                    ${tasksHtml || '<tr><td colspan="6" class="text-center py-8 text-slate-500">هیچ وظیفه‌ای به شما واگذار نشده است.</td></tr>'}
                 </tbody>
             </table>
         </div>
     `;
-},
+},,
 analytics: () => {
     return `
         <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
@@ -2001,7 +2024,7 @@ const viewTeamProfile = (teamId) => {
                 if (pageName === 'organization') { setupOrganizationPageListeners(); }
                 if (pageName === 'surveys') { setupSurveysPageListeners(); }
                 if (pageName === 'requests') { setupRequestsPageListeners(); }
-              if (pageName === 'tasks') { /* اینجا در آینده تابع خودش را خواهد داشت */ }
+              if (pageName === 'tasks') { setupTasksPageListeners(); }
                 if (pageName === 'analytics') { setupAnalyticsPage(); }
                 if (pageName === 'settings') {
                     if(isAdmin()) {
@@ -2261,18 +2284,18 @@ const renderEngagementGauge = (canvasId, score) => {
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید و کامل جایگزین کنید
 
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید و کامل جایگزین کنید
+
 const renderAllReminders = () => {
-    // اگر کاربری لاگین نکرده باشد، چیزی نمایش نده
-    if (!state.currentUser) return '';
-    
-    // ۱. یادآورها را از state بخوان و فقط آن‌هایی که به کاربر فعلی واگذار شده را فیلتر کن
-    const myReminders = (state.reminders || [])
-        .filter(r => r.assignedTo === state.currentUser.uid)
-        .sort((a, b) => new Date(a.date.toDate()) - new Date(b.date.toDate())); // مرتب‌سازی بر اساس تاریخ
-        
-    // ۲. اگر هیچ یادآوری برای کاربر وجود نداشت، یک پیام نمایش بده
-    if (myReminders.length === 0) {
-        return '<p class="text-sm text-slate-500 text-center">یادآوری برای شما وجود ندارد.</p>';
+    // ۱. تمام یادآورها را از state بخوان، بر اساس تاریخ مرتب کن و ۵ مورد اول را انتخاب کن
+    const allUpcomingReminders = (state.reminders || [])
+        .sort((a, b) => new Date(a.date.toDate()) - new Date(b.date.toDate()))
+        .slice(0, 5); // فقط ۵ یادآور نزدیک را برای نمایش در داشبورد انتخاب می‌کنیم
+
+    // ۲. اگر هیچ یادآوری وجود نداشت، یک پیام نمایش بده
+    if (allUpcomingReminders.length === 0) {
+        return '<p class="text-sm text-slate-500 text-center">هیچ یادآوری فعالی وجود ندارد.</p>';
     }
 
     // ۳. پالت رنگی برای انواع مختلف یادآورها
@@ -2286,14 +2309,17 @@ const renderAllReminders = () => {
     };
 
     // ۴. ساخت HTML نهایی برای نمایش یادآورها
-    return myReminders.map(r => {
-        const colors = colorClasses[r.icon] || colorClasses['calendar-plus']; // انتخاب رنگ بر اساس آیکون
+    return allUpcomingReminders.map(r => {
+        const colors = colorClasses[r.icon] || colorClasses['calendar-plus'];
+        const assignee = state.users.find(u => u.firestoreId === r.assignedTo);
+        const subtext = assignee ? `${r.subtext} (به ${assignee.name} واگذار شده)` : r.subtext;
+
         return `
             <div class="flex items-start p-3 ${colors.bg} rounded-xl border border-transparent hover:border-blue-200 transition">
                 <i data-lucide="${r.icon}" class="w-5 h-5 ${colors.text} ml-3 mt-1 flex-shrink-0"></i>
                 <div>
                     <p class="font-medium text-sm">${r.text}</p>
-                    <p class="text-xs text-slate-500 mt-0.5">${r.subtext || `تاریخ: ${toPersianDate(r.date)}`}</p>
+                    <p class="text-xs text-slate-500 mt-0.5">${subtext || `تاریخ: ${toPersianDate(r.date)}`}</p>
                 </div>
             </div>
         `;
@@ -2660,6 +2686,32 @@ const setupRequestsPageListeners = () => {
         if (processBtn) {
             const requestId = processBtn.dataset.id;
             showProcessRequestForm(requestId); // فراخوانی فرم پردازش
+        }
+    });
+};
+// این تابع جدید را به js/main.js اضافه کنید
+const setupTasksPageListeners = () => {
+    const tableBody = document.getElementById('tasks-table-body');
+    if (!tableBody) return;
+
+    // منطق واگذاری مجدد یادآورها
+    tableBody.addEventListener('input', async (e) => {
+        if (e.target.classList.contains('assign-reminder-select')) {
+            const reminderId = e.target.dataset.id;
+            const adminUid = e.target.value;
+            const reminderRef = doc(db, `artifacts/${appId}/public/data/reminders`, reminderId);
+            try {
+                await updateDoc(reminderRef, { assignedTo: adminUid, isReadByAssignee: false });
+                showToast(`یادآور به کاربر مورد نظر واگذار شد.`);
+            } catch (error) { showToast("خطا در واگذاری یادآور.", "error"); }
+        }
+    });
+
+    // منطق کلیک روی دکمه پردازش
+    tableBody.addEventListener('click', (e) => {
+        const processBtn = e.target.closest('.process-reminder-btn');
+        if (processBtn) {
+            showProcessReminderForm(processBtn.dataset.id);
         }
     });
 };
@@ -4637,6 +4689,49 @@ const showProcessRequestForm = (requestId) => {
             showToast("خطا در ثبت پردازش.", "error");
             saveBtn.disabled = false;
             saveBtn.innerText = 'ذخیره تغییرات';
+        }
+    });
+};
+// این تابع کاملاً جدید را به js/main.js اضافه کنید
+const showProcessReminderForm = (reminderId) => {
+    const reminder = state.reminders.find(r => r.firestoreId === reminderId);
+    if (!reminder) return showToast("یادآور یافت نشد.", "error");
+
+    modalTitle.innerText = `پردازش یادآور: ${reminder.type}`;
+    modalContent.innerHTML = `
+        <form id="process-reminder-form" class="space-y-4">
+            <p class="text-sm border-b pb-3"><strong>موضوع:</strong> ${reminder.text}</p>
+            <div>
+                <label class="block font-medium mb-1">تغییر وضعیت به:</label>
+                <select id="reminder-status" class="w-full p-2 border rounded-md bg-white">
+                    <option value="جدید" ${reminder.status === 'جدید' ? 'selected' : ''}>جدید</option>
+                    <option value="در حال انجام" ${reminder.status === 'در حال انجام' ? 'selected' : ''}>در حال انجام</option>
+                    <option value="انجام شده" ${reminder.status === 'انجام شده' ? 'selected' : ''}>انجام شده</option>
+                </select>
+            </div>
+            <div>
+                <label class="block font-medium mb-1">یادداشت پردازش (اختیاری)</label>
+                <textarea id="processing-notes" rows="4" class="w-full p-2 border rounded-md">${reminder.processingNotes || ''}</textarea>
+            </div>
+            <div class="pt-4 flex justify-end">
+                <button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">ذخیره تغییرات</button>
+            </div>
+        </form>
+    `;
+    openModal(mainModal, mainModalContainer);
+
+    document.getElementById('process-reminder-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+            const reminderRef = doc(db, `artifacts/${appId}/public/data/reminders`, reminderId);
+            await updateDoc(reminderRef, {
+                status: document.getElementById('reminder-status').value,
+                processingNotes: document.getElementById('processing-notes').value,
+            });
+            showToast("وضعیت یادآور با موفقیت بروزرسانی شد.");
+            closeModal(mainModal, mainModalContainer);
+        } catch (error) {
+            showToast("خطا در بروزرسانی یادآور.", "error");
         }
     });
 };
