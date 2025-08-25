@@ -292,6 +292,7 @@ function renderEmployeePortalPage(pageName, employee) {
         const requestsHtml = myRequests.map(req => {
             const statusColors = {
                 'درحال بررسی': 'bg-yellow-100 text-yellow-800',
+              'در حال انجام': 'bg-blue-100 text-blue-800', // [!code ++]
                 'تایید شده': 'bg-green-100 text-green-800',
                 'رد شده': 'bg-red-100 text-red-800'
             };
@@ -1279,55 +1280,52 @@ surveys: () => {
 // در فایل js/main.js، داخل آبجکت pages
 // کل تابع requests را با این نسخه جایگزین کنید
 
+// در فایل js/main.js، داخل آبجکت pages
 requests: () => {
-    const allRequests = (state.requests || []).sort((a, b) => new Date(b.createdAt?.toDate()) - new Date(a.createdAt?.toDate()));
+    let filteredRequests = (state.requests || []);
+    if (state.requestFilter === 'mine' && state.currentUser) {
+        filteredRequests = filteredRequests.filter(req => req.assignedTo === state.currentUser.uid);
+    }
+    const allRequests = filteredRequests.sort((a, b) => new Date(b.createdAt?.toDate()) - new Date(a.createdAt?.toDate()));
     
-    // [!code ++] ابتدا لیستی از تمام ادمین‌های سیستم را آماده می‌کنیم
     const admins = state.users.filter(u => u.role === 'admin');
-    
     const requestsHtml = allRequests.map(req => {
         const statusColors = {
             'درحال بررسی': 'bg-yellow-100 text-yellow-800',
+            'در حال انجام': 'bg-blue-100 text-blue-800', // [!code ++] وضعیت جدید
             'تایید شده': 'bg-green-100 text-green-800',
             'رد شده': 'bg-red-100 text-red-800'
         };
         
-        // [!code ++] برای هر درخواست، یک منوی کشویی از ادمین‌ها می‌سازیم
-        const adminOptions = admins.map(admin => 
-            `<option value="${admin.firestoreId}" ${req.assignedTo === admin.firestoreId ? 'selected' : ''}>
-                ${admin.name || admin.email}
-            </option>`
-        ).join('');
+        const adminOptions = admins.map(admin => `<option value="${admin.firestoreId}" ${req.assignedTo === admin.firestoreId ? 'selected' : ''}>${admin.name || admin.email}</option>`).join('');
 
         return `
             <tr class="border-b">
                 <td class="px-4 py-3">${toPersianDate(req.createdAt)}</td>
                 <td class="px-4 py-3 font-semibold">${req.employeeName}</td>
                 <td class="px-4 py-3">${req.requestType}</td>
-                <td class="px-4 py-3 text-sm text-slate-600 max-w-xs truncate" title="${req.details}">${req.details}</td>
                 <td class="px-4 py-3"><span class="px-2 py-1 text-xs font-medium rounded-full ${statusColors[req.status] || 'bg-slate-100'}">${req.status}</span></td>
-                
                 <td class="px-4 py-3">
-                    <select data-id="${req.firestoreId}" class="assign-request-select w-full p-1.5 border border-slate-300 rounded-md bg-white text-xs">
+                    <select data-id="${req.firestoreId}" class="assign-request-select w-full p-1.5 border border-slate-300 rounded-lg bg-white text-xs">
                         <option value="">واگذار نشده</option>
                         ${adminOptions}
                     </select>
                 </td>
-
                 <td class="px-4 py-3">
-                    ${req.status === 'درحال بررسی' ? `
-                        <div class="flex items-center gap-2">
-                            <button class="approve-request-btn p-2 text-green-600 hover:bg-green-100 rounded-full" data-id="${req.firestoreId}" title="تایید"><i data-lucide="check-circle" class="w-5 h-5"></i></button>
-                            <button class="reject-request-btn p-2 text-red-600 hover:bg-red-100 rounded-full" data-id="${req.firestoreId}" title="رد کردن"><i data-lucide="x-circle" class="w-5 h-5"></i></button>
-                        </div>
-                    ` : ''}
+                    <button class="process-request-btn text-sm bg-slate-700 text-white py-1 px-3 rounded-md hover:bg-slate-800" data-id="${req.firestoreId}">پردازش</button>
                 </td>
             </tr>
         `;
     }).join('');
 
     return `
-        <h1 class="text-3xl font-bold text-slate-800 mb-6">مدیریت درخواست‌ها</h1>
+        <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+            <h1 class="text-3xl font-bold text-slate-800">مدیریت درخواست‌ها</h1>
+            <div class="flex items-center gap-2 p-1 bg-slate-200 rounded-lg">
+                <button data-filter="all" class="request-filter-btn ${state.requestFilter === 'all' ? 'active' : ''}">همه درخواست‌ها</button>
+                <button data-filter="mine" class="request-filter-btn ${state.requestFilter === 'mine' ? 'active' : ''}">واگذار شده به من</button>
+            </div>
+        </div>
         <div class="bg-white p-6 rounded-xl shadow-md">
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
@@ -1336,15 +1334,12 @@ requests: () => {
                             <th class="px-4 py-2 font-semibold">تاریخ</th>
                             <th class="px-4 py-2 font-semibold">نام کارمند</th>
                             <th class="px-4 py-2 font-semibold">نوع درخواست</th>
-                            <th class="px-4 py-2 font-semibold">جزئیات</th>
                             <th class="px-4 py-2 font-semibold">وضعیت</th>
                             <th class="px-4 py-2 font-semibold">واگذار به</th>
                             <th class="px-4 py-2 font-semibold">عملیات</th>
                         </tr>
                     </thead>
-                    <tbody id="requests-table-body">
-                        ${requestsHtml || '<tr><td colspan="7" class="text-center py-8 text-slate-500">هیچ درخواستی ثبت نشده است.</td></tr>'}
-                    </tbody>
+                    <tbody id="requests-table-body">${requestsHtml || '<tr><td colspan="6" class="text-center py-8 text-slate-500">هیچ درخواستی ثبت نشده است.</td></tr>'}</tbody>
                 </table>
             </div>
         </div>
