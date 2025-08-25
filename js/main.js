@@ -1281,6 +1281,8 @@ const updateNotificationsForCurrentUser = () => {
 const pages = {
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید و کامل جایگزین کنید
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید و کامل جایگزین کنید
 
 dashboard: () => {
     calculateDashboardMetrics();
@@ -1324,9 +1326,13 @@ dashboard: () => {
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div class="lg:col-span-2 card">
                 <h3 class="font-semibold mb-4 text-lg">نمودارهای کلیدی سازمان</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 pt-4">
                     <div class="flex flex-col items-center"><p class="text-slate-500 text-sm mb-2">توزیع استعدادها</p><div class="relative w-full h-56"><canvas id="nineBoxChart"></canvas></div></div>
                     <div class="flex flex-col items-center"><p class="text-slate-500 text-sm mb-2">ترکیب جنسیتی</p><div class="relative w-full h-56"><canvas id="genderCompositionChart"></canvas></div></div>
+                    <div class="flex flex-col items-center"><p class="text-slate-500 text-sm mb-2">توزیع دپارتمان‌ها</p><div class="relative w-full h-56"><canvas id="departmentDistributionChart"></canvas></div></div>
+                    <div class="flex flex-col items-center"><p class="text-slate-500 text-sm mb-2">سابقه کار</p><div class="relative w-full h-56"><canvas id="tenureDistributionChart"></canvas></div></div>
+                    <div class="flex flex-col items-center"><p class="text-slate-500 text-sm mb-2">توزیع سنی</p><div class="relative w-full h-56"><canvas id="ageDistributionChart"></canvas></div></div>
+                    <div class="flex flex-col items-center"><p class="text-slate-500 text-sm mb-2">میانگین شایستگی</p><div class="relative w-full h-56"><canvas id="teamCompetencyRadarChart"></canvas></div></div>
                 </div>
             </div>
 
