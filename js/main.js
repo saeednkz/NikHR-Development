@@ -499,6 +499,9 @@ function setupEmployeePortalEventListeners(employee) {
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید و کامل جایگزین کنید
 
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید جایگزین کنید
+
 function renderEmployeePortal() {
     // ابتدا تمام کانتینرهای دیگر را مخفی می‌کنیم
     document.getElementById('login-container').classList.add('hidden');
@@ -525,35 +528,16 @@ function renderEmployeePortal() {
                     <p class="text-sm text-slate-500">${employee.jobTitle || 'بدون عنوان شغلی'}</p>
                 </div>
                 <nav id="employee-portal-nav" class="flex flex-col gap-2">
-                    <a href="#profile" class="employee-nav-item active flex items-center gap-3 px-4 py-2 rounded-lg text-slate-700 hover:bg-blue-50 hover:text-blue-600">
-                        <i data-lucide="user"></i>
-                        <span>پروفایل من</span>
-                    </a>
-                    <a href="#requests" class="employee-nav-item flex items-center gap-3 px-4 py-2 rounded-lg text-slate-700 hover:bg-blue-50 hover:text-blue-600">
-                        <i data-lucide="send"></i>
-                        <span>درخواست‌های من</span>
-                    </a>
-                    <a href="#directory" class="employee-nav-item flex items-center gap-3 px-4 py-2 rounded-lg text-slate-700 hover:bg-blue-50 hover:text-blue-600">
-                        <i data-lucide="users"></i>
-                        <span>دایرکتوری سازمان</span>
-                    </a>
-                    <a href="#documents" class="employee-nav-item flex items-center gap-3 px-4 py-2 rounded-lg text-slate-700 hover:bg-blue-50 hover:text-blue-600">
-                        <i data-lucide="folder-kanban"></i>
-                        <span>اسناد سازمان</span>
-                    </a>
-                    <a href="#inbox" class="employee-nav-item flex items-center gap-3 px-4 py-2 rounded-lg text-slate-700 hover:bg-blue-50 hover:text-blue-600">
-                        <i data-lucide="inbox"></i>
-                        <span>صندوق پیام</span>
-                    </a>
+                    <a href="#profile" class="employee-nav-item active flex items-center gap-3 px-4 py-2 rounded-lg text-slate-700 hover:bg-blue-50 hover:text-blue-600"><i data-lucide="user"></i><span>پروفایل من</span></a>
+                    <a href="#requests" class="employee-nav-item flex items-center gap-3 px-4 py-2 rounded-lg text-slate-700 hover:bg-blue-50 hover:text-blue-600"><i data-lucide="send"></i><span>درخواست‌های من</span></a>
+                    <a href="#directory" class="employee-nav-item flex items-center gap-3 px-4 py-2 rounded-lg text-slate-700 hover:bg-blue-50 hover:text-blue-600"><i data-lucide="users"></i><span>دایرکتوری سازمان</span></a>
+                    <a href="#documents" class="employee-nav-item flex items-center gap-3 px-4 py-2 rounded-lg text-slate-700 hover:bg-blue-50 hover:text-blue-600"><i data-lucide="folder-kanban"></i><span>اسناد سازمان</span></a>
+                    <a href="#inbox" class="employee-nav-item flex items-center gap-3 px-4 py-2 rounded-lg text-slate-700 hover:bg-blue-50 hover:text-blue-600"><i data-lucide="inbox"></i><span>صندوق پیام</span></a>
                 </nav>
                 <div class="mt-auto">
-                    <button id="portal-logout-btn" class="w-full flex items-center justify-center gap-3 px-4 py-2 rounded-lg text-red-600 hover:bg-red-50">
-                        <i data-lucide="log-out"></i>
-                        <span>خروج</span>
-                    </button>
+                    <button id="portal-logout-btn" class="w-full flex items-center justify-center gap-3 px-4 py-2 rounded-lg text-red-600 hover:bg-red-50"><i data-lucide="log-out"></i><span>خروج</span></button>
                 </div>
             </aside>
-
             <div class="flex-1 flex flex-col h-screen overflow-y-hidden">
                 <header class="bg-white shadow-sm">
                     <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
@@ -572,7 +556,6 @@ function renderEmployeePortal() {
                         </div>
                     </div>
                 </header>
-
                 <main id="employee-main-content" class="flex-1 p-6 sm:p-10 overflow-y-auto"></main>
             </div>
         </div>
@@ -581,6 +564,10 @@ function renderEmployeePortal() {
     lucide.createIcons();
     renderEmployeePortalPage('profile', employee);
     setupEmployeePortalEventListeners(employee);
+    
+    // [!code ++] این خط جدید مشکل را حل می‌کند
+    // بعد از اینکه پورتال ساخته شد، یک بار وضعیت نوتیفیکیشن‌ها را چک کن
+    updateEmployeeNotificationBell(employee); 
 }
         // --- UTILITY & HELPER FUNCTIONS ---
         // --- تابع جدید برای تبدیل تاریخ به شمسی ---
