@@ -1685,6 +1685,9 @@ const showEditUserForm = (user) => {
         }
     });
 };
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید و کامل جایگزین کنید
+
 const viewEmployeeProfile = (employeeId) => {
     const emp = state.employees.find(e => e.firestoreId === employeeId);
     if (!emp) return;
@@ -1761,169 +1764,40 @@ const viewEmployeeProfile = (employeeId) => {
                                 </div>
                             </div>
                         </div>
-
                         <div id="tab-performance" class="profile-tab-content">
                             <div class="space-y-4">
                                 <div class="flex justify-between items-center mb-3">
-                                    <h4 class="font-semibold text-slate-700">
-                                        <i data-lucide="clipboard-check" class="ml-2 w-5 h-5 text-green-600"></i>
-                                        سابقه ارزیابی عملکرد
-                                    </h4>
+                                    <h4 class="font-semibold text-slate-700"><i data-lucide="clipboard-check" class="ml-2 w-5 h-5 text-green-600"></i>سابقه ارزیابی عملکرد</h4>
                                     ${canEdit() ? `<button id="add-performance-btn" class="text-sm bg-blue-600 text-white py-1 px-3 rounded-md hover:bg-blue-700">افزودن</button>` : ''}
                                 </div>
                                 <div class="space-y-4">
-                                    ${(emp.performanceHistory && emp.performanceHistory.length > 0) ? emp.performanceHistory.sort((a,b) => new Date(b.reviewDate) - new Date(a.reviewDate)).map((review, index) => `
-                                    <div class="card p-4 bg-white rounded-xl border border-slate-200">
-                                        <div class="flex justify-between items-center mb-2">
-                                            <p class="font-bold text-slate-800">امتیاز کلی: <span class="text-lg text-green-600">${review.overallScore}/5</span></p>
-                                            ${canEdit() ? `<div class="flex gap-2">
-                                                <button class="edit-performance-btn text-blue-500" data-index="${index}"><i data-lucide="edit" class="w-4 h-4"></i></button>
-                                                <button class="delete-performance-btn text-red-500" data-index="${index}"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                                            </div>` : ''}
-                                        </div>
-                                        <p class="text-sm text-slate-500">تاریخ: ${toPersianDate(review.reviewDate)} | ارزیاب: ${review.reviewer}</p>
-                                        <div class="mt-4 border-t border-dashed pt-4">
-                                            <p class="text-xs text-slate-700"><strong>نقاط قوت:</strong> ${review.strengths || '-'}</p>
-                                            <p class="text-xs text-slate-700 mt-2"><strong>زمینه‌های بهبود:</strong> ${review.areasForImprovement || '-'}</p>
-                                        </div>
-                                    </div>`).join('') : '<p class="text-sm text-slate-500">هنوز سابقه ارزیابی عملکردی ثبت نشده است.</p>'}
+                                    ${(emp.performanceHistory && emp.performanceHistory.length > 0) ? emp.performanceHistory.sort((a,b) => new Date(b.reviewDate) - new Date(a.reviewDate)).map((review, index) => `<div class="card p-4 bg-white rounded-xl border border-slate-200"><div class="flex justify-between items-center mb-2"><p class="font-bold text-slate-800">امتیاز کلی: <span class="text-lg text-green-600">${review.overallScore}/5</span></p>${canEdit() ? `<div class="flex gap-2"><button class="edit-performance-btn text-blue-500" data-index="${index}"><i data-lucide="edit" class="w-4 h-4"></i></button><button class="delete-performance-btn text-red-500" data-index="${index}"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>` : ''}</div><p class="text-sm text-slate-500">تاریخ: ${toPersianDate(review.reviewDate)} | ارزیاب: ${review.reviewer}</p><div class="mt-4 border-t border-dashed pt-4"><p class="text-xs text-slate-700"><strong>نقاط قوت:</strong> ${review.strengths || '-'}</p><p class="text-xs text-slate-700 mt-2"><strong>زمینه‌های بهبود:</strong> ${review.areasForImprovement || '-'}</p></div></div>`).join('') : '<p class="text-sm text-slate-500">هنوز سابقه ارزیابی عملکردی ثبت نشده است.</p>'}
                                 </div>
                             </div>
                         </div>
                         <div id="tab-career" class="profile-tab-content">
-                            <div class="space-y-4">
-                                <div class="flex justify-between items-center mb-3">
-                                    <h4 class="font-semibold text-slate-700">
-                                        <i data-lucide="briefcase" class="ml-2 w-5 h-5 text-indigo-600"></i>
-                                        مسیر شغلی و سابقه انضباطی
-                                    </h4>
-                                    <div class="flex gap-2">
-                                        ${canEdit() ? `<button id="add-career-path-btn" class="text-sm bg-blue-600 text-white py-1 px-3 rounded-md hover:bg-blue-700">رویداد شغلی</button>` : ''}
-                                        ${canEdit() ? `<button id="add-disciplinary-btn" class="text-sm bg-blue-600 text-white py-1 px-3 rounded-md hover:bg-blue-700">انضباطی</button>` : ''}
-                                    </div>
-                                </div>
-                                <div class="relative space-y-6 after:absolute after:inset-y-0 after:w-px after:bg-slate-300 after:right-4 after:top-2 after:-bottom-2">
-                                    ${(emp.careerPath && emp.careerPath.length > 0) ? emp.careerPath.sort((a,b) => new Date(a.date) - new Date(b.date)).map((item, index) => `
-                                    <div class="flex items-center space-x-3 space-x-reverse relative">
-                                        <div class="z-10 w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white shrink-0"><i data-lucide="trending-up" class="w-4 h-4"></i></div>
-                                        <div class="flex-grow card p-4 border-r-4 border-indigo-500 shadow-sm relative">
-                                            <p class="font-semibold text-sm">${item.title}</p>
-                                            <p class="text-xs text-slate-500">${item.type} در ${item.department}</p>
-                                            <p class="text-xs text-slate-400 mt-1">${toPersianDate(item.date)}</p>
-                                            ${canEdit() ? `<button class="delete-career-path-btn absolute top-2 left-2 text-red-500 hover:text-red-700" data-index="${index}"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
-                                        </div>
-                                    </div>`).join('') : '<p class="text-sm text-slate-500">هنوز رویداد شغلی‌ای ثبت نشده است.</p>'}
-                                    ${(emp.disciplinaryHistory && emp.disciplinaryHistory.length > 0) ? emp.disciplinaryHistory.sort((a,b) => new Date(a.date) - new Date(b.date)).map((item, index) => `
-                                    <div class="flex items-center space-x-3 space-x-reverse relative">
-                                        <div class="z-10 w-8 h-8 rounded-full ${item.type === 'تشویق' ? 'bg-green-500' : 'bg-red-500'} flex items-center justify-center text-white shrink-0"><i data-lucide="${item.type === 'تشویق' ? 'star' : 'alert-circle'}" class="w-4 h-4"></i></div>
-                                        <div class="flex-grow card p-4 border-r-4 ${item.type === 'تشویق' ? 'border-green-500' : 'border-red-500'} shadow-sm relative">
-                                            <p class="font-semibold text-sm">${item.type}</p>
-                                            <p class="text-xs text-slate-500">${item.reason}</p>
-                                            <p class="text-xs text-slate-400 mt-1">${toPersianDate(item.date)}</p>
-                                            ${canEdit() ? `<button class="delete-disciplinary-btn absolute top-2 left-2 text-red-500 hover:text-red-700" data-index="${index}"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
-                                        </div>
-                                    </div>`).join('') : ''}
-                                </div>
-                            </div>
-                        </div>
+                             </div>
                         <div id="tab-contracts" class="profile-tab-content">
-                            <div class="space-y-4">
-                                <div class="flex justify-between items-center mb-3">
-                                    <h4 class="font-semibold text-slate-700">
-                                        <i data-lucide="clipboard-list" class="ml-2 w-5 h-5 text-purple-600"></i>
-                                        سابقه قرارداد و مدارک
-                                    </h4>
-                                    <div class="flex gap-2">
-                                        ${canEdit() ? `<button id="add-contract-btn" class="text-sm bg-blue-600 text-white py-1 px-3 rounded-md hover:bg-blue-700">قرارداد</button>` : ''}
-                                        ${canEdit() ? `<button id="add-document-btn" class="text-sm bg-blue-600 text-white py-1 px-3 rounded-md hover:bg-blue-700">مدارک</button>` : ''}
-                                    </div>
-                                </div>
-                                <div class="space-y-4">
-                                    <div class="card p-4 bg-white rounded-xl border border-slate-200">
-                                        <h5 class="font-semibold mb-2">قراردادها</h5>
-                                        <div class="overflow-x-auto">
-                                            <table class="w-full text-sm text-right">
-                                                <thead class="text-xs text-slate-700 uppercase bg-slate-50">
-                                                    <tr>
-                                                        <th class="px-3 py-2">شروع</th>
-                                                        <th class="px-3 py-2">پایان</th>
-                                                        <th class="px-3 py-2">حقوق خالص</th>
-                                                        <th class="px-3 py-2">سفته</th>
-                                                        <th class="px-3 py-2">فایل</th>
-                                                        <th class="px-3 py-2">عملیات</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    ${(emp.contractHistory && emp.contractHistory.length > 0) ? emp.contractHistory.map((contract, index) => `
-                                                    <tr class="border-b">
-                                                        <td class="px-3 py-2">${toPersianDate(contract.startDate)}</td>
-                                                        <td class="px-3 py-2">${toPersianDate(contract.endDate)}</td>
-                                                        <td class="px-3 py-2">${contract.netSalary ? contract.netSalary.toLocaleString('fa-IR') : '-'}</td>
-                                                        <td class="px-3 py-2">${contract.promissoryNote ? contract.promissoryNote.toLocaleString('fa-IR') : '-'}</td>
-                                                        <td class="px-3 py-2">
-                                                            ${contract.fileUrl ? `<a href="${contract.fileUrl}" target="_blank" class="text-blue-600 hover:underline">مشاهده</a>` : '-'}
-                                                        </td>
-                                                        <td class="px-3 py-2">
-                                                            ${canEdit() ? `<div class="flex gap-2"><button class="edit-contract-btn text-blue-500" data-index="${index}"><i data-lucide="edit" class="w-4 h-4"></i></button><button class="delete-contract-btn text-red-500" data-index="${index}"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>` : ''}
-                                                        </td>
-                                                    </tr>`).join('') : `<tr><td colspan="6" class="text-center py-4 text-slate-500">قراردادی ثبت نشده است.</td></tr>`}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                    <div class="card p-4 bg-white rounded-xl border border-slate-200">
-                                        <h5 class="font-semibold mb-2">مدارک</h5>
-                                        <div class="overflow-x-auto">
-                                            <table class="w-full text-sm text-right">
-                                                <thead class="text-xs text-slate-700 uppercase bg-slate-50">
-                                                    <tr>
-                                                        <th class="px-3 py-2">نام مدرک</th>
-                                                        <th class="px-3 py-2">تاریخ</th>
-                                                        <th class="px-3 py-2">فایل</th>
-                                                        <th class="px-3 py-2">عملیات</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    ${(emp.documents && emp.documents.length > 0) ? emp.documents.map((doc, index) => `
-                                                    <tr class="border-b">
-                                                        <td class="px-3 py-2">${doc.name || '-'}</td>
-                                                        <td class="px-3 py-2">${toPersianDate(doc.date)}</td>
-                                                        <td class="px-3 py-2">
-                                                            ${doc.fileUrl ? `<a href="${doc.fileUrl}" target="_blank" class="text-blue-600 hover:underline">مشاهده</a>` : '-'}
-                                                        </td>
-                                                        <td class="px-3 py-2">
-                                                            ${canEdit() ? `<div class="flex gap-2"><button class="edit-document-btn text-blue-500" data-index="${index}"><i data-lucide="edit" class="w-4 h-4"></i></button><button class="delete-document-btn text-red-500" data-index="${index}"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>` : ''}
-                                                        </td>
-                                                    </tr>`).join('') : `<tr><td colspan="4" class="text-center py-4 text-slate-500">مدرکی ثبت نشده است.</td></tr>`}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
-                        </div>
                         <div id="tab-personal" class="profile-tab-content">
                             <div class="space-y-4">
                                 <div class="flex justify-between items-center mb-3">
-                                    <h4 class="font-semibold text-slate-700">
-                                        <i data-lucide="user-cog" class="ml-2 w-5 h-5 text-gray-600"></i>
-                                        اطلاعات پرسنلی
-                                    </h4>
+                                    <h4 class="font-semibold text-slate-700"><i data-lucide="user-cog" class="ml-2 w-5 h-5 text-gray-600"></i>اطلاعات پرسنلی</h4>
                                     ${canEdit() ? `<button id="edit-personal-info-btn" class="text-sm bg-blue-600 text-white py-1 px-3 rounded-md hover:bg-blue-700">ویرایش</button>` : ''}
                                 </div>
                                 <div class="card p-4 bg-white rounded-xl border border-slate-200">
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-700">
                                         <p><strong>جنسیت:</strong> ${emp.gender || '-'}</p>
-                                         <p><strong>ایمیل:</strong> ${emp.personalInfo?.email || '-'}</p>
-                                         <p><strong>شماره تماس:</strong> ${emp.personalInfo?.phone || '-'}</p>
+                                        <p><strong>ایمیل:</strong> ${emp.personalInfo?.email || '-'}</p>
+                                        <p><strong>شماره تماس:</strong> ${emp.personalInfo?.phone || '-'}</p>
                                         <p><strong>تاریخ تولد:</strong> ${emp.personalInfo?.birthDate ? toPersianDate(emp.personalInfo.birthDate) : '-'}</p>
                                         <p><strong>کد ملی:</strong> ${emp.personalInfo?.nationalId || '-'}</p>
                                         <p class="md:col-span-2"><strong>آدرس:</strong> ${emp.personalInfo?.address || '-'}</p>
-                                          <p><strong>کد پستی:</strong> ${emp.personalInfo?.postalCode || '-'}</p>
-                                            <p><strong>شماره ثابت:</strong> ${emp.personalInfo?.landline || '-'}</p>
-                                          <p class="md:col-span-2"><strong>مدرک تحصیلی:</strong> ${emp.personalInfo?.education || '-'}</p>
+                                        <p><strong>کد پستی:</strong> ${emp.personalInfo?.postalCode || '-'}</p>
+                                        <p><strong>شماره ثابت:</strong> ${emp.personalInfo?.landline || '-'}</p>
+                                        <p class="md:col-span-2"><strong>مدرک تحصیلی:</strong> ${emp.personalInfo?.education || '-'}</p>
                                         <p><strong>وضعیت نظام وظیفه:</strong> ${emp.personalInfo?.militaryStatus || '-'}</p>
-                                          <p><strong>وضعیت تاهل:</strong> ${emp.personalInfo?.maritalStatus || '-'}</p>
+                                        <p><strong>وضعیت تاهل:</strong> ${emp.personalInfo?.maritalStatus || '-'}</p>
                                         <p><strong>مخاطب اضطراری:</strong> ${emp.personalInfo?.emergencyContactName || '-'}</p>
                                     </div>
                                 </div>
@@ -3377,13 +3251,74 @@ if (imageUploadInput) {
     });
 }
 
-        function handleAvatarChange(updateFunction) {
-            onImageResizedCallback = (newAvatarUrl) => {
-                updateFunction(newAvatarUrl);
-                onImageResizedCallback = null;
-            };
-            imageUploadInput.click();
-        }
+// این دو تابع را با هم کپی کرده و جایگزین تابع قدیمی handleAvatarChange کنید
+
+function handleAvatarChange(emp) {
+    const fileInput = document.getElementById('image-upload-input');
+    
+    fileInput.onchange = (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        // تابع کمکی برای تغییر سایز و آپلود
+        resizeAndUploadAvatar(file, emp);
+        event.target.value = ''; // ریست کردن اینپوت فایل
+    };
+    fileInput.click();
+}
+
+async function resizeAndUploadAvatar(file, emp) {
+    const MAX_DIMENSION = 256;
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+        const img = new Image();
+        img.onload = async () => {
+            const canvas = document.createElement('canvas');
+            let { width, height } = img;
+
+            if (width > height) {
+                if (width > MAX_DIMENSION) {
+                    height *= MAX_DIMENSION / width;
+                    width = MAX_DIMENSION;
+                }
+            } else {
+                if (height > MAX_DIMENSION) {
+                    width *= MAX_DIMENSION / height;
+                    height = MAX_DIMENSION;
+                }
+            }
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            const resizedBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.9));
+
+            if (!resizedBlob) return;
+            showToast("در حال آپلود عکس...", "success");
+            try {
+                const filePath = `avatars/${emp.firestoreId}/${Date.now()}.jpg`;
+                const storageRef = ref(storage, filePath);
+                const snapshot = await uploadBytes(storageRef, resizedBlob);
+                const downloadURL = await getDownloadURL(snapshot.ref);
+                const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
+                await updateDoc(docRef, { avatar: downloadURL });
+                showToast("عکس پروفایل با موفقیت به‌روزرسانی شد.");
+                
+                // رفرش کردن مودال با اطلاعات جدید
+                const updatedEmp = { ...emp, avatar: downloadURL };
+                state.employees = state.employees.map(e => e.firestoreId === emp.firestoreId ? updatedEmp : e);
+                viewEmployeeProfile(emp.firestoreId); 
+            } catch (error) {
+                console.error("Error uploading avatar:", error);
+                showToast("خطا در آپلود عکس پروفایل.", "error");
+            }
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
 
         const generateSmartAnalysis = (emp) => {
             const analysis = {};
@@ -3435,6 +3370,11 @@ const isProfileComplete = (employee) => {
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید و کامل جایگزین کنید
 
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید جایگزین کنید
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید جایگزین کنید
+
 const showEmployeeForm = (employeeId = null) => {
     const isEditing = employeeId !== null;
     const emp = isEditing ? state.employees.find(e => e.firestoreId === employeeId) : {};
@@ -3459,16 +3399,16 @@ const showEmployeeForm = (employeeId = null) => {
                 </div>
                 <div>
                     <label for="jobTitle" class="block text-sm font-medium text-slate-700">عنوان شغلی</label>
-                    <input type="text" id="jobTitle" value="${emp.jobTitle || ''}" class="mt-1 block w-full p-2 border border-slate-300 rounded-lg">
+                    <input type="text" id="jobTitle" value="${emp.jobTitle || ''}" placeholder="مثال: کارشناس بازاریابی دیجیتال" class="mt-1 block w-full p-2 border border-slate-300 rounded-lg">
                 </div>
                 <div>
                     <label for="level" class="block text-sm font-medium text-slate-700">سطح</label>
                     <select id="level" class="mt-1 block w-full p-2 border border-slate-300 rounded-lg">
-                        <option value="Junior">Junior (کارشناس)</option>
-                        <option value="Mid-level">Mid-level (کارشناس ارشد)</option>
-                        <option value="Senior">Senior (خبره)</option>
-                        <option value="Lead">Lead (راهبر)</option>
-                        <option value="Manager">Manager (مدیر)</option>
+                        <option value="Junior" ${emp.level === 'Junior' ? 'selected' : ''}>Junior (کارشناس)</option>
+                        <option value="Mid-level" ${emp.level === 'Mid-level' ? 'selected' : ''}>Mid-level (کارشناس ارشد)</option>
+                        <option value="Senior" ${emp.level === 'Senior' ? 'selected' : ''}>Senior (خبره)</option>
+                        <option value="Lead" ${emp.level === 'Lead' ? 'selected' : ''}>Lead (راهبر)</option>
+                        <option value="Manager" ${emp.level === 'Manager' ? 'selected' : ''}>Manager (مدیر)</option>
                     </select>
                 </div>
                 <div>
@@ -3481,8 +3421,8 @@ const showEmployeeForm = (employeeId = null) => {
                 <div>
                     <label for="status" class="block text-sm font-medium text-slate-700">وضعیت</label>
                     <select id="status" class="mt-1 block w-full p-2 border border-slate-300 rounded-lg">
-                        <option value="فعال">فعال</option>
-                        <option value="غیرفعال">غیرفعال</option>
+                        <option value="فعال" ${emp.status === 'فعال' ? 'selected' : ''}>فعال</option>
+                        <option value="غیرفعال" ${emp.status === 'غیرفعال' ? 'selected' : ''}>غیرفعال</option>
                     </select>
                 </div>
                 <div class="md:col-span-2">
@@ -3500,16 +3440,9 @@ const showEmployeeForm = (employeeId = null) => {
 
     document.getElementById('employee-form').addEventListener('submit', async (e) => {
         e.preventDefault();
-        if (isEditing) {
-            // منطق ویرایش در اینجا قرار می‌گیرد که فعلا ساده است
-            // ...
-            showToast("ویرایش کارمند فعلا فقط از طریق پروفایل کامل او امکان‌پذیر است.", "error");
-            return;
-        }
-
         const saveBtn = e.target.querySelector('button[type="submit"]');
         saveBtn.disabled = true;
-        saveBtn.innerText = 'در حال ساخت کاربر...';
+        saveBtn.innerText = 'در حال پردازش...';
 
         const name = document.getElementById('name').value;
         const employeeId = document.getElementById('id').value;
@@ -3517,7 +3450,7 @@ const showEmployeeForm = (employeeId = null) => {
         const selectedTeamId = document.getElementById('department-team-select').value;
         const selectedTeam = state.teams.find(t => t.firestoreId === selectedTeamId);
 
-        const employeeData = {
+        const employeeCoreData = {
             name: name,
             id: employeeId,
             jobTitle: document.getElementById('jobTitle').value,
@@ -3525,26 +3458,45 @@ const showEmployeeForm = (employeeId = null) => {
             department: selectedTeam ? selectedTeam.name : '',
             status: document.getElementById('status').value,
             startDate: persianToEnglishDate(document.getElementById('startDate').value),
-            avatar: `https://placehold.co/100x100/E2E8F0/4A5568?text=${name.substring(0, 2)}`,
-            personalInfo: { email: email }
         };
 
-        try {
-            const createNewEmployee = httpsCallable(functions, 'createNewEmployee');
-            await createNewEmployee({ 
-                name, 
-                employeeId, 
-                email, 
-                employeeData 
-            });
-            
-            showToast("کارمند و حساب کاربری با موفقیت ایجاد شد!");
-            closeModal(mainModal, mainModalContainer);
-        } catch (error) {
-            console.error("Cloud function error:", error);
-            showToast(`خطا: ${error.message}`, "error");
-            saveBtn.disabled = false;
-            saveBtn.innerText = 'ذخیره';
+        if (isEditing) {
+            // منطق ویرایش کارمند موجود
+            try {
+                const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
+                await updateDoc(docRef, employeeCoreData);
+                // اینجا باید منطق تغییر تیم را هم اضافه کنیم اگر نیاز باشد
+                showToast("اطلاعات کارمند با موفقیت بروزرسانی شد.");
+                closeModal(mainModal, mainModalContainer);
+            } catch (error) {
+                console.error("Error updating employee:", error);
+                showToast("خطا در بروزرسانی اطلاعات.", "error");
+                saveBtn.disabled = false;
+                saveBtn.innerText = 'ذخیره';
+            }
+        } else {
+            // منطق ساخت کارمند جدید از طریق Cloud Function
+            const employeeDataForCreation = {
+                ...employeeCoreData,
+                avatar: `https://placehold.co/100x100/E2E8F0/4A5568?text=${name.substring(0, 2)}`,
+                personalInfo: { email: email }
+            };
+            try {
+                const createNewEmployee = httpsCallable(functions, 'createNewEmployee');
+                await createNewEmployee({ 
+                    name: name, 
+                    employeeId: employeeId, 
+                    email: email, 
+                    employeeData: employeeDataForCreation 
+                });
+                showToast("کارمند و حساب کاربری با موفقیت ایجاد شد!");
+                closeModal(mainModal, mainModalContainer);
+            } catch (error) {
+                console.error("Cloud function error:", error);
+                showToast(`خطا: ${error.message}`, "error");
+                saveBtn.disabled = false;
+                saveBtn.innerText = 'ذخیره';
+            }
         }
     });
 };
@@ -3807,6 +3759,9 @@ const setupEventListeners = () => {
     window.addEventListener('hashchange', router);
 };
 // کل تابع فعلی را با این کد جایگزین کنید
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید جایگزین کنید
+
 const setupProfileModalListeners = (emp) => {
     const tabs = document.querySelectorAll('#profile-tabs .profile-tab');
     const tabContents = document.querySelectorAll('.profile-tab-content');
@@ -3821,12 +3776,9 @@ const setupProfileModalListeners = (emp) => {
         });
     });
 
-    setTimeout(() => {
-        renderSkillRadarChart('skillRadarChart', emp.skills || {});
-        lucide.createIcons();
-    }, 100);
+    renderEngagementGauge('engagementGaugeProfile', emp.engagementScore);
 
-    if(canEdit()) {
+    if (canEdit()) {
         const modalContentArea = document.getElementById('modalContent');
         if (!modalContentArea) return;
 
@@ -3836,24 +3788,9 @@ const setupProfileModalListeners = (emp) => {
 
             const id = target.id;
 
+            // [!code focus:2]
             if (id === 'change-avatar-btn') {
-                handleAvatarChange(async (imageBlob) => {
-                    if (!imageBlob) return;
-                    showToast("در حال آپلود عکس...", "success");
-                    try {
-                        const filePath = `avatars/${emp.firestoreId}/${Date.now()}.jpg`;
-                        const storageRef = ref(storage, filePath);
-                        const snapshot = await uploadBytes(storageRef, imageBlob);
-                        const downloadURL = await getDownloadURL(snapshot.ref);
-                        const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
-                        await updateDoc(docRef, { avatar: downloadURL });
-                        showToast("عکس پروفایل با موفقیت به‌روزرسانی شد.");
-                        viewEmployeeProfile(emp.firestoreId);
-                    } catch (error) {
-                        console.error("Error uploading avatar:", error);
-                        showToast("خطا در آپلود عکس پروفایل.", "error");
-                    }
-                });
+                handleAvatarChange(emp); // فراخوانی مستقیم تابع جدید
             } else if (id === 'delete-avatar-btn') {
                 showConfirmationModal('حذف عکس پروفایل', 'آیا از حذف عکس پروفایل مطمئن هستید؟', async () => {
                     try {
@@ -3902,6 +3839,10 @@ const setupProfileModalListeners = (emp) => {
             }
         });
     }
+
+    setTimeout(() => {
+        lucide.createIcons();
+    }, 100);
 };
         
         // --- EDIT FORM FUNCTIONS ---
@@ -4133,46 +4074,58 @@ const showAddUserForm = () => {
         };
         // --- [FIX END] ---
 
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید جایگزین کنید
+
 const showEditPersonalInfoForm = (emp) => {
     modalTitle.innerText = `ویرایش اطلاعات پرسنلی برای ${emp.name}`;
     const info = emp.personalInfo || {};
     
-    console.log(`[مرحله ۱] showEditPersonalInfoForm باز شد. تاریخ تولد موجود:`, info.birthDate);
-    
-    modalContent.innerHTML = `<form id="edit-personal-info-form" class="space-y-4"><div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-        <div><label class="block font-medium">ایمیل</label><input type="email" id="personal-info-email" value="${info.email || ''}" class="w-full p-2 border rounded-md"></div>
-        <div><label class="block font-medium">شماره موبایل</label><input type="tel" id="phone" value="${info.phone || ''}" class="w-full p-2 border rounded-md"></div>
-        <div><label class="block font-medium">شماره ثابت</label><input type="tel" id="landline" value="${info.landline || ''}" class="w-full p-2 border rounded-md"></div>
-        <div><label class="block font-medium">کد ملی</label><input type="text" id="nationalId" value="${info.nationalId || ''}" class="w-full p-2 border rounded-md"></div>
-        <div><label class="block font-medium">تاریخ تولد</label><input type="text" id="birthDate" class="w-full p-2 border rounded-md"></div>
-        <div><label class="block font-medium">وضعیت تاهل</label><select id="maritalStatus" class="w-full p-2 border rounded-md"><option value="مجرد" ${info.maritalStatus === 'مجرد' ? 'selected' : ''}>مجرد</option><option value="متاهل" ${info.maritalStatus === 'متاهل' ? 'selected' : ''}>متاهل</option></select></div>
-        <div class="md:col-span-2"><label class="block font-medium">مدرک تحصیلی</label><input type="text" id="education" value="${info.education || ''}" class="w-full p-2 border rounded-md"></div>
-        <div class="md:col-span-2"><label class="block font-medium">آدرس</label><input type="text" id="address" value="${info.address || ''}" class="w-full p-2 border rounded-md"></div>
-        <div><label class="block font-medium">کد پستی</label><input type="text" id="postalCode" value="${info.postalCode || ''}" class="w-full p-2 border rounded-md"></div>
-        <div><label class="block font-medium">وضعیت نظام وظیفه</label><input type="text" id="militaryStatus" value="${info.militaryStatus || ''}" class="w-full p-2 border rounded-md"></div>
-        <hr class="md:col-span-2 my-2">
-        <div><label class="block font-medium">نام مخاطب اضطراری</label><input type="text" id="emergencyContactName" value="${info.emergencyContactName || ''}" class="w-full p-2 border rounded-md"></div>
-        <div><label class="block font-medium">شماره مخاطب اضطراری</label><input type="tel" id="emergencyContactPhone" value="${info.emergencyContactPhone || ''}" class="w-full p-2 border rounded-md"></div>
-    </div><div class="pt-6 flex justify-end gap-4"><button type="button" id="back-to-profile-personal" class="bg-gray-500 text-white py-2 px-6 rounded-md hover:bg-gray-600">بازگشت</button><button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">ذخیره</button></div></form>`;
+    modalContent.innerHTML = `
+        <form id="edit-personal-info-form" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div>
+                    <label class="block font-medium">جنسیت</label>
+                    <select id="gender" class="w-full p-2 border rounded-md bg-white">
+                        <option value="">انتخاب کنید</option>
+                        <option value="مرد" ${emp.gender === 'مرد' ? 'selected' : ''}>مرد</option>
+                        <option value="زن" ${emp.gender === 'زن' ? 'selected' : ''}>زن</option>
+                    </select>
+                </div>
+                <div><label class="block font-medium">ایمیل</label><input type="email" id="personal-info-email" value="${info.email || ''}" class="w-full p-2 border rounded-md" readonly></div>
+                <div><label class="block font-medium">شماره موبایل</label><input type="tel" id="phone" value="${info.phone || ''}" class="w-full p-2 border rounded-md"></div>
+                <div><label class="block font-medium">شماره ثابت</label><input type="tel" id="landline" value="${info.landline || ''}" class="w-full p-2 border rounded-md"></div>
+                <div><label class="block font-medium">کد ملی</label><input type="text" id="nationalId" value="${info.nationalId || ''}" class="w-full p-2 border rounded-md"></div>
+                <div><label class="block font-medium">تاریخ تولد</label><input type="text" id="birthDate" class="w-full p-2 border rounded-md"></div>
+                <div><label class="block font-medium">وضعیت تاهل</label><select id="maritalStatus" class="w-full p-2 border rounded-md bg-white"><option value="مجرد" ${info.maritalStatus === 'مجرد' ? 'selected' : ''}>مجرد</option><option value="متاهل" ${info.maritalStatus === 'متاهل' ? 'selected' : ''}>متاهل</option></select></div>
+                <div class="md:col-span-2"><label class="block font-medium">مدرک تحصیلی</label><input type="text" id="education" value="${info.education || ''}" class="w-full p-2 border rounded-md"></div>
+                <div class="md:col-span-2"><label class="block font-medium">آدرس</label><input type="text" id="address" value="${info.address || ''}" class="w-full p-2 border rounded-md"></div>
+                <div><label class="block font-medium">کد پستی</label><input type="text" id="postalCode" value="${info.postalCode || ''}" class="w-full p-2 border rounded-md"></div>
+                <div><label class="block font-medium">وضعیت نظام وظیفه</label><input type="text" id="militaryStatus" value="${info.militaryStatus || ''}" class="w-full p-2 border rounded-md"></div>
+                <hr class="md:col-span-2 my-2">
+                <div><label class="block font-medium">نام مخاطب اضطراری</label><input type="text" id="emergencyContactName" value="${info.emergencyContactName || ''}" class="w-full p-2 border rounded-md"></div>
+                <div><label class="block font-medium">شماره مخاطب اضطراری</label><input type="tel" id="emergencyContactPhone" value="${info.emergencyContactPhone || ''}" class="w-full p-2 border rounded-md"></div>
+            </div>
+            <div class="pt-6 flex justify-end gap-4">
+                <button type="button" id="back-to-profile-personal" class="bg-slate-500 text-white py-2 px-6 rounded-md hover:bg-slate-600">بازگشت</button>
+                <button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">ذخیره</button>
+            </div>
+        </form>
+    `;
 
     activatePersianDatePicker('birthDate', info.birthDate);
 
     document.getElementById('back-to-profile-personal').addEventListener('click', () => viewEmployeeProfile(emp.firestoreId));
+    
     document.getElementById('edit-personal-info-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         
-        const birthDateValueFromInput = document.getElementById('birthDate').value;
-        console.log(`[مرحله ۳] دکمه ذخیره کلیک شد. مقدار خوانده شده از فیلد تاریخ: "${birthDateValueFromInput}"`);
-        
-        const gregorianBirthDate = persianToEnglishDate(birthDateValueFromInput);
-        console.log(`[مرحله ۳] تاریخ بعد از تبدیل به میلادی:`, gregorianBirthDate);
-
         const updatedInfo = {
             email: document.getElementById('personal-info-email').value,
             phone: document.getElementById('phone').value,
             landline: document.getElementById('landline').value,
             nationalId: document.getElementById('nationalId').value,
-            birthDate: gregorianBirthDate,
+            birthDate: persianToEnglishDate(document.getElementById('birthDate').value),
             maritalStatus: document.getElementById('maritalStatus').value,
             education: document.getElementById('education').value,
             address: document.getElementById('address').value,
@@ -4181,11 +4134,20 @@ const showEditPersonalInfoForm = (emp) => {
             emergencyContactName: document.getElementById('emergencyContactName').value,
             emergencyContactPhone: document.getElementById('emergencyContactPhone').value,
         };
+
         try {
             const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
-            await updateDoc(docRef, { personalInfo: updatedInfo });
+            await updateDoc(docRef, { 
+                personalInfo: updatedInfo,
+                gender: document.getElementById('gender').value 
+            });
             showToast("اطلاعات پرسنلی به‌روزرسانی شد.");
+            
+            // بروزرسانی state محلی و نمایش مجدد پروفایل
+            const updatedEmp = { ...emp, personalInfo: updatedInfo, gender: document.getElementById('gender').value };
+            state.employees = state.employees.map(e => e.firestoreId === emp.firestoreId ? updatedEmp : e);
             viewEmployeeProfile(emp.firestoreId);
+            
         } catch (error) {
             console.error("Error updating personal info:", error);
             showToast("خطا در به‌روزرسانی اطلاعات.", "error");
