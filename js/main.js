@@ -1099,58 +1099,7 @@ const updateNotificationBell = () => {
         
 const pages = {
   // این تابع جدید را به آبجکت pages در main.js اضافه کنید
-announcements: () => {
-    const sortedAnnouncements = (state.announcements || []).sort((a, b) => new Date(b.createdAt?.toDate()) - new Date(a.createdAt?.toDate()));
 
-    const announcementsHtml = sortedAnnouncements.map(msg => {
-        let targetText = 'عمومی (همه)';
-        if (msg.targets?.type === 'teams') {
-            targetText = `تیم‌ها: ${msg.targets.teamNames.join(', ')}`;
-        } else if (msg.targets?.type === 'users') {
-            targetText = `افراد: ${msg.targets.userNames.join(', ')}`;
-        } else if (msg.targets?.type === 'roles') {
-            targetText = `نقش‌ها: ${msg.targets.roles.join(', ')}`;
-        }
-
-        return `
-            <tr class="border-b">
-                <td class="p-3">${toPersianDate(msg.createdAt)}</td>
-                <td class="p-3 font-semibold">${msg.title}</td>
-                <td class="p-3 text-xs">${targetText}</td>
-                <td class="p-3">${msg.senderName}</td>
-                <td class="p-3">
-                    <button class="delete-announcement-btn text-red-500 hover:text-red-700" data-id="${msg.firestoreId}"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                </td>
-            </tr>
-        `;
-    }).join('');
-
-    return `
-        <div class="flex justify-between items-center mb-6">
-            <h1 class="text-3xl font-bold text-slate-800">مدیریت اعلانات و پیام‌ها</h1>
-            <button id="add-announcement-btn" class="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 flex items-center gap-2">
-                <i data-lucide="plus-circle" class="w-4 h-4"></i>
-                <span>ارسال پیام/اعلان جدید</span>
-            </button>
-        </div>
-        <div class="bg-white p-6 rounded-xl shadow-md">
-            <table class="w-full text-sm">
-                <thead class="text-right bg-slate-50">
-                    <tr>
-                        <th class="p-3 font-semibold">تاریخ ارسال</th>
-                        <th class="p-3 font-semibold">عنوان</th>
-                        <th class="p-3 font-semibold">گیرندگان</th>
-                        <th class="p-3 font-semibold">فرستنده</th>
-                        <th class="p-3 font-semibold">عملیات</th>
-                    </tr>
-                </thead>
-                <tbody id="announcements-table-body">
-                    ${announcementsHtml || '<tr><td colspan="5" class="text-center py-8 text-slate-500">هیچ پیامی ارسال نشده است.</td></tr>'}
-                </tbody>
-            </table>
-        </div>
-    `;
-},
 dashboard: () => {
     calculateDashboardMetrics();
     const metrics = state.dashboardMetrics;
@@ -1670,6 +1619,58 @@ analytics: () => {
         </div>
     `;
 },
+   announcements: () => {
+        const sortedAnnouncements = (state.announcements || []).sort((a, b) => new Date(b.createdAt?.toDate()) - new Date(a.createdAt?.toDate()));
+
+        const announcementsHtml = sortedAnnouncements.map(msg => {
+            let targetText = 'عمومی (همه)';
+            if (msg.targets?.type === 'teams') {
+                targetText = `تیم‌ها: ${msg.targets.teamNames.join(', ')}`;
+            } else if (msg.targets?.type === 'users') {
+                targetText = `افراد: ${msg.targets.userNames.join(', ')}`;
+            } else if (msg.targets?.type === 'roles') {
+                targetText = `نقش‌ها: ${msg.targets.roles.join(', ')}`;
+            }
+
+            return `
+                <tr class="border-b">
+                    <td class="p-3">${toPersianDate(msg.createdAt)}</td>
+                    <td class="p-3 font-semibold">${msg.title}</td>
+                    <td class="p-3 text-xs">${targetText}</td>
+                    <td class="p-3">${msg.senderName}</td>
+                    <td class="p-3">
+                        <button class="delete-announcement-btn text-red-500 hover:text-red-700" data-id="${msg.firestoreId}"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        return `
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-3xl font-bold text-slate-800">مدیریت اعلانات و پیام‌ها</h1>
+                <button id="add-announcement-btn" class="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 flex items-center gap-2">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                    <span>ارسال پیام/اعلان جدید</span>
+                </button>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-md">
+                <table class="w-full text-sm">
+                    <thead class="text-right bg-slate-50">
+                        <tr>
+                            <th class="p-3 font-semibold">تاریخ ارسال</th>
+                            <th class="p-3 font-semibold">عنوان</th>
+                            <th class="p-3 font-semibold">گیرندگان</th>
+                            <th class="p-3 font-semibold">فرستنده</th>
+                            <th class="p-3 font-semibold">عملیات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="announcements-table-body">
+                        ${announcementsHtml || '<tr><td colspan="5" class="text-center py-8 text-slate-500">هیچ پیامی ارسال نشده است.</td></tr>'}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    },
 
 // در فایل js/main.js، داخل آبجکت pages
 // کل این تابع را جایگزین نسخه فعلی کنید
