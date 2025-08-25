@@ -150,7 +150,7 @@ function listenToData() {
     const collectionsToListen = [
         'employees', 'teams', 'reminders', 'surveyResponses', 'users', 
         'competencies', 'expenses', 'pettyCashCards', 'chargeHistory', 
-        'requests', 'assignmentRules', 'companyDocuments'
+        'requests', 'assignmentRules', 'companyDocuments','announcements'
     ];
     let initialLoads = collectionsToListen.length;
 
