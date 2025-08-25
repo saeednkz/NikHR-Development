@@ -1532,6 +1532,45 @@ analytics: () => {
         </div>
     `;
 },
+  documents: () => {
+    const categories = [...new Set((state.companyDocuments || []).map(doc => doc.category))];
+
+    const documentsHtml = categories.map(category => {
+        const docsInCategory = state.companyDocuments.filter(doc => doc.category === category);
+        return `
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold text-slate-600 border-b pb-2 mb-3">${category}</h3>
+                <div class="space-y-2">
+                    ${docsInCategory.map(doc => `
+                        <div class="flex justify-between items-center bg-slate-50 p-3 rounded-lg">
+                            <a href="${doc.fileUrl}" target="_blank" class="flex items-center gap-2 text-blue-600 hover:underline">
+                                <i data-lucide="file-text" class="w-4 h-4"></i>
+                                <span>${doc.title}</span>
+                            </a>
+                            <div>
+                                <button class="delete-document-btn p-2 text-slate-400 hover:text-red-500" data-id="${doc.firestoreId}" title="حذف"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    return `
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold text-slate-800">اسناد سازمان</h1>
+            <button id="upload-document-btn" class="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 flex items-center gap-2">
+                <i data-lucide="upload" class="w-4 h-4"></i>
+                <span>آپلود سند جدید</span>
+            </button>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-md">
+            ${documentsHtml || '<p class="text-center text-slate-500 py-8">هنوز سندی آپلود نشده است.</p>'}
+        </div>
+    `;
+},
+
 // در فایل js/main.js، داخل آبجکت pages
 // کل این تابع را جایگزین نسخه فعلی کنید
 
@@ -1941,6 +1980,7 @@ const viewTeamProfile = (teamId) => {
                 if (pageName === 'requests') { setupRequestsPageListeners(); }
               if (pageName === 'tasks') { setupTasksPageListeners(); }
                 if (pageName === 'analytics') { setupAnalyticsPage(); }
+              if (pageName === 'documents') { setupDocumentsPageListeners(); } 
                 if (pageName === 'settings') {
                     if(isAdmin()) {
                         setupSettingsPageListeners();
@@ -3696,6 +3736,69 @@ const setupTeamProfileModalListeners = (team) => {
                 try { const docRef = doc(db, `artifacts/${appId}/public/data/teams`, isEditing ? team.firestoreId : formData.id); await setDoc(docRef, formData, { merge: isEditing }); closeModal(mainModal, mainModalContainer); showToast(isEditing ? "تیم با موفقیت ویرایش شد." : "تیم با موفقیت اضافه شد."); } catch (error) { console.error("Error saving team:", error); showToast("خطا در ذخیره اطلاعات تیم.", "error"); }
             });
         };
+// این تابع جدید را به js/main.js اضافه کنید
+const showDocumentUploadForm = () => {
+    modalTitle.innerText = 'آپلود سند جدید';
+    modalContent.innerHTML = `
+        <form id="upload-document-form" class="space-y-4">
+            <div>
+                <label class="block font-medium mb-1">عنوان سند</label>
+                <input type="text" id="doc-title" class="w-full p-2 border rounded-md" required>
+            </div>
+            <div>
+                <label class="block font-medium mb-1">دسته‌بندی (مثال: آیین‌نامه‌ها، فرم‌ها)</label>
+                <input type="text" id="doc-category" class="w-full p-2 border rounded-md" required>
+            </div>
+            <div>
+                <label class="block font-medium mb-1">فایل (حداکثر ۱۰ مگابایت)</label>
+                <input type="file" id="doc-file" class="w-full text-sm" required>
+            </div>
+            <div class="pt-4 flex justify-end">
+                <button type="submit" id="submit-upload-btn" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">آپلود</button>
+            </div>
+        </form>
+    `;
+    openModal(mainModal, mainModalContainer);
+
+    document.getElementById('upload-document-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const saveBtn = document.getElementById('submit-upload-btn');
+        saveBtn.disabled = true;
+        saveBtn.innerText = 'در حال آپلود...';
+        
+        const file = document.getElementById('doc-file').files[0];
+        if (!file || file.size > 10 * 1024 * 1024) {
+            showToast("فایل انتخاب نشده یا حجم آن بیشتر از ۱۰ مگابایت است.", "error");
+            saveBtn.disabled = false;
+            saveBtn.innerText = 'آپلود';
+            return;
+        }
+
+        try {
+            const filePath = `company_documents/${Date.now()}_${file.name}`;
+            const storageRef = ref(storage, filePath);
+            const snapshot = await uploadBytes(storageRef, file);
+            const downloadURL = await getDownloadURL(snapshot.ref);
+
+            const docData = {
+                title: document.getElementById('doc-title').value,
+                category: document.getElementById('doc-category').value,
+                fileUrl: downloadURL,
+                fileName: file.name,
+                uploadedAt: serverTimestamp()
+            };
+
+            await addDoc(collection(db, `artifacts/${appId}/public/data/companyDocuments`), docData);
+            showToast("سند با موفقیت آپلود شد.");
+            closeModal(mainModal, mainModalContainer);
+        } catch (error) {
+            console.error("Error uploading document:", error);
+            showToast("خطا در آپلود سند.", "error");
+            saveBtn.disabled = false;
+            saveBtn.innerText = 'آپلود';
+        }
+    });
+};
 
         // --- EVENT LISTENERS & INITIALIZATION ---
 // در فایل js/main.js
@@ -3775,6 +3878,22 @@ const setupEventListeners = () => {
 
     // بخش ۵: روتر اصلی برنامه
     window.addEventListener('hashchange', router);
+};
+const setupDocumentsPageListeners = () => {
+    document.getElementById('upload-document-btn')?.addEventListener('click', showDocumentUploadForm);
+
+    document.getElementById('main-content').addEventListener('click', (e) => {
+        const deleteBtn = e.target.closest('.delete-document-btn');
+        if (deleteBtn) {
+            const docId = deleteBtn.dataset.id;
+            showConfirmationModal('حذف سند', 'آیا از حذف این سند مطمئن هستید؟', async () => {
+                try {
+                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/companyDocuments`, docId));
+                    showToast("سند با موفقیت حذف شد.");
+                } catch (error) { showToast("خطا در حذف سند.", "error"); }
+            });
+        }
+    });
 };
 // کل تابع فعلی را با این کد جایگزین کنید
 // در فایل js/main.js
