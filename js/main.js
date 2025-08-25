@@ -1281,6 +1281,9 @@ surveys: () => {
 // کل تابع requests را با این نسخه جایگزین کنید
 
 // در فایل js/main.js، داخل آبجکت pages
+// در فایل js/main.js، داخل آبجکت pages
+// کل این تابع را با نسخه جدید جایگزین کنید
+
 requests: () => {
     let filteredRequests = (state.requests || []);
     if (state.requestFilter === 'mine' && state.currentUser) {
@@ -1292,7 +1295,7 @@ requests: () => {
     const requestsHtml = allRequests.map(req => {
         const statusColors = {
             'درحال بررسی': 'bg-yellow-100 text-yellow-800',
-            'در حال انجام': 'bg-blue-100 text-blue-800', // [!code ++] وضعیت جدید
+            'در حال انجام': 'bg-blue-100 text-blue-800',
             'تایید شده': 'bg-green-100 text-green-800',
             'رد شده': 'bg-red-100 text-red-800'
         };
@@ -1312,7 +1315,9 @@ requests: () => {
                     </select>
                 </td>
                 <td class="px-4 py-3">
-                    <button class="process-request-btn text-sm bg-slate-700 text-white py-1 px-3 rounded-md hover:bg-slate-800" data-id="${req.firestoreId}">پردازش</button>
+                    ${(req.status === 'درحال بررسی' || req.status === 'در حال انجام') ? `
+                        <button class="process-request-btn text-sm bg-slate-700 text-white py-1 px-3 rounded-md hover:bg-slate-800" data-id="${req.firestoreId}">پردازش</button>
+                    ` : '<span class="text-xs text-slate-400">-</span>'}
                 </td>
             </tr>
         `;
@@ -3669,10 +3674,53 @@ const setupTeamProfileModalListeners = (team) => {
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید و کامل جایگزین کنید
 
-const setupEventListeners = () => {
-    // ... کدهای قبلی ...
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید و کامل جایگزین کنید
 
-    // --- بخش نوتیفیکیشن ---
+const setupEventListeners = () => {
+    // بخش ۱: مدیریت رویدادهای مودال‌ها (اصلاح شده و کامل)
+    mainModal.addEventListener('click', (e) => {
+        // اگر روی پس‌زمینه خاکستری یا دکمه بستن (×) کلیک شد، مودال را ببند
+        if (e.target === mainModal || e.target.closest('#closeModal')) {
+            closeModal(mainModal, mainModalContainer);
+        }
+    });
+    document.getElementById('confirmCancel').addEventListener('click', () => closeModal(confirmModal, confirmModalContainer)); 
+    document.getElementById('confirmAccept').addEventListener('click', () => { confirmCallback(); closeModal(confirmModal, confirmModalContainer); });
+
+    // بخش ۲: منوی موبایل
+    const menuBtn = document.getElementById('menu-btn'); 
+    if (menuBtn) {
+        const sidebar = document.getElementById('sidebar'); 
+        const overlay = document.getElementById('sidebar-overlay'); 
+        const toggleMenu = () => { 
+            sidebar.classList.toggle('translate-x-full'); 
+            overlay.classList.toggle('hidden'); 
+        };
+        menuBtn.addEventListener('click', toggleMenu);
+        overlay.addEventListener('click', toggleMenu);
+    }
+
+    // بخش ۳: ناوبری (منوی کناری ادمین)
+    const handleNavClick = (e) => { 
+        const link = e.target.closest('a'); 
+        if (link && (link.classList.contains('sidebar-item') || link.classList.contains('sidebar-logo'))) { 
+            e.preventDefault(); 
+            const pageName = link.getAttribute('href').substring(1); 
+            navigateTo(pageName); 
+            // بستن منوی موبایل بعد از کلیک
+            if (window.innerWidth < 768) {
+                const sidebar = document.getElementById('sidebar');
+                const overlay = document.getElementById('sidebar-overlay');
+                if (sidebar) sidebar.classList.add('translate-x-full');
+                if (overlay) overlay.classList.add('hidden');
+            }
+        } 
+    };
+    document.getElementById('sidebar')?.addEventListener('click', handleNavClick);
+    document.querySelector('header .sidebar-logo')?.addEventListener('click', handleNavClick);
+
+    // بخش ۴: نوتیفیکیشن (کدی که شما داشتید)
     const bellBtn = document.getElementById('notification-bell-btn');
     const dropdown = document.getElementById('notification-dropdown');
     if (bellBtn && dropdown) {
@@ -3681,7 +3729,7 @@ const setupEventListeners = () => {
         });
         // بستن منو با کلیک بیرون از آن
         document.addEventListener('click', (e) => {
-            if (!bellBtn.contains(e.target) && !dropdown.contains(e.target)) {
+            if (!bellBtn.parentElement.contains(e.target)) {
                 dropdown.classList.add('hidden');
             }
         });
@@ -3696,6 +3744,7 @@ const setupEventListeners = () => {
         });
     }
 
+    // بخش ۵: روتر اصلی برنامه
     window.addEventListener('hashchange', router);
 };
 // کل تابع فعلی را با این کد جایگزین کنید
