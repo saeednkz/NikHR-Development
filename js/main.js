@@ -1287,6 +1287,9 @@ const pages = {
 // در فایل js/main.js
 // کل تابع pages.dashboard را با این کد جدید جایگزین کنید
 
+// در فایل js/main.js، داخل آبجکت pages
+// کل این تابع را با نسخه جدید جایگزین کنید
+
 dashboard: () => {
     calculateDashboardMetrics();
     const metrics = state.dashboardMetrics;
@@ -1295,7 +1298,7 @@ dashboard: () => {
     const highRiskEmployees = state.employees
         .filter(e => e.status === 'فعال' && e.attritionRisk && e.attritionRisk.score > 60)
         .sort((a, b) => b.attritionRisk.score - a.attritionRisk.score)
-        .slice(0, 5); // نمایش حداکثر ۵ نفر
+        .slice(0, 5);
 
     const highRiskHtml = highRiskEmployees.length > 0 
         ? highRiskEmployees.map(emp => `
@@ -1315,37 +1318,40 @@ dashboard: () => {
         : '<div class="p-4 text-center text-sm text-slate-400">موردی با ریسک بالا یافت نشد.</div>';
 
     return `
-        <div class="mb-8">
-            <h1 class="text-3xl font-bold text-slate-800">داشبورد مدیریتی</h1>
-            <p class="text-slate-500 mt-1">نمای کلی از وضعیت سازمان شما در یک نگاه</p>
+        <div class="page-header">
+            <h1 class="text-3xl font-bold text-text-header">داشبورد</h1>
+            <p class="text-text-muted mt-1">نمای کلی از وضعیت سازمان شما در یک نگاه</p>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div class="p-5 bg-white rounded-xl shadow-sm flex items-center gap-4"><div class="bg-blue-100 p-3 rounded-full"><i data-lucide="users" class="text-blue-600"></i></div><div><p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">پرسنل</p><p class="text-2xl font-bold text-slate-800">${metrics.totalEmployees}</p></div></div>
-            <div class="p-5 bg-white rounded-xl shadow-sm flex items-center gap-4"><div class="bg-green-100 p-3 rounded-full"><i data-lucide="trending-up" class="text-green-600"></i></div><div><p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">ماندگاری</p><p class="text-2xl font-bold text-slate-800">${metrics.retentionRate}%</p></div></div>
-            <div class="p-5 bg-white rounded-xl shadow-sm flex items-center gap-4"><div class="bg-yellow-100 p-3 rounded-full"><i data-lucide="clock" class="text-yellow-600"></i></div><div><p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">میانگین سابقه</p><p class="text-2xl font-bold text-slate-800">${metrics.averageTenure} <span class="text-base font-normal">سال</span></p></div></div>
-            <div class="p-5 bg-white rounded-xl shadow-sm flex items-center gap-4"><div class="bg-purple-100 p-3 rounded-full"><i data-lucide="recycle" class="text-purple-600"></i></div><div><p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">جابجایی داخلی</p><p class="text-2xl font-bold text-slate-800">${metrics.internalMobilityRate}%</p></div></div>
+            <div class="p-5 bg-white rounded-xl shadow-sm"><p class="text-xs font-semibold text-text-muted uppercase">پرسنل</p><p class="text-3xl font-bold text-text-header mt-1">${metrics.totalEmployees}</p></div>
+            <div class="p-5 bg-white rounded-xl shadow-sm"><p class="text-xs font-semibold text-text-muted uppercase">ماندگاری</p><p class="text-3xl font-bold text-text-header mt-1">${metrics.retentionRate}%</p></div>
+            <div class="p-5 bg-white rounded-xl shadow-sm"><p class="text-xs font-semibold text-text-muted uppercase">میانگین سابقه</p><p class="text-3xl font-bold text-text-header mt-1">${metrics.averageTenure} <span class="text-xl font-medium">سال</span></p></div>
+            <div class="p-5 bg-white rounded-xl shadow-sm"><p class="text-xs font-semibold text-text-muted uppercase">جابجایی داخلی</p><p class="text-3xl font-bold text-text-header mt-1">${metrics.internalMobilityRate}%</p></div>
         </div>
         
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm">
-                <h3 class="font-semibold text-slate-800 text-lg mb-4">نمودارهای کلیدی سازمان</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
-                    <div><h4 class="text-center font-medium text-slate-600 mb-2">توزیع استعدادها</h4><div class="relative w-full h-64"><canvas id="nineBoxChart"></canvas></div></div>
-                    <div><h4 class="text-center font-medium text-slate-600 mb-2">ترکیب جنسیتی</h4><div class="relative w-full h-64"><canvas id="genderCompositionChart"></canvas></div></div>
-                    <div><h4 class="text-center font-medium text-slate-600 mb-2">سابقه کار</h4><div class="relative w-full h-64"><canvas id="tenureDistributionChart"></canvas></div></div>
-                    <div><h4 class="text-center font-medium text-slate-600 mb-2">توزیع سنی</h4><div class="relative w-full h-64"><canvas id="ageDistributionChart"></canvas></div></div>
+            <div class="lg:col-span-2 card p-0 overflow-hidden">
+                <div class="card-header"><h3 class="font-semibold text-text-header">نمودارهای کلیدی</h3></div>
+                <div class="card-content">
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+                        <div><h4 class="text-center text-sm font-medium text-slate-600 mb-2">توزیع استعدادها</h4><div class="relative w-full h-56"><canvas id="nineBoxChart"></canvas></div></div>
+                        <div><h4 class="text-center text-sm font-medium text-slate-600 mb-2">ترکیب جنسیتی</h4><div class="relative w-full h-56"><canvas id="genderCompositionChart"></canvas></div></div>
+                        <div><h4 class="text-center text-sm font-medium text-slate-600 mb-2">توزیع دپارتمان‌ها</h4><div class="relative w-full h-56"><canvas id="departmentDistributionChart"></canvas></div></div>
+                        <div><h4 class="text-center text-sm font-medium text-slate-600 mb-2">سابقه کار</h4><div class="relative w-full h-56"><canvas id="tenureDistributionChart"></canvas></div></div>
+                        <div><h4 class="text-center text-sm font-medium text-slate-600 mb-2">توزیع سنی</h4><div class="relative w-full h-56"><canvas id="ageDistributionChart"></canvas></div></div>
+                        <div><h4 class="text-center text-sm font-medium text-slate-600 mb-2">میانگین شایستگی</h4><div class="relative w-full h-56"><canvas id="teamCompetencyRadarChart"></canvas></div></div>
+                    </div>
                 </div>
             </div>
-
             <div class="space-y-8">
-                <div class="bg-white p-6 rounded-xl shadow-sm">
-                    <h3 class="font-semibold text-slate-800 text-lg mb-4">یادآورهای هوشمند</h3>
-                    <div class="space-y-2">${renderAllReminders()}</div>
+                <div class="card p-0">
+                    <div class="card-header"><h3 class="font-semibold text-text-header">یادآورهای هوشمند</h3></div>
+                    <div class="card-content">${renderAllReminders()}</div>
                 </div>
-                <div class="bg-white p-6 rounded-xl shadow-sm">
-                    <h3 class="font-semibold text-slate-800 text-lg mb-4">استعدادهای در معرض ریسک</h3>
-                    <div class="space-y-1">${highRiskHtml}</div>
+                <div class="card p-0">
+                    <div class="card-header"><h3 class="font-semibold text-text-header">استعدادهای در معرض ریسک</h3></div>
+                    <div class="card-content">${highRiskHtml}</div>
                 </div>
             </div>
         </div>
