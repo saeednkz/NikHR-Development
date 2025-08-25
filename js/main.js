@@ -2594,11 +2594,14 @@ const setupOrganizationPageListeners = () => {
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید و کامل جایگزین کنید
 
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید و کامل جایگزین کنید
+
 const setupRequestsPageListeners = () => {
     // بخش ۱: خوانده شده کردن درخواست‌های جدید
     // این کد چک می‌کند اگر در حال مشاهده "درخواست‌های من" هستیم، آن‌ها را به وضعیت "خوانده شده" تغییر دهد.
     if (state.requestFilter === 'mine' && state.currentUser) {
-        const unreadRequests = (state.requests || []).filter(req => 
+        const unreadRequests = (state.requests || []).filter(req =>
             req.assignedTo === state.currentUser.uid && !req.isReadByAssignee
         );
 
@@ -2611,19 +2614,19 @@ const setupRequestsPageListeners = () => {
             batch.commit().catch(err => console.error("Error marking requests as read:", err));
         }
     }
-    
+
     // بخش ۲: فعال‌سازی دکمه‌های فیلتر ("همه" و "واگذار شده به من")
     document.querySelectorAll('.request-filter-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             state.requestFilter = btn.dataset.filter;
-            renderPage('requests'); // صفحه را با فیلتر جدید دوباره رندر می‌کند
+            renderPage('requests');
         });
     });
 
     const tableBody = document.getElementById('requests-table-body');
     if (!tableBody) return;
 
-    // بخش ۳: فعال‌سازی منوی کشویی "واگذار به"
+    // بخش ۳: فعال‌سازی منوی کشویی "واگذار به" (برای واگذاری مجدد)
     tableBody.addEventListener('input', async (e) => {
         if (e.target.classList.contains('assign-request-select')) {
             const selectElement = e.target;
@@ -2633,43 +2636,25 @@ const setupRequestsPageListeners = () => {
             const requestRef = doc(db, `artifacts/${appId}/public/data/requests`, requestId);
 
             try {
-                await updateDoc(requestRef, { assignedTo: adminUid || null,
-                                             isReadByAssignee: false});
+                // هنگام واگذاری مجدد، وضعیت خوانده شده را ریست می‌کنیم تا برای نفر جدید، نوتیفیکیشن ارسال شود
+                await updateDoc(requestRef, {
+                    assignedTo: adminUid || null,
+                    isReadByAssignee: false
+                });
                 showToast(`درخواست به کاربر مورد نظر واگذار شد.`);
             } catch (error) {
-                console.error("Error assigning request:", error);
+                console.error("Error re-assigning request:", error);
                 showToast("خطا در واگذاری درخواست.", "error");
             }
         }
     });
 
-    // بخش ۴: فعال‌سازی دکمه‌های "تایید" و "رد کردن"
+    // بخش ۴: فعال‌سازی دکمه جدید "پردازش"
     tableBody.addEventListener('click', async (e) => {
-        const approveBtn = e.target.closest('.approve-request-btn');
-        const rejectBtn = e.target.closest('.reject-request-btn');
-        
-        let targetButton = null;
-        let newStatus = '';
-
-        if (approveBtn) {
-            targetButton = approveBtn;
-            newStatus = 'تایید شده';
-        } else if (rejectBtn) {
-            targetButton = rejectBtn;
-            newStatus = 'رد شده';
-        }
-
-        if (targetButton) {
-            const requestId = targetButton.dataset.id;
-            const requestRef = doc(db, `artifacts/${appId}/public/data/requests`, requestId);
-
-            try {
-                await updateDoc(requestRef, { status: newStatus });
-                showToast(`وضعیت درخواست به «${newStatus}» تغییر کرد.`);
-            } catch (error) {
-                console.error("Error updating request status:", error);
-                showToast("خطا در بروزرسانی وضعیت.", "error");
-            }
+        const processBtn = e.target.closest('.process-request-btn');
+        if (processBtn) {
+            const requestId = processBtn.dataset.id;
+            showProcessRequestForm(requestId); // فراخوانی فرم پردازش
         }
     });
 };
@@ -4532,6 +4517,77 @@ const showAssignmentRuleForm = (ruleId = null) => {
         } catch (error) {
             console.error("Error saving assignment rule:", error);
             showToast("خطا در ذخیره قانون.", "error");
+        }
+    });
+};
+// این تابع کاملاً جدید را به js/main.js اضافه کنید
+
+const showProcessRequestForm = (requestId) => {
+    const request = state.requests.find(r => r.firestoreId === requestId);
+    if (!request) {
+        showToast("درخواست یافت نشد.", "error");
+        return;
+    }
+
+    modalTitle.innerText = `پردازش درخواست: ${request.requestType}`;
+    modalContent.innerHTML = `
+        <form id="process-request-form" class="space-y-4">
+            <p class="text-sm border-b pb-3"><strong>متقاضی:</strong> ${request.employeeName} | <strong>جزئیات:</strong> ${request.details}</p>
+            <div>
+                <label class="block font-medium mb-1">تغییر وضعیت به:</label>
+                <select id="request-status" class="w-full p-2 border rounded-md bg-white">
+                    <option value="در حال انجام" ${request.status === 'در حال انجام' ? 'selected' : ''}>در حال انجام</option>
+                    <option value="تایید شده" ${request.status === 'تایید شده' ? 'selected' : ''}>تایید شده</option>
+                    <option value="رد شده" ${request.status === 'رد شده' ? 'selected' : ''}>رد شده</option>
+                </select>
+            </div>
+            <div>
+                <label class="block font-medium mb-1">توضیحات/پاسخ برای کارمند (اختیاری)</label>
+                <textarea id="processing-notes" rows="4" class="w-full p-2 border rounded-md">${request.processingNotes || ''}</textarea>
+            </div>
+            <div>
+                <label class="block font-medium mb-1">فایل ضمیمه (اختیاری)</label>
+                <input type="file" id="request-attachment" class="w-full text-sm">
+            </div>
+            <div class="pt-4 flex justify-end">
+                <button type="submit" id="save-processing-btn" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">ذخیره تغییرات</button>
+            </div>
+        </form>
+    `;
+    openModal(mainModal, mainModalContainer);
+
+    document.getElementById('process-request-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const saveBtn = document.getElementById('save-processing-btn');
+        saveBtn.disabled = true;
+        saveBtn.innerText = 'در حال ذخیره...';
+
+        try {
+            const updatedData = {
+                status: document.getElementById('request-status').value,
+                processingNotes: document.getElementById('processing-notes').value,
+            };
+
+            const file = document.getElementById('request-attachment').files[0];
+            if (file) {
+                // آپلود فایل در استوریج
+                const filePath = `request_attachments/${requestId}/${file.name}`;
+                const storageRef = ref(storage, filePath);
+                const snapshot = await uploadBytes(storageRef, file);
+                updatedData.attachmentUrl = await getDownloadURL(snapshot.ref);
+                updatedData.attachmentFileName = file.name;
+            }
+
+            const requestRef = doc(db, `artifacts/${appId}/public/data/requests`, requestId);
+            await updateDoc(requestRef, updatedData);
+            
+            showToast("پردازش درخواست با موفقیت ثبت شد.");
+            closeModal(mainModal, mainModalContainer);
+        } catch (error) {
+            console.error("Error processing request:", error);
+            showToast("خطا در ثبت پردازش.", "error");
+            saveBtn.disabled = false;
+            saveBtn.innerText = 'ذخیره تغییرات';
         }
     });
 };
