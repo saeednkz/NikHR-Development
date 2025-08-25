@@ -1286,73 +1286,62 @@ const pages = {
 // در فایل js/main.js، داخل آبجکت pages
 // کل این تابع را با نسخه جدید جایگزین کنید
 
-dashboard: () => {
-    calculateDashboardMetrics();
-    const metrics = state.dashboardMetrics;
-    if (Object.keys(metrics).length === 0) return `<div class="text-center p-10 card"><i data-lucide="inbox" class="mx-auto w-16 h-16 text-slate-400"></i><h2 class="mt-4 text-xl font-semibold text-slate-700">به NikHR خوش آمدید!</h2><p class="mt-2 text-slate-500">برای شروع، اولین کارمند را از صفحه «استعدادها» اضافه کنید.</p><button onclick="window.location.hash='#talent'" class="mt-6 bg-indigo-600 text-white py-2 px-5 rounded-lg hover:bg-indigo-700 transition">افزودن کارمند</button></div>`;
-    
-    const highRiskEmployees = state.employees
-        .filter(e => e.status === 'فعال' && e.attritionRisk && e.attritionRisk.score > 60)
-        .sort((a, b) => b.attritionRisk.score - a.attritionRisk.score)
-        .slice(0, 5);
+    dashboard: () => {
+        calculateDashboardMetrics();
+        const metrics = state.dashboardMetrics;
+        if (Object.keys(metrics).length === 0) return `<div class="text-center p-10 bg-white rounded-lg shadow-md"><i data-lucide="inbox" class="mx-auto w-16 h-16 text-gray-400"></i><h2 class="mt-4 text-xl font-semibold text-gray-700">به NikHR خوش آمدید!</h2><p class="mt-2 text-gray-500">هنوز هیچ داده‌ای ثبت نشده است. برای شروع یک کارمند جدید اضافه کنید.</p><button onclick="window.location.hash='#talent'" class="mt-6 bg-blue-600 text-white py-2 px-5 rounded-md hover:bg-blue-700 transition">افزودن کارمند</button></div>`;
+        
+        const highRiskEmployees = state.employees
+            .filter(e => e.status === 'فعال' && e.attritionRisk && e.attritionRisk.score > 60)
+            .sort((a, b) => b.attritionRisk.score - a.attritionRisk.score);
 
-    const highRiskHtml = highRiskEmployees.length > 0 
-        ? highRiskEmployees.map(emp => `
-            <div class="p-3 hover:bg-slate-50 rounded-lg transition-colors">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center">
-                        <img src="${emp.avatar}" class="w-10 h-10 rounded-full mr-3 object-cover" alt="${emp.name}">
-                        <div>
-                            <p class="text-sm font-semibold text-slate-800">${emp.name}</p>
-                            <p class="text-xs text-slate-500">${emp.jobTitle || ''}</p>
+        const highRiskHtml = highRiskEmployees.length > 0 
+            ? highRiskEmployees.map(emp => {
+                const reasonsHtml = emp.attritionRisk.reasons.map(reason => `<span class="bg-purple-100 text-purple-800 text-xs font-medium px-2 py-0.5 rounded-full">${reason}</span>`).join(' ');
+                return `<div class="p-3"><div class="flex items-center justify-between"><div class="flex items-center"><div class="w-8 h-8 rounded-full mr-2 shrink-0 overflow-hidden bg-gray-200"><img src="${emp.avatar}" class="w-full h-full object-cover" alt="${emp.name}"></div><div><p class="text-sm font-semibold text-purple-800">${emp.name}</p></div></div><span class="text-lg font-bold text-purple-600">${emp.attritionRisk.score}%</span></div><div class="mt-2 flex flex-wrap gap-1">${reasonsHtml}</div></div>`
+            }).join(' ') 
+            : '<p class="text-xs text-gray-500 text-center">موردی با ریسک بالا یافت نشد.</p>';
+
+        return `
+            <h1 class="text-3xl font-bold text-gray-800 mb-6">داشبورد</h1>
+            <div class="grid-metrics mb-6">
+                <div class="metric-card"><div class="bg-blue-100 p-3 rounded-full mr-4"><i data-lucide="users" class="text-blue-600"></i></div><div><p class="text-gray-500 text-sm">تعداد کل پرسنل</p><p class="text-2xl font-bold text-gray-800">${metrics.totalEmployees}</p></div></div>
+                <div class="metric-card"><div class="bg-green-100 p-3 rounded-full mr-4"><i data-lucide="trending-up" class="text-green-600"></i></div><div><p class="text-gray-500 text-sm">نرخ ماندگاری</p><p class="text-2xl font-bold text-gray-800">${metrics.retentionRate}%</p></div></div>
+                <div class="metric-card"><div class="bg-yellow-100 p-3 rounded-full mr-4"><i data-lucide="clock" class="text-yellow-600"></i></div><div><p class="text-gray-500 text-sm">میانگین سابقه (سال)</p><p class="text-2xl font-bold text-gray-800">${metrics.averageTenure}</p></div></div>
+                <div class="metric-card"><div class="bg-purple-100 p-3 rounded-full mr-4"><i data-lucide="recycle" class="text-purple-600"></i></div><div><p class="text-gray-500 text-sm">جابجایی داخلی</p><p class="text-2xl font-bold text-gray-800">${metrics.internalMobilityRate}%</p></div></div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 flex flex-col gap-6">
+                    <div class="card flex-grow">
+                        <h3 class="font-semibold mb-4 text-lg flex items-center"><i data-lucide="bar-chart-3" class="ml-2 text-indigo-600"></i>نمودارهای کلیدی</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <div class="flex flex-col items-center justify-center"><p class="text-gray-500 text-sm mb-2">توزیع استعدادها</p><div class="relative w-full h-48"><canvas id="nineBoxChart"></canvas></div></div>
+                            <div class="flex flex-col items-center justify-center"><p class="text-gray-500 text-sm mb-2">توزیع دپارتمان‌ها</p><div class="relative w-full h-48"><canvas id="departmentDistributionChart"></canvas></div></div>
+                            <div class="flex flex-col items-center justify-center"><p class="text-gray-500 text-sm mb-2">ترکیب جنسیتی</p><div class="relative w-full h-48"><canvas id="genderCompositionChart"></canvas></div></div>
+                            <div class="flex flex-col items-center justify-center"><p class="text-gray-500 text-sm mb-2">سابقه کار</p><div class="relative w-full h-48"><canvas id="tenureDistributionChart"></canvas></div></div>
+                            <div class="flex flex-col items-center justify-center"><p class="text-gray-500 text-sm mb-2">توزیع سنی</p><div class="relative w-full h-48"><canvas id="ageDistributionChart"></canvas></div></div>
+                            <div class="flex flex-col items-center justify-center"><p class="text-gray-500 text-sm mb-2">میانگین شایستگی تیم‌ها</p><div class="relative w-full h-48"><canvas id="teamCompetencyRadarChart"></canvas></div></div>
                         </div>
                     </div>
-                    <span class="text-lg font-bold text-red-500">${emp.attritionRisk.score}%</span>
                 </div>
-            </div>
-        `).join('') 
-        : '<div class="p-4 text-center text-sm text-slate-400">موردی با ریسک بالا یافت نشد.</div>';
-
-    return `
-        <div class="page-header">
-            <h1 class="text-3xl font-bold text-text-header">داشبورد</h1>
-            <p class="text-text-muted mt-1">نمای کلی از وضعیت سازمان شما در یک نگاه</p>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div class="p-5 bg-white rounded-xl shadow-sm"><p class="text-xs font-semibold text-text-muted uppercase">پرسنل</p><p class="text-3xl font-bold text-text-header mt-1">${metrics.totalEmployees}</p></div>
-            <div class="p-5 bg-white rounded-xl shadow-sm"><p class="text-xs font-semibold text-text-muted uppercase">ماندگاری</p><p class="text-3xl font-bold text-text-header mt-1">${metrics.retentionRate}%</p></div>
-            <div class="p-5 bg-white rounded-xl shadow-sm"><p class="text-xs font-semibold text-text-muted uppercase">میانگین سابقه</p><p class="text-3xl font-bold text-text-header mt-1">${metrics.averageTenure} <span class="text-xl font-medium">سال</span></p></div>
-            <div class="p-5 bg-white rounded-xl shadow-sm"><p class="text-xs font-semibold text-text-muted uppercase">جابجایی داخلی</p><p class="text-3xl font-bold text-text-header mt-1">${metrics.internalMobilityRate}%</p></div>
-        </div>
-        
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div class="lg:col-span-2 card p-0 overflow-hidden">
-                <div class="card-header"><h3 class="font-semibold text-text-header">نمودارهای کلیدی</h3></div>
-                <div class="card-content">
-                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-                        <div><h4 class="text-center text-sm font-medium text-slate-600 mb-2">توزیع استعدادها</h4><div class="relative w-full h-56"><canvas id="nineBoxChart"></canvas></div></div>
-                        <div><h4 class="text-center text-sm font-medium text-slate-600 mb-2">ترکیب جنسیتی</h4><div class="relative w-full h-56"><canvas id="genderCompositionChart"></canvas></div></div>
-                        <div><h4 class="text-center text-sm font-medium text-slate-600 mb-2">توزیع دپارتمان‌ها</h4><div class="relative w-full h-56"><canvas id="departmentDistributionChart"></canvas></div></div>
-                        <div><h4 class="text-center text-sm font-medium text-slate-600 mb-2">سابقه کار</h4><div class="relative w-full h-56"><canvas id="tenureDistributionChart"></canvas></div></div>
-                        <div><h4 class="text-center text-sm font-medium text-slate-600 mb-2">توزیع سنی</h4><div class="relative w-full h-56"><canvas id="ageDistributionChart"></canvas></div></div>
-                        <div><h4 class="text-center text-sm font-medium text-slate-600 mb-2">میانگین شایستگی</h4><div class="relative w-full h-56"><canvas id="teamCompetencyRadarChart"></canvas></div></div>
+                <div class="lg:col-span-1 flex flex-col gap-6">
+                    <div class="card">
+                        <h3 class="font-semibold mb-4 text-lg flex items-center"><i data-lucide="bell" class="ml-2 text-indigo-600"></i>یادآور هوشمند</h3>
+                        <div id="remindersList" class="space-y-4 mb-4 max-h-64 overflow-y-auto pr-2">${renderAllReminders()}</div>
+                        ${canEdit() ? `<div class="border-t pt-4 mt-auto"><p class="text-sm font-medium mb-2">افزودن یادآور دستی</p><div class="flex flex-wrap gap-2"><input type="text" id="reminderText" placeholder="عنوان رویداد..." class="flex-grow p-2 border rounded-md text-sm"><input type="text" id="reminderDate" class="w-32 p-2 border rounded-md text-sm" placeholder="تاریخ"><input type="number" id="reminderDaysBefore" title="از چند روز قبل نمایش داده شود؟" value="7" class="w-20 p-2 border rounded-md text-sm"><button id="addReminderBtn" class="bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 transition text-sm">افزودن</button></div></div>` : ''}
+                    </div>
+                    <div class="card h-full">
+                        <h3 class="font-semibold mb-4 text-lg flex items-center"><i data-lucide="heart-pulse" class="ml-2 text-green-500"></i>امتیاز مشارکت کارکنان</h3>
+                        <div class="relative w-48 h-24 mx-auto my-4"><canvas id="engagementGaugeDashboard"></canvas><div class="absolute inset-0 flex items-center justify-center -bottom-4"><span class="text-4xl font-bold text-green-600">${metrics.engagementScore > 0 ? metrics.engagementScore + '%' : 'N/A'}</span></div></div>
+                    </div>
+                    <div class="card h-full flex-grow overflow-hidden">
+                        <h3 class="font-semibold mb-4 text-lg flex items-center"><i data-lucide="shield-alert" class="ml-2 text-purple-500"></i>ریسک خروج استعدادهای کلیدی</h3>
+                        <div class="mt-3 space-y-2 max-h-48 overflow-y-auto pr-2">${highRiskHtml}</div>
                     </div>
                 </div>
             </div>
-            <div class="space-y-8">
-                <div class="card p-0">
-                    <div class="card-header"><h3 class="font-semibold text-text-header">یادآورهای هوشمند</h3></div>
-                    <div class="card-content">${renderAllReminders()}</div>
-                </div>
-                <div class="card p-0">
-                    <div class="card-header"><h3 class="font-semibold text-text-header">استعدادهای در معرض ریسک</h3></div>
-                    <div class="card-content">${highRiskHtml}</div>
-                </div>
-            </div>
-        </div>
-    `;
-},
+        `;
+    },
     talent: () => {
         return `
             <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
