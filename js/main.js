@@ -357,12 +357,12 @@ function renderEmployeePortalPage(pageName, employee) {
                         <strong class="text-xs text-slate-500">تاریخچه مکالمات:</strong>
                         ${threadHtml || '<p class="text-xs text-slate-400 mt-2">هنوز پاسخی ثبت نشده است.</p>'}
                     </div>
-                     <div class="p-2 border-t bg-white">
-                        <form class="flex items-center gap-2">
-                             <input type="text" placeholder="پاسخ خود را بنویسید..." class="flex-grow p-2 border rounded-md text-sm">
-                             <button type="submit" class="bg-blue-600 text-white py-2 px-3 rounded-md text-sm">ارسال</button>
-                        </form>
-                     </div>
+<div class="p-2 border-t bg-white">
+    <form class="employee-reply-form flex items-center gap-2" data-id="${req.firestoreId}">
+         <input type="text" placeholder="پاسخ خود را بنویسید..." class="reply-input flex-grow p-2 border rounded-md text-sm" required>
+         <button type="submit" class="bg-blue-600 text-white py-2 px-3 rounded-md text-sm">ارسال</button>
+    </form>
+</div>
                 </div>
             `;
         }).join('');
@@ -458,6 +458,9 @@ function renderEmployeePortalPage(pageName, employee) {
 // کل این تابع را با نسخه تمیز شده زیر جایگزین کنید
 
 // کل این تابع را با نسخه جدید جایگزین کنید
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید جایگزین کنید
+
 function setupEmployeePortalEventListeners(employee) {
     document.getElementById('portal-logout-btn')?.addEventListener('click', () => signOut(auth));
     
@@ -465,12 +468,52 @@ function setupEmployeePortalEventListeners(employee) {
         showMyProfileEditForm(employee);
     });
 
-    // [!code focus:6]
-    // فعال‌سازی کلیک روی زنگوله نوتیفیکیشن کارمند
     document.getElementById('portal-notification-bell-btn')?.addEventListener('click', () => {
-        // با کلیک، مستقیم به صفحه اینباکس برو
         document.querySelector('.employee-nav-item[href="#inbox"]').click();
     });
+    
+    // [!code focus:40]
+    // فعال‌سازی فرم‌های پاسخ در صفحه درخواست‌ها
+    const mainContent = document.getElementById('employee-main-content');
+    if (mainContent) {
+        mainContent.addEventListener('submit', async (e) => {
+            if (e.target.classList.contains('employee-reply-form')) {
+                e.preventDefault();
+                const form = e.target;
+                const requestId = form.dataset.id;
+                const input = form.querySelector('.reply-input');
+                const content = input.value.trim();
+                
+                if (!content) return;
+
+                const request = state.requests.find(r => r.firestoreId === requestId);
+                if (!request) return;
+
+                const newThreadItem = {
+                    senderUid: state.currentUser.uid,
+                    content: content,
+                    createdAt: new Date(),
+                    eventType: 'comment'
+                };
+                
+                const updatedThread = [...(request.thread || []), newThreadItem];
+                
+                try {
+                    const requestRef = doc(db, `artifacts/${appId}/public/data/requests`, requestId);
+                    await updateDoc(requestRef, {
+                        thread: updatedThread,
+                        status: 'در حال انجام', // وضعیت را به "در حال انجام" برمی‌گردانیم تا ادمین متوجه پاسخ شود
+                        lastUpdatedAt: serverTimestamp()
+                    });
+                    input.value = ''; // خالی کردن کادر متن بعد از ارسال
+                    showToast("پاسخ شما ارسال شد.");
+                } catch (error) {
+                    console.error("Error submitting reply:", error);
+                    showToast("خطا در ارسال پاسخ.", "error");
+                }
+            }
+        });
+    }
 
     document.querySelectorAll('.employee-nav-item').forEach(link => {
         link.addEventListener('click', (e) => {
