@@ -912,21 +912,41 @@ const generateSmartReminders = async () => {
         const isAdmin = () => state.currentUser?.role === 'admin';
         const canEdit = () => state.currentUser?.role === 'admin' || state.currentUser?.role === 'editor';
 // این تابع را به main.js اضافه کنید
+// در فایل js/main.js
+// کل این تابع را جایگزین کنید
 const updateNotificationBell = () => {
-    if (!state.currentUser || state.currentUser.role === 'employee') return;
+    const bellWrapper = document.getElementById('notification-bell-wrapper');
+    if (!bellWrapper || !state.currentUser || state.currentUser.role === 'employee') return;
 
     const countContainer = document.getElementById('notification-count');
+    const listContainer = document.getElementById('notification-list');
 
-    const unreadRequests = (state.requests || []).filter(req => req.assignedTo === state.currentUser.uid && !req.isReadByAssignee).length;
-    const unreadReminders = (state.reminders || []).filter(rem => rem.assignedTo === state.currentUser.uid && !rem.isReadByAssignee).length;
-    const totalUnread = unreadRequests + unreadReminders;
+    const unreadRequests = (state.requests || []).filter(req => req.assignedTo === state.currentUser.uid && !req.isReadByAssignee);
+    const unreadReminders = (state.reminders || []).filter(rem => rem.assignedTo === state.currentUser.uid && !rem.isReadByAssignee);
+    const totalUnread = unreadRequests.length + unreadReminders.length;
 
+    // آپدیت کردن عدد روی زنگوله
     if (totalUnread > 0) {
         countContainer.textContent = totalUnread;
         countContainer.classList.remove('hidden');
     } else {
         countContainer.classList.add('hidden');
     }
+
+    // ساخت آیتم‌های داخل منوی کشویی
+    let notificationHtml = '';
+    unreadRequests.forEach(req => {
+        notificationHtml += `<a href="#requests" data-filter="mine" class="notification-item block p-3 hover:bg-slate-50 border-b"><p class="font-semibold">درخواست جدید: ${req.requestType}</p><p class="text-xs text-slate-500">از طرف ${req.employeeName}</p></a>`;
+    });
+    unreadReminders.forEach(rem => {
+        notificationHtml += `<a href="#tasks" data-filter="mine" class="notification-item block p-3 hover:bg-slate-50 border-b"><p class="font-semibold">یادآور جدید: ${rem.type}</p><p class="text-xs text-slate-500">${rem.text}</p></a>`;
+    });
+
+    if (totalUnread === 0) {
+        notificationHtml = '<p class="p-4 text-center text-sm text-slate-500">اعلان جدیدی وجود ندارد.</p>';
+    }
+
+    listContainer.innerHTML = notificationHtml;
 };
         const calculateDashboardMetrics = () => {
             const totalEmployees = state.employees.length;
@@ -1327,6 +1347,43 @@ requests: () => {
                     </tbody>
                 </table>
             </div>
+        </div>
+    `;
+},
+  // در فایل js/main.js، به آبجکت pages این بخش جدید را اضافه کنید
+
+tasks: () => {
+    if (!state.currentUser) return '';
+    const myTasks = (state.reminders || [])
+        .filter(r => r.assignedTo === state.currentUser.uid)
+        .sort((a, b) => new Date(a.date.toDate()) - new Date(b.date.toDate()));
+
+    const tasksHtml = myTasks.map(task => `
+        <tr class="border-b">
+            <td class="px-4 py-3">${toPersianDate(task.date)}</td>
+            <td class="px-4 py-3">${task.type}</td>
+            <td class="px-4 py-3 text-sm">${task.text}</td>
+            <td class="px-4 py-3">${task.isReadByAssignee ? 'خوانده شده' : 'جدید'}</td>
+        </tr>
+    `).join('');
+
+    return `
+        <h1 class="text-3xl font-bold text-slate-800 mb-6">وظایف من</h1>
+        <p class="text-slate-500 mb-4">در این صفحه تمام یادآورها و رویدادهایی که به شما واگذار شده است را مشاهده می‌کنید.</p>
+        <div class="bg-white p-6 rounded-xl shadow-md">
+            <table class="w-full text-sm">
+                <thead class="text-right bg-slate-50">
+                    <tr>
+                        <th class="px-4 py-2 font-semibold">تاریخ رویداد</th>
+                        <th class="px-4 py-2 font-semibold">نوع</th>
+                        <th class="px-4 py-2 font-semibold">عنوان</th>
+                        <th class="px-4 py-2 font-semibold">وضعیت</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${tasksHtml || '<tr><td colspan="4" class="text-center py-8 text-slate-500">هیچ وظیفه‌ای به شما واگذار نشده است.</td></tr>'}
+                </tbody>
+            </table>
         </div>
     `;
 },
@@ -1944,6 +2001,7 @@ const viewTeamProfile = (teamId) => {
                 if (pageName === 'organization') { setupOrganizationPageListeners(); }
                 if (pageName === 'surveys') { setupSurveysPageListeners(); }
                 if (pageName === 'requests') { setupRequestsPageListeners(); }
+              if (pageName === 'tasks') { /* اینجا در آینده تابع خودش را خواهد داشت */ }
                 if (pageName === 'analytics') { setupAnalyticsPage(); }
                 if (pageName === 'settings') {
                     if(isAdmin()) {
@@ -2580,7 +2638,8 @@ const setupRequestsPageListeners = () => {
             const requestRef = doc(db, `artifacts/${appId}/public/data/requests`, requestId);
 
             try {
-                await updateDoc(requestRef, { assignedTo: adminUid || null });
+                await updateDoc(requestRef, { assignedTo: adminUid || null,
+                                             isReadByAssignee: false});
                 showToast(`درخواست به کاربر مورد نظر واگذار شد.`);
             } catch (error) {
                 console.error("Error assigning request:", error);
@@ -3631,43 +3690,32 @@ const setupTeamProfileModalListeners = (team) => {
 // کل این تابع را با نسخه جدید و کامل جایگزین کنید
 
 const setupEventListeners = () => {
-    // رویدادهای عمومی برنامه (مربوط به مودال اصلی و مودال تایید)
-    document.getElementById('closeModal').addEventListener('click', () => closeModal(mainModal, mainModalContainer));
-    mainModal.addEventListener('click', (e) => { if (e.target === mainModal) closeModal(mainModal, mainModalContainer); });
-    document.getElementById('confirmCancel').addEventListener('click', () => closeModal(confirmModal, confirmModalContainer)); 
-    document.getElementById('confirmAccept').addEventListener('click', () => { confirmCallback(); closeModal(confirmModal, confirmModalContainer); });
+    // ... کدهای قبلی ...
 
-    // منوی موبایل
-    const menuBtn = document.getElementById('menu-btn'); 
-    const sidebar = document.getElementById('sidebar'); 
-    const overlay = document.getElementById('sidebar-overlay'); 
-    const toggleMenu = () => { sidebar.classList.toggle('translate-x-full'); overlay.classList.toggle('hidden'); };
-    menuBtn.addEventListener('click', toggleMenu);
-    overlay.addEventListener('click', toggleMenu);
-    
-    // ناوبری (منوی کناری ادمین)
-    const handleNavClick = (e) => { 
-        const link = e.target.closest('a'); 
-        if (link && (link.classList.contains('sidebar-item') || link.classList.contains('sidebar-logo'))) { 
-            e.preventDefault(); 
-            const pageName = link.getAttribute('href').substring(1); 
-            navigateTo(pageName); 
-            if (window.innerWidth < 768) toggleMenu(); 
-        } 
-    };
-    document.getElementById('sidebar').addEventListener('click', handleNavClick);
-    document.querySelector('header .sidebar-logo')?.addEventListener('click', handleNavClick);
-    
-    // [!code focus:7]
-    // بخش جدید: فعال‌سازی کلیک روی آیکون زنگوله نوتیفیکیشن
-    document.getElementById('notification-bell')?.addEventListener('click', () => {
-        if (state.currentUser && state.currentUser.role !== 'employee') {
-            state.requestFilter = 'mine'; // فیلتر را روی "واگذار شده به من" تنظیم کن
-            navigateTo('requests'); // به صفحه درخواست‌ها برو
-        }
-    });
-    
-    // روتر اصلی برنامه که به تغییرات URL گوش می‌دهد
+    // --- بخش نوتیفیکیشن ---
+    const bellBtn = document.getElementById('notification-bell-btn');
+    const dropdown = document.getElementById('notification-dropdown');
+    if (bellBtn && dropdown) {
+        bellBtn.addEventListener('click', () => {
+            dropdown.classList.toggle('hidden');
+        });
+        // بستن منو با کلیک بیرون از آن
+        document.addEventListener('click', (e) => {
+            if (!bellBtn.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
+        // مدیریت کلیک روی آیتم‌های نوتیفیکیشن
+        dropdown.addEventListener('click', (e) => {
+            const item = e.target.closest('.notification-item');
+            if (item) {
+                state.requestFilter = item.dataset.filter; // 'mine'
+                navigateTo(item.getAttribute('href').substring(1));
+                dropdown.classList.add('hidden');
+            }
+        });
+    }
+
     window.addEventListener('hashchange', router);
 };
 // کل تابع فعلی را با این کد جایگزین کنید
