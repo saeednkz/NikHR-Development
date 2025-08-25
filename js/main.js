@@ -1992,36 +1992,48 @@ const viewTeamProfile = (teamId) => {
             }
         };
 
-        const renderPage = (pageName) => {
-            try {
-                if (!state.currentUser) {
-                    showLoginPage();
-                    return;
-                }
-                
-                document.getElementById('settings-nav-link').style.display = isAdmin() ? 'flex' : 'none';
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید و کامل جایگزین کنید
 
-                mainContent.innerHTML = pages[pageName]();
-                
-                if (pageName === 'dashboard') { renderDashboardCharts(); setupDashboardListeners(); }
-                if (pageName === 'talent') { renderEmployeeTable(); setupTalentPageListeners(); }
-                if (pageName === 'organization') { setupOrganizationPageListeners(); }
-                if (pageName === 'surveys') { setupSurveysPageListeners(); }
-                if (pageName === 'requests') { setupRequestsPageListeners(); }
-              if (pageName === 'tasks') { setupTasksPageListeners(); }
-                if (pageName === 'analytics') { setupAnalyticsPage(); }
-              if (pageName === 'documents') { setupDocumentsPageListeners(); } 
-                if (pageName === 'settings') {
-                    if(isAdmin()) {
-                        setupSettingsPageListeners();
-                    }
-                }
-                lucide.createIcons();
-            } catch (error) {
-                console.error("Failed to render page:", pageName, error);
-                mainContent.innerHTML = `<div class="text-red-600 text-center p-8"><h1>خطا در نمایش صفحه</h1><p>${error.message}</p></div>`;
+const renderPage = (pageName) => {
+    try {
+        if (!state.currentUser) {
+            showLoginPage();
+            return;
+        }
+        
+        // اطمینان حاصل کنید که صفحه در آبجکت pages وجود دارد
+        if (typeof pages[pageName] !== 'function') {
+            console.error(`Page "${pageName}" not found or is not a function.`);
+            mainContent.innerHTML = `<div class="text-center p-10"><h1>صفحه یافت نشد</h1><p>صفحه‌ای با آدرس #${pageName} وجود ندارد.</p></div>`;
+            return;
+        }
+
+        document.getElementById('settings-nav-link').style.display = isAdmin() ? 'flex' : 'none';
+
+        mainContent.innerHTML = pages[pageName]();
+        
+        // فراخوانی تابع فعال‌سازی مخصوص هر صفحه
+        if (pageName === 'dashboard') { renderDashboardCharts(); setupDashboardListeners(); }
+        if (pageName === 'talent') { renderEmployeeTable(); setupTalentPageListeners(); }
+        if (pageName === 'organization') { setupOrganizationPageListeners(); }
+        if (pageName === 'surveys') { setupSurveysPageListeners(); }
+        if (pageName === 'requests') { setupRequestsPageListeners(); }
+        if (pageName === 'tasks') { setupTasksPageListeners(); }
+        if (pageName === 'analytics') { setupAnalyticsPage(); }
+        if (pageName === 'documents') { setupDocumentsPageListeners(); }
+        if (pageName === 'announcements') { setupAnnouncementsPageListeners(); } // [!code ++] این خط مشکل را حل می‌کند
+        if (pageName === 'settings') {
+            if(isAdmin()) {
+                setupSettingsPageListeners();
             }
-        };
+        }
+        lucide.createIcons();
+    } catch (error) {
+        console.error("Failed to render page:", pageName, error);
+        mainContent.innerHTML = `<div class="text-red-600 text-center p-8"><h1>خطا در نمایش صفحه</h1><p>${error.message}</p></div>`;
+    }
+};
 
         // --- CHART RENDERING FUNCTIONS ---
         const destroyCharts = () => { Object.values(charts).forEach(chart => chart?.destroy()); charts = {}; };
