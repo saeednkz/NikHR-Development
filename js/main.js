@@ -144,13 +144,18 @@ async function initializeFirebase() {
         }
 
 // کل این تابع را با نسخه جدید جایگزین کنید
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید و کامل جایگزین کنید
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید و کامل جایگزین کنید
 function listenToData() {
-    detachAllListeners(); // ابتدا شنونده‌های قبلی را پاک می‌کنیم (برای اطمینان)
+    detachAllListeners(); // ابتدا شنونده‌های قبلی را پاک می‌کنیم
     
     const collectionsToListen = [
         'employees', 'teams', 'reminders', 'surveyResponses', 'users', 
-        'competencies', 'expenses', 'pettyCashCards', 'chargeHistory', 
-        'requests', 'assignmentRules', 'companyDocuments','announcements'
+        'competencies', 'requests', 'assignmentRules', 'companyDocuments',
+        // کالکشن‌های مالی را موقتاً حذف می‌کنیم تا خطاهای دسترسی ندهند
+        // 'expenses', 'pettyCashCards', 'chargeHistory' 
     ];
     let initialLoads = collectionsToListen.length;
 
@@ -158,6 +163,10 @@ function listenToData() {
         initialLoads--;
         if (initialLoads === 0) {
             calculateAndApplyAnalytics();
+            
+            // فراخوانی تابع نوتیفیکیشن بعد از بارگذاری کامل داده‌ها
+            updateNotificationsForCurrentUser(); 
+            
             if (state.currentUser.role === 'employee') {
                 renderEmployeePortal();
             } else {
@@ -170,34 +179,28 @@ function listenToData() {
 
     collectionsToListen.forEach(colName => {
         const colRef = collection(db, `artifacts/${appId}/public/data/${colName}`);
-        // [!code focus:4]
-        // شنونده جدید را در لیست ذخیره می‌کنیم
         const unsubscribe = onSnapshot(colRef, (snapshot) => {
             state[colName] = snapshot.docs.map(doc => ({ firestoreId: doc.id, ...doc.data() }));
             
-            updateNotificationBell();
-           if (state.currentUser && state.currentUser.role === 'employee') {
-        const employeeProfile = state.employees.find(e => e.uid === state.currentUser.uid);
-        if (employeeProfile) {
-            updateEmployeeNotificationBell(employeeProfile); // [!code ++]
-        }
-    }
-
             if (initialLoads > 0) {
                 onDataLoaded();
             } else {
+                // با هر تغییر در داده‌ها، تمام بخش‌ها را بروز می‌کنیم
                 calculateAndApplyAnalytics();
-                if (state.currentUser.role === 'employee') {
-                    // اگر کارمند در حال جابجایی بین صفحات پورتال باشد، صفحه را دوباره رندر نکن
-                } else if (!window.location.hash.startsWith('#survey-taker')) {
+                updateNotificationsForCurrentUser(); // بروزرسانی نوتیفیکیشن‌ها در لحظه
+                
+                if (state.currentUser.role !== 'employee' && !window.location.hash.startsWith('#survey-taker')) {
                     renderPage(state.currentPage);
                 }
             }
         }, (error) => {
             console.error(`Error listening to ${colName}:`, error);
+            // اگر کالکشنی وجود نداشت، آن را به عنوان آرایه خالی در نظر بگیر
+            if (!state[colName]) state[colName] = [];
+            if (initialLoads > 0) onDataLoaded();
         });
         
-        activeListeners.push(unsubscribe); // اضافه کردن به لیست
+        activeListeners.push(unsubscribe);
     });
 }
 // این دو تابع جدید را به فایل js/main.js اضافه کنید
@@ -1199,6 +1202,20 @@ const updateNotificationBell = () => {
         countContainer.classList.add('hidden');
     }
 };   
+// این تابع جدید را به js/main.js اضافه کنید
+const updateNotificationsForCurrentUser = () => {
+    if (!state.currentUser) return;
+
+    if (state.currentUser.role === 'employee') {
+        const employeeProfile = state.employees.find(e => e.uid === state.currentUser.uid);
+        if (employeeProfile) {
+            updateEmployeeNotificationBell(employeeProfile);
+        }
+    } else {
+        // برای ادمین، ویرایشگر و مشاهده‌گر
+        updateNotificationBell();
+    }
+};
 const pages = {
     dashboard: () => {
         calculateDashboardMetrics();
