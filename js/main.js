@@ -7,6 +7,7 @@
             addDoc, getDocs, writeBatch, deleteDoc, updateDoc, query, serverTimestamp
         } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
 // وارد کردن توابع مربوط به احراز هویت از فایل auth.js
 import { 
     showLoginPage, 
@@ -84,7 +85,7 @@ const firebaseConfig = {
   messagingSenderId: "307429828572",
   appId: "1:307429828572:web:132d614871cae0ad965119"
 };
-        let app, auth, db, storage;
+        let app, auth, db, storage, functions;
         
 
 
@@ -98,6 +99,7 @@ async function initializeFirebase() {
         auth = getAuth(app);
         db = getFirestore(app);
         storage = getStorage(app);
+      functions = getFunctions(app); 
 
         // ✅ این خط فراموش شده را اینجا اضافه کنید
         // این دستور، دکمه‌های ورود، ثبت‌نام و خروج را فعال می‌کند
@@ -3430,6 +3432,9 @@ const isProfileComplete = (employee) => {
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
 
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید و کامل جایگزین کنید
+
 const showEmployeeForm = (employeeId = null) => {
     const isEditing = employeeId !== null;
     const emp = isEditing ? state.employees.find(e => e.firestoreId === employeeId) : {};
@@ -3454,16 +3459,16 @@ const showEmployeeForm = (employeeId = null) => {
                 </div>
                 <div>
                     <label for="jobTitle" class="block text-sm font-medium text-slate-700">عنوان شغلی</label>
-                    <input type="text" id="jobTitle" value="${emp.jobTitle || ''}" placeholder="مثال: کارشناس بازاریابی دیجیتال" class="mt-1 block w-full p-2 border border-slate-300 rounded-lg">
+                    <input type="text" id="jobTitle" value="${emp.jobTitle || ''}" class="mt-1 block w-full p-2 border border-slate-300 rounded-lg">
                 </div>
                 <div>
                     <label for="level" class="block text-sm font-medium text-slate-700">سطح</label>
                     <select id="level" class="mt-1 block w-full p-2 border border-slate-300 rounded-lg">
-                        <option value="Junior" ${emp.level === 'Junior' ? 'selected' : ''}>Junior (کارشناس)</option>
-                        <option value="Mid-level" ${emp.level === 'Mid-level' ? 'selected' : ''}>Mid-level (کارشناس ارشد)</option>
-                        <option value="Senior" ${emp.level === 'Senior' ? 'selected' : ''}>Senior (خبره)</option>
-                        <option value="Lead" ${emp.level === 'Lead' ? 'selected' : ''}>Lead (راهبر)</option>
-                        <option value="Manager" ${emp.level === 'Manager' ? 'selected' : ''}>Manager (مدیر)</option>
+                        <option value="Junior">Junior (کارشناس)</option>
+                        <option value="Mid-level">Mid-level (کارشناس ارشد)</option>
+                        <option value="Senior">Senior (خبره)</option>
+                        <option value="Lead">Lead (راهبر)</option>
+                        <option value="Manager">Manager (مدیر)</option>
                     </select>
                 </div>
                 <div>
@@ -3476,8 +3481,8 @@ const showEmployeeForm = (employeeId = null) => {
                 <div>
                     <label for="status" class="block text-sm font-medium text-slate-700">وضعیت</label>
                     <select id="status" class="mt-1 block w-full p-2 border border-slate-300 rounded-lg">
-                        <option value="فعال" ${emp.status === 'فعال' ? 'selected' : ''}>فعال</option>
-                        <option value="غیرفعال" ${emp.status === 'غیرفعال' ? 'selected' : ''}>غیرفعال</option>
+                        <option value="فعال">فعال</option>
+                        <option value="غیرفعال">غیرفعال</option>
                     </select>
                 </div>
                 <div class="md:col-span-2">
@@ -3493,11 +3498,54 @@ const showEmployeeForm = (employeeId = null) => {
     openModal(mainModal, mainModalContainer);
     activatePersianDatePicker('startDate', emp.startDate);
 
-    // منطق ذخیره‌سازی در قدم بعدی اصلاح خواهد شد
     document.getElementById('employee-form').addEventListener('submit', async (e) => {
         e.preventDefault();
-        alert("فرم آماده است، در مرحله بعد منطق ذخیره‌سازی را با Cloud Function جایگزین می‌کنیم.");
-        closeModal(mainModal, mainModalContainer);
+        if (isEditing) {
+            // منطق ویرایش در اینجا قرار می‌گیرد که فعلا ساده است
+            // ...
+            showToast("ویرایش کارمند فعلا فقط از طریق پروفایل کامل او امکان‌پذیر است.", "error");
+            return;
+        }
+
+        const saveBtn = e.target.querySelector('button[type="submit"]');
+        saveBtn.disabled = true;
+        saveBtn.innerText = 'در حال ساخت کاربر...';
+
+        const name = document.getElementById('name').value;
+        const employeeId = document.getElementById('id').value;
+        const email = document.getElementById('employee-email').value;
+        const selectedTeamId = document.getElementById('department-team-select').value;
+        const selectedTeam = state.teams.find(t => t.firestoreId === selectedTeamId);
+
+        const employeeData = {
+            name: name,
+            id: employeeId,
+            jobTitle: document.getElementById('jobTitle').value,
+            level: document.getElementById('level').value,
+            department: selectedTeam ? selectedTeam.name : '',
+            status: document.getElementById('status').value,
+            startDate: persianToEnglishDate(document.getElementById('startDate').value),
+            avatar: `https://placehold.co/100x100/E2E8F0/4A5568?text=${name.substring(0, 2)}`,
+            personalInfo: { email: email }
+        };
+
+        try {
+            const createNewEmployee = httpsCallable(functions, 'createNewEmployee');
+            await createNewEmployee({ 
+                name, 
+                employeeId, 
+                email, 
+                employeeData 
+            });
+            
+            showToast("کارمند و حساب کاربری با موفقیت ایجاد شد!");
+            closeModal(mainModal, mainModalContainer);
+        } catch (error) {
+            console.error("Cloud function error:", error);
+            showToast(`خطا: ${error.message}`, "error");
+            saveBtn.disabled = false;
+            saveBtn.innerText = 'ذخیره';
+        }
     });
 };
         const showPettyCashManagementModal = () => {
