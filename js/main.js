@@ -508,6 +508,9 @@ function renderEmployeePortalPage(pageName, employee) {
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
 
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید جایگزین کنید
+
 function setupEmployeePortalEventListeners(employee) {
     document.getElementById('portal-logout-btn')?.addEventListener('click', () => signOut(auth));
     
@@ -519,45 +522,24 @@ function setupEmployeePortalEventListeners(employee) {
         document.querySelector('.employee-nav-item[href="#inbox"]').click();
     });
     
-    // [!code focus:40]
-    // فعال‌سازی فرم‌های پاسخ در صفحه درخواست‌ها
     const mainContent = document.getElementById('employee-main-content');
     if (mainContent) {
+        // رویداد برای فرم‌های پاسخ در صفحه درخواست‌ها
         mainContent.addEventListener('submit', async (e) => {
             if (e.target.classList.contains('employee-reply-form')) {
                 e.preventDefault();
-                const form = e.target;
-                const requestId = form.dataset.id;
-                const input = form.querySelector('.reply-input');
-                const content = input.value.trim();
-                
-                if (!content) return;
+                // ... (منطق ارسال پاسخ درخواست که از قبل داشتیم)
+            }
+        });
 
-                const request = state.requests.find(r => r.firestoreId === requestId);
-                if (!request) return;
-
-                const newThreadItem = {
-                    senderUid: state.currentUser.uid,
-                    content: content,
-                    createdAt: new Date(),
-                    eventType: 'comment'
-                };
-                
-                const updatedThread = [...(request.thread || []), newThreadItem];
-                
-                try {
-                    const requestRef = doc(db, `artifacts/${appId}/public/data/requests`, requestId);
-                    await updateDoc(requestRef, {
-                        thread: updatedThread,
-                        status: 'در حال انجام', // وضعیت را به "در حال انجام" برمی‌گردانیم تا ادمین متوجه پاسخ شود
-                        lastUpdatedAt: serverTimestamp()
-                    });
-                    input.value = ''; // خالی کردن کادر متن بعد از ارسال
-                    showToast("پاسخ شما ارسال شد.");
-                } catch (error) {
-                    console.error("Error submitting reply:", error);
-                    showToast("خطا در ارسال پاسخ.", "error");
-                }
+        // [!code focus:11]
+        // رویداد جدید برای دکمه‌های ارسال تبریک
+        mainContent.addEventListener('click', (e) => {
+            const sendWishBtn = e.target.closest('.send-wish-btn');
+            if (sendWishBtn) {
+                const targetUid = sendWishBtn.dataset.id;
+                const targetName = sendWishBtn.dataset.name;
+                showBirthdayWishForm(targetUid, targetName);
             }
         });
     }
@@ -4088,6 +4070,44 @@ const setupTeamProfileModalListeners = (team) => {
                 try { const docRef = doc(db, `artifacts/${appId}/public/data/teams`, isEditing ? team.firestoreId : formData.id); await setDoc(docRef, formData, { merge: isEditing }); closeModal(mainModal, mainModalContainer); showToast(isEditing ? "تیم با موفقیت ویرایش شد." : "تیم با موفقیت اضافه شد."); } catch (error) { console.error("Error saving team:", error); showToast("خطا در ذخیره اطلاعات تیم.", "error"); }
             });
         };
+// این تابع جدید را به js/main.js اضافه کنید
+
+const showBirthdayWishForm = (targetUid, targetName) => {
+    modalTitle.innerText = `ارسال تبریک برای ${targetName}`;
+    modalContent.innerHTML = `
+        <form id="birthday-wish-form" class="space-y-4">
+            <div>
+                <label for="wish-message" class="block font-medium mb-1">پیام تبریک شما:</label>
+                <textarea id="wish-message" rows="5" class="w-full p-2 border rounded-md" placeholder="یک پیام شاد بنویسید..." required></textarea>
+            </div>
+            <div class="pt-4 flex justify-end">
+                <button type="submit" class="bg-pink-600 text-white py-2 px-6 rounded-md hover:bg-pink-700">ارسال پیام</button>
+            </div>
+        </form>
+    `;
+    openModal(mainModal, mainModalContainer);
+
+    document.getElementById('birthday-wish-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const wishData = {
+            wisherUid: state.currentUser.uid,
+            wisherName: state.employees.find(emp => emp.uid === state.currentUser.uid)?.name || state.currentUser.email,
+            targetUid: targetUid,
+            message: document.getElementById('wish-message').value,
+            createdAt: serverTimestamp()
+        };
+
+        try {
+            await addDoc(collection(db, `artifacts/${appId}/public/data/birthdayWishes`), wishData);
+            showToast("پیام تبریک شما با موفقیت ارسال شد!");
+            closeModal(mainModal, mainModalContainer);
+        } catch (error) {
+            console.error("Error sending birthday wish:", error);
+            showToast("خطا در ارسال پیام.", "error");
+        }
+    });
+};
 // این تابع جدید را به js/main.js اضافه کنید
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
