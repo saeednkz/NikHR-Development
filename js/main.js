@@ -328,11 +328,14 @@ const renderMyBirthdayWishesWidget = (employee) => {
         </div>
     `;
 };
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید و کامل جایگزین کنید
+
 function renderEmployeePortalPage(pageName, employee) {
     const contentContainer = document.getElementById('employee-main-content');
     if (!contentContainer) return;
 
-    // --- بخش پروفایل (با تغییرات جدید) ---
+    // --- بخش پروفایل ---
     if (pageName === 'profile') {
         const manager = state.teams.find(t => t.memberIds?.includes(employee.id))
             ? state.employees.find(e => e.id === state.teams.find(t => t.memberIds.includes(employee.id)).leaderId)
@@ -365,7 +368,7 @@ function renderEmployeePortalPage(pageName, employee) {
             <div class="space-y-6">
                 ${renderMyBirthdayWishesWidget(employee)}
                 ${renderBirthdaysWidget(employee)}
-
+            
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div class="lg:col-span-1 space-y-6">
                         <div class="bg-white p-6 rounded-xl shadow-md text-center">
@@ -409,8 +412,8 @@ function renderEmployeePortalPage(pageName, employee) {
                 </div>
             </div>
         `;
-    }
-    // --- بخش دایرکتوری (بدون تغییر) ---
+    } 
+    // --- بخش دایرکتوری ---
     else if (pageName === 'directory') {
         const teamCardsHtml = state.teams.map(team => {
             const leader = state.employees.find(e => e.id === team.leaderId);
@@ -445,16 +448,19 @@ function renderEmployeePortalPage(pageName, employee) {
         contentContainer.innerHTML = `<h1 class="text-3xl font-bold text-slate-800 mb-6">دایرکتوری سازمان</h1><div class="space-y-6">${teamCardsHtml || '<p>هنوز تیمی در سازمان ثبت نشده است.</p>'}</div>`;
     
     } 
-    // --- بخش درخواست‌ها (بدون تغییر) ---
- else if (pageName === 'requests') {
-        const myRequests = (state.requests || [])
-            .filter(req => req.uid === employee.uid)
+    // --- بخش درخواست‌ها ---
+    else if (pageName === 'requests') {
+        const myRequests = (state.requests || []).filter(req => req.uid === employee.uid)
             .sort((a, b) => new Date(b.createdAt?.toDate()) - new Date(a.createdAt?.toDate()));
 
         const requestsHtml = myRequests.map(req => {
-            const statusColors = { /* ... رنگ‌ها مثل قبل ... */ };
+            const statusColors = {
+                'درحال بررسی': 'bg-yellow-100 text-yellow-800',
+                'در حال انجام': 'bg-blue-100 text-blue-800',
+                'تایید شده': 'bg-green-100 text-green-800',
+                'رد شده': 'bg-red-100 text-red-800'
+            };
             
-            // نمایش تاریخچه مکالمات
             const threadHtml = (req.thread || []).map(item => {
                 const sender = state.users.find(u => u.firestoreId === item.senderUid) || { name: 'شما' };
                 return `<div class="p-2 mt-2 text-xs border-t ${sender.name === 'شما' ? 'bg-white' : 'bg-slate-50'}"><p class="whitespace-pre-wrap">${item.content}</p><div class="text-slate-400 text-left mt-1">${sender.name} - ${toPersianDate(item.createdAt)}</div></div>`;
@@ -473,12 +479,12 @@ function renderEmployeePortalPage(pageName, employee) {
                         <strong class="text-xs text-slate-500">تاریخچه مکالمات:</strong>
                         ${threadHtml || '<p class="text-xs text-slate-400 mt-2">هنوز پاسخی ثبت نشده است.</p>'}
                     </div>
-<div class="p-2 border-t bg-white">
-    <form class="employee-reply-form flex items-center gap-2" data-id="${req.firestoreId}">
-         <input type="text" placeholder="پاسخ خود را بنویسید..." class="reply-input flex-grow p-2 border rounded-md text-sm" required>
-         <button type="submit" class="bg-blue-600 text-white py-2 px-3 rounded-md text-sm">ارسال</button>
-    </form>
-</div>
+                     <div class="p-2 border-t bg-white">
+                        <form class="employee-reply-form flex items-center gap-2" data-id="${req.firestoreId}">
+                             <input type="text" placeholder="پاسخ خود را بنویسید..." class="reply-input flex-grow p-2 border rounded-md text-sm" required>
+                             <button type="submit" class="bg-blue-600 text-white py-2 px-3 rounded-md text-sm">ارسال</button>
+                        </form>
+                     </div>
                 </div>
             `;
         }).join('');
@@ -494,8 +500,8 @@ function renderEmployeePortalPage(pageName, employee) {
                 ${requestsHtml || '<p class="text-center text-slate-500 py-8">شما هنوز درخواستی ثبت نکرده‌اید.</p>'}
             </div>
         `;
-    } 
-    // --- بخش اسناد سازمان (بدون تغییر) ---
+    }
+    // --- بخش اسناد سازمان ---
     else if (pageName === 'documents') {
         const documentsByCategory = (state.companyDocuments || []).reduce((acc, doc) => {
             const category = doc.category || 'عمومی';
@@ -517,62 +523,51 @@ function renderEmployeePortalPage(pageName, employee) {
         }).join('');
 
         contentContainer.innerHTML = `<h1 class="text-3xl font-bold text-slate-800 mb-6">اسناد و فایل‌های سازمان</h1><div class="bg-white p-6 rounded-xl shadow-md">${documentsHtml || '<p class="text-center text-slate-500 py-8">هنوز سندی در سیستم بارگذاری نشده است.</p>'}</div>`;
-    }
-    // --- بخش صندوق پیام (اینباکس) با تغییر جدید ---
-  // کد کامل و اصلاح شده برای بخش inbox در تابع renderEmployeePortalPage
+    } 
+    // --- بخش صندوق پیام (اینباکس) ---
+    else if (pageName === 'inbox') {
+        // [!code focus:4]
+        // این کد جدید است که در ابتدای این بخش اضافه می‌شود
+        // زمان بازدید از اینباکس را در پروفایل کاربر آپدیت کن
+        const employeeRef = doc(db, `artifacts/${appId}/public/data/employees`, employee.firestoreId);
+        updateDoc(employeeRef, { "personalInfo.lastCheckedInbox": serverTimestamp() })
+            .then(() => {
+                const updatedEmployee = { ...employee, personalInfo: { ...employee.personalInfo, lastCheckedInbox: new Date() } };
+                updateEmployeeNotificationBell(updatedEmployee);
+            });
+    
+        const myTeam = state.teams.find(team => team.memberIds?.includes(employee.id));
+        const myTeamId = myTeam ? myTeam.firestoreId : null;
 
-else if (pageName === 'inbox') {
-    // ۱. به‌روزرسانی زمان آخرین بازدید از اینباکس (مانند قبل)
+        const myMessages = (state.announcements || [])
+            .filter(msg => {
+                const targets = msg.targets;
+                if (targets.type === 'public') return true;
+                if (targets.type === 'roles' && targets.roles?.includes('employee')) return true;
+                if (targets.type === 'users' && targets.userIds?.includes(employee.firestoreId)) return true;
+                if (targets.type === 'teams' && targets.teamIds?.includes(myTeamId)) return true;
+                return false;
+            })
+            .sort((a, b) => new Date(b.createdAt?.toDate()) - new Date(a.createdAt?.toDate()));
 
-    // ۲. پیدا کردن تیم کارمند برای فیلتر پیام‌های تیمی (مانند قبل)
-    const myTeam = state.teams.find(team => team.memberIds?.includes(employee.id));
-    const myTeamId = myTeam ? myTeam.firestoreId : null;
-
-    // ۳. فیلتر کردن پیام‌های ادمین (اعلانات)
-    const adminMessages = (state.announcements || [])
-        .filter(msg => {
-            const targets = msg.targets;
-            if (targets.type === 'public') return true;
-            if (targets.type === 'roles' && targets.roles?.includes('employee')) return true;
-            if (targets.type === 'users' && targets.userIds?.includes(employee.firestoreId)) return true;
-            if (targets.type === 'teams' && targets.teamIds?.includes(myTeamId)) return true;
-            return false;
-        });
-
-    // ۴. فیلتر کردن پیام‌های تبریک تولد دریافتی
-    const birthdayWishes = (state.birthdayWishes || [])
-        .filter(wish => wish.targetUid === employee.uid)
-        .map(wish => ({ // تبدیل فرمت تبریک به فرمت پیام استاندارد
-            title: `تبریک تولد از طرف ${wish.wisherName}`,
-            content: wish.message,
-            createdAt: wish.createdAt,
-            attachmentUrl: null
-        }));
-
-    // ۵. ترکیب هر دو نوع پیام و مرتب‌سازی بر اساس تاریخ
-    const allMyMessages = [...adminMessages, ...birthdayWishes]
-        .sort((a, b) => new Date(b.createdAt?.toDate()) - new Date(a.createdAt?.toDate()));
-
-    // ۶. رندر کردن لیست نهایی پیام‌ها
-    const messagesHtml = allMyMessages.map(msg => `
-        <div class="p-4 border rounded-lg bg-white shadow-sm">
-            <div class="flex justify-between items-center mb-2">
-                <h3 class="font-bold text-slate-800">${msg.title}</h3>
-                <span class="text-xs text-slate-400">${toPersianDate(msg.createdAt)}</span>
+        const messagesHtml = myMessages.map(msg => `
+            <div class="p-4 border rounded-lg bg-white shadow-sm">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="font-bold text-slate-800">${msg.title}</h3>
+                    <span class="text-xs text-slate-400">${toPersianDate(msg.createdAt)}</span>
+                </div>
+                <p class="text-sm text-slate-600 whitespace-pre-wrap">${msg.content}</p>
+                ${msg.attachmentUrl ? `<a href="${msg.attachmentUrl}" target="_blank" class="inline-block mt-3 text-sm text-blue-600 font-semibold hover:underline">دانلود فایل ضمیمه</a>` : ''}
             </div>
-            <p class="text-sm text-slate-600 whitespace-pre-wrap">${msg.content}</p>
-            ${msg.attachmentUrl ? `<a href="${msg.attachmentUrl}" target="_blank" class="inline-block mt-3 text-sm text-blue-600 font-semibold hover:underline">دانلود فایل ضمیمه</a>` : ''}
-        </div>
-    `).join('');
+        `).join('');
 
-    // ۷. نمایش نتیجه نهایی در صفحه
-    contentContainer.innerHTML = `
-        <h1 class="text-3xl font-bold text-slate-800 mb-6">صندوق پیام</h1>
-        <div class="space-y-4">
-            ${messagesHtml || '<p class="text-center text-slate-500 py-8">شما هیچ پیام جدیدی ندارید.</p>'}
-        </div>
-    `;
-}
+        contentContainer.innerHTML = `
+            <h1 class="text-3xl font-bold text-slate-800 mb-6">صندوق پیام</h1>
+            <div class="space-y-4">
+                ${messagesHtml || '<p class="text-center text-slate-500 py-8">شما هیچ پیام جدیدی ندارید.</p>'}
+            </div>
+        `;
+    }
     // --- بخش پیش‌فرض ---
     else {
         contentContainer.innerHTML = `<h1>صفحه مورد نظر یافت نشد.</h1>`;
@@ -1733,6 +1728,15 @@ requests: () => {
 // کل این تابع را با نسخه جدید جایگزین کنید
 tasks: () => {
     if (!state.currentUser) return '';
+      const unreadTasks = (state.reminders || []).filter(r => r.assignedTo === state.currentUser.uid && !r.isReadByAssignee);
+    if (unreadTasks.length > 0) {
+        const batch = writeBatch(db);
+        unreadTasks.forEach(task => {
+            const docRef = doc(db, `artifacts/${appId}/public/data/reminders`, task.firestoreId);
+            batch.update(docRef, { isReadByAssignee: true });
+        });
+        batch.commit().catch(err => console.error("Error marking tasks as read:", err));
+    }
     const admins = state.users.filter(u => u.role === 'admin');
     const myTasks = (state.reminders || [])
         .filter(r => r.assignedTo === state.currentUser.uid)
@@ -3035,7 +3039,9 @@ const setupRequestsPageListeners = () => {
                 const docRef = doc(db, `artifacts/${appId}/public/data/requests`, req.firestoreId);
                 batch.update(docRef, { isReadByAssignee: true });
             });
-            batch.commit().catch(err => console.error("Error marking requests as read:", err));
+              batch.commit().then(() => {
+                updateNotificationBell(); // [!code ++] بروزرسانی فوری زنگوله
+            }).catch(err => console.error("Error marking requests as read:", err));
         }
     }
 
