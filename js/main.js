@@ -127,21 +127,37 @@ async function initializeFirebase() {
     }
 }
 
-        async function fetchUserRole(user) {
-            const userRef = doc(db, `artifacts/${appId}/public/data/users`, user.uid);
-            const userSnap = await getDoc(userRef);
-            if (userSnap.exists()) {
-                state.currentUser = { uid: user.uid, email: user.email, ...userSnap.data() };
-            } else {
-                const usersCol = collection(db, `artifacts/${appId}/public/data/users`);
-                const usersSnapshot = await getDocs(usersCol);
-                const isFirstUser = usersSnapshot.empty;
-                const newUserRole = isFirstUser ? 'admin' : 'viewer';
-                const newUser = { email: user.email, role: newUserRole, createdAt: serverTimestamp() };
-                await setDoc(userRef, newUser);
-                state.currentUser = { uid: user.uid, ...newUser };
-            }
+// کد اصلاح شده برای main.js
+
+async function fetchUserRole(user) {
+    const userRef = doc(db, `artifacts/${appId}/public/data/users`, user.uid);
+    const userSnap = await getDoc(userRef);
+
+    if (userSnap.exists()) {
+        // اگر کاربر نقش مشخصی داشت، همان را استفاده کن (رفتار قبلی)
+        state.currentUser = { uid: user.uid, email: user.email, ...userSnap.data() };
+    } else {
+        // اگر کاربر نقش نداشت، چک کن آیا پروفایل پرسنلی دارد یا نه
+        const employeeRef = doc(db, `artifacts/${appId}/public/data/employees`, user.uid);
+        const employeeSnap = await getDoc(employeeRef);
+
+        if (employeeSnap.exists()) {
+            // اگر پروفایل پرسنلی داشت، نقش او را 'employee' قرار بده
+            const newUser = { email: user.email, role: 'employee', createdAt: serverTimestamp() };
+            await setDoc(userRef, newUser); // این نقش را در دیتابیس هم برایش ثبت کن
+            state.currentUser = { uid: user.uid, ...newUser };
+        } else {
+            // اگر پروفایل پرسنلی هم نداشت، همان منطق قبلی را اجرا کن
+            const usersCol = collection(db, `artifacts/${appId}/public/data/users`);
+            const usersSnapshot = await getDocs(usersCol);
+            const isFirstUser = usersSnapshot.empty;
+            const newUserRole = isFirstUser ? 'admin' : 'viewer';
+            const newUser = { email: user.email, role: newUserRole, createdAt: serverTimestamp() };
+            await setDoc(userRef, newUser);
+            state.currentUser = { uid: user.uid, ...newUser };
         }
+    }
+}
 
 // کل این تابع را با نسخه جدید جایگزین کنید
 // در فایل js/main.js
@@ -4281,21 +4297,28 @@ const setupEventListeners = () => {
     }
 
     // بخش ۳: ناوبری (منوی کناری ادمین)
-    const handleNavClick = (e) => { 
-        const link = e.target.closest('a'); 
-        if (link && (link.classList.contains('sidebar-item') || link.classList.contains('sidebar-logo'))) { 
-            e.preventDefault(); 
-            const pageName = link.getAttribute('href').substring(1); 
-            navigateTo(pageName); 
-            // بستن منوی موبایل بعد از کلیک
-            if (window.innerWidth < 768) {
-                const sidebar = document.getElementById('sidebar');
-                const overlay = document.getElementById('sidebar-overlay');
-                if (sidebar) sidebar.classList.add('translate-x-full');
-                if (overlay) overlay.classList.add('hidden');
-            }
-        } 
-    };
+// کد اصلاح شده برای main.js
+
+const handleNavClick = (e) => {
+    const link = e.target.closest('a');
+    // اگر لینکی وجود نداشت یا لینک مربوط به دکمه خروج بود، ادامه نده
+    if (!link || link.id === 'logout-btn') {
+        return;
+    }
+
+    if (link.classList.contains('sidebar-item') || link.classList.contains('sidebar-logo')) {
+        e.preventDefault();
+        const pageName = link.getAttribute('href').substring(1);
+        navigateTo(pageName);
+        // بستن منوی موبایل بعد از کلیک
+        if (window.innerWidth < 768) {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            if (sidebar) sidebar.classList.add('translate-x-full');
+            if (overlay) overlay.classList.add('hidden');
+        }
+    }
+};
     document.getElementById('sidebar')?.addEventListener('click', handleNavClick);
     document.querySelector('header .sidebar-logo')?.addEventListener('click', handleNavClick);
 
