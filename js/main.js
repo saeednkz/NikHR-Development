@@ -172,12 +172,11 @@ async function fetchUserRole(user) {
 function listenToData() {
     detachAllListeners(); // ابتدا شنونده‌های قبلی را پاک می‌کنیم
     
-    const collectionsToListen = [
-        'employees', 'teams', 'reminders', 'surveyResponses', 'users', 
-        'competencies', 'requests', 'assignmentRules', 'companyDocuments', 'birthdayWishes',
-        // کالکشن‌های مالی را موقتاً حذف می‌کنیم تا خطاهای دسترسی ندهند
-        // 'expenses', 'pettyCashCards', 'chargeHistory' 
-    ];
+const collectionsToListen = [
+    'employees', 'teams', 'reminders', 'surveyResponses', 'users',
+    'competencies', 'requests', 'assignmentRules', 'companyDocuments', 'birthdayWishes',
+    'announcements' // <-- این خط اضافه شده است
+];
     let initialLoads = collectionsToListen.length;
 
     const onDataLoaded = () => {
@@ -507,45 +506,62 @@ function renderEmployeePortalPage(pageName, employee) {
         contentContainer.innerHTML = `<h1 class="text-3xl font-bold text-slate-800 mb-6">اسناد و فایل‌های سازمان</h1><div class="bg-white p-6 rounded-xl shadow-md">${documentsHtml || '<p class="text-center text-slate-500 py-8">هنوز سندی در سیستم بارگذاری نشده است.</p>'}</div>`;
     }
     // --- بخش صندوق پیام (اینباکس) با تغییر جدید ---
-    else if (pageName === 'inbox') {
-        // [!code focus:4]
-        // این کد جدید است که در ابتدای این بخش اضافه می‌شود
-        // زمان بازدید از اینباکس را در پروفایل کاربر آپدیت کن
-        const employeeRef = doc(db, `artifacts/${appId}/public/data/employees`, employee.firestoreId);
-        updateDoc(employeeRef, { "personalInfo.lastCheckedInbox": serverTimestamp() });
-    
-        const myTeam = state.teams.find(team => team.memberIds?.includes(employee.id));
-        const myTeamId = myTeam ? myTeam.firestoreId : null;
+  // کد کامل و اصلاح شده برای بخش inbox در تابع renderEmployeePortalPage
 
-        const myMessages = (state.announcements || [])
-            .filter(msg => {
-                const targets = msg.targets;
-                if (targets.type === 'public') return true;
-                if (targets.type === 'roles' && targets.roles?.includes('employee')) return true;
-                if (targets.type === 'users' && targets.userIds?.includes(employee.firestoreId)) return true;
-                if (targets.type === 'teams' && targets.teamIds?.includes(myTeamId)) return true;
-                return false;
-            })
-            .sort((a, b) => new Date(b.createdAt?.toDate()) - new Date(a.createdAt?.toDate()));
+else if (pageName === 'inbox') {
+    // ۱. به‌روزرسانی زمان آخرین بازدید از اینباکس (مانند قبل)
+    const employeeRef = doc(db, `artifacts/${appId}/public/data/employees`, employee.firestoreId);
+    updateDoc(employeeRef, { "personalInfo.lastCheckedInbox": serverTimestamp() });
 
-        const messagesHtml = myMessages.map(msg => `
-            <div class="p-4 border rounded-lg bg-white shadow-sm">
-                <div class="flex justify-between items-center mb-2">
-                    <h3 class="font-bold text-slate-800">${msg.title}</h3>
-                    <span class="text-xs text-slate-400">${toPersianDate(msg.createdAt)}</span>
-                </div>
-                <p class="text-sm text-slate-600 whitespace-pre-wrap">${msg.content}</p>
-                ${msg.attachmentUrl ? `<a href="${msg.attachmentUrl}" target="_blank" class="inline-block mt-3 text-sm text-blue-600 font-semibold hover:underline">دانلود فایل ضمیمه</a>` : ''}
+    // ۲. پیدا کردن تیم کارمند برای فیلتر پیام‌های تیمی (مانند قبل)
+    const myTeam = state.teams.find(team => team.memberIds?.includes(employee.id));
+    const myTeamId = myTeam ? myTeam.firestoreId : null;
+
+    // ۳. فیلتر کردن پیام‌های ادمین (اعلانات)
+    const adminMessages = (state.announcements || [])
+        .filter(msg => {
+            const targets = msg.targets;
+            if (targets.type === 'public') return true;
+            if (targets.type === 'roles' && targets.roles?.includes('employee')) return true;
+            if (targets.type === 'users' && targets.userIds?.includes(employee.firestoreId)) return true;
+            if (targets.type === 'teams' && targets.teamIds?.includes(myTeamId)) return true;
+            return false;
+        });
+
+    // ۴. فیلتر کردن پیام‌های تبریک تولد دریافتی
+    const birthdayWishes = (state.birthdayWishes || [])
+        .filter(wish => wish.targetUid === employee.uid)
+        .map(wish => ({ // تبدیل فرمت تبریک به فرمت پیام استاندارد
+            title: `تبریک تولد از طرف ${wish.wisherName}`,
+            content: wish.message,
+            createdAt: wish.createdAt,
+            attachmentUrl: null
+        }));
+
+    // ۵. ترکیب هر دو نوع پیام و مرتب‌سازی بر اساس تاریخ
+    const allMyMessages = [...adminMessages, ...birthdayWishes]
+        .sort((a, b) => new Date(b.createdAt?.toDate()) - new Date(a.createdAt?.toDate()));
+
+    // ۶. رندر کردن لیست نهایی پیام‌ها
+    const messagesHtml = allMyMessages.map(msg => `
+        <div class="p-4 border rounded-lg bg-white shadow-sm">
+            <div class="flex justify-between items-center mb-2">
+                <h3 class="font-bold text-slate-800">${msg.title}</h3>
+                <span class="text-xs text-slate-400">${toPersianDate(msg.createdAt)}</span>
             </div>
-        `).join('');
+            <p class="text-sm text-slate-600 whitespace-pre-wrap">${msg.content}</p>
+            ${msg.attachmentUrl ? `<a href="${msg.attachmentUrl}" target="_blank" class="inline-block mt-3 text-sm text-blue-600 font-semibold hover:underline">دانلود فایل ضمیمه</a>` : ''}
+        </div>
+    `).join('');
 
-        contentContainer.innerHTML = `
-            <h1 class="text-3xl font-bold text-slate-800 mb-6">صندوق پیام</h1>
-            <div class="space-y-4">
-                ${messagesHtml || '<p class="text-center text-slate-500 py-8">شما هیچ پیام جدیدی ندارید.</p>'}
-            </div>
-        `;
-    }
+    // ۷. نمایش نتیجه نهایی در صفحه
+    contentContainer.innerHTML = `
+        <h1 class="text-3xl font-bold text-slate-800 mb-6">صندوق پیام</h1>
+        <div class="space-y-4">
+            ${messagesHtml || '<p class="text-center text-slate-500 py-8">شما هیچ پیام جدیدی ندارید.</p>'}
+        </div>
+    `;
+}
     // --- بخش پیش‌فرض ---
     else {
         contentContainer.innerHTML = `<h1>صفحه مورد نظر یافت نشد.</h1>`;
