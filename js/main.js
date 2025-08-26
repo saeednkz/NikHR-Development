@@ -446,7 +446,11 @@ function renderEmployeePortalPage(pageName, employee) {
 // کل بلوک else if (pageName === 'requests') را با این کد جایگزین کنید
 else if (pageName === 'requests') {
     const myRequests = (state.requests || []).filter(req => req.uid === employee.uid)
-        .sort((a, b) => new Date(b.createdAt?.toDate()) - new Date(a.createdAt?.toDate()));
+      .sort((a, b) => {
+    const dateA = a.lastUpdatedAt?.toDate() || a.createdAt?.toDate();
+    const dateB = b.lastUpdatedAt?.toDate() || b.createdAt?.toDate();
+    return new Date(dateB) - new Date(dateA);
+});
 
     const requestsHtml = myRequests.map(req => {
         const statusColors = {
