@@ -174,9 +174,21 @@
             <header class="flex justify-between items-center p-4 bg-white border-b border-slate-200 shadow-sm z-10">
                 <button id="menu-btn" class="text-slate-600 z-40 md:hidden"><i data-lucide="menu" class="w-6 h-6"></i></button>
                 <div class="flex-grow"></div>
-                <div class="flex items-center gap-4">
-                    <span id="user-email" class="text-sm text-slate-600 hidden sm:block"></span>
+<div class="flex items-center gap-4">
+    <span id="user-email" class="text-sm text-slate-600 hidden sm:block"></span>
+    
+    <div id="notification-bell-wrapper" class="relative">
+        <button id="notification-bell-btn" class="relative cursor-pointer p-2 rounded-full hover:bg-slate-100">
+            <i data-lucide="bell" class="text-slate-600"></i>
+            <span id="notification-count" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full border-2 border-white"></span>
+        </button>
+        <div id="notification-dropdown" class="hidden absolute left-0 mt-2 w-80 bg-white rounded-lg shadow-xl border z-20">
+            <div class="p-3 border-b font-semibold">اعلانات</div>
+            <div id="notification-list" class="max-h-96 overflow-y-auto">
                 </div>
+        </div>
+    </div>
+</div>
             </header>
             <main id="main-content" class="flex-1 p-6 sm:p-10 overflow-y-auto"></main>
         </div>
