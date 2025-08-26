@@ -763,6 +763,9 @@ const persianToEnglishDate = (persianDateStr) => {
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
 
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید جایگزین کنید
+
 const activatePersianDatePicker = (elementId, initialValue = null) => {
     const input = $(`#${elementId}`);
     if (!input.length) return;
@@ -787,7 +790,7 @@ const activatePersianDatePicker = (elementId, initialValue = null) => {
         $(this).persianDatepicker({
             format: 'YYYY/MM/DD',
             autoClose: true,
-            observer: false, // <-- تنظیمات به اینجا منتقل شد
+            observer: false, // <-- تنظیمات باید اینجا باشد
         }).pdp.show();
     });
 };
