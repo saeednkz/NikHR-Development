@@ -714,6 +714,9 @@ mainContent.addEventListener('click', (e) => {
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
 
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید جایگزین کنید
+
 function renderEmployeePortal() {
     // ابتدا تمام کانتینرهای دیگر را مخفی می‌کنیم
     document.getElementById('login-container').classList.add('hidden');
@@ -774,12 +777,10 @@ function renderEmployeePortal() {
     `;
     
     lucide.createIcons();
+    // به صورت پیش‌فرض، صفحه پروفایل را نمایش بده
     renderEmployeePortalPage('profile', employee);
     setupEmployeePortalEventListeners(employee);
-    
-    // [!code ++] این خط جدید مشکل را حل می‌کند
-    // بعد از اینکه پورتال ساخته شد، یک بار وضعیت نوتیفیکیشن‌ها را چک کن
-    updateEmployeeNotificationBell(employee); 
+    updateEmployeeNotificationBell(employee);
 }
         // --- UTILITY & HELPER FUNCTIONS ---
         // --- تابع جدید برای تبدیل تاریخ به شمسی ---
