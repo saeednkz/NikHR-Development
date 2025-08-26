@@ -1,69 +1,83 @@
 // فایل: js/auth.js
+// کل محتوای این فایل را با کد زیر جایگزین کنید
 
-// ۱. وارد کردن (Import) توابع مورد نیاز از منابع خارجی
-// توابع مربوط به لاگین و ثبت‌نام از کتابخانه فایربیس
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-// تابع نمایش پیام که در فایل main.js قرار دارد
+import { 
+    createUserWithEmailAndPassword, 
+    signInWithEmailAndPassword, 
+    signOut 
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { showToast } from './main.js';
 
-// ۲. خروجی گرفتن (Export) توابع برای استفاده در فایل‌های دیگر
-
-// فایل: js/auth.js
 export const showLoginPage = () => {
+    // پاک کردن محتوای قبلی برای جلوگیری از نمایش داشبورد در پس‌زمینه
+    const dashboardContainer = document.getElementById('dashboard-container');
+    const employeePortalContainer = document.getElementById('employee-portal-container');
+    if (dashboardContainer) dashboardContainer.innerHTML = '';
+    if (employeePortalContainer) employeePortalContainer.innerHTML = '';
+
+    // نمایش صفحه لاگین و مخفی کردن بقیه بخش‌ها
+    dashboardContainer?.classList.add('hidden');
+    employeePortalContainer?.classList.add('hidden');
     document.getElementById('login-container').classList.remove('hidden');
     document.getElementById('signup-container').classList.add('hidden');
-    document.getElementById('dashboard-container').classList.add('hidden');
-    // این خط جدید مشکل را حل می‌کند
-    document.getElementById('employee-portal-container').classList.add('hidden');
     document.getElementById('loading-overlay').style.display = 'none';
-};
-
-export const showSignupPage = () => {
-    document.getElementById('login-container').classList.add('hidden');
-    document.getElementById('signup-container').classList.remove('hidden');
-    document.getElementById('dashboard-container').classList.add('hidden');
 };
 
 export const showDashboard = () => {
     document.getElementById('login-container').classList.add('hidden');
-    document.getElementById('signup-container').classList.add('hidden');
-    document.getElementById('dashboard-container').classList.remove('hidden');
-    document.getElementById('dashboard-container').classList.add('md:flex');
+    const dashboardContainer = document.getElementById('dashboard-container');
+    if (dashboardContainer) {
+        dashboardContainer.classList.remove('hidden');
+        dashboardContainer.classList.add('md:flex');
+    }
 };
 
-// ۳. ایجاد یک تابع واحد برای راه‌اندازی تمام رویدادهای مربوط به احراز هویت
-// این تابع آبجکت auth را از main.js به عنوان ورودی می‌گیرد
-export function setupAuthEventListeners(auth) {
-    // رویداد فرم لاگین
-    document.getElementById('login-form').addEventListener('submit', async (e) => {
+export const setupAuthEventListeners = (auth) => {
+    const loginForm = document.getElementById('login-form');
+    const signupForm = document.getElementById('signup-form');
+    const showSignup = document.getElementById('show-signup');
+    const showLogin = document.getElementById('show-login');
+    const logoutBtn = document.getElementById('logout-btn');
+
+    loginForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const email = e.target.email.value;
-        const password = e.target.password.value;
+        const email = loginForm.email.value;
+        const password = loginForm.password.value;
         try {
             await signInWithEmailAndPassword(auth, email, password);
+            showToast('با موفقیت وارد شدید.');
         } catch (error) {
-            showToast("ایمیل یا رمز عبور اشتباه است.", "error");
-            console.error("Login failed:", error);
+            showToast(`خطا در ورود: ${error.message}`, 'error');
         }
     });
 
-    // رویداد فرم ثبت‌نام
-    document.getElementById('signup-form').addEventListener('submit', async (e) => {
+    signupForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const email = e.target.email.value;
-        const password = e.target.password.value;
+        const email = signupForm['signup-email'].value;
+        const password = signupForm['signup-password'].value;
         try {
             await createUserWithEmailAndPassword(auth, email, password);
+            showToast('ثبت‌نام با موفقیت انجام شد. لطفاً وارد شوید.');
+            showLoginPage();
         } catch (error) {
-            showToast("خطا در ثبت نام. ممکن است این ایمیل قبلا استفاده شده باشد.", "error");
-            console.error("Signup failed:", error);
+            showToast(`خطا در ثبت‌نام: ${error.message}`, 'error');
         }
     });
 
-    // رویداد دکمه خروج
-    document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
+    showSignup?.addEventListener('click', (e) => {
+        e.preventDefault();
+        document.getElementById('login-container').classList.add('hidden');
+        document.getElementById('signup-container').classList.remove('hidden');
+    });
 
-    // رویداد لینک‌های جابجایی بین فرم لاگین و ثبت‌نام
-    document.getElementById('show-signup').addEventListener('click', (e) => { e.preventDefault(); showSignupPage(); });
-    document.getElementById('show-login').addEventListener('click', (e) => { e.preventDefault(); showLoginPage(); });
-}
+    showLogin?.addEventListener('click', (e) => {
+        e.preventDefault();
+        document.getElementById('signup-container').classList.add('hidden');
+        document.getElementById('login-container').classList.remove('hidden');
+    });
+
+    logoutBtn?.addEventListener('click', (e) => {
+        e.preventDefault();
+        signOut(auth).catch(error => showToast(`خطا در خروج: ${error.message}`, 'error'));
+    });
+};
