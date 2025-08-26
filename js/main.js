@@ -442,58 +442,58 @@ function renderEmployeePortalPage(pageName, employee) {
     
     } 
     // --- بخش درخواست‌ها ---
-    else if (pageName === 'requests') {
-        const myRequests = (state.requests || []).filter(req => req.uid === employee.uid)
-            .sort((a, b) => new Date(b.createdAt?.toDate()) - new Date(a.createdAt?.toDate()));
+// در تابع renderEmployeePortalPage
+// کل بلوک else if (pageName === 'requests') را با این کد جایگزین کنید
+else if (pageName === 'requests') {
+    const myRequests = (state.requests || []).filter(req => req.uid === employee.uid)
+        .sort((a, b) => new Date(b.createdAt?.toDate()) - new Date(a.createdAt?.toDate()));
 
-        const requestsHtml = myRequests.map(req => {
-            const statusColors = {
-                'درحال بررسی': 'bg-yellow-100 text-yellow-800',
-                'در حال انجام': 'bg-blue-100 text-blue-800',
-                'تایید شده': 'bg-green-100 text-green-800',
-                'رد شده': 'bg-red-100 text-red-800'
-            };
-            
-            const threadHtml = (req.thread || []).map(item => {
-                const sender = state.users.find(u => u.firestoreId === item.senderUid) || { name: 'شما' };
-                return `<div class="p-2 mt-2 text-xs border-t ${sender.name === 'شما' ? 'bg-white' : 'bg-slate-50'}"><p class="whitespace-pre-wrap">${item.content}</p><div class="text-slate-400 text-left mt-1">${sender.name} - ${toPersianDate(item.createdAt)}</div></div>`;
-            }).join('');
-
-            return `
-                <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
-                    <div class="p-4">
-                        <div class="flex justify-between items-center">
-                            <h3 class="font-bold">${req.requestType}</h3>
-                            <span class="px-2 py-1 text-xs font-medium rounded-full ${statusColors[req.status] || 'bg-slate-100'}">${req.status}</span>
-                        </div>
-                        <p class="text-sm text-slate-600 mt-2">${req.details}</p>
-                    </div>
-                    <div class="p-4 border-t bg-slate-50">
-                        <strong class="text-xs text-slate-500">تاریخچه مکالمات:</strong>
-                        ${threadHtml || '<p class="text-xs text-slate-400 mt-2">هنوز پاسخی ثبت نشده است.</p>'}
-                    </div>
-                     <div class="p-2 border-t bg-white">
-                        <form class="employee-reply-form flex items-center gap-2" data-id="${req.firestoreId}">
-                             <input type="text" placeholder="پاسخ خود را بنویسید..." class="reply-input flex-grow p-2 border rounded-md text-sm" required>
-                             <button type="submit" class="bg-blue-600 text-white py-2 px-3 rounded-md text-sm">ارسال</button>
-                        </form>
-                     </div>
-                </div>
-            `;
-        }).join('');
-
-        contentContainer.innerHTML = `
-            <div class="flex justify-between items-center mb-6">
-                <h1 class="text-3xl font-bold text-slate-800">درخواست‌های من</h1>
-                <button id="add-new-request-btn" class="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 flex items-center gap-2">
-                    <i data-lucide="plus-circle" class="w-4 h-4"></i><span>ثبت درخواست جدید</span>
-                </button>
-            </div>
-            <div class="space-y-4">
-                ${requestsHtml || '<p class="text-center text-slate-500 py-8">شما هنوز درخواستی ثبت نکرده‌اید.</p>'}
-            </div>
+    const requestsHtml = myRequests.map(req => {
+        const statusColors = {
+            'درحال بررسی': 'bg-yellow-100 text-yellow-800',
+            'در حال انجام': 'bg-blue-100 text-blue-800',
+            'تایید شده': 'bg-green-100 text-green-800',
+            'رد شده': 'bg-red-100 text-red-800'
+        };
+        
+        return `
+            <tr class="hover:bg-slate-50">
+                <td class="p-3">${req.requestType}</td>
+                <td class="p-3">${toPersianDate(req.createdAt)}</td>
+                <td class="p-3"><span class="px-2 py-1 text-xs font-medium rounded-full ${statusColors[req.status] || 'bg-slate-100'}">${req.status}</span></td>
+                <td class="p-3">
+                    <button class="view-request-btn text-sm text-indigo-600 hover:underline" data-id="${req.firestoreId}">مشاهده جزئیات</button>
+                </td>
+            </tr>
         `;
-    }
+    }).join('');
+
+    contentContainer.innerHTML = `
+        <div class="flex justify-between items-center page-header">
+            <h1 class="text-3xl font-bold text-slate-800">درخواست‌های من</h1>
+            <button id="add-new-request-btn" class="primary-btn flex items-center gap-2">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i><span>ثبت درخواست جدید</span>
+            </button>
+        </div>
+        <div class="card p-0">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-right">
+                    <thead class="bg-slate-50">
+                        <tr>
+                            <th class="p-3 font-semibold text-slate-600">نوع درخواست</th>
+                            <th class="p-3 font-semibold text-slate-600">تاریخ ثبت</th>
+                            <th class="p-3 font-semibold text-slate-600">وضعیت</th>
+                            <th class="p-3 font-semibold text-slate-600"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="my-requests-table-body">
+                        ${requestsHtml || '<tr><td colspan="4" class="text-center py-8 text-slate-500">شما هنوز درخواستی ثبت نکرده‌اید.</td></tr>'}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+}
     // --- بخش اسناد سازمان ---
     else if (pageName === 'documents') {
         const documentsByCategory = (state.companyDocuments || []).reduce((acc, doc) => {
@@ -646,14 +646,19 @@ function setupEmployeePortalEventListeners(employee) {
             }
         });
 
-        mainContent.addEventListener('click', (e) => {
-            const sendWishBtn = e.target.closest('.send-wish-btn');
-            if (sendWishBtn) {
-                const targetUid = sendWishBtn.dataset.id;
-                const targetName = sendWishBtn.dataset.name;
-                showBirthdayWishForm(targetUid, targetName);
-            }
-        });
+mainContent.addEventListener('click', (e) => {
+    const sendWishBtn = e.target.closest('.send-wish-btn');
+    const viewRequestBtn = e.target.closest('.view-request-btn'); // [!code ++]
+
+    if (sendWishBtn) {
+        // ... کد قبلی برای ارسال تبریک
+    } 
+    // [!code focus:4]
+    else if (viewRequestBtn) {
+        const requestId = viewRequestBtn.dataset.id;
+        showRequestDetailsModal(requestId, employee);
+    }
+});
     }
 
     document.querySelectorAll('.employee-nav-item').forEach(link => {
@@ -4391,6 +4396,42 @@ const showDocumentUploadForm = () => {
             saveBtn.innerText = 'آپلود';
         }
     });
+};
+// این تابع جدید را به js/main.js اضافه کنید
+const showRequestDetailsModal = (requestId, employee) => {
+    const request = state.requests.find(r => r.firestoreId === requestId);
+    if (!request) return;
+
+    modalTitle.innerText = `جزئیات درخواست: ${request.requestType}`;
+    
+    const statusColors = { /* ... رنگ‌ها مثل قبل ... */ };
+    const threadHtml = (request.thread || []).map(item => {
+        const sender = state.users.find(u => u.firestoreId === item.senderUid) || { name: 'شما' };
+        return `<div class="p-3 mt-2 text-sm border rounded-lg ${sender.name === 'شما' ? 'bg-blue-50' : 'bg-slate-50'}"><p class="whitespace-pre-wrap">${item.content}</p><div class="text-slate-400 text-xs text-left mt-2">${sender.name} - ${toPersianDate(item.createdAt)}</div></div>`;
+    }).join('');
+
+    modalContent.innerHTML = `
+        <div class="space-y-4">
+            <div class="p-4 border rounded-lg bg-slate-50 text-sm">
+                <div class="flex justify-between items-center">
+                    <p><strong>موضوع:</strong> ${request.details}</p>
+                    <span class="px-2 py-1 text-xs font-medium rounded-full ${statusColors[request.status] || 'bg-slate-100'}">${request.status}</span>
+                </div>
+            </div>
+            <div>
+                <strong class="text-slate-600">تاریخچه مکالمات:</strong>
+                <div class="mt-2 max-h-60 overflow-y-auto pr-2">${threadHtml || '<p class="text-xs text-slate-400 mt-2">هنوز پاسخی ثبت نشده است.</p>'}</div>
+            </div>
+            <div class="pt-4 border-t">
+                <form class="employee-reply-form flex items-center gap-2" data-id="${request.firestoreId}">
+                     <input type="text" placeholder="پاسخ خود را بنویسید..." class="reply-input flex-grow p-2 border rounded-md text-sm" required>
+                     <button type="submit" class="primary-btn py-2 px-3 text-sm">ارسال</button>
+                </form>
+            </div>
+        </div>
+    `;
+    openModal(mainModal, mainModalContainer);
+    lucide.createIcons();
 };
 
         // --- EVENT LISTENERS & INITIALIZATION ---
