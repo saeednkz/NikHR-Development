@@ -522,49 +522,65 @@ else if (pageName === 'requests') {
         contentContainer.innerHTML = `<h1 class="text-3xl font-bold text-slate-800 mb-6">اسناد و فایل‌های سازمان</h1><div class="bg-white p-6 rounded-xl shadow-md">${documentsHtml || '<p class="text-center text-slate-500 py-8">هنوز سندی در سیستم بارگذاری نشده است.</p>'}</div>`;
     } 
     // --- بخش صندوق پیام (اینباکس) ---
-    else if (pageName === 'inbox') {
-        // [!code focus:4]
-        // این کد جدید است که در ابتدای این بخش اضافه می‌شود
-        // زمان بازدید از اینباکس را در پروفایل کاربر آپدیت کن
-        const employeeRef = doc(db, `artifacts/${appId}/public/data/employees`, employee.firestoreId);
-        updateDoc(employeeRef, { "personalInfo.lastCheckedInbox": serverTimestamp() })
-            .then(() => {
-                const updatedEmployee = { ...employee, personalInfo: { ...employee.personalInfo, lastCheckedInbox: new Date() } };
-                updateEmployeeNotificationBell(updatedEmployee);
-            });
-    
-        const myTeam = state.teams.find(team => team.memberIds?.includes(employee.id));
-        const myTeamId = myTeam ? myTeam.firestoreId : null;
+// در تابع renderEmployeePortalPage
+// کل بلوک else if (pageName === 'inbox') را با این کد جایگزین کنید
 
-        const myMessages = (state.announcements || [])
-            .filter(msg => {
-                const targets = msg.targets;
-                if (targets.type === 'public') return true;
-                if (targets.type === 'roles' && targets.roles?.includes('employee')) return true;
-                if (targets.type === 'users' && targets.userIds?.includes(employee.firestoreId)) return true;
-                if (targets.type === 'teams' && targets.teamIds?.includes(myTeamId)) return true;
-                return false;
-            })
-            .sort((a, b) => new Date(b.createdAt?.toDate()) - new Date(a.createdAt?.toDate()));
+else if (pageName === 'inbox') {
+    const employeeRef = doc(db, `artifacts/${appId}/public/data/employees`, employee.firestoreId);
+    updateDoc(employeeRef, { "personalInfo.lastCheckedInbox": serverTimestamp() })
+        .then(() => {
+            const updatedEmployee = { ...employee, personalInfo: { ...employee.personalInfo, lastCheckedInbox: new Date() } };
+            updateEmployeeNotificationBell(updatedEmployee);
+        });
 
-        const messagesHtml = myMessages.map(msg => `
-            <div class="p-4 border rounded-lg bg-white shadow-sm">
-                <div class="flex justify-between items-center mb-2">
-                    <h3 class="font-bold text-slate-800">${msg.title}</h3>
-                    <span class="text-xs text-slate-400">${toPersianDate(msg.createdAt)}</span>
-                </div>
-                <p class="text-sm text-slate-600 whitespace-pre-wrap">${msg.content}</p>
-                ${msg.attachmentUrl ? `<a href="${msg.attachmentUrl}" target="_blank" class="inline-block mt-3 text-sm text-blue-600 font-semibold hover:underline">دانلود فایل ضمیمه</a>` : ''}
+    const myTeam = state.teams.find(team => team.memberIds?.includes(employee.id));
+    const myTeamId = myTeam ? myTeam.firestoreId : null;
+
+    const myMessages = (state.announcements || [])
+        .filter(msg => {
+            const targets = msg.targets;
+            if (targets.type === 'public') return true;
+            if (targets.type === 'roles' && targets.roles?.includes('employee')) return true;
+            if (targets.type === 'users' && targets.userIds?.includes(employee.firestoreId)) return true;
+            if (targets.type === 'teams' && targets.teamIds?.includes(myTeamId)) return true;
+            return false;
+        })
+        .sort((a, b) => new Date(b.createdAt?.toDate()) - new Date(a.createdAt?.toDate()));
+
+    const messagesHtml = myMessages.map(msg => `
+        <tr class="hover:bg-slate-50">
+            <td class="p-3 font-semibold">${msg.title}</td>
+            <td class="p-3">${msg.senderName}</td>
+            <td class="p-3">${toPersianDate(msg.createdAt)}</td>
+            <td class="p-3">
+                <button class="view-message-btn text-sm text-indigo-600 hover:underline" data-id="${msg.firestoreId}">مشاهده پیام</button>
+            </td>
+        </tr>
+    `).join('');
+
+    contentContainer.innerHTML = `
+        <div class="page-header">
+            <h1 class="text-3xl font-bold text-slate-800">صندوق پیام</h1>
+        </div>
+        <div class="card p-0">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-right">
+                    <thead class="bg-slate-50">
+                        <tr>
+                            <th class="p-3 font-semibold text-slate-600">عنوان</th>
+                            <th class="p-3 font-semibold text-slate-600">فرستنده</th>
+                            <th class="p-3 font-semibold text-slate-600">تاریخ دریافت</th>
+                            <th class="p-3 font-semibold text-slate-600"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${messagesHtml || '<tr><td colspan="4" class="text-center py-8 text-slate-500">شما هیچ پیامی ندارید.</td></tr>'}
+                    </tbody>
+                </table>
             </div>
-        `).join('');
-
-        contentContainer.innerHTML = `
-            <h1 class="text-3xl font-bold text-slate-800 mb-6">صندوق پیام</h1>
-            <div class="space-y-4">
-                ${messagesHtml || '<p class="text-center text-slate-500 py-8">شما هیچ پیام جدیدی ندارید.</p>'}
-            </div>
-        `;
-    }
+        </div>
+    `;
+}
     // --- بخش پیش‌فرض ---
     else {
         contentContainer.innerHTML = `<h1>صفحه مورد نظر یافت نشد.</h1>`;
@@ -653,6 +669,7 @@ function setupEmployeePortalEventListeners(employee) {
 mainContent.addEventListener('click', (e) => {
     const sendWishBtn = e.target.closest('.send-wish-btn');
     const viewRequestBtn = e.target.closest('.view-request-btn'); // [!code ++]
+  const viewMessageBtn = e.target.closest('.view-message-btn'); // [!code ++]
 
     if (sendWishBtn) {
         // ... کد قبلی برای ارسال تبریک
@@ -4432,6 +4449,34 @@ const showRequestDetailsModal = (requestId, employee) => {
                      <button type="submit" class="primary-btn py-2 px-3 text-sm">ارسال</button>
                 </form>
             </div>
+        </div>
+    `;
+    openModal(mainModal, mainModalContainer);
+    lucide.createIcons();
+};
+// این تابع جدید را به js/main.js اضافه کنید
+const showMessageDetailsModal = (announcementId) => {
+    const msg = state.announcements.find(a => a.firestoreId === announcementId);
+    if (!msg) return;
+
+    modalTitle.innerText = msg.title;
+    modalContent.innerHTML = `
+        <div class="space-y-4">
+            <div class="flex justify-between items-center text-sm text-slate-500">
+                <span><strong>فرستنده:</strong> ${msg.senderName}</span>
+                <span><strong>تاریخ:</strong> ${toPersianDate(msg.createdAt)}</span>
+            </div>
+            <div class="p-4 border rounded-lg bg-slate-50">
+                <p class="text-sm text-slate-700 whitespace-pre-wrap">${msg.content}</p>
+            </div>
+            ${msg.attachmentUrl ? `
+                <div class="pt-4 border-t">
+                    <a href="${msg.attachmentUrl}" target="_blank" class="primary-btn text-sm inline-flex items-center gap-2">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                        <span>دانلود فایل ضمیمه</span>
+                    </a>
+                </div>
+            ` : ''}
         </div>
     `;
     openModal(mainModal, mainModalContainer);
