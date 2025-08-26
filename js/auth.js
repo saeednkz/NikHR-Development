@@ -25,7 +25,7 @@ export const showDashboard = () => {
     document.getElementById('login-container').classList.add('hidden');
     document.getElementById('signup-container').classList.add('hidden');
     document.getElementById('dashboard-container').classList.remove('hidden');
-    document.getElementById('dashboard-container').classList.add('flex');
+    document.getElementById('dashboard-container').classList.add('md:flex');
 };
 
 // ۳. ایجاد یک تابع واحد برای راه‌اندازی تمام رویدادهای مربوط به احراز هویت
