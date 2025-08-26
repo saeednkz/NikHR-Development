@@ -1295,6 +1295,9 @@ const pages = {
 // در فایل js/main.js
 // کل تابع pages.dashboard را با این کد جدید جایگزین کنید
 
+// در فایل js/main.js
+// کل تابع pages.dashboard را با این کد جدید جایگزین کنید
+
 dashboard: () => {
     calculateDashboardMetrics();
     const metrics = state.dashboardMetrics;
