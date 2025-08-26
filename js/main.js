@@ -12,7 +12,9 @@ import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/
 import { 
     showLoginPage, 
     showDashboard, 
-    setupAuthEventListeners 
+    setupAuthEventListeners,
+    isAdmin,
+    canEdit 
 } from './auth.js';
         
         // --- SURVEY TEMPLATES (COMPREHENSIVE & STANDARD) ---
@@ -47,7 +49,7 @@ import {
             'exit': { id: 'exit', title: 'نظرسنجی خروج از سازمان', description: 'درک دلایل ترک سازمان برای بهبود محیط کاری برای کارمندان آینده.', questions: [ { id: 'ext_q1', text: 'لطفاً دلیل یا دلایل اصلی خود برای ترک سازمان را بیان کنید.', type: 'open_text' }, { id: 'ext_q2', text: 'از تجربه کاری خود در این شرکت به طور کلی چقدر رضایت داشتید؟', type: 'rating_1_5' }, { id: 'ext_q3', text: 'آیا احساس می‌کردید شغل شما از مهارت‌هایتان به خوبی استفاده می‌کند؟', type: 'rating_1_5' }, { id: 'ext_q4', text: 'رابطه و کیفیت مدیریت مدیر مستقیم خود را چگونه ارزیابی می‌کنید؟', type: 'rating_1_5' }, { id: 'ext_q5', text: 'آیا فرصت‌های کافی برای رشد و پیشرفت شغلی در اختیار شما قرار گرفت؟', type: 'rating_1_5' }, { id: 'ext_q6', text: 'فرهنگ سازمانی شرکت را چگونه توصیف می‌کنید؟', type: 'open_text' }, { id: 'ext_q7', text: 'آیا بسته حقوق و مزایای خود را منصفانه و رقابتی می‌دانستید؟', type: 'yes_no' }, { id: 'ext_q8', text: 'آیا این شرکت را به عنوان یک محیط کاری به دیگران توصیه می‌کنید؟', type: 'yes_no' }, { id: 'ext_q9', text: 'اگر می‌توانستید یک چیز را در شرکت تغییر دهید، آن چه بود؟', type: 'open_text' }, ] }
         };
 
-        const state = { employees: [], teams: [], reminders: [], surveyResponses: [], users: [], competencies: [], expenses: [], pettyCashCards: [], chargeHistory: [], dashboardMetrics: {}, orgAnalytics: {}, currentPage: 'dashboard', currentPageTalent: 1, currentUser: null, };
+        export const state = { employees: [], teams: [], reminders: [], surveyResponses: [], users: [], competencies: [], expenses: [], pettyCashCards: [], chargeHistory: [], dashboardMetrics: {}, orgAnalytics: {}, currentPage: 'dashboard', currentPageTalent: 1, currentUser: null, };
         let charts = {};
 let activeListeners = []; // [!code ++] این خط را اضافه کنید
         // این کد را نزدیک به تعریف state قرار دهید
@@ -122,7 +124,7 @@ async function initializeFirebase() {
             } else {
                 state.currentUser = null;
                 detachAllListeners();
-                showLoginPage(); // << فقط همین یک خط جایگزین کدهای قبلی می‌شود
+                showLoginPage(); // << استفاده از تابع جدید
             }
         });
     } catch (error) { 
@@ -1288,8 +1290,7 @@ const showChangePasswordForm = () => {
             setTimeout(() => toast.remove(), 5000);
         };
         
-        const isAdmin = () => state.currentUser?.role === 'admin';
-        const canEdit = () => state.currentUser?.role === 'admin' || state.currentUser?.role === 'editor';
+        
 // این تابع را به main.js اضافه کنید
 // در فایل js/main.js
 // کل این تابع را جایگزین کنید
