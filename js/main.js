@@ -2383,7 +2383,7 @@ const renderPage = (pageName) => {
             return;
         }
 
-        document.getElementById('settings-nav-link').style.display = isAdmin() ? 'flex' : 'none';
+       
 
         mainContent.innerHTML = pages[pageName]();
         
