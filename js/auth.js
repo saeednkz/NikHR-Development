@@ -52,17 +52,32 @@ export const setupAuthEventListeners = (auth) => {
     const showLogin = document.getElementById('show-login');
     const logoutBtn = document.getElementById('logout-btn');
 
-    loginForm?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const email = loginForm.email.value;
-        const password = loginForm.password.value;
-        try {
-            await signInWithEmailAndPassword(auth, email, password);
-            showToast('با موفقیت وارد شدید.');
-        } catch (error) {
-            showToast(`خطا در ورود: ${error.message}`, 'error');
-        }
-    });
+// در فایل js/auth.js، داخل تابع setupAuthEventListeners
+// کل این بلوک addEventListener را با نسخه جدید جایگزین کنید
+
+loginForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = loginForm.email.value;
+    const password = loginForm.password.value;
+    const loginButton = loginForm.querySelector('button[type="submit"]');
+
+    loginButton.disabled = true;
+    loginButton.innerText = 'در حال ورود...';
+
+    try {
+        await signInWithEmailAndPassword(auth, email, password);
+        showToast('با موفقیت وارد شدید.');
+        // بعد از یک تاخیر کوتاه، صفحه را رفرش می‌کنیم تا همه چیز از نو بارگذاری شود
+        setTimeout(() => {
+            window.location.reload();
+        }, 1000); // ۱ ثانیه تاخیر برای نمایش پیام
+
+    } catch (error) {
+        showToast(`خطا در ورود: ${error.message}`, 'error');
+        loginButton.disabled = false;
+        loginButton.innerText = 'ورود';
+    }
+});
 
     signupForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
