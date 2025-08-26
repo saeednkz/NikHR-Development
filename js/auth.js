@@ -8,10 +8,13 @@ import { showToast } from './main.js';
 
 // ۲. خروجی گرفتن (Export) توابع برای استفاده در فایل‌های دیگر
 
+// فایل: js/auth.js
 export const showLoginPage = () => {
     document.getElementById('login-container').classList.remove('hidden');
     document.getElementById('signup-container').classList.add('hidden');
     document.getElementById('dashboard-container').classList.add('hidden');
+    // این خط جدید مشکل را حل می‌کند
+    document.getElementById('employee-portal-container').classList.add('hidden');
     document.getElementById('loading-overlay').style.display = 'none';
 };
 
