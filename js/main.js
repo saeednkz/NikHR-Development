@@ -103,20 +103,6 @@ const firebaseConfig = {
 // کل این تابع را با نسخه جدید جایگزین کنید
 // این تابع جدید را به js/main.js اضافه کنید
 
-const showLoginPage = () => {
-    // پاک کردن محتوای قبلی برای جلوگیری از نمایش داشبورد در پس‌زمینه
-    const dashboardContainer = document.getElementById('dashboard-container');
-    const employeePortalContainer = document.getElementById('employee-portal-container');
-    if (dashboardContainer) dashboardContainer.innerHTML = '';
-    if (employeePortalContainer) employeePortalContainer.innerHTML = '';
-
-    // نمایش صفحه لاگین و مخفی کردن بقیه بخش‌ها
-    dashboardContainer?.classList.add('hidden');
-    employeePortalContainer?.classList.add('hidden');
-    document.getElementById('login-container').classList.remove('hidden');
-    document.getElementById('signup-container').classList.add('hidden'); // برای اطمینان
-    document.getElementById('loading-overlay').style.display = 'none';
-};
 // کل تابع initializeFirebase را با این نسخه جایگزین کنید
 
 async function initializeFirebase() {
