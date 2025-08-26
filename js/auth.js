@@ -27,6 +27,9 @@ export const showLoginPage = () => {
 };
 
 // تابع جدید برای نمایش داشبورد ادمین
+// در فایل js/auth.js
+// کل این تابع را با نسخه جدید جایگزین کنید
+
 export const showDashboard = () => {
     document.getElementById('login-container').classList.add('hidden');
     const dashboardContainer = document.getElementById('dashboard-container');
@@ -34,7 +37,7 @@ export const showDashboard = () => {
         dashboardContainer.classList.remove('hidden');
         dashboardContainer.classList.add('md:flex');
         
-        // کد نمایش/عدم نمایش لینک تنظیمات به اینجا منتقل شد
+        // این خط به اینجا منتقل شده تا در زمان درست اجرا شود
         const settingsLink = document.getElementById('settings-nav-link');
         if (settingsLink) {
             settingsLink.style.display = isAdmin() ? 'flex' : 'none';
