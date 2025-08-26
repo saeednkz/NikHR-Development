@@ -205,12 +205,11 @@ const collectionsToListen = [
             if (initialLoads > 0) {
                 onDataLoaded();
             } else {
-                // با هر تغییر در داده‌ها، تمام بخش‌ها را بروز می‌کنیم
-                calculateAndApplyAnalytics();
-                updateNotificationsForCurrentUser(); // بروزرسانی نوتیفیکیشن‌ها در لحظه
-                
+        calculateAndApplyAnalytics();
+        // این خط جدید، اعلانات همه کاربران (ادمین و کارمند) را بروز می‌کند
+        updateNotificationsForCurrentUser();
                 if (state.currentUser.role !== 'employee' && !window.location.hash.startsWith('#survey-taker')) {
-                    renderPage(state.currentPage);
+            renderPage(state.currentPage);
                 }
             }
         }, (error) => {
@@ -803,32 +802,51 @@ const persianToEnglishDate = (persianDateStr) => {
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
 
+// فایل: main.js
+// کل این تابع را با نسخه جدید جایگزین کنید
 const activatePersianDatePicker = (elementId, initialValue = null) => {
     const input = $(`#${elementId}`);
     if (!input.length) return;
 
-    // پاک کردن نمونه‌های قبلی
+    // پاک کردن نمونه‌های قبلی برای جلوگیری از تداخل
     try {
         if (input.data('datepicker')) {
             input.persianDatepicker('destroy');
         }
-    } catch (e) { /* Ignore */ }
-    input.off('click');
+    } catch (e) {
+        console.warn("Could not destroy previous datepicker instance.", e);
+    }
 
-    input.attr('readonly', true).css('background-color', '#fff').val('');
+    // مقداردهی اولیه با مقدار ورودی (اگر وجود داشت)
+    let initialTimestamp = null;
     if (initialValue) {
-        const persianDateString = toPersianDate(initialValue);
-        if (persianDateString && persianDateString !== 'نامشخص' && persianDateString !== 'تاریخ نامعتبر') {
-            input.val(persianDateString);
+        const date = new Date(initialValue);
+        if (!isNaN(date.getTime())) {
+            initialTimestamp = date.getTime();
         }
     }
-    
-    input.one('click', function() {
-        $(this).persianDatepicker({
-            format: 'YYYY/MM/DD',
-            autoClose: true,
-            observer: false, // <-- تنظیمات باید اینجا باشد
-        }).pdp.show();
+
+    // مقداردهی استاندارد کتابخانه
+    input.persianDatepicker({
+        format: 'YYYY/MM/DD',
+        autoClose: true,
+        observer: false, // جلوگیری از خطای observer
+        initialValue: initialValue ? true : false,
+        initialValueType: 'persian',
+        // افزودن یک جعبه ابزار برای راحتی کاربر
+        toolbox: {
+            calendarSwitch: {
+                enabled: false,
+            },
+            todayButton: {
+                enabled: true,
+                text: {
+                    fa: 'امروز',
+                },
+            },
+        },
+        // انتخاب تاریخ اولیه در صورت وجود
+        selectedDate: initialTimestamp ? new Date(initialTimestamp) : null
     });
 };
         // --- تابع جدید برای ساخت دکمه‌های صفحه‌بندی ---
