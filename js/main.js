@@ -101,6 +101,24 @@ const firebaseConfig = {
 // این کد باید در فایل js/main.js شما جایگزین تابع فعلی شود
 
 // کل این تابع را با نسخه جدید جایگزین کنید
+// این تابع جدید را به js/main.js اضافه کنید
+
+const showLoginPage = () => {
+    // پاک کردن محتوای قبلی برای جلوگیری از نمایش داشبورد در پس‌زمینه
+    const dashboardContainer = document.getElementById('dashboard-container');
+    const employeePortalContainer = document.getElementById('employee-portal-container');
+    if (dashboardContainer) dashboardContainer.innerHTML = '';
+    if (employeePortalContainer) employeePortalContainer.innerHTML = '';
+
+    // نمایش صفحه لاگین و مخفی کردن بقیه بخش‌ها
+    dashboardContainer?.classList.add('hidden');
+    employeePortalContainer?.classList.add('hidden');
+    document.getElementById('login-container').classList.remove('hidden');
+    document.getElementById('signup-container').classList.add('hidden'); // برای اطمینان
+    document.getElementById('loading-overlay').style.display = 'none';
+};
+// کل تابع initializeFirebase را با این نسخه جایگزین کنید
+
 async function initializeFirebase() {
     try {
         app = initializeApp(firebaseConfig);
@@ -108,7 +126,7 @@ async function initializeFirebase() {
         db = getFirestore(app);
         storage = getStorage(app);
         functions = getFunctions(app);
-        
+
         setupAuthEventListeners(auth); 
 
         onAuthStateChanged(auth, async (user) => {
@@ -117,9 +135,8 @@ async function initializeFirebase() {
                 listenToData();
             } else {
                 state.currentUser = null;
-                detachAllListeners(); // [!code ++] مهم: اینجا شنونده‌ها را خاموش می‌کنیم
-                showLoginPage();
-                document.getElementById('loading-overlay').style.display = 'none';
+                detachAllListeners();
+                showLoginPage(); // << فقط همین یک خط جایگزین کدهای قبلی می‌شود
             }
         });
     } catch (error) { 
