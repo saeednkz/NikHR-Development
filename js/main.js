@@ -407,50 +407,39 @@ function renderEmployeePortalPage(pageName, employee) {
         `;
     } 
     // --- بخش دایرکتوری ---
-    if (pageName === 'directory') {
+    else if (pageName === 'directory') {
         const teamCardsHtml = state.teams.map(team => {
             const leader = state.employees.find(e => e.id === team.leaderId);
             const members = state.employees.filter(e => team.memberIds?.includes(e.id));
-            
             return `
-                <div class="card p-0 flex flex-col overflow-hidden">
-                    <div class="card-header">
-                        <div class="flex items-center gap-4">
-                            <img src="${team.avatar}" alt="${team.name}" class="w-16 h-16 rounded-full object-cover border-4 border-white shadow-sm">
-                            <div>
-                                <h3 class="text-xl font-bold text-slate-800">${team.name}</h3>
-                                <p class="text-sm text-slate-500">رهبر تیم: ${leader ? leader.name : 'نامشخص'}</p>
-                            </div>
+                <div class="bg-white p-6 rounded-xl shadow-md flex flex-col">
+                    <div class="flex items-center mb-4">
+                        <img src="${team.avatar}" alt="${team.name}" class="w-16 h-16 rounded-full object-cover ml-4 border-2 border-slate-200">
+                        <div>
+                            <h3 class="text-xl font-bold text-blue-600">${team.name}</h3>
+                            <p class="text-sm text-slate-500"><span class="font-semibold">رهبر تیم:</span> ${leader ? leader.name : 'نامشخص'}</p>
                         </div>
                     </div>
-                    <div class="card-content flex-grow">
+                    <div class="border-t pt-4 mb-4">
                         <h4 class="font-semibold text-slate-600 mb-3 text-sm">اهداف کلیدی (OKRs)</h4>
                         <div class="space-y-3">
                             ${(team.okrs && team.okrs.length > 0) 
-                                ? team.okrs.map(okr => `<div><div class="flex justify-between items-center mb-1 text-xs"><span class="text-slate-600">${okr.title}</span><span class="font-medium text-indigo-600">${okr.progress}%</span></div><div class="w-full bg-slate-200 rounded-full h-2"><div class="bg-indigo-600 h-2 rounded-full" style="width: ${okr.progress}%;"></div></div></div>`).join('') 
+                                ? team.okrs.map(okr => `<div><div class="flex justify-between items-center mb-1 text-xs"><span class="text-slate-600">${okr.title}</span><span class="font-medium text-blue-600">${okr.progress}%</span></div><div class="progress-bar w-full"><div class="progress-bar-fill" style="width: ${okr.progress}%;"></div></div></div>`).join('') 
                                 : '<p class="text-xs text-slate-400">هدفی برای این تیم ثبت نشده است.</p>'
                             }
                         </div>
                     </div>
-                    <div class="card-content border-t">
+                    <div class="border-t pt-4 mt-auto">
                         <h4 class="font-semibold text-slate-600 mb-3 text-sm">اعضا (${members.length} نفر):</h4>
-                        <div class="flex flex-wrap gap-2">
-                            ${members.map(member => `<img src="${member.avatar}" alt="${member.name}" title="${member.name}" class="w-9 h-9 rounded-full object-cover ring-2 ring-white">`).join('')}
+                        <div class="flex flex-wrap gap-x-6 gap-y-3">
+                            ${members.map(member => `<div class="flex items-center gap-2" title="${member.name} - ${member.jobTitle}"><img src="${member.avatar}" alt="${member.name}" class="w-8 h-8 rounded-full object-cover"><p class="text-sm font-medium">${member.name}</p></div>`).join('')}
                         </div>
                     </div>
                 </div>
             `;
         }).join('');
-
-        contentContainer.innerHTML = `
-            <div class="page-header">
-                <h1 class="text-3xl font-bold text-slate-800">دایرکتوری سازمان</h1>
-                <p class="text-slate-500 mt-1">آشنایی با تیم‌ها و اعضای آن‌ها</p>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-                ${teamCardsHtml || '<p>هنوز تیمی در سازمان ثبت نشده است.</p>'}
-            </div>
-        `;
+        contentContainer.innerHTML = `<h1 class="text-3xl font-bold text-slate-800 mb-6">دایرکتوری سازمان</h1><div class="space-y-6">${teamCardsHtml || '<p>هنوز تیمی در سازمان ثبت نشده است.</p>'}</div>`;
+    
     } 
     // --- بخش درخواست‌ها ---
 // در تابع renderEmployeePortalPage
