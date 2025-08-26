@@ -45,6 +45,9 @@ export const showDashboard = () => {
     }
 };
 
+// در فایل js/auth.js
+// کل این تابع را با نسخه جدید و کامل جایگزین کنید
+
 export const setupAuthEventListeners = (auth) => {
     const loginForm = document.getElementById('login-form');
     const signupForm = document.getElementById('signup-form');
@@ -52,33 +55,31 @@ export const setupAuthEventListeners = (auth) => {
     const showLogin = document.getElementById('show-login');
     const logoutBtn = document.getElementById('logout-btn');
 
-// در فایل js/auth.js، داخل تابع setupAuthEventListeners
-// کل این بلوک addEventListener را با نسخه جدید جایگزین کنید
+    // منطق فرم لاگین (اصلاح شده)
+    loginForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = loginForm.email.value;
+        const password = loginForm.password.value;
+        const loginButton = loginForm.querySelector('button[type="submit"]');
 
-loginForm?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const email = loginForm.email.value;
-    const password = loginForm.password.value;
-    const loginButton = loginForm.querySelector('button[type="submit"]');
+        loginButton.disabled = true;
+        loginButton.innerText = 'در حال ورود...';
 
-    loginButton.disabled = true;
-    loginButton.innerText = 'در حال ورود...';
+        try {
+            await signInWithEmailAndPassword(auth, email, password);
+            showToast('با موفقیت وارد شدید.');
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
 
-    try {
-        await signInWithEmailAndPassword(auth, email, password);
-        showToast('با موفقیت وارد شدید.');
-        // بعد از یک تاخیر کوتاه، صفحه را رفرش می‌کنیم تا همه چیز از نو بارگذاری شود
-        setTimeout(() => {
-            window.location.reload();
-        }, 1000); // ۱ ثانیه تاخیر برای نمایش پیام
+        } catch (error) {
+            showToast(`خطا در ورود: ${error.message}`, 'error');
+            loginButton.disabled = false;
+            loginButton.innerText = 'ورود';
+        }
+    });
 
-    } catch (error) {
-        showToast(`خطا در ورود: ${error.message}`, 'error');
-        loginButton.disabled = false;
-        loginButton.innerText = 'ورود';
-    }
-});
-
+    // منطق فرم ثبت‌نام (که در کد قبلی من جا افتاده بود)
     signupForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const email = signupForm['signup-email'].value;
@@ -92,18 +93,21 @@ loginForm?.addEventListener('submit', async (e) => {
         }
     });
 
+    // منطق دکمه "ثبت نام کنید"
     showSignup?.addEventListener('click', (e) => {
         e.preventDefault();
         document.getElementById('login-container').classList.add('hidden');
         document.getElementById('signup-container').classList.remove('hidden');
     });
 
+    // منطق دکمه "وارد شوید"
     showLogin?.addEventListener('click', (e) => {
         e.preventDefault();
         document.getElementById('signup-container').classList.add('hidden');
         document.getElementById('login-container').classList.remove('hidden');
     });
 
+    // منطق دکمه خروج
     logoutBtn?.addEventListener('click', (e) => {
         e.preventDefault();
         signOut(auth).catch(error => showToast(`خطا در خروج: ${error.message}`, 'error'));
