@@ -335,7 +335,7 @@ function renderEmployeePortalPage(pageName, employee) {
         const manager = state.teams.find(t => t.memberIds?.includes(employee.id))
             ? state.employees.find(e => e.id === state.teams.find(t => t.memberIds.includes(employee.id)).leaderId)
             : null;
-
+        
         const performanceHistoryHtml = (employee.performanceHistory || []).sort((a,b) => new Date(b.reviewDate) - new Date(a.reviewDate)).map(review => `
             <div class="p-4 bg-slate-50 rounded-lg border">
                 <div class="flex justify-between items-center mb-2">
@@ -347,7 +347,19 @@ function renderEmployeePortalPage(pageName, employee) {
         `).join('') || '<p class="text-sm text-slate-500">سابقه‌ای ثبت نشده است.</p>';
 
         contentContainer.innerHTML = `
-            <h1 class="text-3xl font-bold text-slate-800 mb-6">داشبورد شما</h1>
+            <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-2">
+                <h1 class="text-3xl font-bold text-slate-800">داشبورد شما</h1>
+                <div class="flex items-center gap-2">
+                    <button id="change-password-btn" class="bg-slate-600 text-white py-2 px-4 rounded-lg hover:bg-slate-700 flex items-center gap-2 text-sm">
+                        <i data-lucide="key-round" class="w-4 h-4"></i>
+                        <span>تغییر رمز عبور</span>
+                    </button>
+                    <button id="edit-my-profile-btn" class="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 flex items-center gap-2 text-sm">
+                        <i data-lucide="edit-3" class="w-4 h-4"></i>
+                        <span>ویرایش اطلاعات</span>
+                    </button>
+                </div>
+            </div>
             <div class="space-y-6">
                 ${renderMyBirthdayWishesWidget(employee)}
                 ${renderBirthdaysWidget(employee)}
@@ -581,6 +593,9 @@ else if (pageName === 'inbox') {
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
 
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید جایگزین کنید
+
 function setupEmployeePortalEventListeners(employee) {
     document.getElementById('portal-logout-btn')?.addEventListener('click', () => signOut(auth));
     
@@ -588,22 +603,53 @@ function setupEmployeePortalEventListeners(employee) {
         showMyProfileEditForm(employee);
     });
 
+    // [!code ++] این خط جدید، دکمه تغییر رمز را فعال می‌کند
+    document.getElementById('change-password-btn')?.addEventListener('click', showChangePasswordForm);
+
     document.getElementById('portal-notification-bell-btn')?.addEventListener('click', () => {
         document.querySelector('.employee-nav-item[href="#inbox"]').click();
     });
     
     const mainContent = document.getElementById('employee-main-content');
     if (mainContent) {
-        // رویداد برای فرم‌های پاسخ در صفحه درخواست‌ها
         mainContent.addEventListener('submit', async (e) => {
             if (e.target.classList.contains('employee-reply-form')) {
                 e.preventDefault();
-                // ... (منطق ارسال پاسخ درخواست که از قبل داشتیم)
+                const form = e.target;
+                const requestId = form.dataset.id;
+                const input = form.querySelector('.reply-input');
+                const content = input.value.trim();
+                
+                if (!content) return;
+
+                const request = state.requests.find(r => r.firestoreId === requestId);
+                if (!request) return;
+
+                const newThreadItem = {
+                    senderUid: state.currentUser.uid,
+                    content: content,
+                    createdAt: new Date(),
+                    eventType: 'comment'
+                };
+                
+                const updatedThread = [...(request.thread || []), newThreadItem];
+                
+                try {
+                    const requestRef = doc(db, `artifacts/${appId}/public/data/requests`, requestId);
+                    await updateDoc(requestRef, {
+                        thread: updatedThread,
+                        status: 'در حال انجام',
+                        lastUpdatedAt: serverTimestamp()
+                    });
+                    input.value = '';
+                    showToast("پاسخ شما ارسال شد.");
+                } catch (error) {
+                    console.error("Error submitting reply:", error);
+                    showToast("خطا در ارسال پاسخ.", "error");
+                }
             }
         });
 
-        // [!code focus:11]
-        // رویداد جدید برای دکمه‌های ارسال تبریک
         mainContent.addEventListener('click', (e) => {
             const sendWishBtn = e.target.closest('.send-wish-btn');
             if (sendWishBtn) {
@@ -1176,7 +1222,55 @@ const generateSmartReminders = async () => {
 
         return analysis;
     };
-        
+       // این تابع جدید را به js/main.js اضافه کنید
+
+const showChangePasswordForm = () => {
+    modalTitle.innerText = 'تغییر رمز عبور';
+    modalContent.innerHTML = `
+        <form id="change-password-form" class="space-y-4">
+            <div>
+                <label for="new-password" class="block font-medium mb-1">رمز عبور جدید</label>
+                <input type="password" id="new-password" class="w-full p-2 border rounded-md" required minlength="6">
+                <p class="text-xs text-slate-500 mt-1">رمز عبور باید حداقل ۶ کاراکتر باشد.</p>
+            </div>
+            <div>
+                <label for="confirm-password" class="block font-medium mb-1">تکرار رمز عبور جدید</label>
+                <input type="password" id="confirm-password" class="w-full p-2 border rounded-md" required>
+            </div>
+            <div class="pt-4 flex justify-end">
+                <button type="submit" class="primary-btn">ذخیره رمز جدید</button>
+            </div>
+        </form>
+    `;
+    openModal(mainModal, mainModalContainer);
+
+    document.getElementById('change-password-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const newPassword = document.getElementById('new-password').value;
+        const confirmPassword = document.getElementById('confirm-password').value;
+
+        if (newPassword.length < 6) {
+            showToast("رمز عبور باید حداقل ۶ کاراکتر باشد.", "error");
+            return;
+        }
+        if (newPassword !== confirmPassword) {
+            showToast("رمزهای عبور وارد شده یکسان نیستند.", "error");
+            return;
+        }
+
+        const user = auth.currentUser;
+        if (user) {
+            try {
+                await updatePassword(user, newPassword);
+                showToast("رمز عبور شما با موفقیت تغییر کرد.");
+                closeModal(mainModal, mainModalContainer);
+            } catch (error) {
+                console.error("Error updating password:", error);
+                showToast("خطا در تغییر رمز عبور. ممکن است نیاز به ورود مجدد داشته باشید.", "error");
+            }
+        }
+    });
+}; 
     
       export const showToast = (message, type = 'success') => {
             const container = document.getElementById('toast-container');
