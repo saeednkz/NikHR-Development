@@ -182,7 +182,7 @@ const collectionsToListen = [
     const onDataLoaded = () => {
         initialLoads--;
         if (initialLoads === 0) {
-            calculateAndApplyAnalytics();
+     
             
             // فراخوانی تابع نوتیفیکیشن بعد از بارگذاری کامل داده‌ها
             updateNotificationsForCurrentUser(); 
@@ -509,8 +509,6 @@ function renderEmployeePortalPage(pageName, employee) {
 
 else if (pageName === 'inbox') {
     // ۱. به‌روزرسانی زمان آخرین بازدید از اینباکس (مانند قبل)
-    const employeeRef = doc(db, `artifacts/${appId}/public/data/employees`, employee.firestoreId);
-    updateDoc(employeeRef, { "personalInfo.lastCheckedInbox": serverTimestamp() });
 
     // ۲. پیدا کردن تیم کارمند برای فیلتر پیام‌های تیمی (مانند قبل)
     const myTeam = state.teams.find(team => team.memberIds?.includes(employee.id));
@@ -804,50 +802,43 @@ const persianToEnglishDate = (persianDateStr) => {
 
 // فایل: main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
+// فایل: main.js
+// این نسخه نهایی، مشکل خطا را حل می‌کند
 const activatePersianDatePicker = (elementId, initialValue = null) => {
     const input = $(`#${elementId}`);
     if (!input.length) return;
 
-    // پاک کردن نمونه‌های قبلی برای جلوگیری از تداخل
-    try {
-        if (input.data('datepicker')) {
-            input.persianDatepicker('destroy');
-        }
-    } catch (e) {
-        console.warn("Could not destroy previous datepicker instance.", e);
-    }
+    // استفاده از setTimeout برای اطمینان از آمادگی کامل DOM
+    setTimeout(() => {
+        try {
+            if (input.data('datepicker')) {
+                input.persianDatepicker('destroy');
+            }
 
-    // مقداردهی اولیه با مقدار ورودی (اگر وجود داشت)
-    let initialTimestamp = null;
-    if (initialValue) {
-        const date = new Date(initialValue);
-        if (!isNaN(date.getTime())) {
-            initialTimestamp = date.getTime();
-        }
-    }
+            let initialTimestamp = null;
+            if (initialValue) {
+                const date = new Date(initialValue);
+                if (!isNaN(date.getTime())) {
+                    initialTimestamp = date.getTime();
+                }
+            }
 
-    // مقداردهی استاندارد کتابخانه
-    input.persianDatepicker({
-        format: 'YYYY/MM/DD',
-        autoClose: true,
-        observer: false, // جلوگیری از خطای observer
-        initialValue: initialValue ? true : false,
-        initialValueType: 'persian',
-        // افزودن یک جعبه ابزار برای راحتی کاربر
-        toolbox: {
-            calendarSwitch: {
-                enabled: false,
-            },
-            todayButton: {
-                enabled: true,
-                text: {
-                    fa: 'امروز',
+            input.persianDatepicker({
+                format: 'YYYY/MM/DD',
+                autoClose: true,
+                observer: false,
+                initialValue: !!initialValue,
+                initialValueType: 'persian',
+                toolbox: {
+                    calendarSwitch: { enabled: false },
+                    todayButton: { enabled: true, text: { fa: 'امروز' } },
                 },
-            },
-        },
-        // انتخاب تاریخ اولیه در صورت وجود
-        selectedDate: initialTimestamp ? new Date(initialTimestamp) : null
-    });
+                selectedDate: initialTimestamp ? new Date(initialTimestamp) : null
+            });
+        } catch (error) {
+            console.error(`Failed to initialize persian-datepicker on #${elementId}:`, error);
+        }
+    }, 0); // تاخیر صفر میلی‌ثانیه‌ای کافی است تا اجرا به تیک بعدی موکول شود
 };
         // --- تابع جدید برای ساخت دکمه‌های صفحه‌بندی ---
     const renderPagination = (containerId, currentPage, totalItems, itemsPerPage) => {
