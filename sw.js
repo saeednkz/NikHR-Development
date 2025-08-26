@@ -1,16 +1,16 @@
 // نام کش (حافظه پنهان) و لیستی از فایل‌های اصلی برنامه
 const CACHE_NAME = 'nikhr-cache-v1';
+// در فایل sw.js
+// محتوای این آرایه را با لیست جدید جایگزین کنید
+
 const ASSETS_TO_CACHE = [
-  './', // فایل HTML اصلی شما
-  'https://cdn.tailwindcss.com',
-  'https://cdn.jsdelivr.net/npm/chart.js',
-  'https://unpkg.com/lucide@latest/dist/umd/lucide.min.js',
-  'https://cdn.jsdelivr.net/npm/jalaali-js/dist/jalaali.js',
-  'https://code.jquery.com/jquery-3.6.0.min.js',
-  'https://unpkg.com/persian-date@1.1.0/dist/persian-date.min.js',
-  'https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/css/persian-datepicker.min.css',
-  'https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js',
-  'https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css'
+  './',
+  'index.html',
+  'js/main.js',
+  'js/auth.js',
+  'logo.png',
+  'manifest.json'
+  // تمام لینک‌های http حذف شدند
 ];
 
 // 1. هنگام نصب Service Worker، فایل‌های اصلی را در کش ذخیره کن
