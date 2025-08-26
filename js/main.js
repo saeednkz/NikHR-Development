@@ -169,20 +169,22 @@ async function fetchUserRole(user) {
 // کل این تابع را با نسخه جدید و کامل جایگزین کنید
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید و کامل جایگزین کنید
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید و کامل جایگزین کنید
+
 function listenToData() {
-    detachAllListeners(); // ابتدا شنونده‌های قبلی را پاک می‌کنیم
+    detachAllListeners(); 
     
-const collectionsToListen = [
-    'employees', 'teams', 'reminders', 'surveyResponses', 'users',
-    'competencies', 'requests', 'assignmentRules', 'companyDocuments', 'birthdayWishes',
-    'announcements' // <-- این خط اضافه شده است
-];
+    const collectionsToListen = [
+        'employees', 'teams', 'reminders', 'surveyResponses', 'users', 
+        'competencies', 'requests', 'assignmentRules', 'companyDocuments', 'announcements', 'birthdayWishes'
+    ];
     let initialLoads = collectionsToListen.length;
 
     const onDataLoaded = () => {
         initialLoads--;
         if (initialLoads === 0) {
-     
+            calculateAndApplyAnalytics();
             
             // فراخوانی تابع نوتیفیکیشن بعد از بارگذاری کامل داده‌ها
             updateNotificationsForCurrentUser(); 
@@ -205,16 +207,16 @@ const collectionsToListen = [
             if (initialLoads > 0) {
                 onDataLoaded();
             } else {
-        calculateAndApplyAnalytics();
-        // این خط جدید، اعلانات همه کاربران (ادمین و کارمند) را بروز می‌کند
-        updateNotificationsForCurrentUser();
+                // با هر تغییر در داده‌ها، تمام بخش‌ها را بروز می‌کنیم
+                calculateAndApplyAnalytics();
+                updateNotificationsForCurrentUser(); // بروزرسانی نوتیفیکیشن‌ها در لحظه
+                
                 if (state.currentUser.role !== 'employee' && !window.location.hash.startsWith('#survey-taker')) {
-            renderPage(state.currentPage);
+                    renderPage(state.currentPage);
                 }
             }
         }, (error) => {
             console.error(`Error listening to ${colName}:`, error);
-            // اگر کالکشنی وجود نداشت، آن را به عنوان آرایه خالی در نظر بگیر
             if (!state[colName]) state[colName] = [];
             if (initialLoads > 0) onDataLoaded();
         });
@@ -606,8 +608,14 @@ function setupEmployeePortalEventListeners(employee) {
     // [!code ++] این خط جدید، دکمه تغییر رمز را فعال می‌کند
     document.getElementById('change-password-btn')?.addEventListener('click', showChangePasswordForm);
 
+    // [!code focus:7]
+    // منطق اصلاح شده برای کلیک روی زنگوله
     document.getElementById('portal-notification-bell-btn')?.addEventListener('click', () => {
-        document.querySelector('.employee-nav-item[href="#inbox"]').click();
+        // ۱. لینک منوی اینباکس را به صورت دستی فعال کن
+        document.querySelectorAll('.employee-nav-item').forEach(item => item.classList.remove('active'));
+        document.querySelector('.employee-nav-item[href="#inbox"]').classList.add('active');
+        // ۲. صفحه اینباکس را مستقیماً رندر کن
+        renderEmployeePortalPage('inbox', employee);
     });
     
     const mainContent = document.getElementById('employee-main-content');
