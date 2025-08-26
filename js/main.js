@@ -2,10 +2,10 @@
         // --- ALL JAVASCRIPT CODE STARTS HERE ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { 
-            getFirestore, doc, getDoc, setDoc, onSnapshot, collection, 
-            addDoc, getDocs, writeBatch, deleteDoc, updateDoc, query, serverTimestamp
-        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+    getFirestore, doc, getDoc, setDoc, onSnapshot, collection,
+    addDoc, getDocs, writeBatch, deleteDoc, updateDoc, query, where, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
 // وارد کردن توابع مربوط به احراز هویت از فایل auth.js
@@ -129,29 +129,34 @@ async function initializeFirebase() {
 
 // کد اصلاح شده برای main.js
 
+// کد کامل و صحیح برای جایگزینی در main.js
+
 async function fetchUserRole(user) {
+    // مرحله ۱: سعی کن نقش کاربر را از کالکشن users بخوانی
     const userRef = doc(db, `artifacts/${appId}/public/data/users`, user.uid);
     const userSnap = await getDoc(userRef);
 
     if (userSnap.exists()) {
-        // اگر کاربر نقش مشخصی داشت، همان را استفاده کن (رفتار قبلی)
+        // اگر نقش از قبل مشخص بود، آن را تنظیم کن
         state.currentUser = { uid: user.uid, email: user.email, ...userSnap.data() };
     } else {
-        // اگر کاربر نقش نداشت، چک کن آیا پروفایل پرسنلی دارد یا نه
-        const employeeRef = doc(db, `artifacts/${appId}/public/data/employees`, user.uid);
-        const employeeSnap = await getDoc(employeeRef);
+        // مرحله ۲: اگر نقش مشخص نبود، در کالکشن employees دنبال پروفایل کارمند بگرد
+        const employeesCollection = collection(db, `artifacts/${appId}/public/data/employees`);
+        // یک کوئری می‌سازیم تا کارمندی را پیدا کنیم که فیلد uid او با شناسه لاگین کاربر برابر است
+        const q = query(employeesCollection, where("uid", "==", user.uid));
+        const employeeQuerySnapshot = await getDocs(q);
 
-        if (employeeSnap.exists()) {
-            // اگر پروفایل پرسنلی داشت، نقش او را 'employee' قرار بده
+        if (!employeeQuerySnapshot.empty) {
+            // اگر پروفایل کارمندی پیدا شد، نقش او را 'employee' قرار بده
             const newUser = { email: user.email, role: 'employee', createdAt: serverTimestamp() };
-            await setDoc(userRef, newUser); // این نقش را در دیتابیس هم برایش ثبت کن
+            await setDoc(userRef, newUser); // این نقش را برای ورودهای بعدی در دیتابیس ذخیره کن
             state.currentUser = { uid: user.uid, ...newUser };
         } else {
-            // اگر پروفایل پرسنلی هم نداشت، همان منطق قبلی را اجرا کن
+            // مرحله ۳: اگر پروفایل کارمندی هم پیدا نشد، به عنوان کاربر عادی (viewer) ثبت‌نامش کن
             const usersCol = collection(db, `artifacts/${appId}/public/data/users`);
             const usersSnapshot = await getDocs(usersCol);
             const isFirstUser = usersSnapshot.empty;
-            const newUserRole = isFirstUser ? 'admin' : 'viewer';
+            const newUserRole = isFirstUser ? 'admin' : 'viewer'; // اولین کاربر سیستم ادمین می‌شود
             const newUser = { email: user.email, role: newUserRole, createdAt: serverTimestamp() };
             await setDoc(userRef, newUser);
             state.currentUser = { uid: user.uid, ...newUser };
