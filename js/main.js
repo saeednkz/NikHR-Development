@@ -717,23 +717,20 @@ mainContent.addEventListener('click', (e) => {
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
 
-function renderEmployeePortal() {
-    // ابتدا تمام کانتینرهای دیگر را مخفی می‌کنیم
-    document.getElementById('login-container').classList.add('hidden');
-    document.getElementById('dashboard-container').classList.add('hidden');
-    
-    const portalContainer = document.getElementById('employee-portal-container');
-    portalContainer.classList.remove('hidden');
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید جایگزین کنید
 
+function renderEmployeePortal() {
+    const portalContainer = document.getElementById('employee-portal-container');
     const employee = state.employees.find(emp => emp.uid === state.currentUser.uid);
     
     if (!employee) {
-        portalContainer.innerHTML = `<div class="text-center p-10"><h2 class="text-xl font-bold text-red-600">خطا</h2><p class="mt-2 text-slate-500">پروفایل پرسنلی شما یافت نشد. لطفاً با مدیر سیستم تماس بگیرید.</p></div>`;
+        portalContainer.innerHTML = `<div class="text-center p-10"><h2 class="text-xl font-bold text-red-600">خطا</h2><p class="mt-2 text-slate-500">پروفایل پرسنلی شما یافت نشد.</p></div>`;
         return;
     }
 
+    // ابتدا ساختار اصلی پورتال را می‌سازیم
     const employeeName = employee.name || state.currentUser.email;
-
     portalContainer.innerHTML = `
         <div class="flex h-screen bg-slate-100">
             <aside class="w-64 bg-white shadow-md p-4 flex flex-col">
@@ -776,11 +773,13 @@ function renderEmployeePortal() {
         </div>
     `;
     
-    lucide.createIcons();
-    // به صورت پیش‌فرض، صفحه پروفایل را نمایش بده
+    // [!code focus:4]
+    // این بخش مشکل را حل می‌کند:
+    // بعد از ساختار اولیه، صفحه پیش‌فرض (پروفایل) را رندر کرده و دکمه‌ها را فعال می‌کنیم
     renderEmployeePortalPage('profile', employee);
     setupEmployeePortalEventListeners(employee);
     updateEmployeeNotificationBell(employee);
+    lucide.createIcons();
 }
         // --- UTILITY & HELPER FUNCTIONS ---
         // --- تابع جدید برای تبدیل تاریخ به شمسی ---
