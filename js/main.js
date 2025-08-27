@@ -510,12 +510,9 @@ function renderEmployeePortalPage(pageName, employee) {
 // این بخش را به تابع setupEmployeePortalEventListeners اضافه کنید
 
 // در فایل js/main.js
-// کل این تابع را به تابع setupEmployeePortalEventListeners اضافه کنید
-
-// کل این تابع را با نسخه جدید جایگزین کنید
-// در فایل js/main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
 
+// کل این تابع را با نسخه جدید جایگزین کنید
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
 
@@ -1336,6 +1333,34 @@ const updateNotificationBell = () => {
                 closeModal(mainModal, mainModalContainer);
             }
         });
+
+        async function showBirthdayWishForm(targetUid, targetName) {
+            modalTitle.innerText = `ارسال تبریک برای ${targetName}`;
+            modalContent.innerHTML = `
+                <form id=\"wish-form\" class=\"space-y-4\">\n                    <div>\n                        <label class=\"block text-sm font-medium\">پیام شما</label>\n                        <textarea id=\"wish-text\" rows=\"4\" class=\"w-full p-2 border rounded-md\" placeholder=\"مثال: تولدت مبارک! آرزوی موفقیت دارم.\" required></textarea>\n                    </div>\n                    <div class=\"flex justify-end gap-2\">\n                        <button type=\"button\" id=\"wish-cancel\" class=\"bg-slate-200 text-slate-800 py-2 px-4 rounded-md hover:bg-slate-300\">انصراف</button>\n                        <button type=\"submit\" class=\"bg-pink-600 text-white py-2 px-4 rounded-md hover:bg-pink-700\">ارسال</button>\n                    </div>\n                </form>`;
+            openModal(mainModal, mainModalContainer);
+            document.getElementById('wish-cancel').addEventListener('click', () => closeModal(mainModal, mainModalContainer));
+            document.getElementById('wish-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const text = document.getElementById('wish-text').value.trim();
+                if (!text) return;
+                try {
+                    await addDoc(collection(db, `artifacts/${appId}/public/data/birthdayWishes`), {
+                        targetUid,
+                        wisherUid: state.currentUser?.uid || 'anonymous',
+                        wisherName: state.currentUser?.email || 'یک همکار',
+                        message: text,
+                        createdAt: serverTimestamp()
+                    });
+                    showToast('پیام تبریک ارسال شد.');
+                    closeModal(mainModal, mainModalContainer);
+                } catch (err) {
+                    console.error('Error sending wish', err);
+                    showToast('خطا در ارسال پیام تبریک.', 'error');
+                }
+            });
+        }
+
      const updateEmployeeNotificationBell = (employee) => {
     const countContainer = document.getElementById('portal-notification-count');
     if (!countContainer || !employee) return;
@@ -3296,154 +3321,6 @@ const setupAnalyticsPage = () => {
     renderTeamHealthChart();
     setupSkillGapFinder();
 };
-        // --- [FIX START] ADDED EXPENSES PAGE LISTENERS AND HELPERS ---
-const setupExpensesPageListeners = () => {
-    // فعال کردن تقویم شمسی برای فیلترها
-    activatePersianDatePicker('start-date-filter');
-    activatePersianDatePicker('end-date-filter');
-
-    mainContent.addEventListener('click', (e) => {
-        const addExpenseBtn = e.target.closest('#add-expense-btn');
-        const chargeCardBtn = e.target.closest('#charge-card-btn');
-        const addCardBtn = e.target.closest('#add-card-btn');
-        const editCardBtn = e.target.closest('.edit-card-btn');
-        const deleteCardBtn = e.target.closest('.delete-card-btn');
-        const exportCsvBtn = e.target.closest('#export-transactions-csv-btn');
-
-        if (addExpenseBtn) showExpenseForm();
-        if (chargeCardBtn) showNewChargeForm();
-        if (addCardBtn) showPettyCashCardForm();
-        if (exportCsvBtn) exportTransactionsToCSV();
-
-        if (editCardBtn) {
-            showPettyCashCardForm(editCardBtn.dataset.id);
-        }
-        if (deleteCardBtn) {
-            const cardId = deleteCardBtn.dataset.id;
-            showConfirmationModal('حذف کارت تنخواه', 'آیا از حذف این کارت مطمئن هستید؟', async () => {
-                try {
-                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/pettyCashCards`, cardId));
-                    showToast('کارت با موفقیت حذف شد.');
-                } catch (error) {
-                    console.error("Error deleting card:", error);
-                    showToast('خطا در حذف کارت.', 'error');
-                }
-            });
-        }
-    });
-};
-
-const showPettyCashCardForm = (cardId = null) => {
-    const isEditing = cardId !== null;
-    const card = isEditing ? state.pettyCashCards.find(c => c.firestoreId === cardId) : {};
-    modalTitle.innerText = isEditing ? 'ویرایش کارت تنخواه' : 'افزودن کارت تنخواه';
-    modalContent.innerHTML = `
-        <form id="card-form" class="space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div><label class="block font-medium">نام کارت (مثال: کارت بانک ملت)</label><input type="text" id="card-name" value="${card.name || ''}" class="w-full p-2 border rounded-md" required></div>
-                <div><label class="block font-medium">شماره کارت (اختیاری)</label><input type="text" id="card-number" value="${card.cardNumber || ''}" class="w-full p-2 border rounded-md"></div>
-            </div>
-            <div><label class="block font-medium">موجودی اولیه (تومان)</label><input type="number" id="card-balance" value="${card.balance || '0'}" class="w-full p-2 border rounded-md" ${isEditing ? 'readonly' : ''} required></div>
-            <div class="pt-6 flex justify-end"><button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">ذخیره</button></div>
-        </form>
-    `;
-    openModal(mainModal, mainModalContainer);
-
-    document.getElementById('card-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const cardName = document.getElementById('card-name').value;
-        const initialBalance = Number(document.getElementById('card-balance').value);
-        const cardData = {
-            name: cardName,
-            cardNumber: document.getElementById('card-number').value,
-            balance: initialBalance
-        };
-
-        try {
-            const batch = writeBatch(db);
-            const cardRef = doc(db, `artifacts/${appId}/public/data/pettyCashCards`, isEditing ? cardId : cardName.replace(/\s+/g, '-'));
-            batch.set(cardRef, cardData, { merge: true });
-
-            // اگر کارت جدید است و موجودی اولیه دارد، آن را به عنوان یک تراکنش شارژ ثبت کن
-            if (!isEditing && initialBalance > 0) {
-                const chargeHistoryRef = collection(db, `artifacts/${appId}/public/data/chargeHistory`);
-                batch.set(doc(chargeHistoryRef), {
-                    cardId: cardRef.id,
-                    cardName: cardName,
-                    amount: initialBalance,
-                    chargedAt: new Date(), // تاریخ فعلی
-                    chargedBy: 'موجودی اولیه'
-                });
-            }
-
-            await batch.commit();
-            closeModal(mainModal, mainModalContainer);
-            showToast('کارت با موفقیت ذخیره شد.');
-        } catch (error) {
-            console.error("Error saving card:", error);
-            showToast('خطا در ذخیره کارت.', 'error');
-        }
-    });
-};
-const showNewChargeForm = () => {
-    modalTitle.innerText = 'شارژ کارت تنخواه';
-    const cardOptions = state.pettyCashCards.map(c => `<option value="${c.firestoreId}">${c.name} (${c.cardNumber || ''})</option>`).join('');
-
-    modalContent.innerHTML = `
-        <form id="charge-card-form" class="space-y-4">
-            <div><label class="block font-medium">کارت مورد نظر</label><select id="charge-card-select" class="w-full p-2 border rounded-md" required>${cardOptions}</select></div>
-            <div><label class="block font-medium">تاریخ شارژ</label><input type="text" id="charge-date" class="w-full p-2 border rounded-md" required></div>
-            <div><label class="block font-medium">مبلغ شارژ (تومان)</label><input type="number" id="charge-amount" class="w-full p-2 border rounded-md" required></div>
-            <div class="pt-6 flex justify-end">
-                <button type="submit" id="submit-charge-btn" class="bg-green-600 text-white py-2 px-6 rounded-md hover:bg-green-700">تایید و شارژ</button>
-            </div>
-        </form>
-    `;
-    openModal(mainModal, mainModalContainer);
-    activatePersianDatePicker('charge-date', new Date());
-
-    document.getElementById('charge-card-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const submitBtn = document.getElementById('submit-charge-btn');
-        submitBtn.disabled = true;
-        submitBtn.innerText = 'در حال پردازش...';
-
-        const cardId = document.getElementById('charge-card-select').value;
-        const amount = Number(document.getElementById('charge-amount').value);
-        const gregorianDate = persianToEnglishDate(document.getElementById('charge-date').value);
-
-        try {
-            const cardRef = doc(db, `artifacts/${appId}/public/data/pettyCashCards`, cardId);
-            const cardSnap = await getDoc(cardRef);
-
-            if (cardSnap.exists()) {
-                const cardData = cardSnap.data();
-                const batch = writeBatch(db);
-
-                batch.update(cardRef, { balance: cardData.balance + amount });
-
-                const chargeHistoryRef = collection(db, `artifacts/${appId}/public/data/chargeHistory`);
-                batch.set(doc(chargeHistoryRef), {
-                    cardId: cardId,
-                    cardName: cardData.name,
-                    amount: amount,
-                    chargedAt: new Date(gregorianDate),
-                    chargedBy: state.currentUser.email
-                });
-
-                await batch.commit();
-                closeModal(mainModal, mainModalContainer);
-                showToast(`کارت ${cardData.name} با موفقیت شارژ شد.`);
-            }
-        } catch (error) {
-            console.error("Error charging card:", error);
-            showToast("خطا در عملیات شارژ.", "error");
-        } finally {
-            submitBtn.disabled = false;
-            submitBtn.innerText = 'تایید و شارژ';
-        }
-    });
-};
 const showExpenseForm = () => {
         modalTitle.innerText = 'افزودن هزینه جدید';
         const cardOptions = state.pettyCashCards.map(c => `<option value="${c.firestoreId}">${c.name}</option>`).join('');
@@ -4951,379 +4828,6 @@ const showDocumentForm = (emp, docIndex = null) => {
             }
         });
     };
-// این تابع جدید را به انتهای بخش "EDIT FORM FUNCTIONS" در main.js اضافه کنید
-
-// کد کامل و اصلاح شده برای جایگزینی در main.js
-
-const showMyProfileEditForm = (emp) => {
-    modalTitle.innerText = 'ویرایش اطلاعات پرسنلی';
-    const info = emp.personalInfo || {};
-    
-    modalContent.innerHTML = `
-        <form id="my-profile-edit-form" class="space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div><label class="block font-medium">ایمیل</label><input type="email" id="personal-email" value="${info.email || ''}" class="w-full p-2 border rounded-md"></div>
-                <div><label class="block font-medium">شماره موبایل</label><input type="tel" id="personal-phone" value="${info.phone || ''}" class="w-full p-2 border rounded-md"></div>
-                <div><label class="block font-medium">تاریخ تولد</label><input type="text" id="personal-birthDate" class="w-full p-2 border rounded-md"></div>
-                <div><label class="block font-medium">وضعیت تاهل</label><select id="personal-maritalStatus" class="w-full p-2 border rounded-md"><option value="مجرد" ${info.maritalStatus === 'مجرد' ? 'selected' : ''}>مجرد</option><option value="متاهل" ${info.maritalStatus === 'متاهل' ? 'selected' : ''}>متاهل</option></select></div>
-                <div class="md:col-span-2"><label class="block font-medium">آدرس</label><input type="text" id="personal-address" value="${info.address || ''}" class="w-full p-2 border rounded-md"></div>
-                <hr class="md:col-span-2 my-2">
-                <div><label class="block font-medium">نام مخاطب اضطراری</label><input type="text" id="personal-emergencyContactName" value="${info.emergencyContactName || ''}" class="w-full p-2 border rounded-md"></div>
-                <div><label class="block font-medium">شماره مخاطب اضطراری</label><input type="tel" id="personal-emergencyContactPhone" value="${info.emergencyContactPhone || ''}" class="w-full p-2 border rounded-md"></div>
-            </div>
-            <div class="pt-6 flex justify-end">
-                <button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">ذخیره تغییرات</button>
-            </div>
-        </form>
-    `;
-
-    openModal(mainModal, mainModalContainer);
-    activatePersianDatePicker('personal-birthDate', info.birthDate);
-
-    document.getElementById('my-profile-edit-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const birthDateValue = document.getElementById('personal-birthDate').value;
-        const gregorianBirthDate = persianToEnglishDate(birthDateValue);
-
-        const updatedInfo = {
-            ...emp.personalInfo,
-            email: document.getElementById('personal-email').value,
-            phone: document.getElementById('personal-phone').value,
-            birthDate: gregorianBirthDate,
-            maritalStatus: document.getElementById('personal-maritalStatus').value,
-            address: document.getElementById('personal-address').value,
-            emergencyContactName: document.getElementById('personal-emergencyContactName').value,
-            emergencyContactPhone: document.getElementById('personal-emergencyContactPhone').value,
-        };
-
-        try {
-            const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
-            await updateDoc(docRef, { personalInfo: updatedInfo });
-            showToast("اطلاعات شما با موفقیت به‌روزرسانی شد.");
-            closeModal(mainModal, mainModalContainer);
-            
-            //  یک آبجکت جدید از کارمند با اطلاعات بروز شده می‌سازیم
-            const updatedEmployeeData = { ...emp, personalInfo: updatedInfo };
-            
-            // صفحه پروفایل را با داده‌های جدید مجددا رندر می‌کنیم
-            renderEmployeePortalPage('profile', updatedEmployeeData);
-            
-            // [!code ++]
-            //  دکمه ویرایش جدید را دوباره فعال می‌کنیم
-            setupEmployeePortalEventListeners(updatedEmployeeData);
-
-        } catch (error) {
-            console.error("Error updating profile:", error);
-            showToast("خطا در به‌روزرسانی اطلاعات.", "error");
-        }
-    });
-};
-// این تابع جدید را به js/main.js اضافه کنید
-// در فایل js/main.js
-// کل این تابع را با نسخه جدید جایگزین کنید
-const showAssignmentRuleForm = (ruleId = null) => {
-    const isEditing = ruleId !== null;
-    const rule = isEditing ? state.assignmentRules.find(r => r.firestoreId === ruleId) : {};
-
-    modalTitle.innerText = isEditing ? 'ویرایش قانون واگذاری' : 'افزودن قانون واگذاری جدید';
-
-    const admins = state.users.filter(u => u.role === 'admin');
-    // [!code focus:5]
-    // لیست انواع درخواست و یادآورها را کامل می‌کنیم
-    const itemTypes = {
-        'درخواست‌ها': ['درخواست مرخصی', 'گواهی اشتغال به کار', 'مساعده حقوق', 'سایر'],
-        'یادآورها': ['تمدید قرارداد', 'تولد', 'سالگرد استخدام', 'ارزیابی عملکرد معوق']
-    };
-
-    const adminOptions = admins.map(admin => `<option value="${admin.firestoreId}" ${isEditing && rule.assigneeUid === admin.firestoreId ? 'selected' : ''}>${admin.name || admin.email}</option>`).join('');
-
-    let checkboxesHtml = '';
-    for (const category in itemTypes) {
-        checkboxesHtml += `<div class="md:col-span-2 mt-2"><strong class="text-sm text-slate-500">${category}</strong></div>`;
-        checkboxesHtml += itemTypes[category].map(type => `
-            <div class="flex items-center">
-                <input type="checkbox" id="type-${type}" value="${type}" class="rule-request-type" 
-                       ${isEditing && rule.itemTypes?.includes(type) ? 'checked' : ''}>
-                <label for="type-${type}" class="mr-2">${type}</label>
-            </div>
-        `).join('');
-    }
-
-    modalContent.innerHTML = `
-        <form id="assignment-rule-form" class="space-y-4">
-            <div>
-                <label class="block font-medium mb-1">نام قانون (مثال: امور اداری)</label>
-                <input type="text" id="rule-name" value="${rule.ruleName || ''}" class="w-full p-2 border rounded-md" required>
-            </div>
-            <div>
-                <label class="block font-medium mb-1">برای کدام موارد اعمال شود؟</label>
-                <div class="grid grid-cols-2 gap-2 mt-2">${checkboxesHtml}</div>
-            </div>
-            <div>
-                <label class="block font-medium mb-1">به کدام مدیر واگذار شود؟</label>
-                <select id="rule-assignee" class="w-full p-2 border rounded-md bg-white" required>${adminOptions}</select>
-            </div>
-            <div class="pt-4 flex justify-end">
-                <button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">ذخیره قانون</button>
-            </div>
-        </form>
-    `;
-    openModal(mainModal, mainModalContainer);
-
-    document.getElementById('assignment-rule-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const selectedTypes = Array.from(document.querySelectorAll('.rule-request-type:checked')).map(cb => cb.value);
-
-        if (selectedTypes.length === 0) {
-            showToast("حداقل یک نوع آیتم باید انتخاب شود.", "error");
-            return;
-        }
-
-        const ruleData = {
-            ruleName: document.getElementById('rule-name').value,
-            itemTypes: selectedTypes, // نام فیلد را به itemTypes تغییر دادیم
-            assigneeUid: document.getElementById('rule-assignee').value
-        };
-
-        try {
-            const docRef = isEditing ? doc(db, `artifacts/${appId}/public/data/assignmentRules`, ruleId) : doc(collection(db, `artifacts/${appId}/public/data/assignmentRules`));
-            await setDoc(docRef, ruleData, { merge: true });
-            showToast("قانون واگذاری با موفقیت ذخیره شد.");
-            closeModal(mainModal, mainModalContainer);
-        } catch (error) {
-            console.error("Error saving assignment rule:", error);
-            showToast("خطا در ذخیره قانون.", "error");
-        }
-    });
-};
-        const deleteDocument = async (emp, index) => {
-            showConfirmationModal("حذف مدرک", "آیا از حذف این مدرک مطمئن هستید؟", async () => {
-                let updatedDocs = [...(emp.documents || [])];
-                updatedDocs.splice(index, 1);
-                try {
-                    const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
-                    await updateDoc(docRef, { documents: updatedDocs });
-                    showToast("مدرک حذف شد.");
-                    viewEmployeeProfile(emp.firestoreId);
-                } catch (error) {
-                    console.error("Error deleting document:", error);
-                    showToast("خطا در حذف مدرک.", "error");
-                }
-            });
-        };
-
-        const showPerformanceForm = (emp, reviewIndex = null) => {
-            const isEditing = reviewIndex !== null;
-            const review = isEditing ? emp.performanceHistory[reviewIndex] : {};
-            modalTitle.innerText = isEditing ? `ویرایش ارزیابی عملکرد برای ${emp.name}` : `ثبت ارزیابی عملکرد جدید`;
-            modalContent.innerHTML = `
-                <form id="performance-form" class="space-y-4">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div><label class="block font-medium">تاریخ ارزیابی</label><input type="text" id="perf-date" class="w-full p-2 border rounded-md" required></div>
-                        <div><label class="block font-medium">نام ارزیاب</label><input type="text" id="perf-reviewer" value="${review.reviewer || ''}" class="w-full p-2 border rounded-md" required></div>
-                        <div class="md:col-span-2"><label class="block font-medium">امتیاز کلی (۱ تا ۵)</label><input type="number" step="0.1" min="0" max="5" id="perf-score" value="${review.overallScore || ''}" class="w-full p-2 border rounded-md" required></div>
-                        <div class="md:col-span-2"><label class="block font-medium">نقاط قوت</label><textarea id="perf-strengths" rows="3" class="w-full p-2 border rounded-md">${review.strengths || ''}</textarea></div>
-                        <div class="md:col-span-2"><label class="block font-medium">زمینه‌های قابل بهبود</label><textarea id="perf-improvements" rows="3" class="w-full p-2 border rounded-md">${review.areasForImprovement || ''}</textarea></div>
-                    </div>
-                    <div class="pt-6 flex justify-end gap-4">
-                        <button type="button" id="back-to-profile-perf" class="bg-gray-500 text-white py-2 px-6 rounded-md hover:bg-gray-600">بازگشت</button>
-                        <button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">ذخیره</button>
-                    </div>
-                </form>
-            `;
-
-            activatePersianDatePicker('perf-date', review.reviewDate || new Date());
-
-            document.getElementById('back-to-profile-perf').addEventListener('click', () => viewEmployeeProfile(emp.firestoreId));
-            document.getElementById('performance-form').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const gregorianDate = persianToEnglishDate(document.getElementById('perf-date').value);
-                if (!gregorianDate) {
-                    showToast("فرمت تاریخ شمسی صحیح نیست.", "error");
-                    return;
-                }
-                const newReview = {
-                    reviewDate: gregorianDate,
-                    reviewer: document.getElementById('perf-reviewer').value,
-                    overallScore: parseFloat(document.getElementById('perf-score').value),
-                    strengths: document.getElementById('perf-strengths').value,
-                    areasForImprovement: document.getElementById('perf-improvements').value,
-                };
-                let updatedHistory = [...(emp.performanceHistory || [])];
-                if (isEditing) {
-                    updatedHistory[reviewIndex] = newReview;
-                } else {
-                    updatedHistory.push(newReview);
-                }
-                try {
-                    const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
-                    await updateDoc(docRef, { performanceHistory: updatedHistory });
-                    showToast("ارزیابی عملکرد با موفقیت ذخیره شد.");
-                    viewEmployeeProfile(emp.firestoreId);
-                } catch (error) {
-                    console.error("Error saving performance review:", error);
-                    showToast("خطا در ذخیره ارزیابی.", "error");
-                }
-            });
-        };
-
-        const showCareerPathForm = (emp) => {
-            modalTitle.innerText = `ثبت رویداد شغلی برای ${emp.name}`;
-            modalContent.innerHTML = `
-                <form id="career-path-form" class="space-y-4">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div><label class="block font-medium">تاریخ</label><input type="text" id="career-date" class="w-full p-2 border rounded-md" required></div>
-                        <div><label class="block font-medium">نوع رویداد</label><select id="career-type" class="w-full p-2 border rounded-md"><option value="ترفیع">ترفیع</option><option value="جابجایی افقی">جابجایی افقی</option><option value="تغییر سمت">تغییر سمت</option></select></div>
-                        <div><label class="block font-medium">سمت جدید</label><input type="text" id="career-title" class="w-full p-2 border rounded-md" required></div>
-                        <div><label class="block font-medium">دپارتمان جدید</label><input type="text" id="career-department" value="${emp.department}" class="w-full p-2 border rounded-md" required></div>
-                    </div>
-                    <div class="pt-6 flex justify-end gap-4">
-                        <button type="button" id="back-to-profile-career" class="bg-gray-500 text-white py-2 px-6 rounded-md hover:bg-gray-600">بازگشت</button>
-                        <button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">ثبت</button>
-                    </div>
-                </form>
-            `;
-
-            activatePersianDatePicker('career-date', new Date());
-
-            document.getElementById('back-to-profile-career').addEventListener('click', () => viewEmployeeProfile(emp.firestoreId));
-            document.getElementById('career-path-form').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const gregorianDate = persianToEnglishDate(document.getElementById('career-date').value);
-                 if (!gregorianDate) {
-                    showToast("فرمت تاریخ شمسی صحیح نیست.", "error");
-                    return;
-                }
-                const newEntry = {
-                    date: gregorianDate,
-                    type: document.getElementById('career-type').value,
-                    title: document.getElementById('career-title').value,
-                    department: document.getElementById('career-department').value,
-                };
-                const updatedPath = [...(emp.careerPath || []), newEntry];
-                try {
-                    const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
-                    await updateDoc(docRef, { careerPath: updatedPath });
-                    showToast("رویداد شغلی با موفقیت ثبت شد.");
-                    viewEmployeeProfile(emp.firestoreId);
-                } catch (error) {
-                    console.error("Error saving career path:", error);
-                    showToast("خطا در ثبت رویداد شغلی.", "error");
-                }
-            });
-        };
-
-        const deletePerformanceReview = async (emp, index) => {
-            showConfirmationModal("حذف سابقه عملکرد", "آیا از حذف این مورد مطمئن هستید؟", async () => {
-                const updatedHistory = emp.performanceHistory.filter((_, i) => i !== index);
-                try {
-                    const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
-                    await updateDoc(docRef, { performanceHistory: updatedHistory });
-                    showToast("سابقه عملکرد حذف شد.");
-                    viewEmployeeProfile(emp.firestoreId);
-                } catch (error) {
-                    console.error("Error deleting performance review:", error);
-                    showToast("خطا در حذف سابقه عملکرد.", "error");
-                }
-            });
-        };
-
-        const deleteDisciplinaryRecord = async (emp, index) => {
-            showConfirmationModal("حذف سابقه انضباطی", "آیا از حذف این مورد مطمئن هستید؟", async () => {
-                const updatedHistory = emp.disciplinaryHistory.filter((_, i) => i !== index);
-                try {
-                    const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
-                    await updateDoc(docRef, { disciplinaryHistory: updatedHistory });
-                    showToast("سابقه انضباطی حذف شد.");
-                    viewEmployeeProfile(emp.firestoreId);
-                } catch (error) {
-                    console.error("Error deleting disciplinary record:", error);
-                    showToast("خطا در حذف سابقه انضباطی.", "error");
-                }
-            });
-        };
-
-        const deleteCareerPathEntry = async (emp, index) => {
-            showConfirmationModal("حذف رویداد شغلی", "آیا از حذف این مورد مطمئن هستید؟", async () => {
-                const updatedPath = emp.careerPath.filter((_, i) => i !== index);
-                try {
-                    const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
-                    await updateDoc(docRef, { careerPath: updatedPath });
-                    showToast("رویداد شغلی حذف شد.");
-                    viewEmployeeProfile(emp.firestoreId);
-                } catch (error) {
-                    console.error("Error deleting career path entry:", error);
-                    showToast("خطا در حذف رویداد شغلی.", "error");
-                }
-            });
-        };
-
-        const setupSurveysPageListeners = () => {
-            document.querySelectorAll('.create-survey-link-btn').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    const surveyId = e.currentTarget.dataset.surveyId;
-                    const surveyTemplate = surveyTemplates[surveyId];
-                    if (surveyTemplate.requiresTarget) {
-                        showSurveyTargetSelector(surveyId);
-                    } else {
-                        generateAndShowSurveyLink(surveyId);
-                    }
-                });
-            });
-        };
-
-        const showSurveyTargetSelector = (surveyId) => {
-            modalTitle.innerText = 'انتخاب فرد مورد نظر برای نظرسنجی';
-            const employeeOptions = state.employees.map(emp => `<option value="${emp.id}">${emp.name} (${emp.id})</option>`).join('');
-            modalContent.innerHTML = `
-                <div class="p-4 space-y-4">
-                    <p>این نظرسنجی (بازخورد ۳۶۰ درجه) نیازمند انتخاب یک فرد مشخص است.</p>
-                    <div>
-                        <label for="survey-target-employee" class="block text-sm font-medium text-gray-700">کارمند مورد نظر را انتخاب کنید:</label>
-                        <select id="survey-target-employee" class="mt-1 block w-full p-2 border rounded-md">
-                            ${employeeOptions}
-                        </select>
-                    </div>
-                    <div class="flex justify-end">
-                        <button id="generate-targeted-link-btn" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">ایجاد لینک</button>
-                    </div>
-                </div>
-            `;
-            openModal(mainModal, mainModalContainer);
-            document.getElementById('generate-targeted-link-btn').addEventListener('click', () => {
-                const targetEmployeeId = document.getElementById('survey-target-employee').value;
-                if (targetEmployeeId) {
-                    generateAndShowSurveyLink(surveyId, targetEmployeeId);
-                }
-            });
-        };
-
-        const generateAndShowSurveyLink = (surveyId, targetEmployeeId = null) => {
-            let surveyLink = `${window.location.origin}${window.location.pathname}#survey-taker?id=${surveyId}`;
-            if (targetEmployeeId) {
-                surveyLink += `&target=${targetEmployeeId}`;
-            }
-            modalTitle.innerText = 'لینک نظرسنجی ایجاد شد';
-            modalContent.innerHTML = `
-                <div class="p-4 space-y-4">
-                    <p>این لینک را برای شرکت‌کنندگان ارسال کنید:</p>
-                    <div class="flex items-center bg-gray-100 p-2 rounded-md">
-                        <input id="survey-link-input" type="text" readonly value="${surveyLink}" class="flex-grow bg-transparent outline-none font-mono text-sm">
-                        <button id="copy-survey-link-btn" class="bg-blue-500 text-white py-1 px-3 rounded-md hover:bg-blue-600 ml-2">کپی</button>
-                    </div>
-                </div>
-            `;
-            if (!mainModal.classList.contains('flex')) {
-                openModal(mainModal, mainModalContainer);
-            }
-            document.getElementById('copy-survey-link-btn').addEventListener('click', () => {
-                const linkInput = document.getElementById('survey-link-input');
-                linkInput.select();
-                document.execCommand('copy');
-                showToast("لینک با موفقیت کپی شد!");
-            });
-        };
         const renderSurveyTakerPage = (surveyId) => {
             document.getElementById('dashboard-container').classList.add('hidden');
             const surveyTakerContainer = document.getElementById('survey-taker-container');
