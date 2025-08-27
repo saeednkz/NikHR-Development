@@ -279,6 +279,7 @@ const renderMyBirthdayWishesWidget = (employee) => {
 
     if (myWishes.length === 0) {
         return ''; // اگر تبریکی دریافت نکرده بود، چیزی نمایش نده
+        
     }
 
     return `
@@ -354,27 +355,6 @@ function renderBirthdaysWidget(currentEmployee) {
     `;
 }
 
-function renderMyBirthdayWishesWidget(employee) {
-    const today = new Date();
-    const birthDate = employee.personalInfo?.birthDate ? new Date(employee.personalInfo.birthDate) : null;
-    
-    if (!birthDate || birthDate.getMonth() !== today.getMonth() || birthDate.getDate() !== today.getDate()) {
-        return ''; // اگر امروز تولدش نبود، چیزی نمایش نده
-    }
-
-    // اینجا در آینده می‌توانید کدی برای نمایش پیام‌های تبریک اضافه کنید
-    // فعلاً فقط یک پیام تبریک از طرف شرکت نمایش می‌دهیم
-
-    return `
-        <div class="card p-6 bg-gradient-to-br from-indigo-500 to-purple-600 text-white relative overflow-hidden">
-            <div class="absolute -right-10 -top-10 w-32 h-32 text-white/10"><i data-lucide="party-popper" class="w-32 h-32"></i></div>
-            <div class="relative z-10">
-                <h3 class="text-2xl font-bold">تولدت مبارک، ${employee.name}!</h3>
-                <p class="mt-2 text-indigo-200">تیم منابع انسانی NikHR بهترین آرزوها را برای شما در سال جدید زندگی‌تان دارد.</p>
-            </div>
-        </div>
-    `;
-}
 function renderEmployeePortalPage(pageName, employee) {
     const contentContainer = document.getElementById('employee-main-content');
     if (!contentContainer) return;
