@@ -6,7 +6,8 @@ import {
     signInWithEmailAndPassword, 
     signOut 
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { state, showToast, router } from './main.js'; // state و router را از main.js وارد می‌کنیم
+import { state, router } from './main.js';
+import { showToast } from './utils.js';
 
 // توابع کمکی نقش‌ها در اینجا تعریف و export می‌شوند
 export const isAdmin = () => state.currentUser?.role === 'admin';
