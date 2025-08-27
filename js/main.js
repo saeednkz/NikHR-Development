@@ -375,6 +375,9 @@ function renderMyBirthdayWishesWidget(employee) {
 }
 
 
+// در فایل js/main.js
+// کل این تابع را نیز با نسخه کامل و نهایی زیر جایگزین کنید
+
 function renderEmployeePortalPage(pageName, employee) {
     const contentContainer = document.getElementById('employee-main-content');
     if (!contentContainer) return;
@@ -384,34 +387,16 @@ function renderEmployeePortalPage(pageName, employee) {
         const manager = state.teams.find(t => t.memberIds?.includes(employee.id))
             ? state.employees.find(e => e.id === state.teams.find(t => t.memberIds.includes(employee.id)).leaderId)
             : null;
-
-        const performanceHistoryHtml = (employee.performanceHistory || [])
-            .sort((a,b) => new Date(b.reviewDate) - new Date(a.reviewDate)).slice(0, 3)
-            .map(review => `
-                <div class="performance-item">
-                    <div class="flex justify-between items-center mb-2">
-                        <div class="flex items-center gap-2 text-slate-800">
-                            <i data-lucide="award" class="w-4 h-4 text-amber-500"></i>
-                            <span class="font-bold">امتیاز کلی:</span>
-                            <span class="text-lg font-semibold text-green-600">${review.overallScore}/5</span>
-                        </div>
-                        <p class="text-xs text-slate-500">${toPersianDate(review.reviewDate)}</p>
-                    </div>
-                    <p class="text-sm text-slate-700 mt-2"><strong>نقاط قوت:</strong> ${review.strengths || 'ثبت نشده'}</p>
-                </div>
-            `).join('') || '<div class="text-center py-6"><i data-lucide="inbox" class="w-12 h-12 mx-auto text-slate-300"></i><p class="mt-2 text-sm text-slate-500">سابقه‌ای از ارزیابی عملکرد شما ثبت نشده است.</p></div>';
+        const performanceHistoryHtml = (employee.performanceHistory || []).sort((a,b) => new Date(b.reviewDate) - new Date(a.reviewDate)).slice(0, 3)
+            .map(review => `<div class="performance-item"><div class="flex justify-between items-center mb-2"><div class="flex items-center gap-2 text-slate-800"><i data-lucide="award" class="w-4 h-4 text-amber-500"></i><span class="font-bold">امتیاز کلی:</span><span class="text-lg font-semibold text-green-600">${review.overallScore}/5</span></div><p class="text-xs text-slate-500">${toPersianDate(review.reviewDate)}</p></div><p class="text-sm text-slate-700 mt-2"><strong>نقاط قوت:</strong> ${review.strengths || 'ثبت نشده'}</p></div>`).join('') 
+            || '<div class="text-center py-6"><i data-lucide="inbox" class="w-12 h-12 mx-auto text-slate-300"></i><p class="mt-2 text-sm text-slate-500">سابقه‌ای از ارزیابی عملکرد شما ثبت نشده است.</p></div>';
 
         contentContainer.innerHTML = `
             ${renderMyBirthdayWishesWidget(employee)}
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 ${renderMyBirthdayWishesWidget(employee) ? 'mt-8' : ''}">
                 <div class="lg:col-span-2 space-y-8">
                     <div class="card p-0">
-                        <div class="card-header flex justify-between items-center">
-                            <h3 class="font-semibold text-slate-800 flex items-center gap-2"><i data-lucide="user-round" class="w-5 h-5 text-indigo-500"></i>اطلاعات پرسنلی</h3>
-                            <button id="edit-my-profile-btn" class="secondary-btn py-1 px-3 text-xs flex items-center gap-1">
-                                <i data-lucide="edit-3" class="w-3 h-3"></i><span>ویرایش</span>
-                            </button>
-                        </div>
+                        <div class="card-header flex justify-between items-center"><h3 class="font-semibold text-slate-800 flex items-center gap-2"><i data-lucide="user-round" class="w-5 h-5 text-indigo-500"></i>اطلاعات پرسنلی</h3><button id="edit-my-profile-btn" class="secondary-btn py-1 px-3 text-xs flex items-center gap-1"><i data-lucide="edit-3" class="w-3 h-3"></i><span>ویرایش</span></button></div>
                         <div class="card-content grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-sm">
                             <p><strong>کد ملی:</strong> ${employee.personalInfo?.nationalId || '-'}</p>
                             <p><strong>تاریخ تولد:</strong> ${toPersianDate(employee.personalInfo?.birthDate)}</p>
@@ -423,7 +408,7 @@ function renderEmployeePortalPage(pageName, employee) {
                     </div>
                     <div class="card p-0">
                         <div class="card-header flex items-center gap-2"><i data-lucide="trending-up" class="w-5 h-5 text-teal-500"></i><h3 class="font-semibold text-slate-800">خلاصه عملکرد</h3></div>
-                        <div class="card-content">${performanceHistoryHtml}</div>
+                        <div class="card-content p-4 sm:p-6">${performanceHistoryHtml}</div>
                     </div>
                 </div>
                 <div class="lg:col-span-1 space-y-8">
@@ -474,15 +459,14 @@ function renderEmployeePortalPage(pageName, employee) {
         const myMessages = (state.announcements || []).filter(msg => {
             const targets = msg.targets; if (!msg.createdAt?.toDate) return false; if (targets.type === 'public') return true; if (targets.type === 'roles' && targets.roles?.includes('employee')) return true; if (targets.type === 'users' && targets.userIds?.includes(employee.firestoreId)) return true; if (targets.type === 'teams' && targets.teamIds?.includes(myTeamId)) return true; return false;
         }).sort((a, b) => new Date(b.createdAt?.toDate()) - new Date(a.createdAt?.toDate()));
-        const messagesHtml = myMessages.map(msg => `
-            <tr class="hover:bg-slate-50"><td class="p-3 font-semibold">${msg.title}</td><td class="p-3">${msg.senderName}</td><td class="p-3">${toPersianDate(msg.createdAt)}</td><td class="p-3"><button class="view-message-btn text-sm text-indigo-600 hover:underline" data-id="${msg.firestoreId}">مشاهده پیام</button></td></tr>`).join('');
+        const messagesHtml = myMessages.map(msg => `<tr class="hover:bg-slate-50"><td class="p-3 font-semibold">${msg.title}</td><td class="p-3">${msg.senderName}</td><td class="p-3">${toPersianDate(msg.createdAt)}</td><td class="p-3"><button class="view-message-btn text-sm text-indigo-600 hover:underline" data-id="${msg.firestoreId}">مشاهده پیام</button></td></tr>`).join('');
         contentContainer.innerHTML = `
             <div class="page-header mb-8"><h1 class="text-3xl font-bold text-slate-800">صندوق پیام</h1></div>
             <div class="card p-0"><div class="overflow-x-auto"><table class="w-full text-sm text-right"><thead class="bg-slate-50"><tr><th class="p-3 font-semibold text-slate-600">عنوان</th><th class="p-3 font-semibold text-slate-600">فرستنده</th><th class="p-3 font-semibold text-slate-600">تاریخ</th><th class="p-3 font-semibold text-slate-600"></th></tr></thead><tbody>${messagesHtml || '<tr><td colspan="4" class="text-center py-8 text-slate-500">شما هیچ پیامی ندارید.</td></tr>'}</tbody></table></div></div>`;
     }
     // --- بخش پیش‌فرض ---
     else {
-        contentContainer.innerHTML = `<h1>صفحه مورد نظر یافت نشد.</h1>`;
+        contentContainer.innerHTML = `<div class="text-center p-10"><h1>صفحه مورد نظر یافت نشد</h1></div>`;
     }
     
     lucide.createIcons();
@@ -508,26 +492,26 @@ function renderEmployeePortalPage(pageName, employee) {
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید و کامل جایگزین کنید
 
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید و کامل جایگزین کنید
+
 function setupEmployeePortalEventListeners(employee) {
-    // دکمه خروج
+    // دکمه خروج از حساب در سایدبار
     document.getElementById('portal-logout-btn')?.addEventListener('click', () => {
         signOut(auth).catch(err => console.error("Logout Error:", err));
     });
     
-    // دکمه ویرایش اطلاعات شخصی در صفحه پروفایل
-    document.getElementById('edit-my-profile-btn')?.addEventListener('click', () => {
-        showMyProfileEditForm(employee);
-    });
-
     // دکمه تغییر رمز عبور در سایدبار
     document.getElementById('change-password-btn')?.addEventListener('click', showChangePasswordForm);
 
-    // دکمه ثبت درخواست جدید در صفحه درخواست‌ها
-    document.getElementById('add-new-request-btn')?.addEventListener('click', () => {
-        showNewRequestForm(employee);
+    // دکمه زنگوله نوتیفیکیشن در هدر
+    document.getElementById('portal-notification-bell-btn')?.addEventListener('click', () => {
+        document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+        document.querySelector('.nav-item[href="#inbox"]').classList.add('active');
+        renderEmployeePortalPage('inbox', employee);
     });
 
-    // دکمه‌های ناوبری منو
+    // دکمه‌های ناوبری منو (سایدبار)
     document.querySelectorAll('.nav-item').forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
@@ -542,68 +526,29 @@ function setupEmployeePortalEventListeners(employee) {
     const mainContent = document.getElementById('employee-main-content');
     if (mainContent) {
         mainContent.addEventListener('click', (e) => {
-            // دکمه ارسال تبریک تولد
+            const editProfileBtn = e.target.closest('#edit-my-profile-btn');
+            const newRequestBtn = e.target.closest('#add-new-request-btn');
             const sendWishBtn = e.target.closest('.send-wish-btn');
+            const viewRequestBtn = e.target.closest('.view-request-btn');
+            const viewMessageBtn = e.target.closest('.view-message-btn');
+
+            if (editProfileBtn) showMyProfileEditForm(employee);
+            if (newRequestBtn) showNewRequestForm(employee);
             if (sendWishBtn) {
                 const targetUid = sendWishBtn.dataset.id;
                 const targetName = sendWishBtn.dataset.name;
                 showBirthdayWishForm(targetUid, targetName);
             }
-            // دکمه مشاهده جزئیات درخواست
-            const viewRequestBtn = e.target.closest('.view-request-btn');
             if (viewRequestBtn) {
                 const requestId = viewRequestBtn.dataset.id;
                 showRequestDetailsModal(requestId, employee);
             }
-            // دکمه مشاهده پیام
-            const viewMessageBtn = e.target.closest('.view-message-btn');
             if (viewMessageBtn) {
                 const messageId = viewMessageBtn.dataset.id;
                 showMessageDetailsModal(messageId);
             }
         });
     }
-    
-    // Listener برای فرم پاسخ به درخواست در مودال (برای جلوگیری از تداخل)
-     mainModal.addEventListener('submit', async (e) => {
-        if (e.target.classList.contains('employee-reply-form')) {
-            e.preventDefault();
-            const form = e.target;
-            const requestId = form.dataset.id;
-            const input = form.querySelector('.reply-input');
-            const content = input.value.trim();
-            
-            if (!content) return;
-
-            const request = state.requests.find(r => r.firestoreId === requestId);
-            if (!request) return;
-
-            const newThreadItem = {
-                senderUid: state.currentUser.uid,
-                content: content,
-                createdAt: new Date(),
-                eventType: 'comment'
-            };
-            
-            const updatedThread = [...(request.thread || []), newThreadItem];
-            
-            try {
-                const requestRef = doc(db, `artifacts/${appId}/public/data/requests`, requestId);
-                await updateDoc(requestRef, {
-                    thread: updatedThread,
-                    status: 'در حال انجام',
-                    lastUpdatedAt: serverTimestamp()
-                });
-                input.value = '';
-                showToast("پاسخ شما ارسال شد.");
-                // رفرش کردن مودال برای نمایش پاسخ جدید
-                showRequestDetailsModal(requestId, employee);
-            } catch (error) {
-                console.error("Error submitting reply:", error);
-                showToast("خطا در ارسال پاسخ.", "error");
-            }
-        }
-     });
 }
 // این تابع را به فایل js/main.js اضافه کنید
 
