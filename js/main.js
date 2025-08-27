@@ -1349,8 +1349,13 @@ const updateNotificationBell = () => {
 
         // --- Admin helper safe stubs (until full implementations below) ---
         if (typeof setupSurveysPageListeners !== 'function') { window.setupSurveysPageListeners = () => { document.querySelectorAll('.create-survey-link-btn').forEach(btn => { btn.addEventListener('click', (e) => { const id = e.currentTarget.dataset.surveyId; const t = surveyTemplates[id]; if (t?.requiresTarget) { window.showSurveyTargetSelector(id); } else { window.generateAndShowSurveyLink(id); } }); }); }; }
+
+        if (typeof window.showProcessRequestForm !== 'function') { window.showProcessRequestForm = (requestId) => { const emp = state.employees.find(e => e.uid === state.currentUser?.uid); if (emp) { showRequestDetailsModal(requestId, emp); } }; }
+        if (typeof window.showDocumentUploadForm !== 'function') { window.showDocumentUploadForm = () => { modalTitle.innerText='آپلود سند سازمان'; modalContent.innerHTML = `<form id=\"doc-upload-form\" class=\"space-y-4\"><div><label class=\"block text-sm\">عنوان</label><input id=\"doc-title\" class=\"w-full p-2 border rounded-md\" required></div><div><label class=\"block text-sm\">فایل</label><input id=\"doc-file\" type=\"file\" class=\"w-full\" required></div><div class=\"flex justify-end\"><button type=\"submit\" class=\"bg-blue-600 text-white py-2 px-4 rounded-md\">آپلود</button></div></form>`; openModal(mainModal, mainModalContainer); document.getElementById('doc-upload-form').addEventListener('submit', async (e)=>{ e.preventDefault(); const f=document.getElementById('doc-file').files[0]; const t=document.getElementById('doc-title').value.trim(); if(!f||!t) return; try { const sRef = ref(storage, `companyDocs/${Date.now()}_${f.name}`); await uploadBytes(sRef, f); const url = await getDownloadURL(sRef); await addDoc(collection(db, `artifacts/${appId}/public/data/companyDocuments`), { title: t, fileUrl: url, uploadedAt: serverTimestamp() }); showToast('سند آپلود شد.'); closeModal(mainModal, mainModalContainer); renderPage('documents'); } catch(err){ console.error(err); showToast('خطا در آپلود.', 'error'); } }); }; }
+=======
         if (typeof showProcessRequestForm !== 'function') { window.showProcessRequestForm = (requestId) => { const emp = state.employees.find(e => e.uid === state.currentUser?.uid); if (emp) { showRequestDetailsModal(requestId, emp); } }; }
         if (typeof showDocumentUploadForm !== 'function') { window.showDocumentUploadForm = () => { modalTitle.innerText='آپلود سند سازمان'; modalContent.innerHTML = `<form id=\"doc-upload-form\" class=\"space-y-4\"><div><label class=\"block text-sm\">عنوان</label><input id=\"doc-title\" class=\"w-full p-2 border rounded-md\" required></div><div><label class=\"block text-sm\">فایل</label><input id=\"doc-file\" type=\"file\" class=\"w-full\" required></div><div class=\"flex justify-end\"><button type=\"submit\" class=\"bg-blue-600 text-white py-2 px-4 rounded-md\">آپلود</button></div></form>`; openModal(mainModal, mainModalContainer); document.getElementById('doc-upload-form').addEventListener('submit', async (e)=>{ e.preventDefault(); const f=document.getElementById('doc-file').files[0]; const t=document.getElementById('doc-title').value.trim(); if(!f||!t) return; try { const sRef = ref(storage, `companyDocs/${Date.now()}_${f.name}`); await uploadBytes(sRef, f); const url = await getDownloadURL(sRef); await addDoc(collection(db, `artifacts/${appId}/public/data/companyDocuments`), { title: t, fileUrl: url, uploadedAt: serverTimestamp() }); showToast('سند آپلود شد.'); closeModal(mainModal, mainModalContainer); renderPage('documents'); } catch(err){ console.error(err); showToast('خطا در آپلود.', 'error'); } }); }; }
+
         // Provide safe fallbacks for missing survey link helpers
         if (typeof window.generateAndShowSurveyLink !== 'function') {
             window.generateAndShowSurveyLink = (surveyId) => {
@@ -2607,6 +2612,18 @@ const viewTeamProfile = (teamId) => {
                         } finally { input.value = ''; }
                     };
                     input.click();
+
+                    return;
+                }
+                if (e.target.closest('#edit-team-members-btn')) {
+                    showEditTeamMembersForm(teamArg);
+                    return;
+                }
+                if (e.target.closest('#edit-team-okrs-btn')) {
+                    showEditTeamOkrsForm(teamArg);
+                    return;
+=======
+
                 }
             });
         };
@@ -4691,6 +4708,98 @@ if (typeof window.showEditPersonalInfoForm !== 'function') {
 }
         
         // --- EDIT FORM FUNCTIONS ---
+// Team members editor
+if (typeof window.showEditTeamMembersForm !== 'function') {
+    window.showEditTeamMembersForm = (team) => {
+        const allEmployees = state.employees;
+        const selectedIds = new Set(team.memberIds || []);
+        modalTitle.innerText = `ویرایش اعضای تیم ${team.name}`;
+        const listHtml = allEmployees.map(emp => `
+            <label class="flex items-center gap-2 p-2 border rounded-md">
+                <input type="checkbox" class="emp-chk" value="${emp.id}" ${selectedIds.has(emp.id)?'checked':''}>
+                <span class="text-sm">${emp.name} (${emp.id})</span>
+            </label>`).join('');
+        modalContent.innerHTML = `
+            <form id="edit-team-members-form" class="space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-80 overflow-y-auto pr-2">${listHtml}</div>
+                <div class="flex justify-end gap-2">
+                    <button type="button" id="cancel-team-members" class="bg-slate-200 text-slate-800 py-2 px-4 rounded-md hover:bg-slate-300">انصراف</button>
+                    <button type="submit" class="primary-btn">ذخیره</button>
+                </div>
+            </form>`;
+        openModal(mainModal, mainModalContainer);
+        document.getElementById('cancel-team-members')?.addEventListener('click', () => viewTeamProfile(team.firestoreId));
+        document.getElementById('edit-team-members-form')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                const newMemberIds = Array.from(document.querySelectorAll('.emp-chk'))
+                    .filter(chk => chk.checked)
+                    .map(chk => chk.value);
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/teams`, team.firestoreId), { memberIds: newMemberIds });
+                showToast('اعضای تیم به‌روزرسانی شد.');
+                viewTeamProfile(team.firestoreId);
+            } catch (error) {
+                console.error('Error updating team members', error);
+                showToast('خطا در ذخیره اعضای تیم.', 'error');
+            }
+        });
+    };
+}
+
+// Team OKRs editor
+if (typeof window.showEditTeamOkrsForm !== 'function') {
+    window.showEditTeamOkrsForm = (team) => {
+        modalTitle.innerText = `ویرایش اهداف تیم (${team.name})`;
+        const okrsHtml = (team.okrs || []).map((okr) => `
+            <div class="okr-item grid grid-cols-12 gap-2 items-center">
+                <input type="text" value="${okr.title}" class="col-span-8 p-2 border rounded-md okr-title" placeholder="عنوان هدف">
+                <input type="number" value="${okr.progress}" class="col-span-3 p-2 border rounded-md okr-progress" placeholder="پیشرفت %" min="0" max="100">
+                <button type="button" class="col-span-1 remove-okr-btn text-red-500 hover:text-red-700"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+            </div>`).join('');
+        modalContent.innerHTML = `
+            <form id="edit-team-okrs-form">
+                <div id="team-okrs-container" class="space-y-2">${okrsHtml}</div>
+                <button type="button" id="add-team-okr-btn" class="mt-4 text-sm bg-gray-200 py-2 px-4 rounded-md hover:bg-gray-300">افزودن هدف جدید</button>
+                <div class="pt-6 flex justify-end gap-4">
+                    <button type="button" id="back-to-team-profile-okr" class="bg-gray-500 text-white py-2 px-6 rounded-md hover:bg-gray-600">بازگشت</button>
+                    <button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">ذخیره</button>
+                </div>
+            </form>`;
+        openModal(mainModal, mainModalContainer);
+        lucide.createIcons();
+        document.getElementById('back-to-team-profile-okr').addEventListener('click', () => viewTeamProfile(team.firestoreId));
+        const okrsContainer = document.getElementById('team-okrs-container');
+        document.getElementById('add-team-okr-btn').addEventListener('click', () => {
+            const newItem = document.createElement('div');
+            newItem.className = 'okr-item grid grid-cols-12 gap-2 items-center';
+            newItem.innerHTML = `<input type=\"text\" class=\"col-span-8 p-2 border rounded-md okr-title\" placeholder=\"عنوان هدف\"><input type=\"number\" class=\"col-span-3 p-2 border rounded-md okr-progress\" placeholder=\"پیشرفت %\" min=\"0\" max=\"100\" value=\"0\"><button type=\"button\" class=\"col-span-1 remove-okr-btn text-red-500 hover:text-red-700\"><i data-lucide=\"trash-2\" class=\"w-5 h-5\"></i></button>`;
+            okrsContainer.appendChild(newItem);
+            lucide.createIcons();
+        });
+        okrsContainer.addEventListener('click', (e) => {
+            if (e.target.closest('.remove-okr-btn')) {
+                e.target.closest('.okr-item').remove();
+            }
+        });
+        document.getElementById('edit-team-okrs-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                const newOkrs = [];
+                document.querySelectorAll('#team-okrs-container .okr-item').forEach(item => {
+                    const title = item.querySelector('.okr-title').value;
+                    const progress = parseInt(item.querySelector('.okr-progress').value) || 0;
+                    if (title) newOkrs.push({ title, progress });
+                });
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/teams`, team.firestoreId), { okrs: newOkrs });
+                showToast('اهداف تیم به‌روزرسانی شد.');
+                viewTeamProfile(team.firestoreId);
+            } catch (error) {
+                console.error('Error saving team OKRs', error);
+                showToast('خطا در ذخیره اهداف.', 'error');
+            }
+        });
+    };
+}
 const showAddUserForm = () => {
     modalTitle.innerText = 'افزودن کاربر جدید';
     modalContent.innerHTML = `
