@@ -106,6 +106,36 @@
         color: white;
     }
 
+    /* --- استایل‌های پنل ادمین (سایدبار) --- */
+    .sidebar {
+        background-color: #ffffff;
+        border-left: 1px solid #e2e8f0; /* slate-200 */
+    }
+    .sidebar-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        color: #475569; /* slate-600 */
+        transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+        border: 1px solid transparent;
+    }
+    .sidebar-item:hover {
+        background-color: #f1f5f9; /* slate-100 */
+        color: #0f172a; /* slate-900 */
+    }
+    .sidebar-item.active {
+        background-color: #eef2ff; /* indigo-50 */
+        color: #4338ca; /* indigo-700 */
+        border-color: #c7d2fe; /* indigo-200 */
+        font-weight: 600;
+    }
+    .sidebar-item i {
+        width: 1.25rem;
+        height: 1.25rem;
+    }
+
     /* سایر استایل‌ها */
     #loading-overlay { position: fixed; inset: 0; background-color: rgba(248, 250, 252, 0.8); display: flex; align-items: center; justify-content: center; z-index: 9999; }
     .spinner { width: 56px; height: 56px; border: 6px solid #e0e7ff; border-top: 6px solid #4f46e5; border-radius: 50%; animation: spin 1s linear infinite; }
