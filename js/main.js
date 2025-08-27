@@ -1334,6 +1334,196 @@ const updateNotificationBell = () => {
             }
         });
 
+        // --- Employee Portal Helpers (hoisted function declarations) ---
+        // 1) Edit My Profile
+        async function showMyProfileEditForm(employee) {
+            const info = employee.personalInfo || {};
+            modalTitle.innerText = 'ویرایش اطلاعات من';
+            modalContent.innerHTML = `
+                <form id="edit-my-profile-form" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium">ایمیل</label>
+                            <input id="my-email" type="email" class="w-full p-2 border rounded-md" value="${info.email || ''}">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium">تلفن</label>
+                            <input id="my-phone" type="text" class="w-full p-2 border rounded-md" value="${info.phone || ''}">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium">آدرس</label>
+                            <input id="my-address" type="text" class="w-full p-2 border rounded-md" value="${info.address || ''}">
+                        </div>
+                    </div>
+                    <div class="flex justify-end gap-2 pt-4">
+                        <button type="button" id="cancel-edit-my-profile" class="bg-slate-200 text-slate-800 py-2 px-4 rounded-md hover:bg-slate-300">انصراف</button>
+                        <button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">ذخیره</button>
+                    </div>
+                </form>`;
+            openModal(mainModal, mainModalContainer);
+            document.getElementById('cancel-edit-my-profile').addEventListener('click', () => closeModal(mainModal, mainModalContainer));
+            document.getElementById('edit-my-profile-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                try {
+                    const updatedInfo = {
+                        ...info,
+                        email: document.getElementById('my-email').value.trim(),
+                        phone: document.getElementById('my-phone').value.trim(),
+                        address: document.getElementById('my-address').value.trim(),
+                    };
+                    const docRef = doc(db, `artifacts/${appId}/public/data/employees`, employee.firestoreId);
+                    await updateDoc(docRef, { personalInfo: updatedInfo });
+                    showToast('اطلاعات با موفقیت ذخیره شد.');
+                    closeModal(mainModal, mainModalContainer);
+                    // رندر مجدد برای نمایش تغییرات
+                    renderEmployeePortalPage('profile', { ...employee, personalInfo: updatedInfo });
+                } catch (err) {
+                    console.error('Error updating my profile', err);
+                    showToast('خطا در ذخیره اطلاعات.', 'error');
+                }
+            });
+        }
+
+        // 2) New Request Form
+        function showNewRequestForm(employee) {
+            modalTitle.innerText = 'ثبت درخواست جدید';
+            modalContent.innerHTML = `
+                <form id="new-request-form" class="space-y-4">
+                    <div>
+                        <label class="block font-medium mb-1">نوع درخواست</label>
+                        <select id="request-type" class="w-full p-2 border rounded-md bg-white" required>
+                            <option value="درخواست مرخصی">درخواست مرخصی</option>
+                            <option value="گواهی اشتغال به کار">گواهی اشتغال به کار</option>
+                            <option value="مساعده حقوق">مساعده حقوق</option>
+                            <option value="سایر">سایر موارد</option>
+                        </select>
+                    </div>
+                    <div id="leave-fields" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block font-medium mb-1">تاریخ شروع</label>
+                                <input type="text" id="leave-start" class="w-full p-2 border rounded-md">
+                            </div>
+                            <div>
+                                <label class="block font-medium mb-1">تاریخ پایان</label>
+                                <input type="text" id="leave-end" class="w-full p-2 border rounded-md">
+                            </div>
+                        </div>
+                    </div>
+                    <div id="generic-fields">
+                        <label class="block font-medium mb-1">جزئیات</label>
+                        <textarea id="request-details" rows="4" class="w-full p-2 border rounded-md"></textarea>
+                    </div>
+                    <div class="pt-4 flex justify-end">
+                        <button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">ارسال</button>
+                    </div>
+                </form>`;
+            openModal(mainModal, mainModalContainer);
+            activatePersianDatePicker('leave-start');
+            activatePersianDatePicker('leave-end');
+            const typeSelect = document.getElementById('request-type');
+            const leaveFields = document.getElementById('leave-fields');
+            const genericFields = document.getElementById('generic-fields');
+            const toggleFields = () => {
+                const isLeave = typeSelect.value === 'درخواست مرخصی';
+                leaveFields.style.display = isLeave ? 'block' : 'none';
+                genericFields.style.display = isLeave ? 'none' : 'block';
+            };
+            typeSelect.addEventListener('change', toggleFields);
+            toggleFields();
+            document.getElementById('new-request-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const requestType = typeSelect.value;
+                let details = document.getElementById('request-details').value.trim();
+                let extra = {};
+                if (requestType === 'درخواست مرخصی') {
+                    const startVal = persianToEnglishDate(document.getElementById('leave-start').value);
+                    const endVal = persianToEnglishDate(document.getElementById('leave-end').value);
+                    if (!startVal || !endVal || new Date(endVal) < new Date(startVal)) {
+                        showToast('تاریخ‌های مرخصی را به درستی وارد کنید.', 'error');
+                        return;
+                    }
+                    const duration = Math.round((new Date(endVal) - new Date(startVal)) / 86400000) + 1;
+                    extra = { startDate: startVal, endDate: endVal, duration };
+                    details = `درخواست مرخصی از ${document.getElementById('leave-start').value} تا ${document.getElementById('leave-end').value} (مجموع ${duration} روز)`;
+                }
+                // تعیین assignee بر اساس قوانین
+                let assignedUid = null;
+                const rule = (state.assignmentRules || []).find(r => r.itemTypes?.includes(requestType))
+                    || (state.assignmentRules || []).find(r => r.firestoreId === '_default');
+                if (rule) assignedUid = rule.assigneeUid;
+                try {
+                    await addDoc(collection(db, `artifacts/${appId}/public/data/requests`), {
+                        uid: employee.uid,
+                        employeeId: employee.id,
+                        employeeName: employee.name,
+                        requestType,
+                        details,
+                        ...extra,
+                        status: 'درحال بررسی',
+                        createdAt: serverTimestamp(),
+                        assignedTo: assignedUid,
+                        isReadByAssignee: false
+                    });
+                    showToast('درخواست ثبت شد.');
+                    closeModal(mainModal, mainModalContainer);
+                    renderEmployeePortalPage('requests', employee);
+                } catch (err) {
+                    console.error('Error submitting request', err);
+                    showToast('خطا در ثبت درخواست.', 'error');
+                }
+            });
+        }
+
+        // 3) Request Details Modal (+ mark lastSeenAt)
+        async function showRequestDetailsModal(requestId, employee) {
+            const request = state.requests.find(r => r.firestoreId === requestId);
+            if (!request) return;
+            const threadHtml = (request.thread || []).map(item => {
+                const sender = state.users.find(u => u.firestoreId === item.senderUid)?.name || 'کاربر';
+                const dateTxt = item.createdAt?.toDate ? toPersianDate(item.createdAt) : '';
+                return `<div class=\"p-3 mt-2 text-sm border rounded-lg bg-slate-50\"><p class=\"whitespace-pre-wrap\">${item.content}</p><div class=\"text-slate-400 text-xs text-left mt-2\">${sender} - ${dateTxt}</div></div>`;
+            }).join('') || '<p class="text-xs text-slate-400">هنوز پاسخی ثبت نشده است.</p>';
+            modalTitle.innerText = `جزئیات درخواست: ${request.requestType}`;
+            modalContent.innerHTML = `
+                <div class="space-y-4">
+                    <div class="p-4 border rounded-lg bg-slate-50 text-sm">
+                        <div class="flex justify-between items-center">
+                            <p><strong>موضوع:</strong> ${request.details}</p>
+                            <span class="px-2 py-1 text-xs font-medium rounded-full bg-slate-100">${request.status}</span>
+                        </div>
+                    </div>
+                    <div>
+                        <strong class="text-slate-600">تاریخچه مکالمات:</strong>
+                        <div class="mt-2 max-h-60 overflow-y-auto pr-2">${threadHtml}</div>
+                    </div>
+                    <div class="pt-4 border-t">
+                        <form id="employee-reply-form" class="flex items-center gap-2" data-id="${request.firestoreId}">
+                            <input type="text" id="reply-input" placeholder="پاسخ خود را بنویسید..." class="flex-grow p-2 border rounded-md text-sm" required>
+                            <button type="submit" class="primary-btn py-2 px-3 text-sm">ارسال</button>
+                        </form>
+                    </div>
+                </div>`;
+            openModal(mainModal, mainModalContainer);
+            // mark seen
+            try { await updateDoc(doc(db, `artifacts/${appId}/public/data/requests`, requestId), { lastSeenAt: serverTimestamp() }); } catch {}
+            document.getElementById('employee-reply-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const content = document.getElementById('reply-input').value.trim();
+                if (!content) return;
+                try {
+                    const newThread = [ ...(request.thread || []), { content, senderUid: state.currentUser?.uid, createdAt: serverTimestamp() } ];
+                    await updateDoc(doc(db, `artifacts/${appId}/public/data/requests`, requestId), { thread: newThread, lastUpdatedAt: serverTimestamp() });
+                    showToast('پاسخ ارسال شد.');
+                    closeModal(mainModal, mainModalContainer);
+                    renderEmployeePortalPage('requests', employee);
+                } catch (err) {
+                    console.error('Error sending reply', err);
+                    showToast('خطا در ارسال پاسخ.', 'error');
+                }
+            });
+        }
+
         async function showBirthdayWishForm(targetUid, targetName) {
             modalTitle.innerText = `ارسال تبریک برای ${targetName}`;
             modalContent.innerHTML = `
