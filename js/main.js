@@ -660,6 +660,14 @@ function setupEmployeePortalEventListeners(employee) {
     
     const mainContent = document.getElementById('employee-main-content');
     if (mainContent) {
+                mainContent.addEventListener('click', (e) => {
+            const sendWishBtn = e.target.closest('.send-wish-btn');
+            if (sendWishBtn) {
+                const targetUid = sendWishBtn.dataset.id;
+                const targetName = sendWishBtn.dataset.name;
+                showBirthdayWishForm(targetUid, targetName);
+            }
+        });
         mainContent.addEventListener('submit', async (e) => {
             if (e.target.classList.contains('employee-reply-form')) {
                 e.preventDefault();
@@ -4328,6 +4336,8 @@ const setupTeamProfileModalListeners = (team) => {
                 try { const docRef = doc(db, `artifacts/${appId}/public/data/teams`, isEditing ? team.firestoreId : formData.id); await setDoc(docRef, formData, { merge: isEditing }); closeModal(mainModal, mainModalContainer); showToast(isEditing ? "تیم با موفقیت ویرایش شد." : "تیم با موفقیت اضافه شد."); } catch (error) { console.error("Error saving team:", error); showToast("خطا در ذخیره اطلاعات تیم.", "error"); }
             });
         };
+// این تابع جدید را به js/main.js اضافه کنید
+
 // این تابع جدید را به js/main.js اضافه کنید
 
 const showBirthdayWishForm = (targetUid, targetName) => {
