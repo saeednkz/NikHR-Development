@@ -306,6 +306,8 @@ const renderMyBirthdayWishesWidget = (employee) => {
 // کل این تابع را با نسخه جدید و کامل جایگزین کنید
 // این دو تابع جدید را به js/main.js اضافه کنید
 
+// این دو تابع جدید را به js/main.js اضافه کنید
+
 function renderBirthdaysWidget(currentEmployee) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -327,20 +329,20 @@ function renderBirthdaysWidget(currentEmployee) {
         .filter(emp => emp.daysUntil >= 0 && emp.daysUntil <= 30)
         .sort((a, b) => a.daysUntil - b.daysUntil);
 
-    if (upcomingBirthdays.length === 0) return '';
+    if (upcomingBirthdays.length === 0) {
+        return ''; // اگر تولدی نزدیک نبود، چیزی نمایش نده
+    }
 
     const birthdayListHtml = upcomingBirthdays.map(emp => `
         <div class="flex items-center justify-between py-2 border-b last:border-b-0 border-slate-100">
             <div class="flex items-center gap-3">
-                <img src="${emp.avatar}" alt="${emp.name}" class="w-8 h-8 rounded-full object-cover">
+                <img src="${emp.avatar}" alt="${emp.name}" class="w-10 h-10 rounded-full object-cover">
                 <div>
-                    <p class="font-semibold text-slate-800">${emp.name}</p>
-                    <p class="text-xs text-slate-500">${emp.jobTitle || 'کارمند'}</p>
+                    <p class="font-semibold text-sm text-slate-800">${emp.name}</p>
+                    <p class="text-xs text-slate-500">${toPersianDate(emp.nextBirthday)} (${emp.daysUntil === 0 ? 'امروز!' : `${emp.daysUntil} روز دیگر`})</p>
                 </div>
             </div>
-            <span class="text-sm font-medium ${emp.daysUntil === 0 ? 'text-green-600' : 'text-indigo-600'}">
-                ${emp.daysUntil === 0 ? 'امروز!' : `${emp.daysUntil} روز دیگر`}
-            </span>
+            <button class="send-wish-btn text-sm bg-pink-500 text-white py-1 px-3 rounded-md hover:bg-pink-600" data-id="${emp.uid}" data-name="${emp.name}">ارسال تبریک</button>
         </div>
     `).join('');
 
@@ -355,11 +357,32 @@ function renderBirthdaysWidget(currentEmployee) {
     `;
 }
 
+function renderMyBirthdayWishesWidget(employee) {
+    const today = new Date();
+    const birthDate = employee.personalInfo?.birthDate ? new Date(employee.personalInfo.birthDate) : null;
+    
+    if (!birthDate || birthDate.getMonth() !== today.getMonth() || birthDate.getDate() !== today.getDate()) {
+        return ''; // اگر امروز تولدش نبود، چیزی نمایش نده
+    }
+
+    // در اینجا می‌توانید پیام‌های تبریکی که دیگران فرستاده‌اند را هم نمایش دهید
+    // فعلاً فقط پیام تبریک شرکت را نمایش می‌دهیم
+
+    return `
+        <div class="card p-6 bg-gradient-to-br from-indigo-500 to-purple-600 text-white relative overflow-hidden">
+            <div class="absolute -right-10 -top-10 w-32 h-32 text-white/10"><i data-lucide="party-popper" class="w-32 h-32"></i></div>
+            <div class="relative z-10">
+                <h3 class="text-2xl font-bold">تولدت مبارک، ${employee.name}!</h3>
+                <p class="mt-2 text-indigo-200">تیم منابع انسانی NikHR بهترین آرزوها را برای شما در سال جدید زندگی‌تان دارد.</p>
+            </div>
+        </div>
+    `;
+}
+
 function renderEmployeePortalPage(pageName, employee) {
     const contentContainer = document.getElementById('employee-main-content');
     if (!contentContainer) return;
 
-    // --- بخش پروفایل (بازطراحی شده) ---
     if (pageName === 'profile') {
         const manager = state.teams.find(t => t.memberIds?.includes(employee.id))
             ? state.employees.find(e => e.id === state.teams.find(t => t.memberIds.includes(employee.id)).leaderId)
@@ -378,8 +401,6 @@ function renderEmployeePortalPage(pageName, employee) {
                         <p class="text-xs text-slate-500">${toPersianDate(review.reviewDate)}</p>
                     </div>
                     <p class="text-sm text-slate-700 mt-2"><strong>نقاط قوت:</strong> ${review.strengths || 'ندارد'}</p>
-                    ${review.areasForImprovement ? `<p class="text-sm text-slate-700 mt-1"><strong>نقاط قابل بهبود:</strong> ${review.areasForImprovement}</p>` : ''}
-                    ${review.comments ? `<p class="text-sm text-slate-700 mt-1"><strong>نظرات:</strong> ${review.comments}</p>` : ''}
                 </div>
             `).join('') || '<p class="text-sm text-slate-500 text-center py-4">سابقه‌ای از ارزیابی عملکرد شما ثبت نشده است.</p>';
 
@@ -428,14 +449,6 @@ function renderEmployeePortalPage(pageName, employee) {
                             <div class="flex items-center gap-2 text-slate-700">
                                 <i data-lucide="calendar-days" class="w-4 h-4 text-slate-400"></i>
                                 <strong>تاریخ استخدام:</strong> <span>${toPersianDate(employee.startDate)}</span>
-                            </div>
-                            <div class="flex items-center gap-2 text-slate-700">
-                                <i data-lucide="mail" class="w-4 h-4 text-slate-400"></i>
-                                <strong>ایمیل:</strong> <span>${employee.email || '-'}</span>
-                            </div>
-                            <div class="flex items-center gap-2 text-slate-700">
-                                <i data-lucide="phone" class="w-4 h-4 text-slate-400"></i>
-                                <strong>تلفن:</strong> <span>${employee.personalInfo?.phone || '-'}</span>
                             </div>
                         </div>
                     </div>
