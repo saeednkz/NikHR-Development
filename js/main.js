@@ -1332,6 +1332,29 @@ const updateNotificationBell = () => {
                 closeModal(mainModal, mainModalContainer);
             }
         });
+
+        // --- Confirmation Modal helpers (shared) ---
+        const confirmModal = document.getElementById('confirmModal');
+        const confirmModalContainer = confirmModal?.querySelector('div');
+        let confirmCallback = () => {};
+        function showConfirmationModal(title, message, onConfirm) {
+            if (!confirmModal || !confirmModalContainer) return;
+            document.getElementById('confirmTitle').innerText = title || 'تایید عملیات';
+            document.getElementById('confirmMessage').innerText = message || '';
+            confirmCallback = typeof onConfirm === 'function' ? onConfirm : () => {};
+            openModal(confirmModal, confirmModalContainer);
+        }
+        document.getElementById('confirmCancel')?.addEventListener('click', () => closeModal(confirmModal, confirmModalContainer));
+        document.getElementById('confirmAccept')?.addEventListener('click', () => { confirmCallback(); closeModal(confirmModal, confirmModalContainer); });
+
+        // --- Admin helper safe stubs (until full implementations below) ---
+        if (typeof setupSurveysPageListeners !== 'function') { window.setupSurveysPageListeners = () => {}; }
+        if (typeof showProcessRequestForm !== 'function') { window.showProcessRequestForm = (id) => {}; }
+        if (typeof showDocumentUploadForm !== 'function') { window.showDocumentUploadForm = () => {}; }
+        if (typeof renderTeamHealthMetrics !== 'function') { window.renderTeamHealthMetrics = () => ''; }
+        if (typeof showTeamForm !== 'function') { window.showTeamForm = () => {}; }
+        if (typeof showPerformanceForm !== 'function') { window.showPerformanceForm = () => {}; }
+
         // --- Employee Portal Helpers (hoisted function declarations) ---
         // 1) Edit My Profile
         async function showMyProfileEditForm(employee) {
@@ -3690,11 +3713,7 @@ const showExpenseForm = () => {
             }
         });
     };
-        // --- [FIX END] ---
 
-        // --- MODAL & FORM LOGIC ---
-        // (moved to shared modal section above)
-        
         const renderCompetencyBars = (competencies) => {
             if (!competencies || Object.keys(competencies).length === 0) {
                 return '<p class="text-sm text-gray-500">شایستگی‌ای ثبت نشده است.</p>';
@@ -3868,16 +3887,6 @@ const isProfileComplete = (employee) => {
             if (highRiskMembers > 0) { analysis.risk = { text: `${highRiskMembers} نفر از اعضا ریسک خروج بالا دارند.`, icon: 'shield-alert', color: 'text-red-600' }; }
             return analysis;
         };
-// در فایل js/main.js
-// کل این تابع را با نسخه جدید جایگزین کنید
-
-// در فایل js/main.js
-// کل این تابع را با نسخه جدید و کامل جایگزین کنید
-
-// در فایل js/main.js
-// کل این تابع را با نسخه جدید جایگزین کنید
-// در فایل js/main.js
-// کل این تابع را با نسخه جدید جایگزین کنید
 
 const showEmployeeForm = (employeeId = null) => {
     const isEditing = employeeId !== null;
@@ -4004,7 +4013,9 @@ const showEmployeeForm = (employeeId = null) => {
         }
     });
 };
-// این تابع جدید را به js/main.js اضافه کنید
+
+        // --- ADMIN HELPERS ---
+        // (rest of the code remains unchanged)
 // این تابع جدید را به js/main.js اضافه کنید
 
 const showAnnouncementForm = () => {
