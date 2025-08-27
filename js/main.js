@@ -470,7 +470,7 @@ function renderEmployeePortalPage(pageName, employee) {
     }
     
     lucide.createIcons();
-    setupEmployeePortalEventListeners(employee);
+   setupEmployeePortalEventListeners(employee, auth, signOut);
 }
 
 // در فایل js/main.js
@@ -495,7 +495,10 @@ function renderEmployeePortalPage(pageName, employee) {
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید و کامل جایگزین کنید
 
-function setupEmployeePortalEventListeners(employee) {
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید و کامل جایگزین کنید
+
+function setupEmployeePortalEventListeners(employee, auth, signOut) {
     // دکمه خروج از حساب در سایدبار
     document.getElementById('portal-logout-btn')?.addEventListener('click', () => {
         signOut(auth).catch(err => console.error("Logout Error:", err));
@@ -507,7 +510,8 @@ function setupEmployeePortalEventListeners(employee) {
     // دکمه زنگوله نوتیفیکیشن در هدر
     document.getElementById('portal-notification-bell-btn')?.addEventListener('click', () => {
         document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-        document.querySelector('.nav-item[href="#inbox"]').classList.add('active');
+        const inboxLink = document.querySelector('.nav-item[href="#inbox"]');
+        if (inboxLink) inboxLink.classList.add('active');
         renderEmployeePortalPage('inbox', employee);
     });
 
@@ -629,7 +633,7 @@ function renderEmployeePortal() {
     // بعد از ساختار، بقیه کارها را انجام بده
     lucide.createIcons();
     renderEmployeePortalPage('profile', employee);
-    setupEmployeePortalEventListeners(employee);
+  setupEmployeePortalEventListeners(employee, auth, signOut);
     updateEmployeeNotificationBell(employee);
 }
 
