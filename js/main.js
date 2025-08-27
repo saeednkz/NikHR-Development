@@ -412,22 +412,34 @@ function renderEmployeePortalPage(pageName, employee) {
                 </div>
             </div>`;
     }
-    // --- بخش دایرکتوری ---
+    // --- بخش دایرکتوری (تیمی) ---
     else if (pageName === 'directory') {
-        const employeesHtml = state.employees.filter(emp => emp.status === 'فعال').map(emp => `
-            <div class="card p-4 flex flex-col items-center text-center hover:shadow-lg transition-shadow duration-200">
-                <img src="${emp.avatar}" alt="${emp.name}" class="w-20 h-20 rounded-full object-cover mb-3 border-2 border-indigo-200">
-                <h3 class="font-bold text-lg text-slate-800">${emp.name}</h3>
-                <p class="text-indigo-600 text-sm mb-2">${emp.jobTitle || 'نامشخص'}</p>
-                <p class="text-slate-500 text-xs">${emp.department || 'نامشخص'}</p>
-                <div class="mt-4 flex gap-2">
-                    <a href="mailto:${emp.personalInfo?.email}" class="p-2 text-slate-500 rounded-full hover:bg-slate-100"><i data-lucide="mail" class="w-4 h-4"></i></a>
-                    ${emp.personalInfo?.phone ? `<a href="tel:${emp.personalInfo.phone}" class="p-2 text-slate-500 rounded-full hover:bg-slate-100"><i data-lucide="phone" class="w-4 h-4"></i></a>` : ''}
-                </div>
-            </div>`).join('');
+        const teamCardsHtml = (state.teams || []).map(team => {
+            const leader = state.employees.find(e => e.id === team.leaderId);
+            return `
+                <div class="card p-6 rounded-xl border border-slate-200 bg-white hover:shadow-lg transition-shadow">
+                    <div class="flex items-center gap-4">
+                        <div class="w-14 h-14 rounded-xl overflow-hidden bg-slate-100 flex items-center justify-center">
+                            <img src="${team.avatar || ''}" alt="${team.name}" class="w-full h-full object-cover" onerror="this.parentElement.classList.add('ring-2','ring-indigo-200');this.remove();">
+                            <i data-lucide="users" class="w-6 h-6 text-indigo-500"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-lg font-bold text-slate-800">${team.name}</h3>
+                            <p class="text-sm text-slate-500">مدیر تیم: <span class="font-medium text-slate-700">${leader?.name || 'نامشخص'}</span></p>
+                        </div>
+                        <button class="view-team-employee-btn bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700 text-sm" data-team-id="${team.firestoreId}">
+                            مشاهده اعضا و OKR
+                        </button>
+                    </div>
+                </div>`;
+        }).join('');
+
         contentContainer.innerHTML = `
-            <div class="page-header mb-8"><h1 class="text-3xl font-bold text-slate-800">دایرکتوری سازمان</h1><p class="text-slate-500 mt-1">لیست همکاران و اطلاعات تماس آن‌ها.</p></div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">${employeesHtml || '<p>کارمندی یافت نشد.</p>'}</div>`;
+            <div class="page-header mb-8">
+                <h1 class="text-3xl font-bold text-slate-800">دایرکتوری سازمان</h1>
+                <p class="text-slate-500 mt-1">تیم‌ها و اعضای آن‌ها.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">${teamCardsHtml || '<p class="text-slate-500">تیمی ثبت نشده است.</p>'}</div>`;
     }
     // --- بخش درخواست‌ها ---
     else if (pageName === 'requests') {
@@ -573,6 +585,15 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
                 const announcementId = viewMessageBtn.dataset.id;
                 if (announcementId) {
                     showMessageDetailsModal(announcementId);
+                }
+            }
+            // مشاهده اعضای تیم و OKR در دایرکتوری
+            const viewTeamBtn = e.target.closest('.view-team-employee-btn');
+            if (viewTeamBtn) {
+                const teamId = viewTeamBtn.dataset.teamId;
+                const team = state.teams.find(t => t.firestoreId === teamId);
+                if (team) {
+                    showTeamDirectoryModal(team);
                 }
             }
             const sendWishBtn = e.target.closest('.send-wish-btn');
@@ -4071,6 +4092,54 @@ const showMessageDetailsModal = (announcementId) => {
             }
         } catch (err) { console.error('Error marking announcement as read:', err); }
     })();
+};
+
+// مودال نمایش اعضای تیم برای دایرکتوری کارمندان
+const showTeamDirectoryModal = (team) => {
+    const leader = state.employees.find(e => e.id === team.leaderId);
+    const members = (team.memberIds || []).map(id => state.employees.find(e => e.id === id)).filter(Boolean);
+
+    const membersCards = members.map(member => {
+        const competencies = (member.competencies || []).slice(0, 4).map(c => `<span class="text-xs px-2 py-1 rounded-full bg-slate-100 text-slate-700 border">${c.name}</span>`).join(' ');
+        return `
+            <div class="flex items-center gap-3 p-3 border-b last:border-b-0">
+                <img src="${member.avatar}" alt="${member.name}" class="w-12 h-12 rounded-full object-cover border">
+                <div class="flex-1">
+                    <div class="font-bold text-slate-800">${member.name}</div>
+                    <div class="text-sm text-indigo-600">${member.jobTitle || 'بدون عنوان شغلی'}</div>
+                    <div class="mt-2 flex flex-wrap gap-2">${competencies || '<span class="text-xs text-slate-400">مهارتی ثبت نشده</span>'}</div>
+                </div>
+            </div>`;
+    }).join('');
+
+    const okrHtml = (team.okrs || []).map(okr => `
+        <div class="space-y-1">
+            <div class="flex justify-between text-sm"><span class="font-medium text-slate-700">${okr.title}</span><span class="font-semibold text-indigo-600">${okr.progress}%</span></div>
+            <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                <div class="h-2 bg-indigo-500" style="width:${okr.progress}%;"></div>
+            </div>
+        </div>`).join('') || '<p class="text-sm text-slate-500">OKR ثبت نشده است.</p>';
+
+    modalTitle.innerText = `تیم ${team.name}`;
+    modalContent.innerHTML = `
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 bg-white border rounded-xl p-4">
+                <div class="flex items-center gap-3 mb-4">
+                    <img src="${team.avatar || ''}" alt="${team.name}" class="w-14 h-14 rounded-lg object-cover border" onerror="this.remove()">
+                    <div>
+                        <div class="text-xl font-bold text-slate-800">${team.name}</div>
+                        <div class="text-sm text-slate-500">مدیر تیم: ${leader?.name || 'نامشخص'}</div>
+                    </div>
+                </div>
+                <div class="divide-y">${membersCards || '<p class="text-sm text-slate-500">عضوی ثبت نشده است.</p>'}</div>
+            </div>
+            <div class="bg-white border rounded-xl p-4">
+                <div class="font-semibold text-slate-800 mb-3">اهداف تیم (OKRs)</div>
+                <div class="space-y-3">${okrHtml}</div>
+            </div>
+        </div>`;
+    openModal(mainModal, mainModalContainer);
+    lucide.createIcons();
 };
 
         // --- EVENT LISTENERS & INITIALIZATION ---
