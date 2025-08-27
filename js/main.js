@@ -532,6 +532,22 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
             if (e.target.closest('#add-new-request-btn')) {
                 showNewRequestForm(employee);
             }
+            // مشاهده جزئیات درخواست در پورتال کارمند
+            const viewRequestBtn = e.target.closest('.view-request-btn');
+            if (viewRequestBtn) {
+                const requestId = viewRequestBtn.dataset.id;
+                if (requestId) {
+                    showRequestDetailsModal(requestId, employee);
+                }
+            }
+            // مشاهده پیام صندوق پیام در پورتال کارمند
+            const viewMessageBtn = e.target.closest('.view-message-btn');
+            if (viewMessageBtn) {
+                const announcementId = viewMessageBtn.dataset.id;
+                if (announcementId) {
+                    showMessageDetailsModal(announcementId);
+                }
+            }
             const sendWishBtn = e.target.closest('.send-wish-btn');
             if (sendWishBtn) {
                 showBirthdayWishForm(sendWishBtn.dataset.id, sendWishBtn.dataset.name);
@@ -5553,6 +5569,13 @@ document.getElementById('new-request-form').addEventListener('submit', async (e)
         await addDoc(collection(db, `artifacts/${appId}/public/data/requests`), finalRequestData);
         showToast("درخواست شما با موفقیت ثبت شد.");
         closeModal(mainModal, mainModalContainer);
+        // نمایش فوری لیست درخواست‌ها بدون رفرش صفحه
+        const requestsNav = document.querySelector('#employee-portal-nav .nav-item[href="#requests"]');
+        if (requestsNav) {
+            document.querySelectorAll('#employee-portal-nav .nav-item').forEach(item => item.classList.remove('active'));
+            requestsNav.classList.add('active');
+        }
+        renderEmployeePortalPage('requests', employee);
     } catch (error) {
         console.error("Error submitting request:", error);
         showToast("خطا در ثبت درخواست.", "error");
