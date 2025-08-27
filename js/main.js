@@ -374,16 +374,6 @@ function renderMyBirthdayWishesWidget(employee) {
     `;
 }
 
-function renderEmployeePortalPage(pageName, employee) {
-    const contentContainer = document.getElementById('employee-main-content');
-    if (!contentContainer) return;
-
-// در فایل js/main.js
-// فقط و فقط بلوک if (pageName === 'profile') را با این کد جایگزین کنید
-
-
-// در فایل js/main.js
-// کل تابع renderEmployeePortalPage را با این نسخه کامل و نهایی جایگزین کنید
 
 function renderEmployeePortalPage(pageName, employee) {
     const contentContainer = document.getElementById('employee-main-content');
