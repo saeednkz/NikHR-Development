@@ -9,7 +9,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
 
 // وارد کردن توابع از ماژول‌های محلی
-import { initAuth, showLoginPage, showDashboard, setupAuthEventListeners, signOut } from './auth.js';
+import { initAuth, showLoginPage, showDashboard, setupAuthEventListeners, signOut, isAdmin, canEdit } from './auth.js';
 import { showToast } from './utils.js';
         
         // --- SURVEY TEMPLATES (COMPREHENSIVE & STANDARD) ---
