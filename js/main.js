@@ -2574,6 +2574,34 @@ const viewTeamProfile = (teamId) => {
     `;
 
     openModal(mainModal, mainModalContainer);
+    // Minimal listener to handle avatar change in team profile and future actions
+    if (typeof window.setupTeamProfileModalListeners !== 'function') {
+        window.setupTeamProfileModalListeners = (teamArg) => {
+            const content = document.getElementById('modalContent');
+            content?.addEventListener('click', async (e) => {
+                if (e.target.closest('#change-team-avatar-btn')) {
+                    const input = document.getElementById('image-upload-input');
+                    if (!input) return;
+                    input.onchange = async () => {
+                        const file = input.files[0];
+                        if (!file) return;
+                        try {
+                            const sRef = ref(storage, `teams/${teamArg.firestoreId}/avatar_${Date.now()}_${file.name}`);
+                            await uploadBytes(sRef, file);
+                            const url = await getDownloadURL(sRef);
+                            await updateDoc(doc(db, `artifacts/${appId}/public/data/teams`, teamArg.firestoreId), { avatar: url });
+                            showToast('عکس تیم به‌روزرسانی شد.');
+                            viewTeamProfile(teamArg.firestoreId);
+                        } catch (err) {
+                            console.error('Error uploading team avatar', err);
+                            showToast('خطا در به‌روزرسانی عکس تیم.', 'error');
+                        } finally { input.value = ''; }
+                    };
+                    input.click();
+                }
+            });
+        };
+    }
     setupTeamProfileModalListeners(team);
 };
 
@@ -3479,6 +3507,56 @@ const setupSettingsPageListeners = () => {
         });
     }
 };
+// Assignment Rule form (add/edit)
+if (typeof window.showAssignmentRuleForm !== 'function') {
+    window.showAssignmentRuleForm = (ruleId = null) => {
+        const existing = (state.assignmentRules || []).find(r => r.firestoreId === ruleId) || {};
+        const admins = state.users.filter(u => u.role === 'admin');
+        const adminOptions = admins.map(a => `<option value="${a.firestoreId}" ${existing.assigneeUid===a.firestoreId?'selected':''}>${a.name || a.email}</option>`).join('');
+        modalTitle.innerText = ruleId ? 'ویرایش قانون واگذاری' : 'افزودن قانون واگذاری';
+        modalContent.innerHTML = `
+            <form id="assignment-rule-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium">نام قانون</label>
+                    <input id="rule-name" class="w-full p-2 border rounded-md" value="${existing.ruleName || ''}" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium">انواع آیتم (با کاما جدا کنید)</label>
+                    <input id="item-types" class="w-full p-2 border rounded-md" placeholder="مثلا: تمدید قرارداد, تولد" value="${(existing.itemTypes||[]).join(', ')}">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium">واگذار به</label>
+                    <select id="assignee-uid" class="w-full p-2 border rounded-md bg-white">${adminOptions}</select>
+                </div>
+                <div class="flex justify-end gap-2">
+                    <button type="button" id="cancel-rule" class="bg-slate-200 text-slate-800 py-2 px-4 rounded-md hover:bg-slate-300">انصراف</button>
+                    <button type="submit" class="primary-btn">ذخیره</button>
+                </div>
+            </form>`;
+        openModal(mainModal, mainModalContainer);
+        document.getElementById('cancel-rule')?.addEventListener('click', () => closeModal(mainModal, mainModalContainer));
+        document.getElementById('assignment-rule-form')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                const name = document.getElementById('rule-name').value.trim();
+                const typesStr = document.getElementById('item-types').value.trim();
+                const assigneeUid = document.getElementById('assignee-uid').value;
+                const itemTypes = typesStr ? typesStr.split(',').map(s => s.trim()).filter(Boolean) : [];
+                if (ruleId) {
+                    await updateDoc(doc(db, `artifacts/${appId}/public/data/assignmentRules`, ruleId), { ruleName: name, itemTypes, assigneeUid });
+                } else {
+                    await addDoc(collection(db, `artifacts/${appId}/public/data/assignmentRules`), { ruleName: name, itemTypes, assigneeUid, createdAt: serverTimestamp() });
+                }
+                showToast('قانون واگذاری ذخیره شد.');
+                closeModal(mainModal, mainModalContainer);
+                renderPage('settings');
+            } catch (error) {
+                console.error('Error saving rule', error);
+                showToast('خطا در ذخیره قانون.', 'error');
+            }
+        });
+    };
+}
 const setupAnalyticsPage = () => {
     // --- منطق تب‌ها ---
     const tabs = document.querySelectorAll('.analytics-tab');
@@ -4553,6 +4631,55 @@ const setupProfileModalListeners = (emp) => {
         lucide.createIcons();
     }, 100);
 };
+// Minimal personal info editor (fallback)
+if (typeof window.showEditPersonalInfoForm !== 'function') {
+    window.showEditPersonalInfoForm = (emp) => {
+        const info = emp.personalInfo || {};
+        modalTitle.innerText = `ویرایش اطلاعات پرسنلی ${emp.name}`;
+        modalContent.innerHTML = `
+            <form id="edit-personal-form" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div><label class="block text-sm">ایمیل</label><input id="pi-email" class="w-full p-2 border rounded-md" value="${info.email || ''}"></div>
+                    <div><label class="block text-sm">تلفن</label><input id="pi-phone" class="w-full p-2 border rounded-md" value="${info.phone || ''}"></div>
+                    <div><label class="block text-sm">کد ملی</label><input id="pi-nid" class="w-full p-2 border rounded-md" value="${info.nationalId || ''}"></div>
+                    <div><label class="block text-sm">کد پستی</label><input id="pi-postal" class="w-full p-2 border rounded-md" value="${info.postalCode || ''}"></div>
+                    <div><label class="block text-sm">شماره ثابت</label><input id="pi-land" class="w-full p-2 border rounded-md" value="${info.landline || ''}"></div>
+                    <div><label class="block text-sm">وضعیت تاهل</label><input id="pi-marital" class="w-full p-2 border rounded-md" value="${info.maritalStatus || ''}"></div>
+                    <div class="md:col-span-2"><label class="block text-sm">آدرس</label><input id="pi-address" class="w-full p-2 border rounded-md" value="${info.address || ''}"></div>
+                    <div><label class="block text-sm">تاریخ تولد</label><input id="pi-birth" class="w-full p-2 border rounded-md" value="${info.birthDate ? toPersianDate(info.birthDate) : ''}" placeholder="YYYY/MM/DD"></div>
+                </div>
+                <div class="flex justify-end gap-2">
+                    <button type="button" id="cancel-pi" class="bg-slate-200 text-slate-800 py-2 px-4 rounded-md hover:bg-slate-300">انصراف</button>
+                    <button type="submit" class="primary-btn">ذخیره</button>
+                </div>
+            </form>`;
+        openModal(mainModal, mainModalContainer);
+        activatePersianDatePicker('pi-birth');
+        document.getElementById('cancel-pi')?.addEventListener('click', () => viewEmployeeProfile(emp.firestoreId));
+        document.getElementById('edit-personal-form')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                const updated = {
+                    ...info,
+                    email: document.getElementById('pi-email').value.trim(),
+                    phone: document.getElementById('pi-phone').value.trim(),
+                    nationalId: document.getElementById('pi-nid').value.trim(),
+                    postalCode: document.getElementById('pi-postal').value.trim(),
+                    landline: document.getElementById('pi-land').value.trim(),
+                    maritalStatus: document.getElementById('pi-marital').value.trim(),
+                    address: document.getElementById('pi-address').value.trim(),
+                    birthDate: persianToEnglishDate(document.getElementById('pi-birth').value)
+                };
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId), { personalInfo: updated });
+                showToast('اطلاعات پرسنلی ذخیره شد.');
+                viewEmployeeProfile(emp.firestoreId);
+            } catch (error) {
+                console.error('Error saving personal info', error);
+                showToast('خطا در ذخیره اطلاعات.', 'error');
+            }
+        });
+    };
+}
         
         // --- EDIT FORM FUNCTIONS ---
 const showAddUserForm = () => {
