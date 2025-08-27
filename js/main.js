@@ -3609,7 +3609,7 @@ const showExpenseForm = () => {
         // --- [FIX END] ---
 
         // --- MODAL & FORM LOGIC ---
-        const mainModal = document.getElementById('mainModal'); const modalTitle = document.getElementById('modalTitle'); const modalContent = document.getElementById('modalContent'); const mainModalContainer = mainModal.querySelector('div');
+        // (moved to shared modal section above)
         
         const renderCompetencyBars = (competencies) => {
             if (!competencies || Object.keys(competencies).length === 0) {
