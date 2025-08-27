@@ -380,7 +380,7 @@ function renderEmployeePortalPage(pageName, employee) {
 // در فایل js/main.js
 // فقط و فقط بلوک if (pageName === 'profile') را با این کد جایگزین کنید
 
-    if (pageName === 'profile') {
+if (pageName === 'profile') {
         const manager = state.teams.find(t => t.memberIds?.includes(employee.id))
             ? state.employees.find(e => e.id === state.teams.find(t => t.memberIds.includes(employee.id)).leaderId)
             : null;
@@ -399,67 +399,43 @@ function renderEmployeePortalPage(pageName, employee) {
                         <p class="text-xs text-slate-500">${toPersianDate(review.reviewDate)}</p>
                     </div>
                     <p class="text-sm text-slate-700 mt-2"><strong>نقاط قوت:</strong> ${review.strengths || 'ثبت نشده'}</p>
-                    ${review.areasForImprovement ? `<p class="text-sm text-slate-700 mt-1"><strong>زمینه‌های بهبود:</strong> ${review.areasForImprovement}</p>` : ''}
                 </div>
             `).join('') || '<div class="text-center py-6"><i data-lucide="inbox" class="w-12 h-12 mx-auto text-slate-300"></i><p class="mt-2 text-sm text-slate-500">سابقه‌ای از ارزیابی عملکرد شما ثبت نشده است.</p></div>';
 
         contentContainer.innerHTML = `
-            <div class="page-header mb-8">
-                <h1 class="text-3xl font-bold text-slate-800">پروفایل من</h1>
-                <p class="text-slate-500 mt-1">رزومه حرفه‌ای شما در NikHR</p>
-            </div>
+            ${renderMyBirthdayWishesWidget(employee)}
             
-            <div class="max-w-7xl mx-auto employee-profile-layout">
-                <div class="employee-sidebar-info flex flex-col items-center text-center">
-                    <div class="profile-picture-container">
-                        <img src="${employee.avatar}" alt="${employee.name}">
-                    </div>
-                    <h2 class="text-3xl font-bold text-white mb-1">${employee.name}</h2>
-                    <p class="text-indigo-300 font-semibold text-lg">${employee.jobTitle || 'عنوان شغلی'}</p>
-                    <button id="change-password-btn" class="text-xs text-indigo-200 hover:text-white font-semibold flex items-center gap-1 mt-4">
-                        <i data-lucide="key-round" class="w-3 h-3"></i><span>مدیریت رمز عبور</span>
-                    </button>
-
-                    <div class="w-full mt-8">
-                        <h3 class="section-title">اطلاعات تماس</h3>
-                        <div class="space-y-3 text-right">
-                            <div class="info-item"><i data-lucide="mail" class="w-5 h-5"></i><span>${employee.personalInfo?.email || '-'}</span></div>
-                            <div class="info-item"><i data-lucide="phone" class="w-5 h-5"></i><span>${employee.personalInfo?.phone || '-'}</span></div>
-                            <div class="info-item"><i data-lucide="map-pin" class="w-5 h-5"></i><span>${employee.personalInfo?.address || '-'}</span></div>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
+                <div class="lg:col-span-2 space-y-8">
+                    <div class="card p-0">
+                        <div class="card-header flex justify-between items-center">
+                            <h3 class="font-semibold text-slate-800 flex items-center gap-2"><i data-lucide="user-round" class="w-5 h-5 text-indigo-500"></i>اطلاعات پرسنلی</h3>
+                            <button id="edit-my-profile-btn" class="secondary-btn py-1 px-3 text-xs flex items-center gap-1">
+                                <i data-lucide="edit-3" class="w-3 h-3"></i><span>ویرایش</span>
+                            </button>
+                        </div>
+                        <div class="card-content grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-sm">
+                            <p><strong>کد ملی:</strong> ${employee.personalInfo?.nationalId || '-'}</p>
+                            <p><strong>تاریخ تولد:</strong> ${toPersianDate(employee.personalInfo?.birthDate)}</p>
+                            <p><strong>شماره ثابت:</strong> ${employee.personalInfo?.landline || '-'}</p>
+                            <p><strong>کد پستی:</strong> ${employee.personalInfo?.postalCode || '-'}</p>
+                            <p><strong>وضعیت تاهل:</strong> ${employee.personalInfo?.maritalStatus || '-'}</p>
+                            <p class="sm:col-span-2"><strong>آدرس:</strong> ${employee.personalInfo?.address || '-'}</p>
                         </div>
                     </div>
 
-                    <div class="w-full mt-8">
-                        <h3 class="section-title">اطلاعات سازمانی</h3>
-                        <div class="space-y-3 text-right">
-                            <div class="info-item"><i data-lucide="id-card" class="w-5 h-5"></i><span>کد پرسنلی: ${employee.id}</span></div>
-                            <div class="info-item"><i data-lucide="briefcase" class="w-5 h-5"></i><span>دپارتمان: ${employee.department || '-'}</span></div>
-                            <div class="info-item"><i data-lucide="user-check" class="w-5 h-5"></i><span>مدیر: ${manager ? manager.name : '-'}</span></div>
-                            <div class="info-item"><i data-lucide="calendar-check" class="w-5 h-5"></i><span>استخدام: ${toPersianDate(employee.startDate)}</span></div>
+                    <div class="card p-0">
+                        <div class="card-header flex items-center gap-2">
+                            <i data-lucide="trending-up" class="w-5 h-5 text-teal-500"></i>
+                            <h3 class="font-semibold text-slate-800">خلاصه عملکرد</h3>
                         </div>
+                        <div class="card-content">${performanceHistoryHtml}</div>
                     </div>
                 </div>
 
-                <div class="employee-main-content-profile">
-                    <div class="flex justify-between items-center mb-6">
-                        <h2 class="block-header"><i data-lucide="info" class="w-7 h-7"></i>درباره من</h2>
-                        <button id="edit-my-profile-btn" class="primary-btn py-2 px-4 text-sm flex items-center gap-1">
-                            <i data-lucide="edit-3" class="w-4 h-4"></i><span>ویرایش پروفایل</span>
-                        </button>
-                    </div>
-                    <div class="text-slate-700 leading-relaxed mb-8">
-                        <p>${employee.personalInfo?.bio || 'متاسفانه بیوگرافی برای شما ثبت نشده است. می‌توانید با کلیک بر روی دکمه ویرایش، آن را اضافه کنید.'}</p>
-                    </div>
-
-                    ${renderMyBirthdayWishesWidget(employee)}
+                <div class="lg:col-span-1 space-y-8">
                     ${renderBirthdaysWidget(employee)}
-
-                    <div class="mt-8">
-                        <h2 class="block-header"><i data-lucide="trending-up" class="w-7 h-7"></i>عملکرد و ارزیابی‌ها</h2>
-                        ${performanceHistoryHtml}
-                    </div>
-
-                    </div>
+                </div>
             </div>
         `;
     }
@@ -769,8 +745,9 @@ mainContent.addEventListener('click', (e) => {
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
 
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید جایگزین کنید
 function renderEmployeePortal() {
-    // ابتدا تمام کانتینرهای دیگر را مخفی می‌کنیم
     document.getElementById('login-container').classList.add('hidden');
     document.getElementById('dashboard-container').classList.add('hidden');
     
@@ -778,9 +755,8 @@ function renderEmployeePortal() {
     portalContainer.classList.remove('hidden');
 
     const employee = state.employees.find(emp => emp.uid === state.currentUser.uid);
-    
     if (!employee) {
-        portalContainer.innerHTML = `<div class="text-center p-10"><h2 class="text-xl font-bold text-red-600">خطا</h2><p class="mt-2 text-slate-500">پروفایل پرسنلی شما یافت نشد. لطفاً با مدیر سیستم تماس بگیرید.</p></div>`;
+        portalContainer.innerHTML = `<div class="text-center p-10"><h2 class="text-xl font-bold text-red-600">خطا: پروفایل یافت نشد.</h2></div>`;
         return;
     }
 
@@ -788,23 +764,30 @@ function renderEmployeePortal() {
 
     portalContainer.innerHTML = `
         <div class="flex h-screen bg-slate-100">
-            <aside class="w-64 bg-white shadow-md p-4 flex flex-col">
-                <div class="text-center mb-10">
-                    <img src="${employee.avatar}" alt="Avatar" class="w-24 h-24 rounded-full mx-auto object-cover border-4 border-slate-200">
-                    <h2 class="mt-4 text-lg font-bold text-slate-800">${employeeName}</h2>
-                    <p class="text-sm text-slate-500">${employee.jobTitle || 'بدون عنوان شغلی'}</p>
+            <aside class="w-72 employee-sidebar">
+                <div class="text-center">
+                    <img src="${employee.avatar}" alt="Avatar" class="profile-pic object-cover">
+                    <h2 class="employee-name">${employeeName}</h2>
+                    <p class="employee-title">${employee.jobTitle || 'بدون عنوان شغلی'}</p>
                 </div>
+
+                <div class="my-8 border-t border-white/20"></div>
+
                 <nav id="employee-portal-nav" class="flex flex-col gap-2">
-                    <a href="#profile" class="employee-nav-item active flex items-center gap-3 px-4 py-2 rounded-lg text-slate-700 hover:bg-blue-50 hover:text-blue-600"><i data-lucide="user"></i><span>پروفایل من</span></a>
-                    <a href="#requests" class="employee-nav-item flex items-center gap-3 px-4 py-2 rounded-lg text-slate-700 hover:bg-blue-50 hover:text-blue-600"><i data-lucide="send"></i><span>درخواست‌های من</span></a>
-                    <a href="#directory" class="employee-nav-item flex items-center gap-3 px-4 py-2 rounded-lg text-slate-700 hover:bg-blue-50 hover:text-blue-600"><i data-lucide="users"></i><span>دایرکتوری سازمان</span></a>
-                    <a href="#documents" class="employee-nav-item flex items-center gap-3 px-4 py-2 rounded-lg text-slate-700 hover:bg-blue-50 hover:text-blue-600"><i data-lucide="folder-kanban"></i><span>اسناد سازمان</span></a>
-                    <a href="#inbox" class="employee-nav-item flex items-center gap-3 px-4 py-2 rounded-lg text-slate-700 hover:bg-blue-50 hover:text-blue-600"><i data-lucide="inbox"></i><span>صندوق پیام</span></a>
+                    <a href="#profile" class="nav-item active"><i data-lucide="layout-dashboard"></i><span>داشبورد</span></a>
+                    <a href="#requests" class="nav-item"><i data-lucide="send"></i><span>درخواست‌های من</span></a>
+                    <a href="#directory" class="nav-item"><i data-lucide="users"></i><span>دایرکتوری سازمان</span></a>
+                    <a href="#documents" class="nav-item"><i data-lucide="folder-kanban"></i><span>اسناد سازمان</span></a>
+                    <a href="#inbox" class="nav-item"><i data-lucide="inbox"></i><span>صندوق پیام</span></a>
                 </nav>
+
                 <div class="mt-auto">
-                    <button id="portal-logout-btn" class="w-full flex items-center justify-center gap-3 px-4 py-2 rounded-lg text-red-600 hover:bg-red-50"><i data-lucide="log-out"></i><span>خروج</span></button>
+                    <button id="portal-logout-btn" class="w-full flex items-center justify-center gap-3 px-4 py-2 rounded-lg logout-btn">
+                        <i data-lucide="log-out"></i><span>خروج از حساب</span>
+                    </button>
                 </div>
             </aside>
+
             <div class="flex-1 flex flex-col h-screen overflow-y-hidden">
                 <header class="bg-white shadow-sm">
                     <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
@@ -812,14 +795,11 @@ function renderEmployeePortal() {
                             <img src="logo.png" alt="NikHR Logo" class="w-8 h-8">
                             <h1 class="text-xl font-bold text-slate-800">پورتال کارمندان</h1>
                         </div>
-                        <div class="flex items-center gap-4">
-                             <div id="portal-notification-bell-wrapper" class="relative">
-                                <button id="portal-notification-bell-btn" class="relative cursor-pointer p-2 rounded-full hover:bg-slate-100">
-                                    <i data-lucide="bell" class="text-slate-600"></i>
-                                    <span id="portal-notification-count" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full border-2 border-white"></span>
-                                </button>
-                            </div>
-                             <span class="text-sm text-slate-600 hidden sm:block">خوش آمدید، ${employeeName}</span>
+                        <div id="portal-notification-bell-wrapper" class="relative">
+                            <button id="portal-notification-bell-btn" class="relative cursor-pointer p-2 rounded-full hover:bg-slate-100">
+                                <i data-lucide="bell" class="text-slate-600"></i>
+                                <span id="portal-notification-count" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full border-2 border-white"></span>
+                            </button>
                         </div>
                     </div>
                 </header>
@@ -829,12 +809,10 @@ function renderEmployeePortal() {
     `;
     
     lucide.createIcons();
+    // با صفحه 'profile' به عنوان پیش‌فرض شروع کن
     renderEmployeePortalPage('profile', employee);
     setupEmployeePortalEventListeners(employee);
-    
-    // [!code ++] این خط جدید مشکل را حل می‌کند
-    // بعد از اینکه پورتال ساخته شد، یک بار وضعیت نوتیفیکیشن‌ها را چک کن
-    updateEmployeeNotificationBell(employee); 
+    updateEmployeeNotificationBell(employee);
 }
         // --- UTILITY & HELPER FUNCTIONS ---
         // --- تابع جدید برای تبدیل تاریخ به شمسی ---
