@@ -1351,6 +1351,61 @@ const updateNotificationBell = () => {
         if (typeof setupSurveysPageListeners !== 'function') { window.setupSurveysPageListeners = () => { document.querySelectorAll('.create-survey-link-btn').forEach(btn => { btn.addEventListener('click', (e) => { const id = e.currentTarget.dataset.surveyId; const t = surveyTemplates[id]; if (t?.requiresTarget) { showSurveyTargetSelector(id); } else { generateAndShowSurveyLink(id); } }); }); }; }
         if (typeof showProcessRequestForm !== 'function') { window.showProcessRequestForm = (requestId) => { const emp = state.employees.find(e => e.uid === state.currentUser?.uid); if (emp) { showRequestDetailsModal(requestId, emp); } }; }
         if (typeof showDocumentUploadForm !== 'function') { window.showDocumentUploadForm = () => { modalTitle.innerText='آپلود سند سازمان'; modalContent.innerHTML = `<form id=\"doc-upload-form\" class=\"space-y-4\"><div><label class=\"block text-sm\">عنوان</label><input id=\"doc-title\" class=\"w-full p-2 border rounded-md\" required></div><div><label class=\"block text-sm\">فایل</label><input id=\"doc-file\" type=\"file\" class=\"w-full\" required></div><div class=\"flex justify-end\"><button type=\"submit\" class=\"bg-blue-600 text-white py-2 px-4 rounded-md\">آپلود</button></div></form>`; openModal(mainModal, mainModalContainer); document.getElementById('doc-upload-form').addEventListener('submit', async (e)=>{ e.preventDefault(); const f=document.getElementById('doc-file').files[0]; const t=document.getElementById('doc-title').value.trim(); if(!f||!t) return; try { const sRef = ref(storage, `companyDocs/${Date.now()}_${f.name}`); await uploadBytes(sRef, f); const url = await getDownloadURL(sRef); await addDoc(collection(db, `artifacts/${appId}/public/data/companyDocuments`), { title: t, fileUrl: url, uploadedAt: serverTimestamp() }); showToast('سند آپلود شد.'); closeModal(mainModal, mainModalContainer); renderPage('documents'); } catch(err){ console.error(err); showToast('خطا در آپلود.', 'error'); } }); }; }
+        // Provide safe fallbacks for missing survey link helpers
+        if (typeof window.generateAndShowSurveyLink !== 'function') {
+            window.generateAndShowSurveyLink = (surveyId) => {
+                const link = `${window.location.origin}${window.location.pathname}#survey-taker?id=${encodeURIComponent(surveyId)}`;
+                modalTitle.innerText = 'لینک نظرسنجی';
+                modalContent.innerHTML = `
+                    <div class="space-y-4">
+                        <p class="text-sm text-slate-600">لینک را کپی و برای مخاطبان ارسال کنید.</p>
+                        <div class="flex items-center gap-2">
+                            <input id="survey-link-input" class="flex-1 p-2 border rounded-md" readonly value="${link}">
+                            <button id="copy-survey-link" class="primary-btn py-2 px-3 text-sm">کپی</button>
+                        </div>
+                    </div>`;
+                openModal(mainModal, mainModalContainer);
+                document.getElementById('copy-survey-link')?.addEventListener('click', async () => {
+                    try { await navigator.clipboard.writeText(document.getElementById('survey-link-input').value); showToast('لینک کپی شد.'); } catch { showToast('کپی لینک ناموفق بود.', 'error'); }
+                });
+            };
+        }
+        if (typeof window.showSurveyTargetSelector !== 'function') {
+            window.showSurveyTargetSelector = (surveyId) => {
+                const options = state.employees.map(e => `<option value="${e.id}">${e.name} (${e.id})</option>`).join('');
+                modalTitle.innerText = 'انتخاب فرد هدف برای بازخورد ۳۶۰';
+                modalContent.innerHTML = `
+                    <form id="survey-target-form" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium">انتخاب کارمند</label>
+                            <select id="target-employee-id" class="w-full p-2 border rounded-md bg-white">${options}</select>
+                        </div>
+                        <div class="flex justify-end gap-2">
+                            <button type="button" id="cancel-target" class="bg-slate-200 text-slate-800 py-2 px-4 rounded-md hover:bg-slate-300">انصراف</button>
+                            <button type="submit" class="primary-btn">ایجاد لینک</button>
+                        </div>
+                    </form>`;
+                openModal(mainModal, mainModalContainer);
+                document.getElementById('cancel-target')?.addEventListener('click', () => closeModal(mainModal, mainModalContainer));
+                document.getElementById('survey-target-form')?.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const targetId = document.getElementById('target-employee-id').value;
+                    const link = `${window.location.origin}${window.location.pathname}#survey-taker?id=${encodeURIComponent(surveyId)}&target=${encodeURIComponent(targetId)}`;
+                    modalTitle.innerText = 'لینک نظرسنجی ۳۶۰';
+                    modalContent.innerHTML = `
+                        <div class="space-y-4">
+                            <p class="text-sm text-slate-600">لینک را کپی و ارسال کنید.</p>
+                            <div class="flex items-center gap-2">
+                                <input id="survey-link-input" class="flex-1 p-2 border rounded-md" readonly value="${link}">
+                                <button id="copy-survey-link" class="primary-btn py-2 px-3 text-sm">کپی</button>
+                            </div>
+                        </div>`;
+                    document.getElementById('copy-survey-link')?.addEventListener('click', async () => {
+                        try { await navigator.clipboard.writeText(document.getElementById('survey-link-input').value); showToast('لینک کپی شد.'); } catch { showToast('کپی لینک ناموفق بود.', 'error'); }
+                    });
+                });
+            };
+        }
         if (typeof renderTeamHealthMetrics !== 'function') { window.renderTeamHealthMetrics = (team) => { const metrics = team.healthMetrics || []; if(!metrics.length) return '<p class=\"text-sm text-slate-500\">معیاری ثبت نشده است.</p>'; return metrics.map(m=>`<div class=\"flex justify-between text-sm\"><span>${m.name}</span><span class=\"font-medium\">${m.value}</span></div>`).join(''); }; }
         if (typeof showTeamForm !== 'function') { window.showTeamForm = (teamId=null) => { const team=(state.teams||[]).find(t=>t.firestoreId===teamId)||{name:'',leaderId:''}; const leaders=state.employees.map(e=>`<option value=\"${e.id}\" ${e.id===team.leaderId?'selected':''}>${e.name}</option>`).join(''); modalTitle.innerText=teamId?'ویرایش تیم':'افزودن تیم جدید'; modalContent.innerHTML = `<form id=\"team-form\" class=\"space-y-4\"><div><label class=\"block text-sm\">نام تیم</label><input id=\"team-name\" class=\"w-full p-2 border rounded-md\" value=\"${team.name}\" required></div><div><label class=\"block text-sm\">مدیر تیم</label><select id=\"team-leader\" class=\"w-full p-2 border rounded-md\">${leaders}</select></div><div class=\"flex justify-end\"><button type=\"submit\" class=\"bg-blue-600 text-white py-2 px-4 rounded-md\">ذخیره</button></div></form>`; openModal(mainModal, mainModalContainer); document.getElementById('team-form').addEventListener('submit', async (e)=>{ e.preventDefault(); const name=document.getElementById('team-name').value.trim(); const leader=document.getElementById('team-leader').value; try { if(teamId){ await updateDoc(doc(db, `artifacts/${appId}/public/data/teams`, teamId), { name, leaderId: leader }); } else { await addDoc(collection(db, `artifacts/${appId}/public/data/teams`), { name, leaderId: leader, memberIds: [] }); } showToast('تیم ذخیره شد.'); closeModal(mainModal, mainModalContainer); renderPage('organization'); } catch(err){ console.error(err); showToast('خطا در ذخیره تیم.', 'error'); } }); }; }
         if (typeof showPerformanceForm !== 'function') { window.showPerformanceForm = (emp, idx=null) => { modalTitle.innerText='ثبت ارزیابی عملکرد'; modalContent.innerHTML = `<div class=\"p-4 text-sm text-slate-600\">فرم ارزیابی عملکرد به‌زودی تکمیل می‌شود.</div>`; openModal(mainModal, mainModalContainer); }; }
@@ -3303,6 +3358,53 @@ const setupTasksPageListeners = () => {
         }
     });
 };
+// Minimal processing modal for reminders (fallback)
+if (typeof window.showProcessReminderForm !== 'function') {
+    window.showProcessReminderForm = (reminderId) => {
+        const reminder = (state.reminders || []).find(r => r.firestoreId === reminderId);
+        if (!reminder) { showToast('یادآور یافت نشد.', 'error'); return; }
+        modalTitle.innerText = `پردازش یادآور: ${reminder.type || ''}`;
+        modalContent.innerHTML = `
+            <form id="process-reminder-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium">وضعیت</label>
+                    <select id="reminder-status" class="w-full p-2 border rounded-md bg-white">
+                        <option ${reminder.status==='جدید'?'selected':''} value="جدید">جدید</option>
+                        <option ${reminder.status==='در حال انجام'?'selected':''} value="در حال انجام">در حال انجام</option>
+                        <option ${reminder.status==='انجام شده'?'selected':''} value="انجام شده">انجام شده</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium">یادداشت پردازش</label>
+                    <textarea id="reminder-notes" rows="4" class="w-full p-2 border rounded-md">${reminder.processingNotes || ''}</textarea>
+                </div>
+                <div class="flex justify-end gap-2">
+                    <button type="button" id="cancel-process-reminder" class="bg-slate-200 text-slate-800 py-2 px-4 rounded-md hover:bg-slate-300">انصراف</button>
+                    <button type="submit" class="primary-btn">ذخیره</button>
+                </div>
+            </form>`;
+        openModal(mainModal, mainModalContainer);
+        document.getElementById('cancel-process-reminder')?.addEventListener('click', () => closeModal(mainModal, mainModalContainer));
+        document.getElementById('process-reminder-form')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                const newStatus = document.getElementById('reminder-status').value;
+                const notes = document.getElementById('reminder-notes').value.trim();
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/reminders`, reminderId), {
+                    status: newStatus,
+                    processingNotes: notes,
+                    lastUpdatedAt: serverTimestamp()
+                });
+                showToast('یادآور به‌روزرسانی شد.');
+                closeModal(mainModal, mainModalContainer);
+                renderPage('tasks');
+            } catch (error) {
+                console.error('Error processing reminder:', error);
+                showToast('خطا در ذخیره یادآور.', 'error');
+            }
+        });
+    };
+}
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
 // در فایل js/main.js
