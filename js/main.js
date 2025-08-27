@@ -431,14 +431,24 @@ function renderEmployeePortalPage(pageName, employee) {
     }
     // --- بخش درخواست‌ها ---
     else if (pageName === 'requests') {
-        const myRequests = (state.requests || []).filter(req => req.uid === employee.uid).sort((a, b) => (b.lastUpdatedAt?.toDate() || b.createdAt?.toDate()) - (a.lastUpdatedAt?.toDate() || a.createdAt?.toDate()));
+        let myRequests = (state.requests || []).filter(req => req.uid === employee.uid);
+        // مرتب‌سازی: ابتدا درخواست‌هایی که پاسخ جدید دارند (نسبت به lastSeenAt)، سپس بر اساس lastUpdatedAt/createdAt
+        myRequests = myRequests.sort((a, b) => {
+            const aHasNew = (a.thread || []).some(item => item.createdAt?.toDate && (!a.lastSeenAt || item.createdAt.toDate() > a.lastSeenAt.toDate()));
+            const bHasNew = (b.thread || []).some(item => item.createdAt?.toDate && (!b.lastSeenAt || item.createdAt.toDate() > b.lastSeenAt.toDate()));
+            if (aHasNew !== bHasNew) return aHasNew ? -1 : 1;
+            const aTime = a.lastUpdatedAt?.toDate?.() || a.createdAt?.toDate?.() || 0;
+            const bTime = b.lastUpdatedAt?.toDate?.() || b.createdAt?.toDate?.() || 0;
+            return bTime - aTime;
+        });
         const requestsHtml = myRequests.map(req => {
             const statusMap = {'درحال بررسی': { text: 'در حال بررسی', color: 'bg-yellow-100 text-yellow-800' },'در حال انجام': { text: 'در حال انجام', color: 'bg-blue-100 text-blue-800' },'تایید شده': { text: 'تایید شده', color: 'bg-green-100 text-green-800' },'رد شده': { text: 'رد شده', color: 'bg-red-100 text-red-800' }};
             const status = statusMap[req.status] || { text: req.status, color: 'bg-slate-100' };
             const hasNewReply = (req.thread || []).some(item => item.createdAt?.toDate && (!req.lastSeenAt || item.createdAt.toDate() > req.lastSeenAt.toDate()));
-            const rowClass = hasNewReply ? 'bg-emerald-50' : 'hover:bg-slate-50';
-            const titleClass = hasNewReply ? 'font-extrabold text-slate-900' : '';
-            return `<tr class="${rowClass}"><td class="p-3 ${titleClass}">${req.requestType}${hasNewReply ? ' <span class=\"ml-2 inline-block w-2 h-2 rounded-full bg-emerald-500 align-middle\"></span>' : ''}</td><td class="p-3">${toPersianDate(req.createdAt)}</td><td class="p-3"><span class="px-2 py-1 text-xs font-medium rounded-full ${status.color}">${status.text}</span></td><td class="p-3"><button class="view-request-btn text-sm text-indigo-600 hover:underline" data-id="${req.firestoreId}">مشاهده جزئیات</button></td></tr>`;
+            const borderClass = hasNewReply ? 'border-emerald-200' : 'border-slate-200';
+            const titleClass = hasNewReply ? 'font-bold text-slate-900' : 'font-medium text-slate-700';
+            const dot = hasNewReply ? '<span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>' : '';
+            return `<tr class="bg-white"><td class="p-4 border-b ${borderClass}"><div class="flex items-center gap-2 ${titleClass}">${dot}<span>${req.requestType}</span></div></td><td class="p-4 border-b ${borderClass}">${toPersianDate(req.createdAt)}</td><td class="p-4 border-b ${borderClass}"><span class="px-2 py-1 text-xs font-medium rounded-full ${status.color}">${status.text}</span></td><td class="p-4 border-b ${borderClass}"><button class="view-request-btn text-sm text-indigo-600 hover:underline" data-id="${req.firestoreId}">مشاهده جزئیات</button></td></tr>`;
         }).join('');
         contentContainer.innerHTML = `
             <div class="flex justify-between items-center page-header"><h1 class="text-3xl font-bold text-slate-800">درخواست‌های من</h1><button id="add-new-request-btn" class="primary-btn flex items-center gap-2"><i data-lucide="plus-circle" class="w-4 h-4"></i><span>ثبت درخواست جدید</span></button></div>
@@ -460,11 +470,19 @@ function renderEmployeePortalPage(pageName, employee) {
         }).sort((a, b) => new Date(b.createdAt?.toDate()) - new Date(a.createdAt?.toDate()));
         // هایلایت پیام‌های خوانده‌نشده
         const readIds = new Set((employee.readAnnouncements || []));
+        // مرتب‌سازی: ابتدا نخوانده‌ها، سپس خوانده‌شده‌ها؛ هر گروه نزولی بر اساس تاریخ
+        myMessages.sort((a, b) => {
+            const aUnread = !readIds.has(a.firestoreId);
+            const bUnread = !readIds.has(b.firestoreId);
+            if (aUnread !== bUnread) return aUnread ? -1 : 1; // نخوانده‌ها بالا
+            return new Date(b.createdAt?.toDate()) - new Date(a.createdAt?.toDate());
+        });
         const messagesHtml = myMessages.map(msg => {
             const isUnread = !readIds.has(msg.firestoreId);
-            const rowClass = isUnread ? 'bg-indigo-50' : 'hover:bg-slate-50';
-            const titleClass = isUnread ? 'font-extrabold text-slate-900' : 'font-semibold';
-            return `<tr class="${rowClass}"><td class="p-3 ${titleClass}">${msg.title}${isUnread ? ' <span class="ml-2 inline-block w-2 h-2 rounded-full bg-indigo-500 align-middle"></span>' : ''}</td><td class="p-3">${msg.senderName}</td><td class="p-3">${toPersianDate(msg.createdAt)}</td><td class="p-3"><button class="view-message-btn text-sm text-indigo-600 hover:underline" data-id="${msg.firestoreId}">مشاهده پیام</button></td></tr>`;
+            const borderClass = isUnread ? 'border-indigo-200' : 'border-slate-200';
+            const titleClass = isUnread ? 'font-bold text-slate-900' : 'font-medium text-slate-700';
+            const dot = isUnread ? '<span class="inline-block w-2 h-2 rounded-full bg-indigo-500"></span>' : '';
+            return `<tr class="bg-white"><td class="p-4 border-b ${borderClass}"><div class="flex items-center gap-2 ${titleClass}">${dot}<span>${msg.title}</span></div></td><td class="p-4 border-b ${borderClass}">${msg.senderName}</td><td class="p-4 border-b ${borderClass}">${toPersianDate(msg.createdAt)}</td><td class="p-4 border-b ${borderClass}"><button class="view-message-btn text-sm text-indigo-600 hover:underline" data-id="${msg.firestoreId}">مشاهده پیام</button></td></tr>`;
         }).join('');
         contentContainer.innerHTML = `
             <div class="page-header mb-8"><h1 class="text-3xl font-bold text-slate-800">صندوق پیام</h1></div>
@@ -1272,20 +1290,18 @@ const updateNotificationBell = () => {
      const updateEmployeeNotificationBell = (employee) => {
     const countContainer = document.getElementById('portal-notification-count');
     if (!countContainer || !employee) return;
-
-    const lastChecked = employee.personalInfo?.lastCheckedInbox?.toDate() || new Date(0);
-
+    const readIds = new Set(employee.readAnnouncements || []);
     const myTeam = state.teams.find(team => team.memberIds?.includes(employee.id));
     const myTeamId = myTeam ? myTeam.firestoreId : null;
-
     const unreadCount = (state.announcements || []).filter(msg => {
-        if (msg.createdAt.toDate() <= lastChecked) return false; // پیام قدیمی است
+        if (!msg.createdAt?.toDate) return false;
         const targets = msg.targets;
-        if (targets.type === 'public') return true;
-        if (targets.type === 'roles' && targets.roles?.includes('employee')) return true;
-        if (targets.type === 'users' && targets.userIds?.includes(employee.firestoreId)) return true;
-        if (targets.type === 'teams' && targets.teamIds?.includes(myTeamId)) return true;
-        return false;
+        const targeted = (targets.type === 'public')
+            || (targets.type === 'roles' && targets.roles?.includes('employee'))
+            || (targets.type === 'users' && targets.userIds?.includes(employee.firestoreId))
+            || (targets.type === 'teams' && targets.teamIds?.includes(myTeamId));
+        if (!targeted) return false;
+        return !readIds.has(msg.firestoreId);
     }).length;
 
     if (unreadCount > 0) {
@@ -1653,7 +1669,6 @@ tasks: () => {
             </tr>
         `;
     }).join('');
-
     return `
         <h1 class="text-3xl font-bold text-slate-800 mb-6">وظایف من</h1>
         <p class="text-slate-500 mb-4">در این صفحه تمام یادآورها و رویدادهایی که به شما واگذار شده است را مشاهده می‌کنید.</p>
@@ -2335,7 +2350,6 @@ const renderDashboardCharts = () => {
             } 
         }); 
     }
-    
     // Nine Box Distribution (Bar Chart)
     const nineBoxCtx = document.getElementById('nineBoxChart')?.getContext('2d');
     if (nineBoxCtx && metrics.nineBoxDistribution) { 
@@ -2642,7 +2656,6 @@ const renderEmployeeTable = () => {
         (!departmentFilter || emp.department === departmentFilter) &&
         (!statusFilter || emp.status === statusFilter)
     );
-
     const startIndex = (state.currentPageTalent - 1) * TALENT_PAGE_SIZE;
     const endIndex = startIndex + TALENT_PAGE_SIZE;
     const paginatedEmployees = filteredEmployees.slice(startIndex, endIndex);
@@ -2688,7 +2701,6 @@ const renderEmployeeTable = () => {
             }).join('');
         }
     }
-
     renderPagination('pagination-container', state.currentPageTalent, filteredEmployees.length, TALENT_PAGE_SIZE);
 };
         const exportToCSV = () => {
@@ -2989,7 +3001,6 @@ const setupTasksPageListeners = () => {
 };
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
-
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
 
@@ -3628,7 +3639,6 @@ function handleAvatarChange(emp) {
     };
     fileInput.click();
 }
-
 async function resizeAndUploadAvatar(file, emp) {
     const MAX_DIMENSION = 256;
     const reader = new FileReader();
@@ -4016,303 +4026,6 @@ const showAnnouncementForm = () => {
     openModal(mainModal, mainModalContainer);
     lucide.createIcons();
 };
-        
-        // --- [FIX START] ADDED TEAM HEALTH METRICS RENDERER ---
-      const renderTeamHealthMetrics = (team) => {
-        const metrics = team.healthMetrics || {};
-        
-        // اضافه کردن امتیاز مشارکت تیم به لیست معیارها
-        if (team.engagementScore != null) {
-            metrics['مشارکت کارکنان'] = team.engagementScore;
-        }
-
-        const metricsHtml = Object.keys(metrics).length > 0 ? Object.entries(metrics).map(([name, score]) => `
-            <div>
-                <div class="flex justify-between items-center mb-1 text-sm">
-                    <span class="text-gray-600">${name}</span>
-                    <span class="font-medium text-blue-600">${score}%</span>
-                </div>
-                <div class="progress-bar w-full">
-                    <div class="progress-bar-fill" style="width: ${score}%;"></div>
-                </div>
-            </div>
-        `).join('') : '<p class="text-sm text-gray-500">هنوز معیاری برای سلامت تیم ثبت نشده است.</p>';
-
-        return `
-            <div class="card p-4 bg-gray-50 rounded-lg">
-                <div class="flex justify-between items-center mb-3">
-                    <h4 class="font-semibold text-gray-700">معیارهای کلیدی سلامت تیم</h4>
-                    ${canEdit() ? `<button id="edit-team-health-btn" class="text-sm bg-blue-500 text-white py-1 px-3 rounded-md hover:bg-blue-600">ویرایش</button>` : ''}
-                </div>
-                <div class="space-y-4">
-                    ${metricsHtml}
-                </div>
-            </div>
-        `;
-    };
-        const generateTeamNineBoxGrid = (members) => {
-            const grid = Array(3).fill(null).map(() => Array(3).fill(null).map(() => []));
-            const gridMap = {'معما': {r:0,c:0}, 'عملکرد قابل اتکا':{r:1,c:0}, 'مهره کلیدی':{r:2,c:0}, 'پتانسیل بالا':{r:1,c:2}, 'ستاره':{r:2,c:2}};
-            members.forEach(emp => { const pos = gridMap[emp.nineBox]; if(pos) grid[pos.r][pos.c].push(emp); });
-            let html = '';
-            for (let i = 2; i >= 0; i--) { for (let j = 0; j < 3; j++) { html += `<div class="border-b-2 border-r-2 border-gray-200 min-h-[60px] p-1 flex flex-wrap items-center justify-center gap-1">${grid[i][j].map(e => `<div class="w-8 h-8 rounded-full border-2 border-white overflow-hidden shrink-0 bg-gray-200"><img src="${e.avatar}" title="${e.name}" class="w-full h-full object-cover"></div>`).join('')}</div>`; } }
-            return html;
-        };
-
-const setupTeamProfileModalListeners = (team) => {
-    // 1. مدیریت تب‌ها (نمای کلی، سلامت تیم و ...)
-    const tabs = document.querySelectorAll('#profile-tabs .profile-tab');
-    const tabContents = document.querySelectorAll('.profile-tab-content');
-    tabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            tabs.forEach(t => t.classList.remove('active'));
-            tab.classList.add('active');
-            const target = tab.getAttribute('data-tab');
-            tabContents.forEach(content => {
-                content.classList.toggle('active', content.id === `tab-${target}`);
-            });
-        });
-    });
-
-    // 2. مدیریت دکمه‌های ویرایش (فقط برای ادمین و ویرایشگر)
-    if (canEdit()) {
-        const modalContentArea = document.getElementById('modalContent');
-        if (!modalContentArea) return;
-
-        // استفاده از Event Delegation: یک listener برای کل محتوای مودال
-        modalContentArea.addEventListener('click', (e) => {
-            const target = e.target.closest('button'); // پیدا کردن نزدیک‌ترین دکمه‌ای که روی آن کلیک شده
-            if (!target) return; // اگر روی دکمه کلیک نشده، کاری نکن
-
-            const id = target.id;
-
-            // بر اساس ID دکمه، تابع مربوطه را فراخوانی کن
-            switch (id) {
-                case 'edit-team-members-btn':
-                    showTeamForm(team.firestoreId);
-                    break;
-                case 'edit-team-okrs-btn':
-                    showEditTeamOkrsForm(team);
-                    break;
-                case 'edit-team-health-btn':
-                    showTeamHealthForm(team);
-                    break;
-                case 'change-team-avatar-btn':
-                    // --- START: کد اصلاح شده برای آپلود آواتار تیم ---
-                    handleAvatarChange(async (imageBlob) => {
-                        if (!imageBlob) return;
-                        showToast("در حال آپلود عکس تیم...", "success");
-                        try {
-                            // ۱. یک مسیر منحصر به فرد در Storage برای فایل ایجاد می‌کنیم
-                            const filePath = `team-avatars/${team.firestoreId}/${Date.now()}.jpg`;
-                            const storageRef = ref(storage, filePath);
-                            
-                            // ۲. فایل Blob را در Storage آپلود می‌کنیم
-                            const snapshot = await uploadBytes(storageRef, imageBlob);
-                            
-                            // ۳. لینک دانلود فایل آپلود شده را می‌گیریم
-                            const downloadURL = await getDownloadURL(snapshot.ref);
-                            
-                            // ۴. حالا لینک (که یک متن است) را در Firestore ذخیره می‌کنیم
-                            const docRef = doc(db, `artifacts/${appId}/public/data/teams`, team.firestoreId);
-                            await updateDoc(docRef, { avatar: downloadURL });
-                            
-                            showToast("عکس تیم با موفقیت به‌روزرسانی شد.");
-                            viewTeamProfile(team.firestoreId); // رفرش کردن پروفایل تیم برای نمایش عکس جدید
-                        } catch (error) {
-                            console.error("Error updating team avatar:", error);
-                            showToast("خطا در به‌روزرسانی عکس تیم.", "error");
-                        }
-                    });
-                    // --- END: کد اصلاح شده ---
-                    break;
-            }
-        });
-    }
-
-    // 3. اجرای Lucide برای نمایش آیکون‌ها
-    setTimeout(() => {
-        lucide.createIcons();
-    }, 100);
-};
-
-        const openModal = (modal, container) => { modal.classList.remove('hidden'); modal.classList.add('flex'); setTimeout(() => container.classList.remove('scale-95', 'opacity-0'), 50); };
-        const closeModal = (modal, container) => { container.classList.add('scale-95', 'opacity-0'); setTimeout(() => { modal.classList.add('hidden'); modal.classList.remove('flex'); destroyCharts(); }, 300); };
-        const confirmModal = document.getElementById('confirmModal'); const confirmModalContainer = confirmModal.querySelector('div'); let confirmCallback = () => {};
-        const showConfirmationModal = (title, message, onConfirm, acceptText = "تایید") => { document.getElementById('confirmTitle').innerText = title; document.getElementById('confirmMessage').innerText = message; document.getElementById('confirmAccept').innerText = acceptText; confirmCallback = onConfirm; openModal(confirmModal, confirmModalContainer); };
-        document.getElementById('confirmCancel').addEventListener('click', () => closeModal(confirmModal, confirmModalContainer)); document.getElementById('confirmAccept').addEventListener('click', () => { confirmCallback(); closeModal(confirmModal, confirmModalContainer); });
-        
-        const showTeamForm = (teamId = null) => {
-            const isEditing = teamId !== null;
-            const team = isEditing ? state.teams.find(t => t.firestoreId === teamId) : {};
-            const employeeOptions = state.employees.map(emp => `<option value="${emp.id}" ${isEditing && team.leaderId === emp.id ? 'selected' : ''}>${emp.name}</option>`).join('');
-            const memberCheckboxes = state.employees.map(emp => `<div class="flex items-center"><input type="checkbox" id="member-${emp.id}" value="${emp.id}" class="team-member-checkbox" ${isEditing && team.memberIds?.includes(emp.id) ? 'checked' : ''}><label for="member-${emp.id}" class="mr-2">${emp.name}</label></div>`).join('');
-            modalTitle.innerText = isEditing ? 'ویرایش تیم' : 'افزودن تیم جدید';
-            modalContent.innerHTML = `<form id="team-form" class="space-y-4"><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div><label for="team-name" class="block text-sm font-medium text-gray-700">نام تیم</label><input type="text" id="team-name" value="${team.name || ''}" class="mt-1 block w-full p-2 border rounded-md" required></div><div><label for="team-id" class="block text-sm font-medium text-gray-700">شناسه تیم (مثلا T-03)</label><input type="text" id="team-id" value="${team.id || ''}" class="mt-1 block w-full p-2 border rounded-md" ${isEditing ? 'readonly' : ''} required></div><div class="md:col-span-2"><label for="team-mission" class="block text-sm font-medium text-gray-700">ماموریت تیم</label><textarea id="team-mission" rows="3" class="mt-1 block w-full p-2 border rounded-md">${team.mission || ''}</textarea></div><div><label for="team-leader" class="block text-sm font-medium text-gray-700">رهبر تیم</label><select id="team-leader" class="mt-1 block w-full p-2 border rounded-md" required><option value="">انتخاب کنید...</option>${employeeOptions}</select></div><div><label class="block text-sm font-medium text-gray-700">اعضای تیم</label><div id="team-members" class="mt-1 grid grid-cols-2 gap-2 max-h-48 overflow-y-auto p-2 border rounded-md">${memberCheckboxes}</div></div></div><div class="pt-4 flex justify-end"><button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">ذخیره</button></div></form>`;
-            openModal(mainModal, mainModalContainer);
-            document.getElementById('team-form').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const selectedMembers = Array.from(document.querySelectorAll('.team-member-checkbox:checked')).map(cb => cb.value);
-                const formData = { name: document.getElementById('team-name').value, id: document.getElementById('team-id').value, mission: document.getElementById('team-mission').value, leaderId: document.getElementById('team-leader').value, memberIds: selectedMembers, avatar: team.avatar || `https://placehold.co/200x200/dbeafe/4338ca?text=${document.getElementById('team-name').value.substring(0,2)}`, okrs: team.okrs || [], healthMetrics: team.healthMetrics || {} };
-                try { const docRef = doc(db, `artifacts/${appId}/public/data/teams`, isEditing ? team.firestoreId : formData.id); await setDoc(docRef, formData, { merge: isEditing }); closeModal(mainModal, mainModalContainer); showToast(isEditing ? "تیم با موفقیت ویرایش شد." : "تیم با موفقیت اضافه شد."); } catch (error) { console.error("Error saving team:", error); showToast("خطا در ذخیره اطلاعات تیم.", "error"); }
-            });
-        };
-// این تابع جدید را به js/main.js اضافه کنید
-
-// این تابع جدید را به js/main.js اضافه کنید
-
-const showBirthdayWishForm = (targetUid, targetName) => {
-    modalTitle.innerText = `ارسال تبریک برای ${targetName}`;
-    modalContent.innerHTML = `
-        <form id="birthday-wish-form" class="space-y-4">
-            <div>
-                <label for="wish-message" class="block font-medium mb-1">پیام تبریک شما:</label>
-                <textarea id="wish-message" rows="5" class="w-full p-2 border rounded-md" placeholder="یک پیام شاد بنویسید..." required></textarea>
-            </div>
-            <div class="pt-4 flex justify-end">
-                <button type="submit" class="bg-pink-600 text-white py-2 px-6 rounded-md hover:bg-pink-700">ارسال پیام</button>
-            </div>
-        </form>
-    `;
-    openModal(mainModal, mainModalContainer);
-
-    document.getElementById('birthday-wish-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const wishData = {
-            wisherUid: state.currentUser.uid,
-            wisherName: state.employees.find(emp => emp.uid === state.currentUser.uid)?.name || state.currentUser.email,
-            targetUid: targetUid,
-            message: document.getElementById('wish-message').value,
-            createdAt: serverTimestamp()
-        };
-
-        try {
-            await addDoc(collection(db, `artifacts/${appId}/public/data/birthdayWishes`), wishData);
-            showToast("پیام تبریک شما با موفقیت ارسال شد!");
-            closeModal(mainModal, mainModalContainer);
-        } catch (error) {
-            console.error("Error sending birthday wish:", error);
-            showToast("خطا در ارسال پیام.", "error");
-        }
-    });
-};
-// این تابع جدید را به js/main.js اضافه کنید
-// در فایل js/main.js
-// کل این تابع را با نسخه جدید جایگزین کنید
-
-const showDocumentUploadForm = () => {
-    modalTitle.innerText = 'آپلود سند جدید';
-    // [!code focus:8]
-    modalContent.innerHTML = `
-        <form id="upload-document-form" class="space-y-4">
-            <div>
-                <label class="block font-medium mb-1">عنوان سند</label>
-                <input type="text" id="doc-title" class="w-full p-2 border rounded-md" required>
-            </div>
-            <div>
-                <label class="block font-medium mb-1">دسته‌بندی</label>
-                <select id="doc-category" class="w-full p-2 border rounded-md bg-white" required>
-                    <option value="آیین‌نامه‌ها و قوانین">آیین‌نامه‌ها و قوانین</option>
-                    <option value="فرم‌های اداری">فرم‌های اداری</option>
-                    <option value="فرهنگ سازمانی">فرهنگ سازمانی</option>
-                    <option value="چارت سازمانی">چارت سازمانی</option>
-                    <option value="عمومی">عمومی</option>
-                </select>
-            </div>
-            <div>
-                <label class="block font-medium mb-1">فایل (حداکثر ۱۰ مگابایت)</label>
-                <input type="file" id="doc-file" class="w-full text-sm" required>
-            </div>
-            <div class="pt-4 flex justify-end">
-                <button type="submit" id="submit-upload-btn" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">آپلود</button>
-            </div>
-        </form>
-    `;
-    openModal(mainModal, mainModalContainer);
-
-    document.getElementById('upload-document-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const saveBtn = document.getElementById('submit-upload-btn');
-        saveBtn.disabled = true;
-        saveBtn.innerText = 'در حال آپلود...';
-        
-        const file = document.getElementById('doc-file').files[0];
-        if (!file || file.size > 10 * 1024 * 1024) {
-            showToast("فایل انتخاب نشده یا حجم آن بیشتر از ۱۰ مگابایت است.", "error");
-            saveBtn.disabled = false;
-            saveBtn.innerText = 'آپلود';
-            return;
-        }
-
-        try {
-            const filePath = `company_documents/${Date.now()}_${file.name}`;
-            const storageRef = ref(storage, filePath);
-            const snapshot = await uploadBytes(storageRef, file);
-            const downloadURL = await getDownloadURL(snapshot.ref);
-
-            const docData = {
-                title: document.getElementById('doc-title').value,
-                category: document.getElementById('doc-category').value, // خواندن از select
-                fileUrl: downloadURL,
-                fileName: file.name,
-                uploadedAt: serverTimestamp()
-            };
-
-            await addDoc(collection(db, `artifacts/${appId}/public/data/companyDocuments`), docData);
-            showToast("سند با موفقیت آپلود شد.");
-            closeModal(mainModal, mainModalContainer);
-        } catch (error) {
-            console.error("Error uploading document:", error);
-            showToast("خطا در آپلود سند.", "error");
-            saveBtn.disabled = false;
-            saveBtn.innerText = 'آپلود';
-        }
-    });
-};
-// این تابع جدید را به js/main.js اضافه کنید
-const showRequestDetailsModal = (requestId, employee) => {
-    const request = state.requests.find(r => r.firestoreId === requestId);
-    if (!request) return;
-
-    modalTitle.innerText = `جزئیات درخواست: ${request.requestType}`;
-    
-    const statusColors = { /* ... رنگ‌ها مثل قبل ... */ };
-    const threadHtml = (request.thread || []).map(item => {
-        const sender = state.users.find(u => u.firestoreId === item.senderUid) || { name: 'شما' };
-        return `<div class="p-3 mt-2 text-sm border rounded-lg ${sender.name === 'شما' ? 'bg-blue-50' : 'bg-slate-50'}"><p class="whitespace-pre-wrap">${item.content}</p><div class="text-slate-400 text-xs text-left mt-2">${sender.name} - ${toPersianDate(item.createdAt)}</div></div>`;
-    }).join('');
-
-    modalContent.innerHTML = `
-        <div class="space-y-4">
-            <div class="p-4 border rounded-lg bg-slate-50 text-sm">
-                <div class="flex justify-between items-center">
-                    <p><strong>موضوع:</strong> ${request.details}</p>
-                    <span class="px-2 py-1 text-xs font-medium rounded-full ${statusColors[request.status] || 'bg-slate-100'}">${request.status}</span>
-                </div>
-            </div>
-            <div>
-                <strong class="text-slate-600">تاریخچه مکالمات:</strong>
-                <div class="mt-2 max-h-60 overflow-y-auto pr-2">${threadHtml || '<p class="text-xs text-slate-400 mt-2">هنوز پاسخی ثبت نشده است.</p>'}</div>
-            </div>
-            <div class="pt-4 border-t">
-                <form class="employee-reply-form flex items-center gap-2" data-id="${request.firestoreId}">
-                     <input type="text" placeholder="پاسخ خود را بنویسید..." class="reply-input flex-grow p-2 border rounded-md text-sm" required>
-                     <button type="submit" class="primary-btn py-2 px-3 text-sm">ارسال</button>
-                </form>
-            </div>
-        </div>
-    `;
-    openModal(mainModal, mainModalContainer);
-    lucide.createIcons();
-    // علامت‌گذاری آخرین بازدید کارمند از این درخواست برای تشخیص پاسخ جدید
-    (async () => {
-        try {
-            const reqRef = doc(db, `artifacts/${appId}/public/data/requests`, requestId);
-            await updateDoc(reqRef, { lastSeenAt: serverTimestamp() });
-        } catch (err) { console.error('Error updating request lastSeenAt:', err); }
-    })();
-};
 // این تابع جدید را به js/main.js اضافه کنید
 const showMessageDetailsModal = (announcementId) => {
     const msg = state.announcements.find(a => a.firestoreId === announcementId);
@@ -4616,7 +4329,6 @@ const showAddUserForm = () => {
         }
     });
 };
-
         const showEditOkrsForm = (emp) => {
             modalTitle.innerText = `ویرایش OKR برای ${emp.name}`;
             const okrsHtml = (emp.okrs || []).map((okr) => `<div class="okr-item grid grid-cols-12 gap-2 items-center"><input type="text" value="${okr.title}" class="col-span-8 p-2 border rounded-md okr-title" placeholder="عنوان هدف"><input type="number" value="${okr.progress}" class="col-span-3 p-2 border rounded-md okr-progress" placeholder="پیشرفت %" min="0" max="100"><button type="button" class="col-span-1 remove-okr-btn text-red-500 hover:text-red-700"><i data-lucide="trash-2" class="w-5 h-5"></i></button></div>`).join('');
@@ -4934,7 +4646,6 @@ const showDisciplinaryForm = (emp) => {
             }
         });
     };
-
  const showContractForm = (emp, contractIndex = null) => {
         const isEditing = contractIndex !== null;
         const contract = isEditing ? emp.contractHistory[contractIndex] : {};
@@ -5292,321 +5003,6 @@ const showAssignmentRuleForm = (ruleId = null) => {
         }
     });
 };
-// این تابع کاملاً جدید را به js/main.js اضافه کنید
-
-// در فایل js/main.js
-// کل این تابع را با نسخه جدید جایگزین کنید
-
-const showProcessRequestForm = (requestId) => {
-    const request = state.requests.find(r => r.firestoreId === requestId);
-    if (!request) return showToast("درخواست یافت نشد.", "error");
-
-    modalTitle.innerText = `پردازش درخواست: ${request.requestType}`;
-    
-    // نمایش تاریخچه مکالمات قبلی در بالای فرم
-    const historyHtml = (request.thread || []).map(item => {
-        const sender = state.users.find(u => u.firestoreId === item.senderUid) || { name: 'کارمند' };
-        return `
-            <div class="p-3 bg-slate-100 rounded-md mb-2">
-                <div class="flex justify-between items-center text-xs mb-1">
-                    <strong class="text-slate-700">${sender.name}</strong>
-                    <span class="text-slate-400">${toPersianDate(item.createdAt)}</span>
-                </div>
-                <p class="text-sm text-slate-600 whitespace-pre-wrap">${item.content}</p>
-                ${item.attachmentUrl ? `<a href="${item.attachmentUrl}" target="_blank" class="text-blue-500 text-xs mt-1 inline-block">دانلود ضمیمه</a>` : ''}
-            </div>
-        `;
-    }).join('');
-
-    modalContent.innerHTML = `
-        <div class="max-h-48 overflow-y-auto mb-4 pr-2">${historyHtml || '<p class="text-sm text-slate-400 text-center">هنوز پاسخی ثبت نشده است.</p>'}</div>
-        <form id="process-request-form" class="space-y-4 border-t pt-4">
-            <h4 class="font-bold">ثبت پاسخ یا رویداد جدید</h4>
-            <div>
-                <label class="block font-medium mb-1">توضیحات/پاسخ جدید</label>
-                <textarea id="processing-notes" rows="4" class="w-full p-2 border rounded-md" required></textarea>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label class="block font-medium mb-1">تغییر وضعیت به:</label>
-                    <select id="request-status" class="w-full p-2 border rounded-md bg-white">
-                        <option value="در حال انجام" ${request.status === 'در حال انجام' ? 'selected' : ''}>در حال انجام</option>
-                        <option value="تایید شده" ${request.status === 'تایید شده' ? 'selected' : ''}>تایید شده</option>
-                        <option value="رد شده" ${request.status === 'رد شده' ? 'selected' : ''}>رد شده</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block font-medium mb-1">فایل ضمیمه (اختیاری)</label>
-                    <input type="file" id="request-attachment" class="w-full text-sm">
-                </div>
-            </div>
-            <div class="pt-4 flex justify-end">
-                <button type="submit" id="save-processing-btn" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">ثبت پاسخ</button>
-            </div>
-        </form>
-    `;
-    openModal(mainModal, mainModalContainer);
-
-    document.getElementById('process-request-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const saveBtn = document.getElementById('save-processing-btn');
-        saveBtn.disabled = true;
-        saveBtn.innerText = 'در حال ثبت...';
-
-        try {
-            let attachmentUrl = '', attachmentFileName = '';
-            const file = document.getElementById('request-attachment').files[0];
-            if (file) {
-                // ... (منطق آپلود فایل مثل قبل)
-            }
-
-            const newThreadItem = {
-                senderUid: state.currentUser.uid,
-                content: document.getElementById('processing-notes').value,
-                createdAt: new Date(), // از زمان فعلی استفاده می‌کنیم
-                attachmentUrl,
-                attachmentFileName,
-                eventType: 'comment' // برای تفکیک کامنت از رویدادهای دیگر
-            };
-
-            const newStatus = document.getElementById('request-status').value;
-            const updatedThread = [...(request.thread || []), newThreadItem];
-
-            const requestRef = doc(db, `artifacts/${appId}/public/data/requests`, requestId);
-            await updateDoc(requestRef, {
-                status: newStatus,
-                thread: updatedThread,
-                lastUpdatedAt: serverTimestamp() // برای نوتیفیکیشن‌های آینده
-            });
-            
-            showToast("پاسخ شما با موفقیت ثبت شد.");
-            closeModal(mainModal, mainModalContainer);
-        } catch (error) {
-            console.error("Error processing request:", error);
-            showToast("خطا در ثبت پاسخ.", "error");
-            saveBtn.disabled = false;
-            saveBtn.innerText = 'ثبت پاسخ';
-        }
-    });
-};
-// این تابع کاملاً جدید را به js/main.js اضافه کنید
-// در فایل js/main.js
-// کل این تابع را با نسخه جدید جایگزین کنید
-const showProcessReminderForm = (reminderId) => {
-    const reminder = state.reminders.find(r => r.firestoreId === reminderId);
-    if (!reminder) return showToast("یادآور یافت نشد.", "error");
-
-    modalTitle.innerText = `پردازش یادآور: ${reminder.type}`;
-    modalContent.innerHTML = `
-        <form id="process-reminder-form" class="space-y-4">
-            <p class="text-sm border-b pb-3"><strong>موضوع:</strong> ${reminder.text}</p>
-            <div>
-                <label class="block font-medium mb-1">تغییر وضعیت به:</label>
-                <select id="reminder-status" class="w-full p-2 border rounded-md bg-white">
-                    <option value="جدید" ${reminder.status === 'جدید' ? 'selected' : ''}>جدید</option>
-                    <option value="در حال انجام" ${reminder.status === 'در حال انجام' ? 'selected' : ''}>در حال انجام</option>
-                    <option value="انجام شده" ${reminder.status === 'انجام شده' ? 'selected' : ''}>انجام شده</option>
-                </select>
-            </div>
-            <div>
-                <label class="block font-medium mb-1">یادداشت پردازش (این یادداشت در داشبورد برای سایر مدیران قابل مشاهده است)</label>
-                <textarea id="processing-notes" rows="4" class="w-full p-2 border rounded-md">${reminder.processingNotes || ''}</textarea>
-            </div>
-            <div class="pt-4 flex justify-end">
-                <button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">ذخیره تغییرات</button>
-            </div>
-        </form>
-    `;
-    openModal(mainModal, mainModalContainer);
-
-    document.getElementById('process-reminder-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        try {
-            const reminderRef = doc(db, `artifacts/${appId}/public/data/reminders`, reminderId);
-            await updateDoc(reminderRef, {
-                status: document.getElementById('reminder-status').value,
-                processingNotes: document.getElementById('processing-notes').value,
-            });
-            showToast("وضعیت یادآور با موفقیت بروزرسانی شد.");
-            closeModal(mainModal, mainModalContainer);
-        } catch (error) {
-            console.error("Error updating reminder:", error);
-            showToast("خطا در بروزرسانی یادآور.", "error");
-        }
-    });
-};
-// این تابع جدید را به js/main.js اضافه کنید
-
-// در فایل js/main.js
-// کل این تابع را با نسخه جدید جایگزین کنید
-
-// در فایل js/main.js
-// کل این تابع را با نسخه جدید جایگزین کنید
-
-// در فایل js/main.js
-// کل این تابع را با نسخه جدید جایگزین کنید
-
-const showNewRequestForm = (employee) => {
-    modalTitle.innerText = 'ثبت درخواست جدید';
-    modalContent.innerHTML = `
-        <form id="new-request-form" class="space-y-4">
-            <div>
-                <label class="block font-medium mb-1">نوع درخواست</label>
-                <select id="request-type" class="w-full p-2 border rounded-md bg-white" required>
-                    <option value="درخواست مرخصی">درخواست مرخصی</option>
-                    <option value="گواهی اشتغال به کار">گواهی اشتغال به کار</option>
-                    <option value="مساعده حقوق">مساعده حقوق</option>
-                    <option value="سایر">سایر موارد</option>
-                </select>
-            </div>
-
-            <div id="leave-request-fields" class="space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block font-medium mb-1">تاریخ شروع</label>
-                        <input type="text" id="leave-start-date" class="w-full p-2 border rounded-md">
-                    </div>
-                    <div>
-                        <label class="block font-medium mb-1">تاریخ پایان</label>
-                        <input type="text" id="leave-end-date" class="w-full p-2 border rounded-md">
-                    </div>
-                </div>
-                 <div id="leave-duration" class="text-sm text-center font-semibold text-blue-600 bg-blue-50 p-2 rounded-md hidden"></div>
-            </div>
-
-            <div id="generic-request-fields">
-                <label class="block font-medium mb-1">جزئیات</label>
-                <textarea id="request-details" rows="5" class="w-full p-2 border rounded-md"></textarea>
-            </div>
-
-            <div class="pt-4 flex justify-end">
-                <button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">ارسال درخواست</button>
-            </div>
-        </form>
-    `;
-    openModal(mainModal, mainModalContainer);
-
-    // --- منطق جدید برای مدیریت فرم هوشمند ---
-    const requestTypeSelect = document.getElementById('request-type');
-    const leaveFields = document.getElementById('leave-request-fields');
-    const genericFields = document.getElementById('generic-request-fields');
-    const leaveStartDate = document.getElementById('leave-start-date');
-    const leaveEndDate = document.getElementById('leave-end-date');
-    const leaveDurationDiv = document.getElementById('leave-duration');
-
-    const toggleFormFields = () => {
-        if (requestTypeSelect.value === 'درخواست مرخصی') {
-            leaveFields.style.display = 'block';
-            genericFields.style.display = 'none';
-            document.getElementById('request-details').required = false;
-            leaveStartDate.required = true;
-            leaveEndDate.required = true;
-        } else {
-            leaveFields.style.display = 'none';
-            genericFields.style.display = 'block';
-            document.getElementById('request-details').required = true;
-            leaveStartDate.required = false;
-            leaveEndDate.required = false;
-        }
-    };
-
-    requestTypeSelect.addEventListener('change', toggleFormFields);
-
-    // فعال‌سازی تقویم‌های شمسی
-    activatePersianDatePicker('leave-start-date');
-    activatePersianDatePicker('leave-end-date');
-
-    // محاسبه خودکار تعداد روزهای مرخصی
-    $('#leave-start-date, #leave-end-date').on('change', function() {
-        const startVal = persianToEnglishDate($('#leave-start-date').val());
-        const endVal = persianToEnglishDate($('#leave-end-date').val());
-
-        if (startVal && endVal) {
-            const startDate = new Date(startVal);
-            const endDate = new Date(endVal);
-            if (endDate >= startDate) {
-                const duration = Math.round((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
-                leaveDurationDiv.textContent = `مجموع: ${duration} روز`;
-                leaveDurationDiv.classList.remove('hidden');
-            } else {
-                leaveDurationDiv.classList.add('hidden');
-            }
-        }
-    });
-
-    toggleFormFields(); // اجرای اولیه برای تنظیم فرم
-
-  // در فایل js/main.js، داخل تابع showNewRequestForm
-// کل این بلوک addEventListener را با نسخه جدید جایگزین کنید
-
-document.getElementById('new-request-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const requestType = document.getElementById('request-type').value;
-
-    let requestDataPayload = {}; // داده‌های اختصاصی هر نوع درخواست (مثل تاریخ شروع و پایان)
-    let requestDetailsText = document.getElementById('request-details').value;
-
-    // ۱. اگر نوع درخواست "مرخصی" بود، داده‌های مربوط به آن را بخوان
-    if (requestType === 'درخواست مرخصی') {
-        const startDateInput = document.getElementById('leave-start-date');
-        const endDateInput = document.getElementById('leave-end-date');
-        const startDate = persianToEnglishDate(startDateInput.value);
-        const endDate = persianToEnglishDate(endDateInput.value);
-
-        if (!startDate || !endDate || new Date(endDate) < new Date(startDate)) {
-            showToast("لطفاً تاریخ شروع و پایان مرخصی را به درستی وارد کنید.", "error");
-            return;
-        }
-        const duration = Math.round((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24)) + 1;
-        
-        requestDataPayload = { startDate, endDate, duration };
-        // یک متن جزئیات کامل و خوانا برای نمایش به ادمین می‌سازیم
-        requestDetailsText = `درخواست مرخصی از تاریخ ${startDateInput.value} تا ${endDateInput.value} (مجموع: ${duration} روز)`;
-    }
-    
-    // ۲. قوانین واگذاری هوشمند را اعمال کن (این منطق بدون تغییر است)
-    let assignedUid = null;
-    const applicableRule = (state.assignmentRules || []).find(rule => rule.itemTypes?.includes(requestType));
-    if (applicableRule) {
-        assignedUid = applicableRule.assigneeUid;
-    } else {
-        const defaultRule = (state.assignmentRules || []).find(rule => rule.firestoreId === '_default');
-        if (defaultRule) { assignedUid = defaultRule.assigneeUid; }
-    }
-
-    // ۳. آبجکت نهایی داده برای ذخیره در دیتابیس را بساز
-    const finalRequestData = {
-        uid: employee.uid,
-        employeeId: employee.id,
-        employeeName: employee.name,
-        requestType: requestType,
-        details: requestDetailsText,
-        ...requestDataPayload, // اضافه کردن داده‌های اختصاصی مرخصی در اینجا
-        status: 'درحال بررسی',
-        createdAt: serverTimestamp(),
-        assignedTo: assignedUid,
-        isReadByAssignee: false
-    };
-
-    // ۴. داده‌ها را در دیتابیس ذخیره کن
-    try {
-        await addDoc(collection(db, `artifacts/${appId}/public/data/requests`), finalRequestData);
-        showToast("درخواست شما با موفقیت ثبت شد.");
-        closeModal(mainModal, mainModalContainer);
-        // نمایش فوری لیست درخواست‌ها بدون رفرش صفحه
-        const requestsNav = document.querySelector('#employee-portal-nav .nav-item[href="#requests"]');
-        if (requestsNav) {
-            document.querySelectorAll('#employee-portal-nav .nav-item').forEach(item => item.classList.remove('active'));
-            requestsNav.classList.add('active');
-        }
-        renderEmployeePortalPage('requests', employee);
-    } catch (error) {
-        console.error("Error submitting request:", error);
-        showToast("خطا در ثبت درخواست.", "error");
-    }
-});
-};
-        
         const deleteDocument = async (emp, index) => {
             showConfirmationModal("حذف مدرک", "آیا از حذف این مدرک مطمئن هستید؟", async () => {
                 let updatedDocs = [...(emp.documents || [])];
@@ -5623,150 +5019,151 @@ document.getElementById('new-request-form').addEventListener('submit', async (e)
             });
         };
 
-       const showPerformanceForm = (emp, reviewIndex = null) => {
-    const isEditing = reviewIndex !== null;
-    const review = isEditing ? emp.performanceHistory[reviewIndex] : {};
-    modalTitle.innerText = isEditing ? `ویرایش ارزیابی عملکرد برای ${emp.name}` : `ثبت ارزیابی عملکرد جدید`;
-    modalContent.innerHTML = `
-        <form id="performance-form" class="space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div><label class="block font-medium">تاریخ ارزیابی</label><input type="text" id="perf-date" class="w-full p-2 border rounded-md" required></div>
-                <div><label class="block font-medium">نام ارزیاب</label><input type="text" id="perf-reviewer" value="${review.reviewer || ''}" class="w-full p-2 border rounded-md" required></div>
-                <div class="md:col-span-2"><label class="block font-medium">امتیاز کلی (۱ تا ۵)</label><input type="number" step="0.1" min="0" max="5" id="perf-score" value="${review.overallScore || ''}" class="w-full p-2 border rounded-md" required></div>
-                <div class="md:col-span-2"><label class="block font-medium">نقاط قوت</label><textarea id="perf-strengths" rows="3" class="w-full p-2 border rounded-md">${review.strengths || ''}</textarea></div>
-                <div class="md:col-span-2"><label class="block font-medium">زمینه‌های قابل بهبود</label><textarea id="perf-improvements" rows="3" class="w-full p-2 border rounded-md">${review.areasForImprovement || ''}</textarea></div>
-            </div>
-            <div class="pt-6 flex justify-end gap-4">
-                <button type="button" id="back-to-profile-perf" class="bg-gray-500 text-white py-2 px-6 rounded-md hover:bg-gray-600">بازگشت</button>
-                <button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">ذخیره</button>
-            </div>
-        </form>
-    `;
+        const showPerformanceForm = (emp, reviewIndex = null) => {
+            const isEditing = reviewIndex !== null;
+            const review = isEditing ? emp.performanceHistory[reviewIndex] : {};
+            modalTitle.innerText = isEditing ? `ویرایش ارزیابی عملکرد برای ${emp.name}` : `ثبت ارزیابی عملکرد جدید`;
+            modalContent.innerHTML = `
+                <form id="performance-form" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><label class="block font-medium">تاریخ ارزیابی</label><input type="text" id="perf-date" class="w-full p-2 border rounded-md" required></div>
+                        <div><label class="block font-medium">نام ارزیاب</label><input type="text" id="perf-reviewer" value="${review.reviewer || ''}" class="w-full p-2 border rounded-md" required></div>
+                        <div class="md:col-span-2"><label class="block font-medium">امتیاز کلی (۱ تا ۵)</label><input type="number" step="0.1" min="0" max="5" id="perf-score" value="${review.overallScore || ''}" class="w-full p-2 border rounded-md" required></div>
+                        <div class="md:col-span-2"><label class="block font-medium">نقاط قوت</label><textarea id="perf-strengths" rows="3" class="w-full p-2 border rounded-md">${review.strengths || ''}</textarea></div>
+                        <div class="md:col-span-2"><label class="block font-medium">زمینه‌های قابل بهبود</label><textarea id="perf-improvements" rows="3" class="w-full p-2 border rounded-md">${review.areasForImprovement || ''}</textarea></div>
+                    </div>
+                    <div class="pt-6 flex justify-end gap-4">
+                        <button type="button" id="back-to-profile-perf" class="bg-gray-500 text-white py-2 px-6 rounded-md hover:bg-gray-600">بازگشت</button>
+                        <button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">ذخیره</button>
+                    </div>
+                </form>
+            `;
 
-    activatePersianDatePicker('perf-date', review.reviewDate || new Date());
+            activatePersianDatePicker('perf-date', review.reviewDate || new Date());
 
-    document.getElementById('back-to-profile-perf').addEventListener('click', () => viewEmployeeProfile(emp.firestoreId));
-    document.getElementById('performance-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const gregorianDate = persianToEnglishDate(document.getElementById('perf-date').value);
-        if (!gregorianDate) {
-            showToast("فرمت تاریخ شمسی صحیح نیست.", "error");
-            return;
-        }
-        const newReview = {
-            reviewDate: gregorianDate,
-            reviewer: document.getElementById('perf-reviewer').value,
-            overallScore: parseFloat(document.getElementById('perf-score').value),
-            strengths: document.getElementById('perf-strengths').value,
-            areasForImprovement: document.getElementById('perf-improvements').value,
+            document.getElementById('back-to-profile-perf').addEventListener('click', () => viewEmployeeProfile(emp.firestoreId));
+            document.getElementById('performance-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const gregorianDate = persianToEnglishDate(document.getElementById('perf-date').value);
+                if (!gregorianDate) {
+                    showToast("فرمت تاریخ شمسی صحیح نیست.", "error");
+                    return;
+                }
+                const newReview = {
+                    reviewDate: gregorianDate,
+                    reviewer: document.getElementById('perf-reviewer').value,
+                    overallScore: parseFloat(document.getElementById('perf-score').value),
+                    strengths: document.getElementById('perf-strengths').value,
+                    areasForImprovement: document.getElementById('perf-improvements').value,
+                };
+                let updatedHistory = [...(emp.performanceHistory || [])];
+                if (isEditing) {
+                    updatedHistory[reviewIndex] = newReview;
+                } else {
+                    updatedHistory.push(newReview);
+                }
+                try {
+                    const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
+                    await updateDoc(docRef, { performanceHistory: updatedHistory });
+                    showToast("ارزیابی عملکرد با موفقیت ذخیره شد.");
+                    viewEmployeeProfile(emp.firestoreId);
+                } catch (error) {
+                    console.error("Error saving performance review:", error);
+                    showToast("خطا در ذخیره ارزیابی.", "error");
+                }
+            });
         };
-        let updatedHistory = [...(emp.performanceHistory || [])];
-        if (isEditing) {
-            updatedHistory[reviewIndex] = newReview;
-        } else {
-            updatedHistory.push(newReview);
-        }
-        try {
-            const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
-            await updateDoc(docRef, { performanceHistory: updatedHistory });
-            showToast("ارزیابی عملکرد با موفقیت ذخیره شد.");
-            viewEmployeeProfile(emp.firestoreId);
-        } catch (error) {
-            console.error("Error saving performance review:", error);
-            showToast("خطا در ذخیره ارزیابی.", "error");
-        }
-    });
-};
 
-      const showCareerPathForm = (emp) => {
-    modalTitle.innerText = `ثبت رویداد شغلی برای ${emp.name}`;
-    modalContent.innerHTML = `
-        <form id="career-path-form" class="space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div><label class="block font-medium">تاریخ</label><input type="text" id="career-date" class="w-full p-2 border rounded-md" required></div>
-                <div><label class="block font-medium">نوع رویداد</label><select id="career-type" class="w-full p-2 border rounded-md"><option value="ترفیع">ترفیع</option><option value="جابجایی افقی">جابجایی افقی</option><option value="تغییر سمت">تغییر سمت</option></select></div>
-                <div><label class="block font-medium">سمت جدید</label><input type="text" id="career-title" class="w-full p-2 border rounded-md" required></div>
-                <div><label class="block font-medium">دپارتمان جدید</label><input type="text" id="career-department" value="${emp.department}" class="w-full p-2 border rounded-md" required></div>
-            </div>
-            <div class="pt-6 flex justify-end gap-4">
-                <button type="button" id="back-to-profile-career" class="bg-gray-500 text-white py-2 px-6 rounded-md hover:bg-gray-600">بازگشت</button>
-                <button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">ثبت</button>
-            </div>
-        </form>
-    `;
+        const showCareerPathForm = (emp) => {
+            modalTitle.innerText = `ثبت رویداد شغلی برای ${emp.name}`;
+            modalContent.innerHTML = `
+                <form id="career-path-form" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><label class="block font-medium">تاریخ</label><input type="text" id="career-date" class="w-full p-2 border rounded-md" required></div>
+                        <div><label class="block font-medium">نوع رویداد</label><select id="career-type" class="w-full p-2 border rounded-md"><option value="ترفیع">ترفیع</option><option value="جابجایی افقی">جابجایی افقی</option><option value="تغییر سمت">تغییر سمت</option></select></div>
+                        <div><label class="block font-medium">سمت جدید</label><input type="text" id="career-title" class="w-full p-2 border rounded-md" required></div>
+                        <div><label class="block font-medium">دپارتمان جدید</label><input type="text" id="career-department" value="${emp.department}" class="w-full p-2 border rounded-md" required></div>
+                    </div>
+                    <div class="pt-6 flex justify-end gap-4">
+                        <button type="button" id="back-to-profile-career" class="bg-gray-500 text-white py-2 px-6 rounded-md hover:bg-gray-600">بازگشت</button>
+                        <button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">ثبت</button>
+                    </div>
+                </form>
+            `;
 
-    activatePersianDatePicker('career-date', new Date());
+            activatePersianDatePicker('career-date', new Date());
 
-    document.getElementById('back-to-profile-career').addEventListener('click', () => viewEmployeeProfile(emp.firestoreId));
-    document.getElementById('career-path-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const gregorianDate = persianToEnglishDate(document.getElementById('career-date').value);
-         if (!gregorianDate) {
-            showToast("فرمت تاریخ شمسی صحیح نیست.", "error");
-            return;
-        }
-        const newEntry = {
-            date: gregorianDate,
-            type: document.getElementById('career-type').value,
-            title: document.getElementById('career-title').value,
-            department: document.getElementById('career-department').value,
+            document.getElementById('back-to-profile-career').addEventListener('click', () => viewEmployeeProfile(emp.firestoreId));
+            document.getElementById('career-path-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const gregorianDate = persianToEnglishDate(document.getElementById('career-date').value);
+                 if (!gregorianDate) {
+                    showToast("فرمت تاریخ شمسی صحیح نیست.", "error");
+                    return;
+                }
+                const newEntry = {
+                    date: gregorianDate,
+                    type: document.getElementById('career-type').value,
+                    title: document.getElementById('career-title').value,
+                    department: document.getElementById('career-department').value,
+                };
+                const updatedPath = [...(emp.careerPath || []), newEntry];
+                try {
+                    const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
+                    await updateDoc(docRef, { careerPath: updatedPath });
+                    showToast("رویداد شغلی با موفقیت ثبت شد.");
+                    viewEmployeeProfile(emp.firestoreId);
+                } catch (error) {
+                    console.error("Error saving career path:", error);
+                    showToast("خطا در ثبت رویداد شغلی.", "error");
+                }
+            });
         };
-        const updatedPath = [...(emp.careerPath || []), newEntry];
-        try {
-            const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
-            await updateDoc(docRef, { careerPath: updatedPath });
-            showToast("رویداد شغلی با موفقیت ثبت شد.");
-            viewEmployeeProfile(emp.firestoreId);
-        } catch (error) {
-            console.error("Error saving career path:", error);
-            showToast("خطا در ثبت رویداد شغلی.", "error");
-        }
-    });
-};
+
         const deletePerformanceReview = async (emp, index) => {
-        showConfirmationModal("حذف سابقه عملکرد", "آیا از حذف این مورد مطمئن هستید؟", async () => {
-            const updatedHistory = emp.performanceHistory.filter((_, i) => i !== index);
-            try {
-                const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
-                await updateDoc(docRef, { performanceHistory: updatedHistory });
-                showToast("سابقه عملکرد حذف شد.");
-                viewEmployeeProfile(emp.firestoreId);
-            } catch (error) {
-                console.error("Error deleting performance review:", error);
-                showToast("خطا در حذف سابقه عملکرد.", "error");
-            }
-        });
-    };
+            showConfirmationModal("حذف سابقه عملکرد", "آیا از حذف این مورد مطمئن هستید؟", async () => {
+                const updatedHistory = emp.performanceHistory.filter((_, i) => i !== index);
+                try {
+                    const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
+                    await updateDoc(docRef, { performanceHistory: updatedHistory });
+                    showToast("سابقه عملکرد حذف شد.");
+                    viewEmployeeProfile(emp.firestoreId);
+                } catch (error) {
+                    console.error("Error deleting performance review:", error);
+                    showToast("خطا در حذف سابقه عملکرد.", "error");
+                }
+            });
+        };
 
-    const deleteDisciplinaryRecord = async (emp, index) => {
-        showConfirmationModal("حذف سابقه انضباطی", "آیا از حذف این مورد مطمئن هستید؟", async () => {
-            const updatedHistory = emp.disciplinaryHistory.filter((_, i) => i !== index);
-            try {
-                const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
-                await updateDoc(docRef, { disciplinaryHistory: updatedHistory });
-                showToast("سابقه انضباطی حذف شد.");
-                viewEmployeeProfile(emp.firestoreId);
-            } catch (error) {
-                console.error("Error deleting disciplinary record:", error);
-                showToast("خطا در حذف سابقه انضباطی.", "error");
-            }
-        });
-    };
+        const deleteDisciplinaryRecord = async (emp, index) => {
+            showConfirmationModal("حذف سابقه انضباطی", "آیا از حذف این مورد مطمئن هستید؟", async () => {
+                const updatedHistory = emp.disciplinaryHistory.filter((_, i) => i !== index);
+                try {
+                    const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
+                    await updateDoc(docRef, { disciplinaryHistory: updatedHistory });
+                    showToast("سابقه انضباطی حذف شد.");
+                    viewEmployeeProfile(emp.firestoreId);
+                } catch (error) {
+                    console.error("Error deleting disciplinary record:", error);
+                    showToast("خطا در حذف سابقه انضباطی.", "error");
+                }
+            });
+        };
 
-    const deleteCareerPathEntry = async (emp, index) => {
-        showConfirmationModal("حذف رویداد شغلی", "آیا از حذف این مورد مطمئن هستید؟", async () => {
-            const updatedPath = emp.careerPath.filter((_, i) => i !== index);
-            try {
-                const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
-                await updateDoc(docRef, { careerPath: updatedPath });
-                showToast("رویداد شغلی حذف شد.");
-                viewEmployeeProfile(emp.firestoreId);
-            } catch (error) {
-                console.error("Error deleting career path entry:", error);
-                showToast("خطا در حذف رویداد شغلی.", "error");
-            }
-        });
-    };
+        const deleteCareerPathEntry = async (emp, index) => {
+            showConfirmationModal("حذف رویداد شغلی", "آیا از حذف این مورد مطمئن هستید؟", async () => {
+                const updatedPath = emp.careerPath.filter((_, i) => i !== index);
+                try {
+                    const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
+                    await updateDoc(docRef, { careerPath: updatedPath });
+                    showToast("رویداد شغلی حذف شد.");
+                    viewEmployeeProfile(emp.firestoreId);
+                } catch (error) {
+                    console.error("Error deleting career path entry:", error);
+                    showToast("خطا در حذف رویداد شغلی.", "error");
+                }
+            });
+        };
 
         const setupSurveysPageListeners = () => {
             document.querySelectorAll('.create-survey-link-btn').forEach(button => {
@@ -5833,7 +5230,7 @@ document.getElementById('new-request-form').addEventListener('submit', async (e)
                 showToast("لینک با موفقیت کپی شد!");
             });
         };
-        
+
         const renderSurveyTakerPage = (surveyId) => {
             document.getElementById('dashboard-container').classList.add('hidden');
             const surveyTakerContainer = document.getElementById('survey-taker-container');
@@ -5918,24 +5315,20 @@ document.getElementById('new-request-form').addEventListener('submit', async (e)
                 }
             });
         };
-        
-        // --- INITIALIZATION ---
+
         document.addEventListener('DOMContentLoaded', () => {
             initializeFirebase();
             setupEventListeners();
             lucide.createIcons();
         });
-
-   
-   
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('./sw.js')
-            .then(registration => {
-              console.log('Service Worker registered: ', registration);
-            })
-            .catch(registrationError => {
-              console.log('Service Worker registration failed: ', registrationError);
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(registration => {
+                        console.log('Service Worker registered: ', registration);
+                    })
+                    .catch(registrationError => {
+                        console.log('Service Worker registration failed: ', registrationError);
+                    });
             });
-        });
-      }
+        }
