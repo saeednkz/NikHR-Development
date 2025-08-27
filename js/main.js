@@ -1204,7 +1204,6 @@ const showChangePasswordForm = () => {
     });
 }; 
     
-
         
         
 // این تابع را به main.js اضافه کنید
@@ -1333,7 +1332,6 @@ const updateNotificationBell = () => {
                 closeModal(mainModal, mainModalContainer);
             }
         });
-
         // --- Employee Portal Helpers (hoisted function declarations) ---
         // 1) Edit My Profile
         async function showMyProfileEditForm(employee) {
@@ -2134,7 +2132,6 @@ announcements: () => {
         </div>
     `;
 },
-
 // در فایل js/main.js، داخل آبجکت pages
 // کل این تابع را جایگزین نسخه فعلی کنید
 
@@ -2554,7 +2551,6 @@ const renderPage = (pageName) => {
         mainContent.innerHTML = `<div class="text-red-600 text-center p-8"><h1>خطا در نمایش صفحه</h1><p>${error.message}</p></div>`;
     }
 };
-
         // --- CHART RENDERING FUNCTIONS ---
         const destroyCharts = () => { Object.values(charts).forEach(chart => chart?.destroy()); charts = {}; };
 const renderDashboardCharts = () => {
@@ -2793,7 +2789,7 @@ const renderEngagementGauge = (canvasId, score) => {
        
         const renderSkillRadarChart = (canvasId, skills) => {
             const skillCtx = document.getElementById(canvasId)?.getContext('2d');
-            if (skillCtx) { if(charts[canvasId]) charts[canvasId].destroy(); charts[canvasId] = new Chart(skillCtx, { type: 'radar', data: { labels: Object.keys(skills), datasets: [{ label: 'سطح مهارت', data: Object.values(skills), fill: true, backgroundColor: 'rgba(59, 130, 246, 0.2)', borderColor: 'rgb(59, 130, 246)' }] }, options: { scales: { r: { suggestedMin: 0, suggestedMax: 5, ticks: { stepSize: 1 } } } } }); }
+            if (skillCtx) { if(charts[canvasId]) charts[canvasId].destroy(); charts[canvasId] = new Chart(skillCtx, { type: 'radar', data: { labels: Object.keys(skills), datasets: [{ label: 'سطح مهارت', data: Object.values(skills), fill: true, backgroundColor: 'rgba(59, 130, 246, 0.2)', borderColor: 'rgb(59, 130, 246)' }] }, options: { scales: { r: { suggestedMin: 0, suggestedMax: 5, ticks: { stepSize: 1 } } } }); }
         };
 
         // --- PAGE-SPECIFIC LOGIC ---
@@ -3266,7 +3262,6 @@ const setupTasksPageListeners = () => {
 // کل این تابع را با نسخه جدید جایگزین کنید
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
-
 const setupSettingsPageListeners = () => {
     const mainContentArea = document.getElementById('main-content');
     if (!mainContentArea) return;
@@ -4584,7 +4579,6 @@ const showAddUserForm = () => {
                 }
             });
         };
-        
         // --- [FIX START] ADDED TEAM HEALTH FORM ---
         const showTeamHealthForm = (team) => {
             modalTitle.innerText = `ویرایش معیارهای سلامت تیم ${team.name}`;
@@ -4651,471 +4645,114 @@ const showAddUserForm = () => {
             });
         };
         // --- [FIX END] ---
+const showDocumentForm = (emp, docIndex = null) => {
+    // fallback minimal handler: open details modal for processing
+    const employee = state.employees.find(e => e.uid === state.currentUser?.uid);
+    if (employee) {
+        showRequestDetailsModal(docIndex, employee);
+    } else {
+        showToast('برای پردازش، کاربر معتبر یافت نشد.', 'error');
+    }
+};
 
-// در فایل js/main.js
-// کل این تابع را با نسخه جدید جایگزین کنید
-
-const showEditPersonalInfoForm = (emp) => {
-    modalTitle.innerText = `ویرایش اطلاعات پرسنلی برای ${emp.name}`;
-    const info = emp.personalInfo || {};
+const renderSurveyTakerPage = (surveyId) => {
+    document.getElementById('dashboard-container').classList.add('hidden');
+    const surveyTakerContainer = document.getElementById('survey-taker-container');
+    surveyTakerContainer.classList.remove('hidden');
+    const survey = surveyTemplates[surveyId];
+    if (!survey) {
+        surveyTakerContainer.innerHTML = `<p>نظرسنجی یافت نشد.</p>`;
+        return;
+    }
     
-    modalContent.innerHTML = `
-        <form id="edit-personal-info-form" class="space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div>
-                    <label class="block font-medium">جنسیت</label>
-                    <select id="gender" class="w-full p-2 border rounded-md bg-white">
-                        <option value="">انتخاب کنید</option>
-                        <option value="مرد" ${emp.gender === 'مرد' ? 'selected' : ''}>مرد</option>
-                        <option value="زن" ${emp.gender === 'زن' ? 'selected' : ''}>زن</option>
-                    </select>
+    const urlParams = new URLSearchParams(window.location.hash.split('?')[1]);
+    const targetEmployeeId = urlParams.get('target');
+    const targetEmployee = targetEmployeeId ? state.employees.find(e => e.id === targetEmployeeId) : null;
+    
+    let title = survey.title;
+    if (targetEmployee) {
+        title += ` در مورد: ${targetEmployee.name}`;
+    }
+
+    const questionsHtml = survey.questions.map(q => {
+        let inputHtml = '';
+        switch (q.type) {
+            case 'rating_1_5':
+                inputHtml = `<div class="flex justify-center gap-2 flex-wrap">${[1, 2, 3, 4, 5].map(n => `<label class="cursor-pointer"><input type="radio" name="${q.id}" value="${n}" class="sr-only peer" required><div class="w-10 h-10 rounded-full flex items-center justify-center border-2 border-gray-300 peer-checked:bg-blue-600 peer-checked:text-white peer-checked:border-blue-600">${n}</div></label>`).join('')}</div>`;
+                break;
+            case 'yes_no':
+                inputHtml = `<div class="flex justify-center gap-4"><label class="cursor-pointer"><input type="radio" name="${q.id}" value="yes" class="sr-only peer" required><div class="px-6 py-2 rounded-md border-2 border-gray-300 peer-checked:bg-green-600 peer-checked:text-white peer-checked:border-green-600">بله</div></label><label class="cursor-pointer"><input type="radio" name="${q.id}" value="no" class="sr-only peer" required><div class="px-6 py-2 rounded-md border-2 border-gray-300 peer-checked:bg-red-600 peer-checked:text-white peer-checked:border-red-600">خیر</div></label></div>`;
+                break;
+            case 'choice':
+                inputHtml = `<div class="flex justify-center gap-4 flex-wrap">${(q.options || []).map(opt => `<label class="cursor-pointer"><input type="radio" name="${q.id}" value="${opt}" class="sr-only peer" required><div class="px-6 py-2 rounded-md border-2 border-gray-300 peer-checked:bg-blue-600 peer-checked:text-white peer-checked:border-blue-600">${opt}</div></label>`).join('')}</div>`;
+                break;
+            case 'open_text':
+                inputHtml = `<textarea name="${q.id}" rows="4" class="w-full p-2 border rounded-md" required></textarea>`;
+                break;
+        }
+        return `<div class="bg-white p-6 rounded-lg shadow-md"><p class="font-semibold mb-4 text-center">${q.text}</p>${inputHtml}</div>`;
+    }).join('');
+    surveyTakerContainer.innerHTML = `
+        <div class="min-h-screen bg-gray-100 p-4 sm:p-8 flex items-center justify-center">
+            <div class="w-full max-w-2xl space-y-6">
+                 <div class="text-center">
+                    <i data-lucide="shield-check" class="mx-auto w-12 h-12 text-blue-800"></i>
+                    <h1 class="text-2xl font-bold mt-2">${title}</h1>
+                    <p class="text-gray-600 mt-1">${survey.description}</p>
                 </div>
-                <div><label class="block font-medium">ایمیل</label><input type="email" id="personal-info-email" value="${info.email || ''}" class="w-full p-2 border rounded-md" readonly></div>
-                <div><label class="block font-medium">شماره موبایل</label><input type="tel" id="phone" value="${info.phone || ''}" class="w-full p-2 border rounded-md"></div>
-                <div><label class="block font-medium">شماره ثابت</label><input type="tel" id="landline" value="${info.landline || ''}" class="w-full p-2 border rounded-md"></div>
-                <div><label class="block font-medium">کد ملی</label><input type="text" id="nationalId" value="${info.nationalId || ''}" class="w-full p-2 border rounded-md"></div>
-                <div><label class="block font-medium">تاریخ تولد</label><input type="text" id="birthDate" class="w-full p-2 border rounded-md"></div>
-                <div><label class="block font-medium">وضعیت تاهل</label><select id="maritalStatus" class="w-full p-2 border rounded-md bg-white"><option value="مجرد" ${info.maritalStatus === 'مجرد' ? 'selected' : ''}>مجرد</option><option value="متاهل" ${info.maritalStatus === 'متاهل' ? 'selected' : ''}>متاهل</option></select></div>
-                <div class="md:col-span-2"><label class="block font-medium">مدرک تحصیلی</label><input type="text" id="education" value="${info.education || ''}" class="w-full p-2 border rounded-md"></div>
-                <div class="md:col-span-2"><label class="block font-medium">آدرس</label><input type="text" id="address" value="${info.address || ''}" class="w-full p-2 border rounded-md"></div>
-                <div><label class="block font-medium">کد پستی</label><input type="text" id="postalCode" value="${info.postalCode || ''}" class="w-full p-2 border rounded-md"></div>
-                <div><label class="block font-medium">وضعیت نظام وظیفه</label><input type="text" id="militaryStatus" value="${info.militaryStatus || ''}" class="w-full p-2 border rounded-md"></div>
-                <hr class="md:col-span-2 my-2">
-                <div><label class="block font-medium">نام مخاطب اضطراری</label><input type="text" id="emergencyContactName" value="${info.emergencyContactName || ''}" class="w-full p-2 border rounded-md"></div>
-                <div><label class="block font-medium">شماره مخاطب اضطراری</label><input type="tel" id="emergencyContactPhone" value="${info.emergencyContactPhone || ''}" class="w-full p-2 border rounded-md"></div>
+                <form id="survey-form" class="space-y-6">
+                    ${questionsHtml}
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <label for="employeeId" class="block text-sm font-medium text-gray-700 mb-2">کد پرسنلی (اختیاری)</label>
+                        <p class="text-xs text-gray-500 mb-2">برای ثبت پاسخ به صورت ناشناس، این فیلد را خالی بگذارید.</p>
+                        <input type="text" name="employeeId" class="w-full p-2 border rounded-md">
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-md font-semibold hover:bg-blue-700">ارسال پاسخ‌ها</button>
+                </form>
             </div>
-            <div class="pt-6 flex justify-end gap-4">
-                <button type="button" id="back-to-profile-personal" class="bg-slate-500 text-white py-2 px-6 rounded-md hover:bg-slate-600">بازگشت</button>
-                <button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">ذخیره</button>
-            </div>
-        </form>
+        </div>
     `;
-
-    activatePersianDatePicker('birthDate', info.birthDate);
-
-    document.getElementById('back-to-profile-personal').addEventListener('click', () => viewEmployeeProfile(emp.firestoreId));
+    lucide.createIcons();
     
-    document.getElementById('edit-personal-info-form').addEventListener('submit', async (e) => {
+    document.getElementById('survey-form').addEventListener('submit', async (e) => {
         e.preventDefault();
+        const formData = new FormData(e.target);
+        const answers = {};
+        survey.questions.forEach(q => {
+            answers[q.id] = formData.get(q.id);
+        });
+        const employeeId = formData.get('employeeId').trim() || 'anonymous';
         
-        const updatedInfo = {
-            email: document.getElementById('personal-info-email').value,
-            phone: document.getElementById('phone').value,
-            landline: document.getElementById('landline').value,
-            nationalId: document.getElementById('nationalId').value,
-            birthDate: persianToEnglishDate(document.getElementById('birthDate').value),
-            maritalStatus: document.getElementById('maritalStatus').value,
-            education: document.getElementById('education').value,
-            address: document.getElementById('address').value,
-            postalCode: document.getElementById('postalCode').value,
-            militaryStatus: document.getElementById('militaryStatus').value,
-            emergencyContactName: document.getElementById('emergencyContactName').value,
-            emergencyContactPhone: document.getElementById('emergencyContactPhone').value,
-        };
-
         try {
-            const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
-            await updateDoc(docRef, { 
-                personalInfo: updatedInfo,
-                gender: document.getElementById('gender').value 
+            await addDoc(collection(db, `artifacts/${appId}/public/data/surveyResponses`), {
+                surveyId,
+                employeeId,
+                targetEmployeeId,
+                answers,
+                submittedAt: serverTimestamp()
             });
-            showToast("اطلاعات پرسنلی به‌روزرسانی شد.");
-            
-            // بروزرسانی state محلی و نمایش مجدد پروفایل
-            const updatedEmp = { ...emp, personalInfo: updatedInfo, gender: document.getElementById('gender').value };
-            state.employees = state.employees.map(e => e.firestoreId === emp.firestoreId ? updatedEmp : e);
-            viewEmployeeProfile(emp.firestoreId);
-            
+            surveyTakerContainer.innerHTML = `<div class="min-h-screen flex items-center justify-center text-center"><div class="bg-white p-10 rounded-lg shadow-xl"><i data-lucide="check-circle" class="mx-auto w-16 h-16 text-green-500"></i><h2 class="mt-4 text-2xl font-bold">از شما متشکریم!</h2><p class="mt-2 text-gray-600">پاسخ‌های شما با موفقیت ثبت شد.</p></div></div>`;
+            lucide.createIcons();
         } catch (error) {
-            console.error("Error updating personal info:", error);
-            showToast("خطا در به‌روزرسانی اطلاعات.", "error");
+            console.error("Error submitting survey:", error);
+            showToast("خطا در ارسال نظرسنجی.", "error");
         }
     });
-};  
-const showDisciplinaryForm = (emp) => {
-        modalTitle.innerText = `ثبت مورد انضباطی برای ${emp.name}`;
-        modalContent.innerHTML = `
-            <form id="disciplinary-form" class="space-y-4">
-                <div><label class="block font-medium">نوع</label><select id="disciplinary-type" class="w-full p-2 border border-slate-300 rounded-lg"><option value="تشویق">تشویق</option><option value="تذکر">تذکر</option></select></div>
-                <div><label class="block font-medium">تاریخ</label><input type="text" id="disciplinary-date" class="w-full p-2 border border-slate-300 rounded-lg" required></div>
-                <div><label class="block font-medium">دلیل</label><textarea id="disciplinary-reason" rows="3" class="w-full p-2 border border-slate-300 rounded-lg" required></textarea></div>
-                <div>
-                    <label class="block font-medium">آپلود فایل ضمیمه (اختیاری - حداکثر ۵ مگابایت)</label>
-                    <input type="file" id="disciplinary-file" class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100"/>
-                </div>
-                <div class="pt-6 flex justify-end gap-4"><button type="button" id="back-to-profile-disciplinary" class="bg-slate-500 text-white py-2 px-6 rounded-lg hover:bg-slate-600">بازگشت</button><button type="submit" id="submit-disciplinary-btn" class="bg-indigo-500 text-white py-2 px-6 rounded-lg hover:bg-indigo-600">ثبت</button></div>
-            </form>`;
-        
-        activatePersianDatePicker('disciplinary-date', new Date());
-        document.getElementById('back-to-profile-disciplinary').addEventListener('click', () => viewEmployeeProfile(emp.firestoreId));
-        
-        document.getElementById('disciplinary-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const submitBtn = document.getElementById('submit-disciplinary-btn');
-            submitBtn.disabled = true;
-            submitBtn.innerText = 'در حال ثبت...';
+};
 
-            const file = document.getElementById('disciplinary-file').files[0];
-            let fileUrl = '';
-            let fileName = '';
-
-            if (file && file.size > 5 * 1024 * 1024) { // 5 MB
-                showToast("حجم فایل نباید بیشتر از ۵ مگابایت باشد.", "error");
-                submitBtn.disabled = false;
-                submitBtn.innerText = 'ثبت';
-                return;
-            }
-
-            try {
-                if (file) {
-                    const filePath = `disciplinary/${emp.id}/${Date.now()}_${file.name}`;
-                    const storageRef = ref(storage, filePath);
-                    const snapshot = await uploadBytes(storageRef, file);
-                    fileUrl = await getDownloadURL(snapshot.ref);
-                    fileName = file.name;
-                }
-
-                const gregorianDate = persianToEnglishDate(document.getElementById('disciplinary-date').value);
-                if (!gregorianDate) {
-                    showToast("فرمت تاریخ شمسی صحیح نیست.", "error");
-                    submitBtn.disabled = false;
-                    submitBtn.innerText = 'ثبت';
-                    return;
-                }
-
-                const newRecord = {
-                    type: document.getElementById('disciplinary-type').value,
-                    date: gregorianDate,
-                    reason: document.getElementById('disciplinary-reason').value,
-                    fileUrl: fileUrl,
-                    fileName: fileName
-                };
-                const updatedHistory = [...(emp.disciplinaryHistory || []), newRecord];
-                
-                const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
-                await updateDoc(docRef, { disciplinaryHistory: updatedHistory });
-                
-                closeModal(mainModal, mainModalContainer);
-                showToast("مورد انضباطی با موفقیت ثبت شد.");
-                viewEmployeeProfile(emp.firestoreId);
-            } catch (error) {
-                console.error("Error adding disciplinary record:", error);
-                showToast("خطا در ثبت مورد انضباطی.", "error");
-                if(submitBtn) {
-                   submitBtn.disabled = false;
-                   submitBtn.innerText = 'ثبت';
-                }
-            }
-        });
-    };
- const showContractForm = (emp, contractIndex = null) => {
-        const isEditing = contractIndex !== null;
-        const contract = isEditing ? emp.contractHistory[contractIndex] : {};
-        modalTitle.innerText = isEditing ? `ویرایش قرارداد برای ${emp.name}` : `ثبت قرارداد جدید برای ${emp.name}`;
-        modalContent.innerHTML = `
-            <form id="contract-form" class="space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div><label class="block font-medium">تاریخ شروع</label><input type="text" id="contract-start" class="w-full p-2 border border-slate-300 rounded-lg" required></div>
-                    <div><label class="block font-medium">تاریخ پایان</label><input type="text" id="contract-end" class="w-full p-2 border border-slate-300 rounded-lg" required></div>
-                    <div><label class="block font-medium">حقوق ناخالص (ریال)</label><input type="number" id="contract-gross" value="${contract.grossSalary || ''}" class="w-full p-2 border border-slate-300 rounded-lg"></div>
-                    <div><label class="block font-medium">حقوق خالص (ریال)</label><input type="number" id="contract-net" value="${contract.netSalary || ''}" class="w-full p-2 border border-slate-300 rounded-lg"></div>
-                    <div><label class="block font-medium">مبلغ سفته (ریال)</label><input type="number" id="contract-promissory" value="${contract.promissoryNote || ''}" class="w-full p-2 border border-slate-300 rounded-lg"></div>
-                    <div class="md:col-span-2">
-                        <label class="block font-medium">آپلود فایل قرارداد (اختیاری - حداکثر ۵ مگابایت)</label>
-                        <input type="file" id="contract-file-upload" class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100"/>
-                        ${contract.fileName ? `<p class="text-xs text-slate-500 mt-2">فایل فعلی: ${contract.fileName} (برای تغییر، فایل جدید را انتخاب کنید)</p>` : ''}
-                    </div>
-                </div>
-                <div class="pt-6 flex justify-end gap-4"><button type="button" id="back-to-profile-contract" class="bg-slate-500 text-white py-2 px-6 rounded-lg hover:bg-slate-600">بازگشت</button><button type="submit" id="submit-contract-btn" class="bg-indigo-500 text-white py-2 px-6 rounded-lg hover:bg-indigo-600">ذخیره</button></div>
-            </form>`;
-
-        activatePersianDatePicker('contract-start', contract.startDate);
-        activatePersianDatePicker('contract-end', contract.endDate);
-
-        document.getElementById('back-to-profile-contract').addEventListener('click', () => viewEmployeeProfile(emp.firestoreId));
-        
-        document.getElementById('contract-form').addEventListener('submit', async (e) => { 
-            e.preventDefault(); 
-            const submitBtn = document.getElementById('submit-contract-btn');
-            submitBtn.disabled = true;
-            submitBtn.innerText = 'در حال ذخیره...';
-            
-            const file = document.getElementById('contract-file-upload').files[0];
-            let fileUrl = contract.fileUrl || '';
-            let fileName = contract.fileName || '';
-
-            if (file && file.size > 5 * 1024 * 1024) { // 5 MB
-                showToast("حجم فایل نباید بیشتر از ۵ مگابایت باشد.", "error");
-                submitBtn.disabled = false;
-                submitBtn.innerText = 'ذخیره';
-                return;
-            }
-
-            try {
-                 if (file) {
-                    const filePath = `contracts/${emp.id}/${Date.now()}_${file.name}`;
-                    const storageRef = ref(storage, filePath);
-                    const snapshot = await uploadBytes(storageRef, file);
-                    fileUrl = await getDownloadURL(snapshot.ref);
-                    fileName = file.name;
-                }
-                
-                const gregorianStart = persianToEnglishDate(document.getElementById('contract-start').value);
-                const gregorianEnd = persianToEnglishDate(document.getElementById('contract-end').value);
-
-                if (!gregorianStart || !gregorianEnd) {
-                    showToast("فرمت تاریخ شمسی صحیح نیست.", "error");
-                    submitBtn.disabled = false;
-                    submitBtn.innerText = 'ذخیره';
-                    return;
-                }
-
-                const newContract = { 
-                    startDate: gregorianStart, 
-                    endDate: gregorianEnd, 
-                    grossSalary: Number(document.getElementById('contract-gross').value), 
-                    netSalary: Number(document.getElementById('contract-net').value), 
-                    promissoryNote: Number(document.getElementById('contract-promissory').value), 
-                    fileName: fileName,
-                    fileUrl: fileUrl
-                }; 
-                let updatedHistory = [...(emp.contractHistory || [])]; 
-                if(isEditing) { 
-                    updatedHistory[contractIndex] = newContract; 
-                } else { 
-                    updatedHistory.push(newContract); 
-                } 
-                updatedHistory.sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
-                const latestContractEndDate = updatedHistory[0]?.endDate || null;
-
-                const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId); 
-                await updateDoc(docRef, { 
-                    contractHistory: updatedHistory,
-                    contractEndDate: latestContractEndDate
-                }); 
-                
-                closeModal(mainModal, mainModalContainer);
-                showToast("قرارداد با موفقیت ذخیره شد."); 
-                viewEmployeeProfile(emp.firestoreId); 
-            } catch (error) { 
-                console.error("Error saving contract record:", error); 
-                showToast("خطا در ثبت قرارداد.", "error"); 
-                if(submitBtn) {
-                   submitBtn.disabled = false;
-                   submitBtn.innerText = 'ذخیره';
-                }
-            } 
-        });
-    };
-        
-        const deleteContract = async (emp, index) => {
-            showConfirmationModal("حذف قرارداد", "آیا از حذف این سابقه قرارداد مطمئن هستید؟", async () => {
-                let updatedHistory = [...(emp.contractHistory || [])];
-                updatedHistory.splice(index, 1);
-                const latestContractEndDate = updatedHistory[0]?.endDate || null;
-                try {
-                    const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
-                    await updateDoc(docRef, { 
-                        contractHistory: updatedHistory,
-                        contractEndDate: latestContractEndDate
-                    });
-                    showToast("سابقه قرارداد حذف شد.");
-                    viewEmployeeProfile(emp.firestoreId);
-                } catch (error) {
-                    console.error("Error deleting contract:", error);
-                    showToast("خطا در حذف قرارداد.", "error");
-                }
+document.addEventListener('DOMContentLoaded', () => {
+    initializeFirebase();
+    setupEventListeners();
+    lucide.createIcons();
+});
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+            .then(registration => {
+                console.log('Service Worker registered: ', registration);
+            })
+            .catch(registrationError => {
+                console.log('Service Worker registration failed: ', registrationError);
             });
-        };
-const showDocumentForm = (emp, docIndex = null) => {
-        const isEditing = docIndex !== null;
-        const documentItem = isEditing ? emp.documents[docIndex] : {};
-        modalTitle.innerText = isEditing ? `ویرایش مدرک برای ${emp.name}` : `افزودن مدرک جدید برای ${emp.name}`;
-        
-        modalContent.innerHTML = `
-            <form id="document-form" class="space-y-4">
-                <div>
-                    <label class="block font-medium">نام مدرک</label>
-                    <input type="text" id="doc-name" value="${documentItem.name || ''}" class="w-full p-2 border border-slate-300 rounded-lg" required>
-                </div>
-                <div>
-                    <label class="block font-medium">تاریخ</label>
-                    <input type="text" id="doc-date" class="w-full p-2 border border-slate-300 rounded-lg" required>
-                </div>
-                <div>
-                    <label class="block font-medium">آپلود فایل (حداکثر ۵ مگابایت)</label>
-                    <input type="file" id="doc-file-upload" class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100"/>
-                    ${documentItem.fileName ? `<p class="text-xs text-slate-500 mt-2">فایل فعلی: ${documentItem.fileName} (برای تغییر، فایل جدید را انتخاب کنید)</p>` : ''}
-                </div>
-                <div class="pt-6 flex justify-end gap-4">
-                    <button type="button" id="back-to-profile-doc" class="bg-slate-500 text-white py-2 px-6 rounded-lg hover:bg-slate-600">بازگشت</button>
-                    <button type="submit" id="submit-doc-btn" class="bg-indigo-500 text-white py-2 px-6 rounded-lg hover:bg-indigo-600 shadow-md transition">ذخیره</button>
-                </div>
-            </form>`;
-        
-        activatePersianDatePicker('doc-date', documentItem.date || new Date());
-        
-        document.getElementById('back-to-profile-doc').addEventListener('click', () => viewEmployeeProfile(emp.firestoreId));
-        
-        document.getElementById('document-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const submitBtn = document.getElementById('submit-doc-btn');
-            submitBtn.disabled = true;
-            submitBtn.innerText = 'در حال ذخیره...';
-
-            const file = document.getElementById('doc-file-upload').files[0];
-            let fileUrl = documentItem.fileUrl || '';
-            let fileName = documentItem.fileName || '';
-
-            // --- بخش جدید: بررسی حجم فایل ---
-            if (file && file.size > 5 * 1024 * 1024) { // 5 MB
-                showToast("حجم فایل نباید بیشتر از ۵ مگابایت باشد.", "error");
-                submitBtn.disabled = false;
-                submitBtn.innerText = 'ذخیره';
-                return;
-            }
-
-            try {
-                if (file) {
-                    const filePath = `documents/${emp.id}/${Date.now()}_${file.name}`;
-                    const storageRef = ref(storage, filePath);
-                    const snapshot = await uploadBytes(storageRef, file);
-                    fileUrl = await getDownloadURL(snapshot.ref);
-                    fileName = file.name;
-                }
-
-                const gregorianDate = persianToEnglishDate(document.getElementById('doc-date').value);
-                if (!gregorianDate) {
-                    showToast("فرمت تاریخ شمسی صحیح نیست.", "error");
-                    submitBtn.disabled = false;
-                    submitBtn.innerText = 'ذخیره';
-                    return;
-                }
-
-                const newDoc = { name: document.getElementById('doc-name').value, date: gregorianDate, fileName: fileName, fileUrl: fileUrl };
-
-                let updatedDocs = [...(emp.documents || [])];
-                if (isEditing) {
-                    updatedDocs[docIndex] = newDoc;
-                } else {
-                    updatedDocs.push(newDoc);
-                }
-
-                const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
-                await updateDoc(docRef, { documents: updatedDocs });
-                
-                closeModal(mainModal, mainModalContainer);
-                showToast("مدرک با موفقیت ذخیره شد.");
-                viewEmployeeProfile(emp.firestoreId);
-
-            } catch (error) {
-                console.error("Error saving document:", error);
-                showToast("خطا در ثبت مدرک.", "error");
-                if (submitBtn) {
-                   submitBtn.disabled = false;
-                   submitBtn.innerText = 'ذخیره';
-                }
-            }
-        });
-    };
-        const renderSurveyTakerPage = (surveyId) => {
-            document.getElementById('dashboard-container').classList.add('hidden');
-            const surveyTakerContainer = document.getElementById('survey-taker-container');
-            surveyTakerContainer.classList.remove('hidden');
-            const survey = surveyTemplates[surveyId];
-            if (!survey) {
-                surveyTakerContainer.innerHTML = `<p>نظرسنجی یافت نشد.</p>`;
-                return;
-            }
-            
-            const urlParams = new URLSearchParams(window.location.hash.split('?')[1]);
-            const targetEmployeeId = urlParams.get('target');
-            const targetEmployee = targetEmployeeId ? state.employees.find(e => e.id === targetEmployeeId) : null;
-            
-            let title = survey.title;
-            if (targetEmployee) {
-                title += ` در مورد: ${targetEmployee.name}`;
-            }
-
-            const questionsHtml = survey.questions.map(q => {
-                let inputHtml = '';
-                switch (q.type) {
-                    case 'rating_1_5':
-                        inputHtml = `<div class="flex justify-center gap-2 flex-wrap">${[1, 2, 3, 4, 5].map(n => `<label class="cursor-pointer"><input type="radio" name="${q.id}" value="${n}" class="sr-only peer" required><div class="w-10 h-10 rounded-full flex items-center justify-center border-2 border-gray-300 peer-checked:bg-blue-600 peer-checked:text-white peer-checked:border-blue-600">${n}</div></label>`).join('')}</div>`;
-                        break;
-                    case 'yes_no':
-                        inputHtml = `<div class="flex justify-center gap-4"><label class="cursor-pointer"><input type="radio" name="${q.id}" value="yes" class="sr-only peer" required><div class="px-6 py-2 rounded-md border-2 border-gray-300 peer-checked:bg-green-600 peer-checked:text-white peer-checked:border-green-600">بله</div></label><label class="cursor-pointer"><input type="radio" name="${q.id}" value="no" class="sr-only peer" required><div class="px-6 py-2 rounded-md border-2 border-gray-300 peer-checked:bg-red-600 peer-checked:text-white peer-checked:border-red-600">خیر</div></label></div>`;
-                        break;
-                    case 'choice':
-                        inputHtml = `<div class="flex justify-center gap-4 flex-wrap">${(q.options || []).map(opt => `<label class="cursor-pointer"><input type="radio" name="${q.id}" value="${opt}" class="sr-only peer" required><div class="px-6 py-2 rounded-md border-2 border-gray-300 peer-checked:bg-blue-600 peer-checked:text-white peer-checked:border-blue-600">${opt}</div></label>`).join('')}</div>`;
-                        break;
-                    case 'open_text':
-                        inputHtml = `<textarea name="${q.id}" rows="4" class="w-full p-2 border rounded-md" required></textarea>`;
-                        break;
-                }
-                return `<div class="bg-white p-6 rounded-lg shadow-md"><p class="font-semibold mb-4 text-center">${q.text}</p>${inputHtml}</div>`;
-            }).join('');
-            surveyTakerContainer.innerHTML = `
-                <div class="min-h-screen bg-gray-100 p-4 sm:p-8 flex items-center justify-center">
-                    <div class="w-full max-w-2xl space-y-6">
-                         <div class="text-center">
-                            <i data-lucide="shield-check" class="mx-auto w-12 h-12 text-blue-800"></i>
-                            <h1 class="text-2xl font-bold mt-2">${title}</h1>
-                            <p class="text-gray-600 mt-1">${survey.description}</p>
-                        </div>
-                        <form id="survey-form" class="space-y-6">
-                            ${questionsHtml}
-                            <div class="bg-white p-6 rounded-lg shadow-md">
-                                <label for="employeeId" class="block text-sm font-medium text-gray-700 mb-2">کد پرسنلی (اختیاری)</label>
-                                <p class="text-xs text-gray-500 mb-2">برای ثبت پاسخ به صورت ناشناس، این فیلد را خالی بگذارید.</p>
-                                <input type="text" name="employeeId" class="w-full p-2 border rounded-md">
-                            </div>
-                            <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-md font-semibold hover:bg-blue-700">ارسال پاسخ‌ها</button>
-                        </form>
-                    </div>
-                </div>
-            `;
-            lucide.createIcons();
-            
-            document.getElementById('survey-form').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const formData = new FormData(e.target);
-                const answers = {};
-                survey.questions.forEach(q => {
-                    answers[q.id] = formData.get(q.id);
-                });
-                const employeeId = formData.get('employeeId').trim() || 'anonymous';
-                
-                try {
-                    await addDoc(collection(db, `artifacts/${appId}/public/data/surveyResponses`), {
-                        surveyId,
-                        employeeId,
-                        targetEmployeeId,
-                        answers,
-                        submittedAt: serverTimestamp()
-                    });
-                    surveyTakerContainer.innerHTML = `<div class="min-h-screen flex items-center justify-center text-center"><div class="bg-white p-10 rounded-lg shadow-xl"><i data-lucide="check-circle" class="mx-auto w-16 h-16 text-green-500"></i><h2 class="mt-4 text-2xl font-bold">از شما متشکریم!</h2><p class="mt-2 text-gray-600">پاسخ‌های شما با موفقیت ثبت شد.</p></div></div>`;
-                    lucide.createIcons();
-                } catch (error) {
-                    console.error("Error submitting survey:", error);
-                    showToast("خطا در ارسال نظرسنجی.", "error");
-                }
-            });
-        };
-
-        document.addEventListener('DOMContentLoaded', () => {
-            initializeFirebase();
-            setupEventListeners();
-            lucide.createIcons();
-        });
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js')
-                    .then(registration => {
-                        console.log('Service Worker registered: ', registration);
-                    })
-                    .catch(registrationError => {
-                        console.log('Service Worker registration failed: ', registrationError);
-                    });
-            });
-        }
+    });
+}
