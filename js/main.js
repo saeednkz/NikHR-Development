@@ -2378,17 +2378,6 @@ const viewTeamProfile = (teamId) => {
             renderPage(pageName);
         };
 
-        const router = () => {
-            const hash = window.location.hash;
-            if (hash.startsWith('#survey-taker')) {
-                const urlParams = new URLSearchParams(hash.split('?')[1]);
-                const surveyId = urlParams.get('id');
-                renderSurveyTakerPage(surveyId);
-            } else {
-                const pageName = hash.substring(1) || 'dashboard';
-                navigateTo(pageName);
-            }
-        };
 
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید و کامل جایگزین کنید
