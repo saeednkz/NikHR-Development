@@ -276,73 +276,92 @@ export const router = () => {
 
 // در فایل js/main.js
 // این تابع را جایگزین نسخه فعلی کنید
+// در فایل js/main.js
+// این تابع را نیز با نسخه جدید جایگزین کنید
 function renderBirthdaysWidget(currentEmployee) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-    const upcomingBirthdays = state.employees
-        .filter(emp => emp.firestoreId !== currentEmployee.firestoreId && emp.personalInfo?.birthDate)
-        .map(emp => {
-            const birthDate = new Date(emp.personalInfo.birthDate);
-            let nextBirthday = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
-            if (nextBirthday < today) {
-                nextBirthday.setFullYear(today.getFullYear() + 1);
-            }
-            return {
-                ...emp,
-                nextBirthday,
-                daysUntil: Math.ceil((nextBirthday - today) / (1000 * 60 * 60 * 24))
-            };
-        })
-        .filter(emp => emp.daysUntil >= 0 && emp.daysUntil <= 30) // تولدهای 30 روز آینده
-        .sort((a, b) => a.daysUntil - b.daysUntil);
+    const upcomingBirthdays = state.employees
+        .filter(emp => emp.firestoreId !== currentEmployee.firestoreId && emp.personalInfo?.birthDate)
+        .map(emp => {
+            const birthDate = new Date(emp.personalInfo.birthDate);
+            let nextBirthday = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
+            if (nextBirthday < today) {
+                nextBirthday.setFullYear(today.getFullYear() + 1);
+            }
+            return {
+                ...emp,
+                nextBirthday,
+                daysUntil: Math.ceil((nextBirthday - today) / (1000 * 60 * 60 * 24))
+            };
+        })
+        .filter(emp => emp.daysUntil >= 0 && emp.daysUntil <= 30)
+        .sort((a, b) => a.daysUntil - b.daysUntil);
 
-    if (upcomingBirthdays.length === 0) return '';
+    if (upcomingBirthdays.length === 0) return '';
 
-    const birthdayListHtml = upcomingBirthdays.map(emp => `
-        <div class="flex items-center justify-between py-2 border-b last:border-b-0 border-slate-100">
-            <div class="flex items-center gap-3">
-                <img src="${emp.avatar}" alt="${emp.name}" class="w-10 h-10 rounded-full object-cover">
-                <div>
-                    <p class="font-semibold text-sm text-slate-800">${emp.name}</p>
-                    <p class="text-xs text-slate-500">${toPersianDate(emp.nextBirthday)} (${emp.daysUntil === 0 ? 'امروز!' : `${emp.daysUntil} روز دیگر`})</p>
-                </div>
-            </div>
-            <button class="send-wish-btn text-sm bg-pink-500 text-white py-1 px-3 rounded-md hover:bg-pink-600" data-id="${emp.uid}" data-name="${emp.name}">تبریک</button>
-        </div>
-    `).join('');
+    const birthdayListHtml = upcomingBirthdays.map(emp => `
+        <div class="flex items-center justify-between p-3 hover:bg-slate-50 rounded-lg">
+            <div class="flex items-center gap-3">
+                <img src="${emp.avatar}" alt="${emp.name}" class="w-10 h-10 rounded-full object-cover">
+                <div>
+                    <p class="font-semibold text-sm text-slate-800">${emp.name}</p>
+                    <p class="text-xs text-slate-500">${toPersianDate(emp.nextBirthday)}</p>
+                </div>
+            </div>
+            <div class="text-center">
+                 <div class="text-sm font-bold ${emp.daysUntil === 0 ? 'text-green-600' : 'text-indigo-600'}">${emp.daysUntil === 0 ? 'امروز!' : `${emp.daysUntil}`}</div>
+                 <div class="text-xs text-slate-400">${emp.daysUntil > 0 ? 'روز دیگر' : ''}</div>
+            </div>
+        </div>
+    `).join('');
 
-    return `
-        <div class="card p-0">
-            <div class="card-header flex items-center gap-2">
-                <i data-lucide="cake" class="w-5 h-5 text-pink-500"></i>
-                <h3 class="font-semibold text-slate-800">تولدهای نزدیک</h3>
-            </div>
-            <div class="card-content">${birthdayListHtml}</div>
-        </div>
-    `;
+    return `
+        <div class="card p-0">
+            <div class="card-header flex items-center gap-2">
+                <i data-lucide="cake" class="w-5 h-5 text-pink-500"></i>
+                <h3 class="font-semibold text-slate-800">تولدهای نزدیک</h3>
+            </div>
+            <div class="card-content divide-y divide-slate-100">${birthdayListHtml}</div>
+        </div>
+    `;
 }
 
 // در فایل js/main.js
 // این تابع را نیز جایگزین نسخه فعلی کنید
+// در فایل js/main.js
+// این تابع را با نسخه جدید جایگزین کنید
 function renderMyBirthdayWishesWidget(employee) {
-    const today = new Date();
-    const birthDate = employee.personalInfo?.birthDate ? new Date(employee.personalInfo.birthDate) : null;
-    
-    if (!birthDate || birthDate.getMonth() !== today.getMonth() || birthDate.getDate() !== today.getDate()) {
-        return ''; // اگر امروز تولدش نبود، چیزی نمایش نده
-    }
+    const today = new Date();
+    const birthDate = employee.personalInfo?.birthDate ? new Date(employee.personalInfo.birthDate) : null;
+    
+    // اگر امروز تولد کارمند نیست، هیچ ویجتی نمایش نده
+    if (!birthDate || birthDate.getMonth() !== today.getMonth() || birthDate.getDate() !== today.getDate()) {
+        return '';
+    }
 
-    // این بخش پیام تبریک از طرف شرکت را نمایش می‌دهد
-    return `
-        <div class="card p-6 bg-gradient-to-br from-indigo-500 to-purple-600 text-white relative overflow-hidden">
-            <div class="absolute -right-10 -top-10 w-32 h-32 text-white/10"><i data-lucide="party-popper" class="w-32 h-32"></i></div>
-            <div class="relative z-10">
-                <h3 class="text-2xl font-bold">تولدت مبارک، ${employee.name}!</h3>
-                <p class="mt-2 text-indigo-200">تیم NikHR بهترین آرزوها را برای شما در سال جدید زندگی‌تان دارد.</p>
-            </div>
-        </div>
-    `;
+    const myWishes = (state.birthdayWishes || [])
+        .filter(wish => wish.targetUid === employee.uid)
+        .sort((a, b) => new Date(b.createdAt?.toDate()) - new Date(a.createdAt?.toDate()));
+
+    const wishesHtml = myWishes.map(wish => `
+        <div class="p-3 bg-white/20 rounded-lg backdrop-blur-sm mt-2">
+            <p class="text-sm text-white">${wish.message}</p>
+            <p class="text-xs text-indigo-200 font-semibold text-left mt-1">- ${wish.wisherName}</p>
+        </div>
+    `).join('');
+
+    return `
+        <div class="card p-6 bg-gradient-to-br from-indigo-500 to-purple-600 text-white relative overflow-hidden">
+            <div class="absolute -right-10 -top-10 w-32 h-32 text-white/10"><i data-lucide="party-popper" class="w-32 h-32"></i></div>
+            <div class="relative z-10">
+                <h3 class="text-2xl font-bold">تولدت مبارک، ${employee.name}!</h3>
+                <p class="mt-2 text-indigo-200">تیم NikHR بهترین آرزوها را برای شما دارد.</p>
+                ${myWishes.length > 0 ? `<div class="mt-4 border-t border-white/20 pt-3">${wishesHtml}</div>` : ''}
+            </div>
+        </div>
+    `;
 }
 
 function renderEmployeePortalPage(pageName, employee) {
@@ -352,81 +371,89 @@ function renderEmployeePortalPage(pageName, employee) {
 // در فایل js/main.js
 // فقط و فقط بلوک if (pageName === 'profile') را با این کد جایگزین کنید
 
-if (pageName === 'profile') {
-    const manager = state.teams.find(t => t.memberIds?.includes(employee.id))
-        ? state.employees.find(e => e.id === state.teams.find(t => t.memberIds.includes(employee.id)).leaderId)
-        : null;
+    if (pageName === 'profile') {
+        const manager = state.teams.find(t => t.memberIds?.includes(employee.id))
+            ? state.employees.find(e => e.id === state.teams.find(t => t.memberIds.includes(employee.id)).leaderId)
+            : null;
 
-    const performanceHistoryHtml = (employee.performanceHistory || [])
-        .sort((a,b) => new Date(b.reviewDate) - new Date(a.reviewDate))
-        .slice(0, 3) // نمایش ۳ ارزیابی آخر
-        .map(review => `
-            <div class="p-4 bg-slate-50 rounded-lg border border-slate-200 shadow-sm mb-3 last:mb-0">
-                <div class="flex justify-between items-center mb-2">
-                    <div class="flex items-center gap-2 text-slate-800">
-                        <i data-lucide="award" class="w-4 h-4 text-amber-500"></i>
-                        <span class="font-bold">امتیاز کلی:</span>
-                        <span class="text-lg font-semibold text-green-600">${review.overallScore}/5</span>
+        const performanceHistoryHtml = (employee.performanceHistory || [])
+            .sort((a,b) => new Date(b.reviewDate) - new Date(a.reviewDate))
+            .slice(0, 3)
+            .map(review => `
+                <div class="p-4 bg-slate-50 rounded-lg border border-slate-200 shadow-sm mb-3 last:mb-0">
+                    <div class="flex justify-between items-center mb-2">
+                        <div class="flex items-center gap-2 text-slate-800">
+                            <i data-lucide="award" class="w-4 h-4 text-amber-500"></i>
+                            <span class="font-bold">امتیاز کلی:</span>
+                            <span class="text-lg font-semibold text-green-600">${review.overallScore}/5</span>
+                        </div>
+                        <p class="text-xs text-slate-500">${toPersianDate(review.reviewDate)}</p>
                     </div>
-                    <p class="text-xs text-slate-500">${toPersianDate(review.reviewDate)}</p>
+                    <p class="text-sm text-slate-700 mt-2"><strong>نقاط قوت:</strong> ${review.strengths || 'ثبت نشده'}</p>
                 </div>
-                <p class="text-sm text-slate-700 mt-2"><strong>نقاط قوت:</strong> ${review.strengths || 'ثبت نشده'}</p>
-            </div>
-        `).join('') || '<div class="text-center py-6"><i data-lucide="inbox" class="w-12 h-12 mx-auto text-slate-300"></i><p class="mt-2 text-sm text-slate-500">سابقه‌ای از ارزیابی عملکرد شما ثبت نشده است.</p></div>';
+            `).join('') || '<div class="text-center py-6"><i data-lucide="inbox" class="w-12 h-12 mx-auto text-slate-300"></i><p class="mt-2 text-sm text-slate-500">سابقه‌ای از ارزیابی عملکرد شما ثبت نشده است.</p></div>';
 
-    contentContainer.innerHTML = `
-        <div class="page-header flex flex-col sm:flex-row justify-between items-center gap-4 mb-8">
-            <div>
+        contentContainer.innerHTML = `
+            <div class="page-header mb-8">
                 <h1 class="text-3xl font-bold text-slate-800">داشبورد شما</h1>
                 <p class="text-slate-500 mt-1">خلاصه‌ای از اطلاعات و فعالیت‌های شما در NikHR</p>
             </div>
-            <div class="flex items-center gap-3 w-full sm:w-auto">
-                 <button id="change-password-btn" class="secondary-btn py-2 px-4 flex items-center gap-2 text-sm w-full justify-center">
-                    <i data-lucide="key-round" class="w-4 h-4"></i><span>تغییر رمز</span>
-                </button>
-                <button id="edit-my-profile-btn" class="primary-btn py-2 px-4 flex items-center gap-2 text-sm w-full justify-center">
-                    <i data-lucide="edit-3" class="w-4 h-4"></i><span>ویرایش</span>
-                </button>
-            </div>
-        </div>
-        
-        <div class="max-w-7xl mx-auto">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div class="lg:col-span-1 lg:order-last space-y-8">
-                    ${renderMyBirthdayWishesWidget(employee)}
-                    ${renderBirthdaysWidget(employee)}
-                </div>
-
-                <div class="lg:col-span-2 space-y-8">
-                    <div class="card p-0">
-                        <div class="card-content flex flex-col md:flex-row items-center gap-6 p-6">
-                            <img src="${employee.avatar}" alt="${employee.name}" class="w-28 h-28 rounded-full mx-auto object-cover border-4 border-slate-100 shadow-md">
-                            <div class="text-center md:text-right">
-                                <h2 class="text-2xl font-bold text-slate-800">${employee.name}</h2>
-                                <p class="text-indigo-600 font-semibold">${employee.jobTitle || ''}</p>
-                                <div class="mt-3 flex flex-wrap justify-center md:justify-start gap-x-4 gap-y-2 text-sm">
-                                    <div class="flex items-center gap-2 text-slate-600"><i data-lucide="building-2" class="w-4 h-4 text-slate-400"></i><span>${employee.department || '-'}</span></div>
-                                    <div class="flex items-center gap-2 text-slate-600"><i data-lucide="calendar-days" class="w-4 h-4 text-slate-400"></i><span>استخدام: ${toPersianDate(employee.startDate)}</span></div>
-                                    ${manager ? `<div class="flex items-center gap-2 text-slate-600"><i data-lucide="user-check" class="w-4 h-4 text-slate-400"></i><span>مدیر: ${manager.name}</span></div>` : ''}
+            
+            <div class="max-w-7xl mx-auto">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div class="lg:col-span-1 lg:order-last space-y-8">
+                        <div class="card p-0 text-center">
+                             <div class="card-content p-6">
+                                <img src="${employee.avatar}" alt="${employee.name}" class="w-28 h-28 rounded-full mx-auto object-cover border-4 border-slate-100 shadow-md">
+                                <h2 class="text-2xl font-bold mt-4 text-slate-800">${employee.name}</h2>
+                                <p class="text-indigo-600 font-semibold text-sm">${employee.jobTitle || ''}</p>
+                                <div class="mt-4">
+                                     <button id="change-password-btn" class="text-xs text-slate-500 hover:text-indigo-600 font-semibold flex items-center gap-1 mx-auto">
+                                        <i data-lucide="key-round" class="w-3 h-3"></i><span>تغییر رمز عبور</span>
+                                    </button>
                                 </div>
                             </div>
                         </div>
+                        
+                        ${renderMyBirthdayWishesWidget(employee)}
+                        ${renderBirthdaysWidget(employee)}
                     </div>
 
-                    <div class="card p-0">
-                        <div class="card-header flex items-center gap-2">
-                            <i data-lucide="trending-up" class="w-5 h-5 text-teal-500"></i>
-                            <h3 class="font-semibold text-slate-800">خلاصه عملکرد</h3>
+                    <div class="lg:col-span-2 space-y-8">
+                        <div class="card p-0">
+                            <div class="card-header flex justify-between items-center">
+                                <div class="flex items-center gap-2">
+                                    <i data-lucide="user-round" class="w-5 h-5 text-indigo-500"></i>
+                                    <h3 class="font-semibold text-slate-800">اطلاعات پرسنلی</h3>
+                                </div>
+                                <button id="edit-my-profile-btn" class="secondary-btn py-1 px-3 text-xs flex items-center gap-1">
+                                    <i data-lucide="edit-3" class="w-3 h-3"></i><span>ویرایش</span>
+                                </button>
+                            </div>
+                            <div class="card-content grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-sm">
+                                <p><strong>کد پرسنلی:</strong> ${employee.id}</p>
+                                <p><strong>دپارتمان:</strong> ${employee.department || '-'}</p>
+                                <p><strong>مدیر مستقیم:</strong> ${manager ? manager.name : '-'}</p>
+                                <p><strong>تاریخ استخدام:</strong> ${toPersianDate(employee.startDate)}</p>
+                                <p><strong>ایمیل:</strong> ${employee.personalInfo?.email || '-'}</p>
+                                <p><strong>شماره تماس:</strong> ${employee.personalInfo?.phone || '-'}</p>
+                                <p><strong>تاریخ تولد:</strong> ${toPersianDate(employee.personalInfo?.birthDate)}</p>
+                                <p><strong>وضعیت تاهل:</strong> ${employee.personalInfo?.maritalStatus || '-'}</p>
+                            </div>
                         </div>
-                        <div class="card-content">
-                            ${performanceHistoryHtml}
+
+                        <div class="card p-0">
+                            <div class="card-header flex items-center gap-2">
+                                <i data-lucide="trending-up" class="w-5 h-5 text-teal-500"></i>
+                                <h3 class="font-semibold text-slate-800">خلاصه عملکرد</h3>
+                            </div>
+                            <div class="card-content">${performanceHistoryHtml}</div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-    `;
-}
+        `;
+    }
     // --- بخش دایرکتوری ---
     else if (pageName === 'directory') {
         const teamCardsHtml = state.teams.map(team => {
