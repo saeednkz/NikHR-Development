@@ -1,5 +1,6 @@
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { state, router, showToast } from './main.js';
+import { state, router } from './main.js';
+import { showToast } from './utils.js';
 
 // متغیر auth در این فایل ساخته و export می‌شود
 export let auth;
