@@ -264,41 +264,7 @@ export const router = () => {
 // این تابع جدید را به js/main.js اضافه کنید (مثلاً قبل از تابع renderEmployeePortal)
 
 // این تابع جدید را به js/main.js اضافه کنید
-const renderMyBirthdayWishesWidget = (employee) => {
-    const today = new Date();
-    const birthDate = new Date(employee.personalInfo?.birthDate);
 
-    // چک می‌کنیم آیا امروز تولد کارمند است یا نه
-    if (!employee.personalInfo?.birthDate || birthDate.getMonth() !== today.getMonth() || birthDate.getDate() !== today.getDate()) {
-        return ''; // اگر تولدش نبود، چیزی نمایش نده
-    }
-
-    const myWishes = (state.birthdayWishes || [])
-        .filter(wish => wish.targetUid === employee.uid)
-        .sort((a, b) => new Date(b.createdAt?.toDate()) - new Date(a.createdAt?.toDate()));
-
-    if (myWishes.length === 0) {
-        return ''; // اگر تبریکی دریافت نکرده بود، چیزی نمایش نده
-        
-    }
-
-    return `
-        <div class="bg-white p-6 rounded-xl shadow-md">
-            <h3 class="text-lg font-semibold text-slate-700 mb-4 flex items-center">
-                <i data-lucide="gift" class="ml-2 text-rose-500"></i>
-                تبریک‌های تولد شما!
-            </h3>
-            <div class="space-y-3 max-h-60 overflow-y-auto pr-2">
-                ${myWishes.map(wish => `
-                    <div class="p-3 bg-rose-50 rounded-lg">
-                        <p class="text-sm text-slate-700">${wish.message}</p>
-                        <p class="text-xs text-rose-800 font-semibold text-left mt-2">- ${wish.wisherName}</p>
-                    </div>
-                `).join('')}
-            </div>
-        </div>
-    `;
-};
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید و کامل جایگزین کنید
 
