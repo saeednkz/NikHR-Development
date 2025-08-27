@@ -769,96 +769,72 @@ mainContent.addEventListener('click', (e) => {
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
 
-// در فایل js/main.js
-// کل این تابع را با نسخه جدید جایگزین کنید
-function renderEmployeePortalPage(pageName, employee) {
-    const contentContainer = document.getElementById('employee-main-content');
-    if (!contentContainer) return;
+function renderEmployeePortal() {
+    // ابتدا تمام کانتینرهای دیگر را مخفی می‌کنیم
+    document.getElementById('login-container').classList.add('hidden');
+    document.getElementById('dashboard-container').classList.add('hidden');
+    
+    const portalContainer = document.getElementById('employee-portal-container');
+    portalContainer.classList.remove('hidden');
 
-    // --- بخش پروفایل (بازطراحی کامل) ---
-    if (pageName === 'profile') {
-        const manager = state.teams.find(t => t.memberIds?.includes(employee.id))
-            ? state.employees.find(e => e.id === state.teams.find(t => t.memberIds.includes(employee.id)).leaderId)
-            : null;
+    const employee = state.employees.find(emp => emp.uid === state.currentUser.uid);
+    
+    if (!employee) {
+        portalContainer.innerHTML = `<div class="text-center p-10"><h2 class="text-xl font-bold text-red-600">خطا</h2><p class="mt-2 text-slate-500">پروفایل پرسنلی شما یافت نشد. لطفاً با مدیر سیستم تماس بگیرید.</p></div>`;
+        return;
+    }
 
-        const performanceHistoryHtml = (employee.performanceHistory || [])
-            .sort((a,b) => new Date(b.reviewDate) - new Date(a.reviewDate))
-            .slice(0, 3) // نمایش ۳ ارزیابی آخر
-            .map(review => `
-                <div class="performance-item">
-                    <div class="flex justify-between items-center mb-2">
-                        <div class="flex items-center gap-2 text-slate-800">
-                            <i data-lucide="award" class="w-4 h-4 text-amber-500"></i>
-                            <span class="font-bold">امتیاز کلی:</span>
-                            <span class="text-lg font-semibold text-green-600">${review.overallScore}/5</span>
-                        </div>
-                        <p class="text-xs text-slate-500">${toPersianDate(review.reviewDate)}</p>
-                    </div>
-                    <p class="text-sm text-slate-700 mt-2"><strong>نقاط قوت:</strong> ${review.strengths || 'ثبت نشده'}</p>
+    const employeeName = employee.name || state.currentUser.email;
+
+    portalContainer.innerHTML = `
+        <div class="flex h-screen bg-slate-100">
+            <aside class="w-64 bg-white shadow-md p-4 flex flex-col">
+                <div class="text-center mb-10">
+                    <img src="${employee.avatar}" alt="Avatar" class="w-24 h-24 rounded-full mx-auto object-cover border-4 border-slate-200">
+                    <h2 class="mt-4 text-lg font-bold text-slate-800">${employeeName}</h2>
+                    <p class="text-sm text-slate-500">${employee.jobTitle || 'بدون عنوان شغلی'}</p>
                 </div>
-            `).join('') || '<div class="text-center py-6"><i data-lucide="inbox" class="w-12 h-12 mx-auto text-slate-300"></i><p class="mt-2 text-sm text-slate-500">سابقه‌ای از ارزیابی عملکرد شما ثبت نشده است.</p></div>';
-
-        contentContainer.innerHTML = `
-            ${renderMyBirthdayWishesWidget(employee)}
-            
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
-                <div class="lg:col-span-2 space-y-8">
-                    <div class="card p-0">
-                        <div class="card-header flex justify-between items-center">
-                            <h3 class="font-semibold text-slate-800 flex items-center gap-2"><i data-lucide="user-round" class="w-5 h-5 text-indigo-500"></i>اطلاعات پرسنلی</h3>
-                            <button id="edit-my-profile-btn" class="secondary-btn py-1 px-3 text-xs flex items-center gap-1">
-                                <i data-lucide="edit-3" class="w-3 h-3"></i><span>ویرایش</span>
-                            </button>
+                <nav id="employee-portal-nav" class="flex flex-col gap-2">
+                    <a href="#profile" class="employee-nav-item active flex items-center gap-3 px-4 py-2 rounded-lg text-slate-700 hover:bg-blue-50 hover:text-blue-600"><i data-lucide="user"></i><span>پروفایل من</span></a>
+                    <a href="#requests" class="employee-nav-item flex items-center gap-3 px-4 py-2 rounded-lg text-slate-700 hover:bg-blue-50 hover:text-blue-600"><i data-lucide="send"></i><span>درخواست‌های من</span></a>
+                    <a href="#directory" class="employee-nav-item flex items-center gap-3 px-4 py-2 rounded-lg text-slate-700 hover:bg-blue-50 hover:text-blue-600"><i data-lucide="users"></i><span>دایرکتوری سازمان</span></a>
+                    <a href="#documents" class="employee-nav-item flex items-center gap-3 px-4 py-2 rounded-lg text-slate-700 hover:bg-blue-50 hover:text-blue-600"><i data-lucide="folder-kanban"></i><span>اسناد سازمان</span></a>
+                    <a href="#inbox" class="employee-nav-item flex items-center gap-3 px-4 py-2 rounded-lg text-slate-700 hover:bg-blue-50 hover:text-blue-600"><i data-lucide="inbox"></i><span>صندوق پیام</span></a>
+                </nav>
+                <div class="mt-auto">
+                    <button id="portal-logout-btn" class="w-full flex items-center justify-center gap-3 px-4 py-2 rounded-lg text-red-600 hover:bg-red-50"><i data-lucide="log-out"></i><span>خروج</span></button>
+                </div>
+            </aside>
+            <div class="flex-1 flex flex-col h-screen overflow-y-hidden">
+                <header class="bg-white shadow-sm">
+                    <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+                        <div class="flex items-center gap-3">
+                            <img src="logo.png" alt="NikHR Logo" class="w-8 h-8">
+                            <h1 class="text-xl font-bold text-slate-800">پورتال کارمندان</h1>
                         </div>
-                        <div class="card-content grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-sm">
-                            <p><strong>کد ملی:</strong> ${employee.personalInfo?.nationalId || '-'}</p>
-                            <p><strong>تاریخ تولد:</strong> ${toPersianDate(employee.personalInfo?.birthDate)}</p>
-                            <p><strong>شماره ثابت:</strong> ${employee.personalInfo?.landline || '-'}</p>
-                            <p><strong>کد پستی:</strong> ${employee.personalInfo?.postalCode || '-'}</p>
-                            <p><strong>وضعیت تاهل:</strong> ${employee.personalInfo?.maritalStatus || '-'}</p>
-                            <p class="sm:col-span-2"><strong>آدرس:</strong> ${employee.personalInfo?.address || '-'}</p>
+                        <div class="flex items-center gap-4">
+                             <div id="portal-notification-bell-wrapper" class="relative">
+                                <button id="portal-notification-bell-btn" class="relative cursor-pointer p-2 rounded-full hover:bg-slate-100">
+                                    <i data-lucide="bell" class="text-slate-600"></i>
+                                    <span id="portal-notification-count" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full border-2 border-white"></span>
+                                </button>
+                            </div>
+                             <span class="text-sm text-slate-600 hidden sm:block">خوش آمدید، ${employeeName}</span>
                         </div>
                     </div>
-
-                    <div class="card p-0">
-                        <div class="card-header flex items-center gap-2">
-                            <i data-lucide="trending-up" class="w-5 h-5 text-teal-500"></i>
-                            <h3 class="font-semibold text-slate-800">خلاصه عملکرد</h3>
-                        </div>
-                        <div class="card-content">${performanceHistoryHtml}</div>
-                    </div>
-                </div>
-
-                <div class="lg:col-span-1 space-y-8">
-                    ${renderBirthdaysWidget(employee)}
-                </div>
+                </header>
+                <main id="employee-main-content" class="flex-1 p-6 sm:p-10 overflow-y-auto"></main>
             </div>
-        `;
-    }
-    else if (pageName === 'directory') {
-        // ... (کد قبلی این بخش بدون تغییر است، فقط برای کامل بودن آورده شده)
-        const teamCardsHtml = state.teams.map(team => {
-            const leader = state.employees.find(e => e.id === team.leaderId);
-            const members = state.employees.filter(e => team.memberIds?.includes(e.id));
-            return `<div class="bg-white p-6 rounded-xl shadow-md flex flex-col">...</div>`;
-        }).join('');
-        contentContainer.innerHTML = `<h1 class="text-3xl font-bold text-slate-800 mb-6">دایرکتوری سازمان</h1><div class="space-y-6">${teamCardsHtml}</div>`;
-    }
-    else if (pageName === 'requests') {
-        // ... (کد قبلی این بخش بدون تغییر است)
-    }
-    else if (pageName === 'documents') {
-        // ... (کد قبلی این بخش بدون تغییر است)
-    }
-    else if (pageName === 'inbox') {
-       // ... (کد قبلی این بخش بدون تغییر است)
-    }
-    else {
-        contentContainer.innerHTML = `<h1>صفحه مورد نظر یافت نشد.</h1>`;
-    }
+        </div>
+    `;
     
     lucide.createIcons();
+    renderEmployeePortalPage('profile', employee);
     setupEmployeePortalEventListeners(employee);
+    
+    // [!code ++] این خط جدید مشکل را حل می‌کند
+    // بعد از اینکه پورتال ساخته شد، یک بار وضعیت نوتیفیکیشن‌ها را چک کن
+    updateEmployeeNotificationBell(employee); 
 }
         // --- UTILITY & HELPER FUNCTIONS ---
         // --- تابع جدید برای تبدیل تاریخ به شمسی ---
