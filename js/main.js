@@ -2789,7 +2789,30 @@ const renderEngagementGauge = (canvasId, score) => {
        
         const renderSkillRadarChart = (canvasId, skills) => {
             const skillCtx = document.getElementById(canvasId)?.getContext('2d');
-            if (skillCtx) { if(charts[canvasId]) charts[canvasId].destroy(); charts[canvasId] = new Chart(skillCtx, { type: 'radar', data: { labels: Object.keys(skills), datasets: [{ label: 'سطح مهارت', data: Object.values(skills), fill: true, backgroundColor: 'rgba(59, 130, 246, 0.2)', borderColor: 'rgb(59, 130, 246)' }] }, options: { scales: { r: { suggestedMin: 0, suggestedMax: 5, ticks: { stepSize: 1 } } } }); }
+            if (!skillCtx) { return; }
+            if (charts[canvasId]) { charts[canvasId].destroy(); }
+            charts[canvasId] = new Chart(skillCtx, {
+                type: 'radar',
+                data: {
+                    labels: Object.keys(skills),
+                    datasets: [{
+                        label: 'سطح مهارت',
+                        data: Object.values(skills),
+                        fill: true,
+                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                        borderColor: 'rgb(59, 130, 246)'
+                    }]
+                },
+                options: {
+                    scales: {
+                        r: {
+                            suggestedMin: 0,
+                            suggestedMax: 5,
+                            ticks: { stepSize: 1 }
+                        }
+                    }
+                }
+            });
         };
 
         // --- PAGE-SPECIFIC LOGIC ---
