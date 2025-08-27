@@ -13,6 +13,7 @@ import {
     isAdmin,
     canEdit 
 } from './auth.js';
+import { showToast } from './utils.js';
         
         // --- SURVEY TEMPLATES (COMPREHENSIVE & STANDARD) ---
         const surveyTemplates = {
@@ -1289,15 +1290,7 @@ const showChangePasswordForm = () => {
     });
 }; 
     
-      export const showToast = (message, type = 'success') => {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            toast.innerHTML = `<i data-lucide="${type === 'success' ? 'check-circle' : 'alert-circle'}" class="ml-3"></i><span>${message}</span>`;
-            container.appendChild(toast);
-            lucide.createIcons();
-            setTimeout(() => toast.remove(), 5000);
-        };
+
         
         
 // این تابع را به main.js اضافه کنید
