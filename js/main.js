@@ -3,7 +3,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { onAuthStateChanged, updatePassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
     getFirestore, doc, getDoc, setDoc, onSnapshot, collection,
-    addDoc, getDocs, writeBatch, deleteDoc, updateDoc, query, where, serverTimestamp
+    addDoc, getDocs, writeBatch, deleteDoc, updateDoc, query, where, serverTimestamp, arrayUnion
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
@@ -327,7 +327,6 @@ function renderBirthdaysWidget(currentEmployee) {
         </div>
     `;
 }
-
 // در فایل js/main.js
 // این تابع را نیز جایگزین نسخه فعلی کنید
 // در فایل js/main.js
@@ -436,7 +435,10 @@ function renderEmployeePortalPage(pageName, employee) {
         const requestsHtml = myRequests.map(req => {
             const statusMap = {'درحال بررسی': { text: 'در حال بررسی', color: 'bg-yellow-100 text-yellow-800' },'در حال انجام': { text: 'در حال انجام', color: 'bg-blue-100 text-blue-800' },'تایید شده': { text: 'تایید شده', color: 'bg-green-100 text-green-800' },'رد شده': { text: 'رد شده', color: 'bg-red-100 text-red-800' }};
             const status = statusMap[req.status] || { text: req.status, color: 'bg-slate-100' };
-            return `<tr class="hover:bg-slate-50"><td class="p-3">${req.requestType}</td><td class="p-3">${toPersianDate(req.createdAt)}</td><td class="p-3"><span class="px-2 py-1 text-xs font-medium rounded-full ${status.color}">${status.text}</span></td><td class="p-3"><button class="view-request-btn text-sm text-indigo-600 hover:underline" data-id="${req.firestoreId}">مشاهده جزئیات</button></td></tr>`;
+            const hasNewReply = (req.thread || []).some(item => item.createdAt?.toDate && (!req.lastSeenAt || item.createdAt.toDate() > req.lastSeenAt.toDate()));
+            const rowClass = hasNewReply ? 'bg-emerald-50' : 'hover:bg-slate-50';
+            const titleClass = hasNewReply ? 'font-extrabold text-slate-900' : '';
+            return `<tr class="${rowClass}"><td class="p-3 ${titleClass}">${req.requestType}${hasNewReply ? ' <span class=\"ml-2 inline-block w-2 h-2 rounded-full bg-emerald-500 align-middle\"></span>' : ''}</td><td class="p-3">${toPersianDate(req.createdAt)}</td><td class="p-3"><span class="px-2 py-1 text-xs font-medium rounded-full ${status.color}">${status.text}</span></td><td class="p-3"><button class="view-request-btn text-sm text-indigo-600 hover:underline" data-id="${req.firestoreId}">مشاهده جزئیات</button></td></tr>`;
         }).join('');
         contentContainer.innerHTML = `
             <div class="flex justify-between items-center page-header"><h1 class="text-3xl font-bold text-slate-800">درخواست‌های من</h1><button id="add-new-request-btn" class="primary-btn flex items-center gap-2"><i data-lucide="plus-circle" class="w-4 h-4"></i><span>ثبت درخواست جدید</span></button></div>
@@ -456,7 +458,14 @@ function renderEmployeePortalPage(pageName, employee) {
         const myMessages = (state.announcements || []).filter(msg => {
             const targets = msg.targets; if (!msg.createdAt?.toDate) return false; if (targets.type === 'public') return true; if (targets.type === 'roles' && targets.roles?.includes('employee')) return true; if (targets.type === 'users' && targets.userIds?.includes(employee.firestoreId)) return true; if (targets.type === 'teams' && targets.teamIds?.includes(myTeamId)) return true; return false;
         }).sort((a, b) => new Date(b.createdAt?.toDate()) - new Date(a.createdAt?.toDate()));
-        const messagesHtml = myMessages.map(msg => `<tr class="hover:bg-slate-50"><td class="p-3 font-semibold">${msg.title}</td><td class="p-3">${msg.senderName}</td><td class="p-3">${toPersianDate(msg.createdAt)}</td><td class="p-3"><button class="view-message-btn text-sm text-indigo-600 hover:underline" data-id="${msg.firestoreId}">مشاهده پیام</button></td></tr>`).join('');
+        // هایلایت پیام‌های خوانده‌نشده
+        const readIds = new Set((employee.readAnnouncements || []));
+        const messagesHtml = myMessages.map(msg => {
+            const isUnread = !readIds.has(msg.firestoreId);
+            const rowClass = isUnread ? 'bg-indigo-50' : 'hover:bg-slate-50';
+            const titleClass = isUnread ? 'font-extrabold text-slate-900' : 'font-semibold';
+            return `<tr class="${rowClass}"><td class="p-3 ${titleClass}">${msg.title}${isUnread ? ' <span class="ml-2 inline-block w-2 h-2 rounded-full bg-indigo-500 align-middle"></span>' : ''}</td><td class="p-3">${msg.senderName}</td><td class="p-3">${toPersianDate(msg.createdAt)}</td><td class="p-3"><button class="view-message-btn text-sm text-indigo-600 hover:underline" data-id="${msg.firestoreId}">مشاهده پیام</button></td></tr>`;
+        }).join('');
         contentContainer.innerHTML = `
             <div class="page-header mb-8"><h1 class="text-3xl font-bold text-slate-800">صندوق پیام</h1></div>
             <div class="card p-0"><div class="overflow-x-auto"><table class="w-full text-sm text-right"><thead class="bg-slate-50"><tr><th class="p-3 font-semibold text-slate-600">عنوان</th><th class="p-3 font-semibold text-slate-600">فرستنده</th><th class="p-3 font-semibold text-slate-600">تاریخ</th><th class="p-3 font-semibold text-slate-600"></th></tr></thead><tbody>${messagesHtml || '<tr><td colspan="4" class="text-center py-8 text-slate-500">شما هیچ پیامی ندارید.</td></tr>'}</tbody></table></div></div>`;
@@ -473,7 +482,7 @@ function renderEmployeePortalPage(pageName, employee) {
 // این بخش را به تابع setupEmployeePortalEventListeners اضافه کنید
 
 // در فایل js/main.js
-// کل این تابع را با نسخه تمیز شده زیر جایگزین کنید
+// کل این تابع را به تابع setupEmployeePortalEventListeners اضافه کنید
 
 // کل این تابع را با نسخه جدید جایگزین کنید
 // در فایل js/main.js
@@ -637,7 +646,6 @@ function renderEmployeePortal() {
   setupEmployeePortalEventListeners(employee, auth, signOut);
     updateEmployeeNotificationBell(employee);
 }
-
         // --- UTILITY & HELPER FUNCTIONS ---
         // --- تابع جدید برای تبدیل تاریخ به شمسی ---
         // --- تابع جدید برای تبدیل اعداد فارسی به انگلیسی ---
@@ -1601,7 +1609,6 @@ requests: () => {
     `;
 },
   // در فایل js/main.js، به آبجکت pages این بخش جدید را اضافه کنید
-
 // در فایل js/main.js، داخل آبجکت pages
 // کل این تابع را با نسخه جدید جایگزین کنید
 tasks: () => {
@@ -1916,7 +1923,6 @@ settings: () => {
             </div>
         `;
     }).join('');
-
     const defaultRule = (state.assignmentRules || []).find(r => r.firestoreId === '_default'); // [!code --]
     
     return `
@@ -2218,6 +2224,7 @@ const viewTeamProfile = (teamId) => {
     openModal(mainModal, mainModalContainer);
     setupTeamProfileModalListeners(team);
 };
+
         // --- NAVIGATION & ROUTING ---
         const navigateTo = (pageName) => {
             state.currentPage = pageName;
@@ -2227,8 +2234,6 @@ const viewTeamProfile = (teamId) => {
             });
             renderPage(pageName);
         };
-
-
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید و کامل جایگزین کنید
 
@@ -2882,7 +2887,6 @@ const setupOrganizationPageListeners = () => {
     }
 };
 // این تابع جدید را به js/main.js اضافه کنید
-
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
 
@@ -3233,7 +3237,6 @@ const setupAnalyticsPage = () => {
     renderTeamHealthChart();
     setupSkillGapFinder();
 };
-        
         // --- [FIX START] ADDED EXPENSES PAGE LISTENERS AND HELPERS ---
 const setupExpensesPageListeners = () => {
     // فعال کردن تقویم شمسی برای فیلترها
@@ -3568,7 +3571,6 @@ const showExpenseForm = () => {
 
         const imageUploadInput = document.getElementById('image-upload-input');
         let onImageResizedCallback = null;
-
 if (imageUploadInput) {
     imageUploadInput.addEventListener('change', (event) => {
         const file = event.target.files[0];
@@ -3915,7 +3917,6 @@ const showAnnouncementForm = () => {
         users: document.getElementById('target-users-list'),
         roles: document.getElementById('target-roles-list'),
     };
-
     targetTypeSelect.addEventListener('change', (e) => {
         const selectedType = e.target.value;
         Object.values(targetLists).forEach(list => list.classList.add('hidden'));
@@ -4304,6 +4305,13 @@ const showRequestDetailsModal = (requestId, employee) => {
     `;
     openModal(mainModal, mainModalContainer);
     lucide.createIcons();
+    // علامت‌گذاری آخرین بازدید کارمند از این درخواست برای تشخیص پاسخ جدید
+    (async () => {
+        try {
+            const reqRef = doc(db, `artifacts/${appId}/public/data/requests`, requestId);
+            await updateDoc(reqRef, { lastSeenAt: serverTimestamp() });
+        } catch (err) { console.error('Error updating request lastSeenAt:', err); }
+    })();
 };
 // این تابع جدید را به js/main.js اضافه کنید
 const showMessageDetailsModal = (announcementId) => {
@@ -4332,6 +4340,24 @@ const showMessageDetailsModal = (announcementId) => {
     `;
     openModal(mainModal, mainModalContainer);
     lucide.createIcons();
+
+    // Mark as read for the current employee and update bell/list
+    (async () => {
+        try {
+            if (state.currentUser?.role === 'employee') {
+                const employee = state.employees.find(e => e.uid === state.currentUser.uid);
+                if (employee) {
+                    const empRef = doc(db, `artifacts/${appId}/public/data/employees`, employee.firestoreId);
+                    await updateDoc(empRef, { readAnnouncements: arrayUnion(announcementId) });
+                    updateEmployeeNotificationBell(employee);
+                    const activeInbox = document.querySelector('#employee-portal-nav .nav-item[href="#inbox"].active');
+                    if (activeInbox) {
+                        renderEmployeePortalPage('inbox', employee);
+                    }
+                }
+            }
+        } catch (err) { console.error('Error marking announcement as read:', err); }
+    })();
 };
 
         // --- EVENT LISTENERS & INITIALIZATION ---
@@ -4847,7 +4873,6 @@ const showDisciplinaryForm = (emp) => {
             </form>`;
         
         activatePersianDatePicker('disciplinary-date', new Date());
-
         document.getElementById('back-to-profile-disciplinary').addEventListener('click', () => viewEmployeeProfile(emp.firestoreId));
         
         document.getElementById('disciplinary-form').addEventListener('submit', async (e) => {
@@ -4921,7 +4946,7 @@ const showDisciplinaryForm = (emp) => {
                     <div><label class="block font-medium">تاریخ پایان</label><input type="text" id="contract-end" class="w-full p-2 border border-slate-300 rounded-lg" required></div>
                     <div><label class="block font-medium">حقوق ناخالص (ریال)</label><input type="number" id="contract-gross" value="${contract.grossSalary || ''}" class="w-full p-2 border border-slate-300 rounded-lg"></div>
                     <div><label class="block font-medium">حقوق خالص (ریال)</label><input type="number" id="contract-net" value="${contract.netSalary || ''}" class="w-full p-2 border border-slate-300 rounded-lg"></div>
-                    <div class="md:col-span-2"><label class="block font-medium">مبلغ سفته (ریال)</label><input type="number" id="contract-promissory" value="${contract.promissoryNote || ''}" class="w-full p-2 border border-slate-300 rounded-lg"></div>
+                    <div><label class="block font-medium">مبلغ سفته (ریال)</label><input type="number" id="contract-promissory" value="${contract.promissoryNote || ''}" class="w-full p-2 border border-slate-300 rounded-lg"></div>
                     <div class="md:col-span-2">
                         <label class="block font-medium">آپلود فایل قرارداد (اختیاری - حداکثر ۵ مگابایت)</label>
                         <input type="file" id="contract-file-upload" class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100"/>
@@ -5190,7 +5215,6 @@ const showMyProfileEditForm = (emp) => {
     });
 };
 // این تابع جدید را به js/main.js اضافه کنید
-
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
 const showAssignmentRuleForm = (ruleId = null) => {
@@ -5417,7 +5441,7 @@ const showProcessReminderForm = (reminderId) => {
 // کل این تابع را با نسخه جدید جایگزین کنید
 
 // در فایل js/main.js
-// کل این تابع را با نسخه جدید و کامل جایگزین کنید
+// کل این تابع را با نسخه جدید جایگزین کنید
 
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
@@ -5847,7 +5871,6 @@ document.getElementById('new-request-form').addEventListener('submit', async (e)
                 }
                 return `<div class="bg-white p-6 rounded-lg shadow-md"><p class="font-semibold mb-4 text-center">${q.text}</p>${inputHtml}</div>`;
             }).join('');
-
             surveyTakerContainer.innerHTML = `
                 <div class="min-h-screen bg-gray-100 p-4 sm:p-8 flex items-center justify-center">
                     <div class="w-full max-w-2xl space-y-6">
