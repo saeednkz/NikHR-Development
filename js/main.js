@@ -539,23 +539,24 @@ else if (pageName === 'inbox') {
     const employeeRef = doc(db, `artifacts/${appId}/public/data/employees`, employee.firestoreId);
     updateDoc(employeeRef, { "personalInfo.lastCheckedInbox": serverTimestamp() })
         .then(() => {
-            const updatedEmployee = { ...employee, personalInfo: { ...employee.personalInfo, lastCheckedInbox: new Date() } };
-            updateEmployeeNotificationBell(updatedEmployee);
+                const updatedEmployee = state.employees.find(e => e.firestoreId === employee.firestoreId);
+                updateEmployeeNotificationBell(updatedEmployee);
         });
 
-    const myTeam = state.teams.find(team => team.memberIds?.includes(employee.id));
-    const myTeamId = myTeam ? myTeam.firestoreId : null;
+        const myTeam = state.teams.find(team => team.memberIds?.includes(employee.id));
+        const myTeamId = myTeam ? myTeam.firestoreId : null;
 
-    const myMessages = (state.announcements || [])
-        .filter(msg => {
-            const targets = msg.targets;
-            if (targets.type === 'public') return true;
-            if (targets.type === 'roles' && targets.roles?.includes('employee')) return true;
-            if (targets.type === 'users' && targets.userIds?.includes(employee.firestoreId)) return true;
-            if (targets.type === 'teams' && targets.teamIds?.includes(myTeamId)) return true;
-            return false;
-        })
-        .sort((a, b) => new Date(b.createdAt?.toDate()) - new Date(a.createdAt?.toDate()));
+        const myMessages = (state.announcements || [])
+            .filter(msg => {
+                const targets = msg.targets;
+                if (!msg.createdAt?.toDate) return false; // جلوگیری از خطا برای داده‌های ناقص
+                if (targets.type === 'public') return true;
+                if (targets.type === 'roles' && targets.roles?.includes('employee')) return true;
+                if (targets.type === 'users' && targets.userIds?.includes(employee.firestoreId)) return true;
+                if (targets.type === 'teams' && targets.teamIds?.includes(myTeamId)) return true;
+                return false;
+            })
+            .sort((a, b) => new Date(b.createdAt?.toDate()) - new Date(a.createdAt?.toDate()));
 
     const messagesHtml = myMessages.map(msg => `
         <tr class="hover:bg-slate-50">
