@@ -369,8 +369,6 @@ function renderMyBirthdayWishesWidget(employee) {
         </div>
     `;
 }
-
-
 // در فایل js/main.js
 // کل این تابع را نیز با نسخه کامل و نهایی زیر جایگزین کنید
 
@@ -1308,6 +1306,36 @@ const updateNotificationBell = () => {
 
         // --- PAGE TEMPLATES & RENDERING ---
         const mainContent = document.getElementById('main-content');
+
+        // --- MODAL (shared) ---
+        const mainModal = document.getElementById('mainModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalContent = document.getElementById('modalContent');
+        const mainModalContainer = mainModal?.querySelector('div');
+
+        function openModal(modal, container) {
+            if (!modal || !container) return;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            // animate in
+            requestAnimationFrame(() => {
+                container.classList.remove('scale-95', 'opacity-0');
+            });
+        }
+        function closeModal(modal, container) {
+            if (!modal || !container) return;
+            container.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300);
+        }
+        document.getElementById('closeModal')?.addEventListener('click', () => closeModal(mainModal, mainModalContainer));
+        mainModal?.addEventListener('click', (e) => {
+            if (e.target === mainModal) {
+                closeModal(mainModal, mainModalContainer);
+            }
+        });
      const updateEmployeeNotificationBell = (employee) => {
     const countContainer = document.getElementById('portal-notification-count');
     if (!countContainer || !employee) return;
@@ -2189,7 +2217,6 @@ const viewEmployeeProfile = (employeeId) => {
     openModal(mainModal, mainModalContainer);
     setupProfileModalListeners(emp);
 };
-
 const viewTeamProfile = (teamId) => {
     const team = state.teams.find(t => t.firestoreId === teamId);
     if (!team) return;
@@ -3894,7 +3921,6 @@ const showEmployeeForm = (employeeId = null) => {
     });
 };
 // این تابع جدید را به js/main.js اضافه کنید
-
 // این تابع جدید را به js/main.js اضافه کنید
 
 const showAnnouncementForm = () => {
@@ -4834,7 +4860,6 @@ const showDisciplinaryForm = (emp) => {
                 }
             });
         };
-
 const showDocumentForm = (emp, docIndex = null) => {
         const isEditing = docIndex !== null;
         const documentItem = isEditing ? emp.documents[docIndex] : {};
@@ -5299,7 +5324,6 @@ const showAssignmentRuleForm = (ruleId = null) => {
                 showToast("لینک با موفقیت کپی شد!");
             });
         };
-
         const renderSurveyTakerPage = (surveyId) => {
             document.getElementById('dashboard-container').classList.add('hidden');
             const surveyTakerContainer = document.getElementById('survey-taker-container');
