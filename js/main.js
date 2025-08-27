@@ -380,14 +380,23 @@ function renderEmployeePortalPage(pageName, employee) {
 // در فایل js/main.js
 // فقط و فقط بلوک if (pageName === 'profile') را با این کد جایگزین کنید
 
-if (pageName === 'profile') {
+
+// در فایل js/main.js
+// کل تابع renderEmployeePortalPage را با این نسخه کامل و نهایی جایگزین کنید
+
+function renderEmployeePortalPage(pageName, employee) {
+    const contentContainer = document.getElementById('employee-main-content');
+    if (!contentContainer) return;
+
+    // --- بخش پروفایل (داشبورد) ---
+    if (pageName === 'profile') {
         const manager = state.teams.find(t => t.memberIds?.includes(employee.id))
             ? state.employees.find(e => e.id === state.teams.find(t => t.memberIds.includes(employee.id)).leaderId)
             : null;
 
         const performanceHistoryHtml = (employee.performanceHistory || [])
             .sort((a,b) => new Date(b.reviewDate) - new Date(a.reviewDate))
-            .slice(0, 3) // نمایش ۳ ارزیابی آخر
+            .slice(0, 3)
             .map(review => `
                 <div class="performance-item">
                     <div class="flex justify-between items-center mb-2">
@@ -403,176 +412,128 @@ if (pageName === 'profile') {
             `).join('') || '<div class="text-center py-6"><i data-lucide="inbox" class="w-12 h-12 mx-auto text-slate-300"></i><p class="mt-2 text-sm text-slate-500">سابقه‌ای از ارزیابی عملکرد شما ثبت نشده است.</p></div>';
 
         contentContainer.innerHTML = `
-            ${renderMyBirthdayWishesWidget(employee)}
-            
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
-                <div class="lg:col-span-2 space-y-8">
-                    <div class="card p-0">
-                        <div class="card-header flex justify-between items-center">
-                            <h3 class="font-semibold text-slate-800 flex items-center gap-2"><i data-lucide="user-round" class="w-5 h-5 text-indigo-500"></i>اطلاعات پرسنلی</h3>
-                            <button id="edit-my-profile-btn" class="secondary-btn py-1 px-3 text-xs flex items-center gap-1">
-                                <i data-lucide="edit-3" class="w-3 h-3"></i><span>ویرایش</span>
-                            </button>
+            <div class="space-y-8">
+                ${renderMyBirthdayWishesWidget(employee)}
+                
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 ${renderMyBirthdayWishesWidget(employee) ? '' : 'mt-8'}">
+                    <div class="lg:col-span-2 space-y-8">
+                        <div class="card p-0">
+                            <div class="card-header flex justify-between items-center">
+                                <h3 class="font-semibold text-slate-800 flex items-center gap-2"><i data-lucide="user-round" class="w-5 h-5 text-indigo-500"></i>اطلاعات پرسنلی</h3>
+                                <button id="edit-my-profile-btn" class="secondary-btn py-1 px-3 text-xs flex items-center gap-1">
+                                    <i data-lucide="edit-3" class="w-3 h-3"></i><span>ویرایش</span>
+                                </button>
+                            </div>
+                            <div class="card-content grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-sm">
+                                <p><strong>کد ملی:</strong> ${employee.personalInfo?.nationalId || '-'}</p>
+                                <p><strong>تاریخ تولد:</strong> ${toPersianDate(employee.personalInfo?.birthDate)}</p>
+                                <p><strong>شماره ثابت:</strong> ${employee.personalInfo?.landline || '-'}</p>
+                                <p><strong>کد پستی:</strong> ${employee.personalInfo?.postalCode || '-'}</p>
+                                <p><strong>وضعیت تاهل:</strong> ${employee.personalInfo?.maritalStatus || '-'}</p>
+                                <p class="sm:col-span-2"><strong>آدرس:</strong> ${employee.personalInfo?.address || '-'}</p>
+                            </div>
                         </div>
-                        <div class="card-content grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-sm">
-                            <p><strong>کد ملی:</strong> ${employee.personalInfo?.nationalId || '-'}</p>
-                            <p><strong>تاریخ تولد:</strong> ${toPersianDate(employee.personalInfo?.birthDate)}</p>
-                            <p><strong>شماره ثابت:</strong> ${employee.personalInfo?.landline || '-'}</p>
-                            <p><strong>کد پستی:</strong> ${employee.personalInfo?.postalCode || '-'}</p>
-                            <p><strong>وضعیت تاهل:</strong> ${employee.personalInfo?.maritalStatus || '-'}</p>
-                            <p class="sm:col-span-2"><strong>آدرس:</strong> ${employee.personalInfo?.address || '-'}</p>
+                        <div class="card p-0">
+                            <div class="card-header flex items-center gap-2"><i data-lucide="trending-up" class="w-5 h-5 text-teal-500"></i><h3 class="font-semibold text-slate-800">خلاصه عملکرد</h3></div>
+                            <div class="card-content">${performanceHistoryHtml}</div>
                         </div>
                     </div>
-
-                    <div class="card p-0">
-                        <div class="card-header flex items-center gap-2">
-                            <i data-lucide="trending-up" class="w-5 h-5 text-teal-500"></i>
-                            <h3 class="font-semibold text-slate-800">خلاصه عملکرد</h3>
-                        </div>
-                        <div class="card-content">${performanceHistoryHtml}</div>
+                    <div class="lg:col-span-1 space-y-8">
+                        ${renderBirthdaysWidget(employee)}
                     </div>
                 </div>
-
-                <div class="lg:col-span-1 space-y-8">
-                    ${renderBirthdaysWidget(employee)}
+            </div>`;
+    }
+    
+    // --- بخش دایرکتوری ---
+    else if (pageName === 'directory') {
+        const employeesHtml = state.employees
+            .filter(emp => emp.status === 'فعال')
+            .map(emp => `
+                <div class="card p-4 flex flex-col items-center text-center hover:shadow-lg transition-shadow duration-200">
+                    <img src="${emp.avatar}" alt="${emp.name}" class="w-20 h-20 rounded-full object-cover mb-3 border-2 border-indigo-200">
+                    <h3 class="font-bold text-lg text-slate-800">${emp.name}</h3>
+                    <p class="text-indigo-600 text-sm mb-2">${emp.jobTitle || 'نامشخص'}</p>
+                    <p class="text-slate-500 text-xs">${emp.department || 'نامشخص'}</p>
+                    <div class="mt-4 flex gap-2">
+                        <a href="mailto:${emp.personalInfo?.email}" class="p-2 text-slate-500 rounded-full hover:bg-slate-100"><i data-lucide="mail" class="w-4 h-4"></i></a>
+                        ${emp.personalInfo?.phone ? `<a href="tel:${emp.personalInfo.phone}" class="p-2 text-slate-500 rounded-full hover:bg-slate-100"><i data-lucide="phone" class="w-4 h-4"></i></a>` : ''}
+                    </div>
                 </div>
+            `).join('');
+
+        contentContainer.innerHTML = `
+            <div class="page-header mb-8">
+                <h1 class="text-3xl font-bold text-slate-800">دایرکتوری سازمان</h1>
+                <p class="text-slate-500 mt-1">لیست همکاران و اطلاعات تماس آن‌ها.</p>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                ${employeesHtml || '<p>کارمندی یافت نشد.</p>'}
             </div>
         `;
     }
-    // --- بخش دایرکتوری ---
-    else if (pageName === 'directory') {
-        const teamCardsHtml = state.teams.map(team => {
-            const leader = state.employees.find(e => e.id === team.leaderId);
-            const members = state.employees.filter(e => team.memberIds?.includes(e.id));
-            return `
-                <div class="bg-white p-6 rounded-xl shadow-md flex flex-col">
-                    <div class="flex items-center mb-4">
-                        <img src="${team.avatar}" alt="${team.name}" class="w-16 h-16 rounded-full object-cover ml-4 border-2 border-slate-200">
-                        <div>
-                            <h3 class="text-xl font-bold text-blue-600">${team.name}</h3>
-                            <p class="text-sm text-slate-500"><span class="font-semibold">رهبر تیم:</span> ${leader ? leader.name : 'نامشخص'}</p>
-                        </div>
-                    </div>
-                    <div class="border-t pt-4 mb-4">
-                        <h4 class="font-semibold text-slate-600 mb-3 text-sm">اهداف کلیدی (OKRs)</h4>
-                        <div class="space-y-3">
-                            ${(team.okrs && team.okrs.length > 0) 
-                                ? team.okrs.map(okr => `<div><div class="flex justify-between items-center mb-1 text-xs"><span class="text-slate-600">${okr.title}</span><span class="font-medium text-blue-600">${okr.progress}%</span></div><div class="progress-bar w-full"><div class="progress-bar-fill" style="width: ${okr.progress}%;"></div></div></div>`).join('') 
-                                : '<p class="text-xs text-slate-400">هدفی برای این تیم ثبت نشده است.</p>'
-                            }
-                        </div>
-                    </div>
-                    <div class="border-t pt-4 mt-auto">
-                        <h4 class="font-semibold text-slate-600 mb-3 text-sm">اعضا (${members.length} نفر):</h4>
-                        <div class="flex flex-wrap gap-x-6 gap-y-3">
-                            ${members.map(member => `<div class="flex items-center gap-2" title="${member.name} - ${member.jobTitle}"><img src="${member.avatar}" alt="${member.name}" class="w-8 h-8 rounded-full object-cover"><p class="text-sm font-medium">${member.name}</p></div>`).join('')}
-                        </div>
-                    </div>
-                </div>
-            `;
-        }).join('');
-        contentContainer.innerHTML = `<h1 class="text-3xl font-bold text-slate-800 mb-6">دایرکتوری سازمان</h1><div class="space-y-6">${teamCardsHtml || '<p>هنوز تیمی در سازمان ثبت نشده است.</p>'}</div>`;
-    
-    } 
+
     // --- بخش درخواست‌ها ---
-// در تابع renderEmployeePortalPage
-// کل بلوک else if (pageName === 'requests') را با این کد جایگزین کنید
-else if (pageName === 'requests') {
-    const myRequests = (state.requests || []).filter(req => req.uid === employee.uid)
-      .sort((a, b) => {
-    const dateA = a.lastUpdatedAt?.toDate() || a.createdAt?.toDate();
-    const dateB = b.lastUpdatedAt?.toDate() || b.createdAt?.toDate();
-    return new Date(dateB) - new Date(dateA);
-});
+    else if (pageName === 'requests') {
+        const myRequests = (state.requests || []).filter(req => req.uid === employee.uid)
+            .sort((a, b) => (b.lastUpdatedAt?.toDate() || b.createdAt?.toDate()) - (a.lastUpdatedAt?.toDate() || a.createdAt?.toDate()));
 
-    const requestsHtml = myRequests.map(req => {
-        const statusColors = {
-            'درحال بررسی': 'bg-yellow-100 text-yellow-800',
-            'در حال انجام': 'bg-blue-100 text-blue-800',
-            'تایید شده': 'bg-green-100 text-green-800',
-            'رد شده': 'bg-red-100 text-red-800'
-        };
-        
-        return `
-            <tr class="hover:bg-slate-50">
-                <td class="p-3">${req.requestType}</td>
-                <td class="p-3">${toPersianDate(req.createdAt)}</td>
-                <td class="p-3"><span class="px-2 py-1 text-xs font-medium rounded-full ${statusColors[req.status] || 'bg-slate-100'}">${req.status}</span></td>
-                <td class="p-3">
-                    <button class="view-request-btn text-sm text-indigo-600 hover:underline" data-id="${req.firestoreId}">مشاهده جزئیات</button>
-                </td>
-            </tr>
-        `;
-    }).join('');
-
-    contentContainer.innerHTML = `
-        <div class="flex justify-between items-center page-header">
-            <h1 class="text-3xl font-bold text-slate-800">درخواست‌های من</h1>
-            <button id="add-new-request-btn" class="primary-btn flex items-center gap-2">
-                <i data-lucide="plus-circle" class="w-4 h-4"></i><span>ثبت درخواست جدید</span>
-            </button>
-        </div>
-        <div class="card p-0">
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm text-right">
-                    <thead class="bg-slate-50">
-                        <tr>
-                            <th class="p-3 font-semibold text-slate-600">نوع درخواست</th>
-                            <th class="p-3 font-semibold text-slate-600">تاریخ ثبت</th>
-                            <th class="p-3 font-semibold text-slate-600">وضعیت</th>
-                            <th class="p-3 font-semibold text-slate-600"></th>
-                        </tr>
-                    </thead>
-                    <tbody id="my-requests-table-body">
-                        ${requestsHtml || '<tr><td colspan="4" class="text-center py-8 text-slate-500">شما هنوز درخواستی ثبت نکرده‌اید.</td></tr>'}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    `;
-}
-    // --- بخش اسناد سازمان ---
-    else if (pageName === 'documents') {
-        const documentsByCategory = (state.companyDocuments || []).reduce((acc, doc) => {
-            const category = doc.category || 'عمومی';
-            if (!acc[category]) { acc[category] = []; }
-            acc[category].push(doc);
-            return acc;
-        }, {});
-
-        const documentsHtml = Object.keys(documentsByCategory).map(category => {
-            const docsInCategory = documentsByCategory[category];
+        const requestsHtml = myRequests.map(req => {
+            const statusMap = {
+                'درحال بررسی': { text: 'در حال بررسی', color: 'bg-yellow-100 text-yellow-800' },
+                'در حال انجام': { text: 'در حال انجام', color: 'bg-blue-100 text-blue-800' },
+                'تایید شده': { text: 'تایید شده', color: 'bg-green-100 text-green-800' },
+                'رد شده': { text: 'رد شده', color: 'bg-red-100 text-red-800' }
+            };
+            const status = statusMap[req.status] || { text: req.status, color: 'bg-slate-100' };
             return `
-                <div class="mb-6">
-                    <h3 class="text-lg font-semibold text-slate-600 border-b pb-2 mb-3">${category}</h3>
-                    <div class="space-y-2">
-                        ${docsInCategory.map(doc => `<a href="${doc.fileUrl}" target="_blank" class="flex justify-between items-center bg-slate-50 p-3 rounded-lg hover:bg-slate-100 transition"><div class="flex items-center gap-3 text-blue-600"><i data-lucide="file-text" class="w-5 h-5"></i><span class="font-semibold">${doc.title}</span></div><i data-lucide="download" class="w-5 h-5 text-slate-400"></i></a>`).join('')}
-                    </div>
-                </div>
-            `;
+                <tr class="hover:bg-slate-50">
+                    <td class="p-3">${req.requestType}</td>
+                    <td class="p-3">${toPersianDate(req.createdAt)}</td>
+                    <td class="p-3"><span class="px-2 py-1 text-xs font-medium rounded-full ${status.color}">${status.text}</span></td>
+                    <td class="p-3">
+                        <button class="view-request-btn text-sm text-indigo-600 hover:underline" data-id="${req.firestoreId}">مشاهده جزئیات</button>
+                    </td>
+                </tr>`;
         }).join('');
 
-        contentContainer.innerHTML = `<h1 class="text-3xl font-bold text-slate-800 mb-6">اسناد و فایل‌های سازمان</h1><div class="bg-white p-6 rounded-xl shadow-md">${documentsHtml || '<p class="text-center text-slate-500 py-8">هنوز سندی در سیستم بارگذاری نشده است.</p>'}</div>`;
-    } 
-    // --- بخش صندوق پیام (اینباکس) ---
-// در تابع renderEmployeePortalPage
-// کل بلوک else if (pageName === 'inbox') را با این کد جایگزین کنید
+        contentContainer.innerHTML = `
+            <div class="flex justify-between items-center page-header">
+                <h1 class="text-3xl font-bold text-slate-800">درخواست‌های من</h1>
+                <button id="add-new-request-btn" class="primary-btn flex items-center gap-2"><i data-lucide="plus-circle" class="w-4 h-4"></i><span>ثبت درخواست جدید</span></button>
+            </div>
+            <div class="card p-0"><div class="overflow-x-auto"><table class="w-full text-sm text-right">
+                <thead class="bg-slate-50"><tr>
+                    <th class="p-3 font-semibold text-slate-600">نوع درخواست</th>
+                    <th class="p-3 font-semibold text-slate-600">تاریخ ثبت</th>
+                    <th class="p-3 font-semibold text-slate-600">وضعیت</th>
+                    <th class="p-3 font-semibold text-slate-600"></th>
+                </tr></thead>
+                <tbody>${requestsHtml || '<tr><td colspan="4" class="text-center py-8 text-slate-500">شما هنوز درخواستی ثبت نکرده‌اید.</td></tr>'}</tbody>
+            </table></div></div>`;
+    }
+    
+    // --- بخش اسناد ---
+    else if (pageName === 'documents') {
+        const documentsHtml = (state.companyDocuments || []).map(doc => `
+            <a href="${doc.fileUrl}" target="_blank" class="flex justify-between items-center bg-slate-50 p-3 rounded-lg hover:bg-slate-100 transition">
+                <div class="flex items-center gap-3 text-blue-600"><i data-lucide="file-text" class="w-5 h-5"></i><span class="font-semibold">${doc.title}</span></div>
+                <i data-lucide="download" class="w-5 h-5 text-slate-400"></i>
+            </a>`).join('');
 
-else if (pageName === 'inbox') {
-    const employeeRef = doc(db, `artifacts/${appId}/public/data/employees`, employee.firestoreId);
-    updateDoc(employeeRef, { "personalInfo.lastCheckedInbox": serverTimestamp() })
-        .then(() => {
-                const updatedEmployee = state.employees.find(e => e.firestoreId === employee.firestoreId);
-                updateEmployeeNotificationBell(updatedEmployee);
-        });
-
+        contentContainer.innerHTML = `
+            <div class="page-header mb-8"><h1 class="text-3xl font-bold text-slate-800">اسناد سازمان</h1></div>
+            <div class="card"><div class="card-content space-y-2">${documentsHtml || '<p>سندی یافت نشد.</p>'}</div></div>`;
+    }
+    
+    // --- بخش صندوق پیام ---
+    else if (pageName === 'inbox') {
         const myTeam = state.teams.find(team => team.memberIds?.includes(employee.id));
         const myTeamId = myTeam ? myTeam.firestoreId : null;
-
         const myMessages = (state.announcements || [])
             .filter(msg => {
                 const targets = msg.targets;
-                if (!msg.createdAt?.toDate) return false; // جلوگیری از خطا برای داده‌های ناقص
+                if (!msg.createdAt?.toDate) return false;
                 if (targets.type === 'public') return true;
                 if (targets.type === 'roles' && targets.roles?.includes('employee')) return true;
                 if (targets.type === 'users' && targets.userIds?.includes(employee.firestoreId)) return true;
@@ -581,40 +542,27 @@ else if (pageName === 'inbox') {
             })
             .sort((a, b) => new Date(b.createdAt?.toDate()) - new Date(a.createdAt?.toDate()));
 
-    const messagesHtml = myMessages.map(msg => `
-        <tr class="hover:bg-slate-50">
-            <td class="p-3 font-semibold">${msg.title}</td>
-            <td class="p-3">${msg.senderName}</td>
-            <td class="p-3">${toPersianDate(msg.createdAt)}</td>
-            <td class="p-3">
-                <button class="view-message-btn text-sm text-indigo-600 hover:underline" data-id="${msg.firestoreId}">مشاهده پیام</button>
-            </td>
-        </tr>
-    `).join('');
+        const messagesHtml = myMessages.map(msg => `
+            <tr class="hover:bg-slate-50">
+                <td class="p-3 font-semibold">${msg.title}</td>
+                <td class="p-3">${msg.senderName}</td>
+                <td class="p-3">${toPersianDate(msg.createdAt)}</td>
+                <td class="p-3"><button class="view-message-btn text-sm text-indigo-600 hover:underline" data-id="${msg.firestoreId}">مشاهده پیام</button></td>
+            </tr>`).join('');
+            
+        contentContainer.innerHTML = `
+            <div class="page-header mb-8"><h1 class="text-3xl font-bold text-slate-800">صندوق پیام</h1></div>
+            <div class="card p-0"><div class="overflow-x-auto"><table class="w-full text-sm text-right">
+                <thead class="bg-slate-50"><tr>
+                    <th class="p-3 font-semibold text-slate-600">عنوان</th>
+                    <th class="p-3 font-semibold text-slate-600">فرستنده</th>
+                    <th class="p-3 font-semibold text-slate-600">تاریخ</th>
+                    <th class="p-3 font-semibold text-slate-600"></th>
+                </tr></thead>
+                <tbody>${messagesHtml || '<tr><td colspan="4" class="text-center py-8 text-slate-500">شما هیچ پیامی ندارید.</td></tr>'}</tbody>
+            </table></div></div>`;
+    }
 
-    contentContainer.innerHTML = `
-        <div class="page-header">
-            <h1 class="text-3xl font-bold text-slate-800">صندوق پیام</h1>
-        </div>
-        <div class="card p-0">
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm text-right">
-                    <thead class="bg-slate-50">
-                        <tr>
-                            <th class="p-3 font-semibold text-slate-600">عنوان</th>
-                            <th class="p-3 font-semibold text-slate-600">فرستنده</th>
-                            <th class="p-3 font-semibold text-slate-600">تاریخ دریافت</th>
-                            <th class="p-3 font-semibold text-slate-600"></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${messagesHtml || '<tr><td colspan="4" class="text-center py-8 text-slate-500">شما هیچ پیامی ندارید.</td></tr>'}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    `;
-}
     // --- بخش پیش‌فرض ---
     else {
         contentContainer.innerHTML = `<h1>صفحه مورد نظر یافت نشد.</h1>`;
@@ -747,6 +695,8 @@ mainContent.addEventListener('click', (e) => {
 
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید جایگزین کنید
 function renderEmployeePortal() {
     document.getElementById('login-container').classList.add('hidden');
     document.getElementById('dashboard-container').classList.add('hidden');
@@ -771,7 +721,7 @@ function renderEmployeePortal() {
                     <p class="employee-title">${employee.jobTitle || 'بدون عنوان شغلی'}</p>
                 </div>
 
-                <div class="my-8 border-t border-white/20"></div>
+                <div class="my-6 border-t border-white/20"></div>
 
                 <nav id="employee-portal-nav" class="flex flex-col gap-2">
                     <a href="#profile" class="nav-item active"><i data-lucide="layout-dashboard"></i><span>داشبورد</span></a>
@@ -781,7 +731,10 @@ function renderEmployeePortal() {
                     <a href="#inbox" class="nav-item"><i data-lucide="inbox"></i><span>صندوق پیام</span></a>
                 </nav>
 
-                <div class="mt-auto">
+                <div class="mt-auto space-y-4">
+                     <button id="change-password-btn" class="w-full text-xs text-indigo-200 hover:text-white font-semibold flex items-center gap-1 justify-center">
+                        <i data-lucide="key-round" class="w-3 h-3"></i><span>مدیریت رمز عبور</span>
+                    </button>
                     <button id="portal-logout-btn" class="w-full flex items-center justify-center gap-3 px-4 py-2 rounded-lg logout-btn">
                         <i data-lucide="log-out"></i><span>خروج از حساب</span>
                     </button>
@@ -791,10 +744,7 @@ function renderEmployeePortal() {
             <div class="flex-1 flex flex-col h-screen overflow-y-hidden">
                 <header class="bg-white shadow-sm">
                     <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-                        <div class="flex items-center gap-3">
-                            <img src="logo.png" alt="NikHR Logo" class="w-8 h-8">
-                            <h1 class="text-xl font-bold text-slate-800">پورتال کارمندان</h1>
-                        </div>
+                        <h1 class="text-xl font-bold text-slate-800">پورتال کارمندان</h1>
                         <div id="portal-notification-bell-wrapper" class="relative">
                             <button id="portal-notification-bell-btn" class="relative cursor-pointer p-2 rounded-full hover:bg-slate-100">
                                 <i data-lucide="bell" class="text-slate-600"></i>
@@ -808,12 +758,13 @@ function renderEmployeePortal() {
         </div>
     `;
     
+    // بعد از ساختار، بقیه کارها را انجام بده
     lucide.createIcons();
-    // با صفحه 'profile' به عنوان پیش‌فرض شروع کن
     renderEmployeePortalPage('profile', employee);
     setupEmployeePortalEventListeners(employee);
     updateEmployeeNotificationBell(employee);
 }
+
         // --- UTILITY & HELPER FUNCTIONS ---
         // --- تابع جدید برای تبدیل تاریخ به شمسی ---
         // --- تابع جدید برای تبدیل اعداد فارسی به انگلیسی ---
