@@ -1,14 +1,11 @@
-  
-        // --- ALL JAVASCRIPT CODE STARTS HERE ---
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updatePassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, onAuthStateChanged, updatePassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
     getFirestore, doc, getDoc, setDoc, onSnapshot, collection,
     addDoc, getDocs, writeBatch, deleteDoc, updateDoc, query, where, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
-// وارد کردن توابع مربوط به احراز هویت از فایل auth.js
 import { 
     showLoginPage, 
     showDashboard, 
@@ -229,6 +226,19 @@ function listenToData() {
         activeListeners.push(unsubscribe);
     });
 }
+
+// --- ROUTER ---
+export const router = () => {
+    const hash = window.location.hash;
+    if (hash.startsWith('#survey-taker')) {
+        const urlParams = new URLSearchParams(hash.split('?')[1]);
+        const surveyId = urlParams.get('id');
+        renderSurveyTakerPage(surveyId);
+    } else {
+        const pageName = hash.substring(1) || 'dashboard';
+        navigateTo(pageName);
+    }
+};
 // این دو تابع جدید را به فایل js/main.js اضافه کنید
 
 // در فایل js/main.js
