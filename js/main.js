@@ -470,7 +470,7 @@ function renderEmployeePortalPage(pageName, employee) {
     }
     
     lucide.createIcons();
-   setupEmployeePortalEventListeners(employee, auth, signOut);
+   setupEmployeePortalEventListeners(employee);
 }
 
 // در فایل js/main.js
