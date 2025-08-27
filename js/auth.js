@@ -6,13 +6,13 @@ import {
     signInWithEmailAndPassword, 
     signOut 
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { state, showToast } from './main.js'; // state را از main.js وارد می‌کنیم
+import { state, showToast, router } from './main.js'; // state و router را از main.js وارد می‌کنیم
 
-// توابع کمکی نقش‌ها به اینجا منتقل شدند
+// توابع کمکی نقش‌ها در اینجا تعریف و export می‌شوند
 export const isAdmin = () => state.currentUser?.role === 'admin';
 export const canEdit = () => state.currentUser?.role === 'admin' || state.currentUser?.role === 'editor';
 
-// تابع جدید برای نمایش صفحه لاگین
+// تابع نمایش صفحه لاگین
 export const showLoginPage = () => {
     const dashboardContainer = document.getElementById('dashboard-container');
     const employeePortalContainer = document.getElementById('employee-portal-container');
@@ -26,10 +26,7 @@ export const showLoginPage = () => {
     document.getElementById('loading-overlay').style.display = 'none';
 };
 
-// تابع جدید برای نمایش داشبورد ادمین
-// در فایل js/auth.js
-// کل این تابع را با نسخه جدید جایگزین کنید
-
+// تابع نمایش داشبورد ادمین
 export const showDashboard = () => {
     document.getElementById('login-container').classList.add('hidden');
     const dashboardContainer = document.getElementById('dashboard-container');
@@ -37,17 +34,16 @@ export const showDashboard = () => {
         dashboardContainer.classList.remove('hidden');
         dashboardContainer.classList.add('md:flex');
         
-        // این خط به اینجا منتقل شده تا در زمان درست اجرا شود
         const settingsLink = document.getElementById('settings-nav-link');
         if (settingsLink) {
             settingsLink.style.display = isAdmin() ? 'flex' : 'none';
         }
     }
+    // بعد از نمایش ساختار، محتوای صفحه پیش‌فرض را بارگذاری می‌کنیم
+    router();
 };
 
-// در فایل js/auth.js
-// کل این تابع را با نسخه جدید و کامل جایگزین کنید
-
+// تابع مدیریت تمام رویدادهای مربوط به احراز هویت
 export const setupAuthEventListeners = (auth) => {
     const loginForm = document.getElementById('login-form');
     const signupForm = document.getElementById('signup-form');
@@ -55,23 +51,18 @@ export const setupAuthEventListeners = (auth) => {
     const showLogin = document.getElementById('show-login');
     const logoutBtn = document.getElementById('logout-btn');
 
-    // منطق فرم لاگین (اصلاح شده)
     loginForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const email = loginForm.email.value;
         const password = loginForm.password.value;
         const loginButton = loginForm.querySelector('button[type="submit"]');
-
         loginButton.disabled = true;
         loginButton.innerText = 'در حال ورود...';
 
         try {
             await signInWithEmailAndPassword(auth, email, password);
             showToast('با موفقیت وارد شدید.');
-            setTimeout(() => {
-                window.location.reload();
-            }, 1000);
-
+            // بعد از لاگین موفق، صفحه به صورت خودکار رفرش می‌شود و دیگر نیازی به کد اضافه نیست
         } catch (error) {
             showToast(`خطا در ورود: ${error.message}`, 'error');
             loginButton.disabled = false;
