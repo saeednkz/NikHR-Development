@@ -263,51 +263,6 @@ export const router = () => {
 // کل این تابع را با نسخه جدید و کامل جایگزین کنید
 // این تابع جدید را به js/main.js اضافه کنید (مثلاً قبل از تابع renderEmployeePortal)
 
-const renderBirthdaysWidget = (currentEmployee) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const upcomingBirthdays = state.employees
-        .filter(emp => emp.status === 'فعال' && emp.personalInfo?.birthDate)
-        .map(emp => {
-            const birthDate = new Date(emp.personalInfo.birthDate);
-            const nextBirthday = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
-            if (nextBirthday < today) {
-                nextBirthday.setFullYear(today.getFullYear() + 1);
-            }
-            const daysUntil = Math.round((nextBirthday - today) / (1000 * 60 * 60 * 24));
-            return { ...emp, daysUntil, nextBirthday };
-        })
-        .filter(emp => emp.daysUntil >= 0 && emp.daysUntil <= 14) // تولدهای ۱۴ روز آینده
-        .sort((a, b) => a.daysUntil - b.daysUntil);
-
-    if (upcomingBirthdays.length === 0) {
-        return ''; // اگر تولدی نزدیک نبود، چیزی نمایش نده
-    }
-
-    return `
-        <div class="bg-white p-6 rounded-xl shadow-md">
-            <h3 class="text-lg font-semibold text-slate-700 mb-4 flex items-center">
-                <i data-lucide="cake" class="ml-2 text-pink-500"></i>
-                تولدهای نزدیک
-            </h3>
-            <div class="space-y-3">
-                ${upcomingBirthdays.map(emp => `
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <img src="${emp.avatar}" class="w-10 h-10 rounded-full object-cover">
-                            <div>
-                                <p class="font-semibold text-sm">${emp.name}</p>
-                                <p class="text-xs text-slate-500">${toPersianDate(emp.nextBirthday)} (${emp.daysUntil === 0 ? 'امروز!' : `${emp.daysUntil} روز دیگر`})</p>
-                            </div>
-                        </div>
-                        ${emp.uid !== currentEmployee.uid ? `<button class="send-wish-btn text-sm bg-pink-500 text-white py-1 px-3 rounded-md hover:bg-pink-600" data-id="${emp.uid}" data-name="${emp.name}">ارسال تبریک</button>` : ''}
-                    </div>
-                `).join('')}
-            </div>
-        </div>
-    `;
-};
 // این تابع جدید را به js/main.js اضافه کنید
 const renderMyBirthdayWishesWidget = (employee) => {
     const today = new Date();
