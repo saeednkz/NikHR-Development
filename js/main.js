@@ -387,9 +387,9 @@ function renderEmployeePortalPage(pageName, employee) {
 
         const performanceHistoryHtml = (employee.performanceHistory || [])
             .sort((a,b) => new Date(b.reviewDate) - new Date(a.reviewDate))
-            .slice(0, 3)
+            .slice(0, 3) // نمایش ۳ ارزیابی آخر
             .map(review => `
-                <div class="p-4 bg-slate-50 rounded-lg border border-slate-200 shadow-sm mb-3 last:mb-0">
+                <div class="performance-item">
                     <div class="flex justify-between items-center mb-2">
                         <div class="flex items-center gap-2 text-slate-800">
                             <i data-lucide="award" class="w-4 h-4 text-amber-500"></i>
@@ -399,61 +399,67 @@ function renderEmployeePortalPage(pageName, employee) {
                         <p class="text-xs text-slate-500">${toPersianDate(review.reviewDate)}</p>
                     </div>
                     <p class="text-sm text-slate-700 mt-2"><strong>نقاط قوت:</strong> ${review.strengths || 'ثبت نشده'}</p>
+                    ${review.areasForImprovement ? `<p class="text-sm text-slate-700 mt-1"><strong>زمینه‌های بهبود:</strong> ${review.areasForImprovement}</p>` : ''}
                 </div>
             `).join('') || '<div class="text-center py-6"><i data-lucide="inbox" class="w-12 h-12 mx-auto text-slate-300"></i><p class="mt-2 text-sm text-slate-500">سابقه‌ای از ارزیابی عملکرد شما ثبت نشده است.</p></div>';
 
         contentContainer.innerHTML = `
-            <div class="space-y-8">
-                <div class="card p-6 flex flex-col sm:flex-row items-center gap-6">
-                    <img src="${employee.avatar}" alt="${employee.name}" class="w-32 h-32 rounded-full object-cover border-4 border-slate-100 shadow-lg">
-                    <div class="text-center sm:text-right">
-                        <h1 class="text-3xl font-bold text-slate-800">${employee.name}</h1>
-                        <p class="text-indigo-600 font-semibold text-lg mt-1">${employee.jobTitle || ''}</p>
-                        <div class="mt-3 flex flex-wrap justify-center sm:justify-start gap-x-4 gap-y-2 text-sm">
-                            <div class="flex items-center gap-2 text-slate-600"><i data-lucide="building-2" class="w-4 h-4 text-slate-400"></i><span>${employee.department || '-'}</span></div>
-                            <div class="flex items-center gap-2 text-slate-600"><i data-lucide="calendar-days" class="w-4 h-4 text-slate-400"></i><span>عضویت از ${toPersianDate(employee.startDate)}</span></div>
+            <div class="page-header mb-8">
+                <h1 class="text-3xl font-bold text-slate-800">پروفایل من</h1>
+                <p class="text-slate-500 mt-1">رزومه حرفه‌ای شما در NikHR</p>
+            </div>
+            
+            <div class="max-w-7xl mx-auto employee-profile-layout">
+                <div class="employee-sidebar-info flex flex-col items-center text-center">
+                    <div class="profile-picture-container">
+                        <img src="${employee.avatar}" alt="${employee.name}">
+                    </div>
+                    <h2 class="text-3xl font-bold text-white mb-1">${employee.name}</h2>
+                    <p class="text-indigo-300 font-semibold text-lg">${employee.jobTitle || 'عنوان شغلی'}</p>
+                    <button id="change-password-btn" class="text-xs text-indigo-200 hover:text-white font-semibold flex items-center gap-1 mt-4">
+                        <i data-lucide="key-round" class="w-3 h-3"></i><span>مدیریت رمز عبور</span>
+                    </button>
+
+                    <div class="w-full mt-8">
+                        <h3 class="section-title">اطلاعات تماس</h3>
+                        <div class="space-y-3 text-right">
+                            <div class="info-item"><i data-lucide="mail" class="w-5 h-5"></i><span>${employee.personalInfo?.email || '-'}</span></div>
+                            <div class="info-item"><i data-lucide="phone" class="w-5 h-5"></i><span>${employee.personalInfo?.phone || '-'}</span></div>
+                            <div class="info-item"><i data-lucide="map-pin" class="w-5 h-5"></i><span>${employee.personalInfo?.address || '-'}</span></div>
+                        </div>
+                    </div>
+
+                    <div class="w-full mt-8">
+                        <h3 class="section-title">اطلاعات سازمانی</h3>
+                        <div class="space-y-3 text-right">
+                            <div class="info-item"><i data-lucide="id-card" class="w-5 h-5"></i><span>کد پرسنلی: ${employee.id}</span></div>
+                            <div class="info-item"><i data-lucide="briefcase" class="w-5 h-5"></i><span>دپارتمان: ${employee.department || '-'}</span></div>
+                            <div class="info-item"><i data-lucide="user-check" class="w-5 h-5"></i><span>مدیر: ${manager ? manager.name : '-'}</span></div>
+                            <div class="info-item"><i data-lucide="calendar-check" class="w-5 h-5"></i><span>استخدام: ${toPersianDate(employee.startDate)}</span></div>
                         </div>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <div class="lg:col-span-2 space-y-8">
-                        <div class="card p-0">
-                            <div class="card-header flex justify-between items-center">
-                                <h3 class="font-semibold text-slate-800 flex items-center gap-2"><i data-lucide="user-round" class="w-5 h-5 text-indigo-500"></i>اطلاعات پرسنلی</h3>
-                                <button id="edit-my-profile-btn" class="secondary-btn py-1 px-3 text-xs flex items-center gap-1">
-                                    <i data-lucide="edit-3" class="w-3 h-3"></i><span>ویرایش</span>
-                                </button>
-                            </div>
-                            <div class="card-content grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-sm">
-                                <p><strong>کد پرسنلی:</strong> ${employee.id}</p>
-                                <p><strong>مدیر مستقیم:</strong> ${manager ? manager.name : '-'}</p>
-                                <p><strong>ایمیل:</strong> ${employee.personalInfo?.email || '-'}</p>
-                                <p><strong>شماره تماس:</strong> ${employee.personalInfo?.phone || '-'}</p>
-                                <p><strong>تاریخ تولد:</strong> ${toPersianDate(employee.personalInfo?.birthDate)}</p>
-                                <p><strong>وضعیت تاهل:</strong> ${employee.personalInfo?.maritalStatus || '-'}</p>
-                            </div>
-                        </div>
-
-                        <div class="card p-0">
-                            <div class="card-header flex items-center gap-2">
-                                <i data-lucide="trending-up" class="w-5 h-5 text-teal-500"></i>
-                                <h3 class="font-semibold text-slate-800">خلاصه عملکرد</h3>
-                            </div>
-                            <div class="card-content p-6">${performanceHistoryHtml}</div>
-                        </div>
+                <div class="employee-main-content-profile">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="block-header"><i data-lucide="info" class="w-7 h-7"></i>درباره من</h2>
+                        <button id="edit-my-profile-btn" class="primary-btn py-2 px-4 text-sm flex items-center gap-1">
+                            <i data-lucide="edit-3" class="w-4 h-4"></i><span>ویرایش پروفایل</span>
+                        </button>
+                    </div>
+                    <div class="text-slate-700 leading-relaxed mb-8">
+                        <p>${employee.personalInfo?.bio || 'متاسفانه بیوگرافی برای شما ثبت نشده است. می‌توانید با کلیک بر روی دکمه ویرایش، آن را اضافه کنید.'}</p>
                     </div>
 
-                    <div class="lg:col-span-1 space-y-8">
-                        ${renderMyBirthdayWishesWidget(employee)}
-                        ${renderBirthdaysWidget(employee)}
-                        <div class="card p-4">
-                             <button id="change-password-btn" class="w-full text-sm text-slate-600 hover:text-indigo-600 font-semibold flex items-center gap-2 justify-center py-2">
-                                <i data-lucide="key-round" class="w-4 h-4"></i><span>مدیریت رمز عبور</span>
-                            </button>
-                        </div>
+                    ${renderMyBirthdayWishesWidget(employee)}
+                    ${renderBirthdaysWidget(employee)}
+
+                    <div class="mt-8">
+                        <h2 class="block-header"><i data-lucide="trending-up" class="w-7 h-7"></i>عملکرد و ارزیابی‌ها</h2>
+                        ${performanceHistoryHtml}
                     </div>
-                </div>
+
+                    </div>
             </div>
         `;
     }
