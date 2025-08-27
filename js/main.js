@@ -349,79 +349,84 @@ function renderEmployeePortalPage(pageName, employee) {
     const contentContainer = document.getElementById('employee-main-content');
     if (!contentContainer) return;
 
+// در فایل js/main.js
+// فقط و فقط بلوک if (pageName === 'profile') را با این کد جایگزین کنید
+
 if (pageName === 'profile') {
-        const manager = state.teams.find(t => t.memberIds?.includes(employee.id))
-            ? state.employees.find(e => e.id === state.teams.find(t => t.memberIds.includes(employee.id)).leaderId)
-            : null;
+    const manager = state.teams.find(t => t.memberIds?.includes(employee.id))
+        ? state.employees.find(e => e.id === state.teams.find(t => t.memberIds.includes(employee.id)).leaderId)
+        : null;
 
-        const performanceHistoryHtml = (employee.performanceHistory || [])
-            .sort((a,b) => new Date(b.reviewDate) - new Date(a.reviewDate))
-            .slice(0, 3) // نمایش ۳ ارزیابی آخر
-            .map(review => `
-                <div class="p-4 bg-slate-50 rounded-lg border border-slate-200 shadow-sm mb-3 last:mb-0">
-                    <div class="flex justify-between items-center mb-2">
-                        <div class="flex items-center gap-2 text-slate-800">
-                            <i data-lucide="award" class="w-4 h-4 text-amber-500"></i>
-                            <span class="font-bold">امتیاز کلی:</span>
-                            <span class="text-lg font-semibold text-green-600">${review.overallScore}/5</span>
-                        </div>
-                        <p class="text-xs text-slate-500">${toPersianDate(review.reviewDate)}</p>
-                    </div>
-                    <p class="text-sm text-slate-700 mt-2"><strong>نقاط قوت:</strong> ${review.strengths || 'ثبت نشده'}</p>
-                </div>
-            `).join('') || '<div class="text-center py-6"><i data-lucide="inbox" class="w-12 h-12 mx-auto text-slate-300"></i><p class="mt-2 text-sm text-slate-500">سابقه‌ای از ارزیابی عملکرد شما ثبت نشده است.</p></div>';
+    const performanceHistoryHtml = (employee.performanceHistory || [])
+        .sort((a,b) => new Date(b.reviewDate) - new Date(a.reviewDate))
+        .slice(0, 3) // نمایش ۳ ارزیابی آخر
+        .map(review => `
+            <div class="p-4 bg-slate-50 rounded-lg border border-slate-200 shadow-sm mb-3 last:mb-0">
+                <div class="flex justify-between items-center mb-2">
+                    <div class="flex items-center gap-2 text-slate-800">
+                        <i data-lucide="award" class="w-4 h-4 text-amber-500"></i>
+                        <span class="font-bold">امتیاز کلی:</span>
+                        <span class="text-lg font-semibold text-green-600">${review.overallScore}/5</span>
+                    </div>
+                    <p class="text-xs text-slate-500">${toPersianDate(review.reviewDate)}</p>
+                </div>
+                <p class="text-sm text-slate-700 mt-2"><strong>نقاط قوت:</strong> ${review.strengths || 'ثبت نشده'}</p>
+            </div>
+        `).join('') || '<div class="text-center py-6"><i data-lucide="inbox" class="w-12 h-12 mx-auto text-slate-300"></i><p class="mt-2 text-sm text-slate-500">سابقه‌ای از ارزیابی عملکرد شما ثبت نشده است.</p></div>';
 
-        contentContainer.innerHTML = `
-            <div class="page-header flex flex-col sm:flex-row justify-between items-center gap-4 mb-8">
-                <div>
-                    <h1 class="text-3xl font-bold text-slate-800">پروفایل شما</h1>
-                    <p class="text-slate-500 mt-1">خلاصه‌ای از اطلاعات و فعالیت‌های شما در NikHR</p>
-                </div>
-                <div class="flex items-center gap-3 w-full sm:w-auto">
-                    <button id="change-password-btn" class="secondary-btn py-2 px-4 flex items-center gap-2 text-sm w-full justify-center">
-                        <i data-lucide="key-round" class="w-4 h-4"></i><span>تغییر رمز</span>
-                    </button>
-                    <button id="edit-my-profile-btn" class="primary-btn py-2 px-4 flex items-center gap-2 text-sm w-full justify-center">
-                        <i data-lucide="edit-3" class="w-4 h-4"></i><span>ویرایش</span>
-                    </button>
-                </div>
-            </div>
-            
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                                <div class="lg:col-span-1 lg:order-last space-y-8">
-                    ${renderMyBirthdayWishesWidget(employee)}
-                    ${renderBirthdaysWidget(employee)}
-                </div>
+    contentContainer.innerHTML = `
+        <div class="page-header flex flex-col sm:flex-row justify-between items-center gap-4 mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-slate-800">داشبورد شما</h1>
+                <p class="text-slate-500 mt-1">خلاصه‌ای از اطلاعات و فعالیت‌های شما در NikHR</p>
+            </div>
+            <div class="flex items-center gap-3 w-full sm:w-auto">
+                 <button id="change-password-btn" class="secondary-btn py-2 px-4 flex items-center gap-2 text-sm w-full justify-center">
+                    <i data-lucide="key-round" class="w-4 h-4"></i><span>تغییر رمز</span>
+                </button>
+                <button id="edit-my-profile-btn" class="primary-btn py-2 px-4 flex items-center gap-2 text-sm w-full justify-center">
+                    <i data-lucide="edit-3" class="w-4 h-4"></i><span>ویرایش</span>
+                </button>
+            </div>
+        </div>
+        
+        <div class="max-w-7xl mx-auto">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-1 lg:order-last space-y-8">
+                    ${renderMyBirthdayWishesWidget(employee)}
+                    ${renderBirthdaysWidget(employee)}
+                </div>
 
-                                <div class="lg:col-span-2 space-y-8">
-                    <div class="card p-0">
-                        <div class="card-content flex flex-col md:flex-row items-center gap-6 p-6">
-                            <img src="${employee.avatar}" alt="${employee.name}" class="w-28 h-28 rounded-full object-cover border-4 border-slate-100 shadow-md">
-                            <div class="text-center md:text-right">
-                                <h2 class="text-2xl font-bold text-slate-800">${employee.name}</h2>
-                                <p class="text-indigo-600 font-semibold">${employee.jobTitle || ''}</p>
-                                <div class="mt-3 flex flex-wrap justify-center md:justify-start gap-3 text-sm">
-                                    <div class="flex items-center gap-2 text-slate-600"><i data-lucide="building-2" class="w-4 h-4 text-slate-400"></i><span>${employee.department || '-'}</span></div>
-                                    <div class="flex items-center gap-2 text-slate-600"><i data-lucide="calendar-days" class="w-4 h-4 text-slate-400"></i><span>استخدام: ${toPersianDate(employee.startDate)}</span></div>
-                                    ${manager ? `<div class="flex items-center gap-2 text-slate-600"><i data-lucide="user-check" class="w-4 h-4 text-slate-400"></i><span>مدیر: ${manager.name}</span></div>` : ''}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <div class="lg:col-span-2 space-y-8">
+                    <div class="card p-0">
+                        <div class="card-content flex flex-col md:flex-row items-center gap-6 p-6">
+                            <img src="${employee.avatar}" alt="${employee.name}" class="w-28 h-28 rounded-full mx-auto object-cover border-4 border-slate-100 shadow-md">
+                            <div class="text-center md:text-right">
+                                <h2 class="text-2xl font-bold text-slate-800">${employee.name}</h2>
+                                <p class="text-indigo-600 font-semibold">${employee.jobTitle || ''}</p>
+                                <div class="mt-3 flex flex-wrap justify-center md:justify-start gap-x-4 gap-y-2 text-sm">
+                                    <div class="flex items-center gap-2 text-slate-600"><i data-lucide="building-2" class="w-4 h-4 text-slate-400"></i><span>${employee.department || '-'}</span></div>
+                                    <div class="flex items-center gap-2 text-slate-600"><i data-lucide="calendar-days" class="w-4 h-4 text-slate-400"></i><span>استخدام: ${toPersianDate(employee.startDate)}</span></div>
+                                    ${manager ? `<div class="flex items-center gap-2 text-slate-600"><i data-lucide="user-check" class="w-4 h-4 text-slate-400"></i><span>مدیر: ${manager.name}</span></div>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-                    <div class="card p-0">
-                        <div class="card-header flex items-center gap-2">
-                            <i data-lucide="trending-up" class="w-5 h-5 text-teal-500"></i>
-                            <h3 class="font-semibold text-slate-800">خلاصه عملکرد</h3>
-                        </div>
-                        <div class="card-content">
-                            ${performanceHistoryHtml}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-    } 
+                    <div class="card p-0">
+                        <div class="card-header flex items-center gap-2">
+                            <i data-lucide="trending-up" class="w-5 h-5 text-teal-500"></i>
+                            <h3 class="font-semibold text-slate-800">خلاصه عملکرد</h3>
+                        </div>
+                        <div class="card-content">
+                            ${performanceHistoryHtml}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
     // --- بخش دایرکتوری ---
     else if (pageName === 'directory') {
         const teamCardsHtml = state.teams.map(team => {
