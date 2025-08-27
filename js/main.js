@@ -1,18 +1,15 @@
+// --- وارد کردن ماژول‌ها ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, onAuthStateChanged, updatePassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { onAuthStateChanged, updatePassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
     getFirestore, doc, getDoc, setDoc, onSnapshot, collection,
     addDoc, getDocs, writeBatch, deleteDoc, updateDoc, query, where, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
-import { 
-    showLoginPage, 
-    showDashboard, 
-    setupAuthEventListeners,
-    isAdmin,
-    canEdit 
-} from './auth.js';
+
+// وارد کردن توابع از ماژول‌های محلی
+import { initAuth, showLoginPage, showDashboard, setupAuthEventListeners, signOut } from './auth.js';
 import { showToast } from './utils.js';
         
         // --- SURVEY TEMPLATES (COMPREHENSIVE & STANDARD) ---
@@ -47,7 +44,7 @@ import { showToast } from './utils.js';
             'exit': { id: 'exit', title: 'نظرسنجی خروج از سازمان', description: 'درک دلایل ترک سازمان برای بهبود محیط کاری برای کارمندان آینده.', questions: [ { id: 'ext_q1', text: 'لطفاً دلیل یا دلایل اصلی خود برای ترک سازمان را بیان کنید.', type: 'open_text' }, { id: 'ext_q2', text: 'از تجربه کاری خود در این شرکت به طور کلی چقدر رضایت داشتید؟', type: 'rating_1_5' }, { id: 'ext_q3', text: 'آیا احساس می‌کردید شغل شما از مهارت‌هایتان به خوبی استفاده می‌کند؟', type: 'rating_1_5' }, { id: 'ext_q4', text: 'رابطه و کیفیت مدیریت مدیر مستقیم خود را چگونه ارزیابی می‌کنید؟', type: 'rating_1_5' }, { id: 'ext_q5', text: 'آیا فرصت‌های کافی برای رشد و پیشرفت شغلی در اختیار شما قرار گرفت؟', type: 'rating_1_5' }, { id: 'ext_q6', text: 'فرهنگ سازمانی شرکت را چگونه توصیف می‌کنید؟', type: 'open_text' }, { id: 'ext_q7', text: 'آیا بسته حقوق و مزایای خود را منصفانه و رقابتی می‌دانستید؟', type: 'yes_no' }, { id: 'ext_q8', text: 'آیا این شرکت را به عنوان یک محیط کاری به دیگران توصیه می‌کنید؟', type: 'yes_no' }, { id: 'ext_q9', text: 'اگر می‌توانستید یک چیز را در شرکت تغییر دهید، آن چه بود؟', type: 'open_text' }, ] }
         };
 
-        export const state = { employees: [], teams: [], reminders: [], surveyResponses: [], users: [], competencies: [], expenses: [], pettyCashCards: [], chargeHistory: [], dashboardMetrics: {}, orgAnalytics: {}, currentPage: 'dashboard', currentPageTalent: 1, currentUser: null, };
+        const state = { employees: [], teams: [], reminders: [], surveyResponses: [], users: [], competencies: [], expenses: [], pettyCashCards: [], chargeHistory: [], dashboardMetrics: {}, orgAnalytics: {}, currentPage: 'dashboard', currentPageTalent: 1, currentUser: null, };
         let charts = {};
 let activeListeners = []; // [!code ++] این خط را اضافه کنید
         // این کد را نزدیک به تعریف state قرار دهید
@@ -108,7 +105,7 @@ const firebaseConfig = {
 async function initializeFirebase() {
     try {
         app = initializeApp(firebaseConfig);
-        auth = getAuth(app);
+        auth = initAuth(app);
         db = getFirestore(app);
         storage = getStorage(app);
         functions = getFunctions(app);
@@ -498,15 +495,15 @@ function renderEmployeePortalPage(pageName, employee) {
 // کل این تابع را با نسخه جدید و کامل جایگزین کنید
 
 function setupEmployeePortalEventListeners(employee, auth, signOut) {
-    // دکمه خروج از حساب در سایدبار
+    // دکمه خروج از حساب
     document.getElementById('portal-logout-btn')?.addEventListener('click', () => {
         signOut(auth).catch(err => console.error("Logout Error:", err));
     });
     
-    // دکمه تغییر رمز عبور در سایدبار
+    // دکمه تغییر رمز عبور
     document.getElementById('change-password-btn')?.addEventListener('click', showChangePasswordForm);
 
-    // دکمه زنگوله نوتیفیکیشن در هدر
+    // دکمه زنگوله نوتیفیکیشن
     document.getElementById('portal-notification-bell-btn')?.addEventListener('click', () => {
         document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
         const inboxLink = document.querySelector('.nav-item[href="#inbox"]');
@@ -514,7 +511,7 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
         renderEmployeePortalPage('inbox', employee);
     });
 
-    // دکمه‌های ناوبری منو (سایدبار)
+    // دکمه‌های منوی ناوبری
     document.querySelectorAll('.nav-item').forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
@@ -525,30 +522,19 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
         });
     });
 
-    // مدیریت رویدادهای داخل محتوای اصلی (Event Delegation)
+    // مدیریت رویدادهای داخل محتوای اصلی
     const mainContent = document.getElementById('employee-main-content');
     if (mainContent) {
         mainContent.addEventListener('click', (e) => {
-            const editProfileBtn = e.target.closest('#edit-my-profile-btn');
-            const newRequestBtn = e.target.closest('#add-new-request-btn');
+            if (e.target.closest('#edit-my-profile-btn')) {
+                showMyProfileEditForm(employee);
+            }
+            if (e.target.closest('#add-new-request-btn')) {
+                showNewRequestForm(employee);
+            }
             const sendWishBtn = e.target.closest('.send-wish-btn');
-            const viewRequestBtn = e.target.closest('.view-request-btn');
-            const viewMessageBtn = e.target.closest('.view-message-btn');
-
-            if (editProfileBtn) showMyProfileEditForm(employee);
-            if (newRequestBtn) showNewRequestForm(employee);
             if (sendWishBtn) {
-                const targetUid = sendWishBtn.dataset.id;
-                const targetName = sendWishBtn.dataset.name;
-                showBirthdayWishForm(targetUid, targetName);
-            }
-            if (viewRequestBtn) {
-                const requestId = viewRequestBtn.dataset.id;
-                showRequestDetailsModal(requestId, employee);
-            }
-            if (viewMessageBtn) {
-                const messageId = viewMessageBtn.dataset.id;
-                showMessageDetailsModal(messageId);
+                showBirthdayWishForm(sendWishBtn.dataset.id, sendWishBtn.dataset.name);
             }
         });
     }
