@@ -2971,10 +2971,67 @@ function setupProfileModalListeners(emp) {
             if (id === 'edit-competencies-btn') { showEditCompetenciesForm(emp); return; }
             if (id === 'add-performance-btn') { showPerformanceForm(emp); return; }
             if (id === 'edit-personal-info-btn') { showEditPersonalInfoForm(emp); return; }
+            if (id === 'edit-career-path-btn') { showEditCareerPathForm(emp); return; }
             if (btn.classList.contains('edit-performance-btn')) { showPerformanceForm(emp, parseInt(btn.dataset.index)); return; }
             if (btn.classList.contains('delete-performance-btn')) { deletePerformanceReview(emp, parseInt(btn.dataset.index)); return; }
         } finally {
             try { lucide.createIcons(); } catch {}
+        }
+    });
+}
+// Career Path editor modal for admins
+function showEditCareerPathForm(emp) {
+    modalTitle.innerText = `مدیریت مسیر شغلی: ${emp.name}`;
+    const steps = emp.careerPath || [];
+    const rows = steps.map((s, i) => `
+        <div class=\"career-step grid grid-cols-1 md:grid-cols-12 gap-2 items-center\">
+            <input type=\"text\" class=\"md:col-span-4 p-2 border rounded-md step-title\" placeholder=\"عنوان شغلی\" value=\"${s.title || ''}\">
+            <input type=\"text\" class=\"md:col-span-4 p-2 border rounded-md step-date\" placeholder=\"تاریخ سمت (YYYY/MM/DD)\" value=\"${s.date ? toPersianDate(s.date) : ''}\">
+            <input type=\"text\" class=\"md:col-span-3 p-2 border rounded-md step-team\" placeholder=\"تیم\" value=\"${s.team || ''}\">
+            <button type=\"button\" class=\"md:col-span-1 remove-step-btn text-rose-500\"><i data-lucide=\"trash-2\" class=\"w-5 h-5\"></i></button>
+        </div>`).join('');
+    modalContent.innerHTML = `
+        <form id=\"career-form\" class=\"space-y-3\">
+            <div id=\"career-steps\" class=\"space-y-3\">${rows}</div>
+            <div class=\"flex justify-between\">
+                <button type=\"button\" id=\"add-step-btn\" class=\"secondary-btn text-xs\">افزودن گام</button>
+                <div class=\"flex items-center gap-2\">
+                    <button type=\"button\" id=\"back-to-profile-career\" class=\"secondary-btn text-xs\">بازگشت</button>
+                    <button type=\"submit\" class=\"primary-btn text-xs\">ذخیره</button>
+                </div>
+            </div>
+        </form>`;
+    openModal(mainModal, mainModalContainer);
+    lucide.createIcons();
+    const container = document.getElementById('career-steps');
+    document.getElementById('add-step-btn').addEventListener('click', () => {
+        const wrap = document.createElement('div');
+        wrap.className = 'career-step grid grid-cols-1 md:grid-cols-12 gap-2 items-center';
+        wrap.innerHTML = `<input type=\"text\" class=\"md:col-span-4 p-2 border rounded-md step-title\" placeholder=\"عنوان شغلی\"><input type=\"text\" class=\"md:col-span-4 p-2 border rounded-md step-date\" placeholder=\"تاریخ سمت (YYYY/MM/DD)\"><input type=\"text\" class=\"md:col-span-3 p-2 border rounded-md step-team\" placeholder=\"تیم\"><button type=\"button\" class=\"md:col-span-1 remove-step-btn text-rose-500\"><i data-lucide=\"trash-2\" class=\"w-5 h-5\"></i></button>`;
+        container.appendChild(wrap);
+        try { lucide.createIcons(); } catch {}
+    });
+    container.addEventListener('click', (e) => { if (e.target.closest('.remove-step-btn')) { e.target.closest('.career-step').remove(); } });
+    document.getElementById('back-to-profile-career').addEventListener('click', () => viewEmployeeProfile(emp.firestoreId));
+    document.getElementById('career-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const stepsNew = [];
+        document.querySelectorAll('#career-steps .career-step').forEach(step => {
+            const title = step.querySelector('.step-title').value.trim();
+            const dateStr = step.querySelector('.step-date').value.trim();
+            const team = step.querySelector('.step-team').value.trim();
+            if (title) {
+                stepsNew.push({ title, date: persianToEnglishDate(dateStr) || null, team });
+            }
+        });
+        try {
+            const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
+            await updateDoc(docRef, { careerPath: stepsNew });
+            showToast('مسیر شغلی بروزرسانی شد.');
+            viewEmployeeProfile(emp.firestoreId);
+        } catch (error) {
+            console.error('Error updating career path:', error);
+            showToast('خطا در بروزرسانی مسیر شغلی.', 'error');
         }
     });
 }
@@ -3068,7 +3125,30 @@ const viewEmployeeProfile = (employeeId) => {
                                     <div class="space-y-4">${(emp.performanceHistory && emp.performanceHistory.length > 0) ? emp.performanceHistory.sort((a,b) => new Date(b.reviewDate) - new Date(a.reviewDate)).map((review, index) => `<div class=\"bg-white rounded-xl border border-slate-200 p-4\"><div class=\"flex justify-between items-center mb-2\"><p class=\"font-bold text-slate-800\">امتیاز کلی: <span style=\"color:#6B69D6\" class=\"text-lg\">${review.overallScore}/5</span></p>${canEdit() ? `<div class=\"flex gap-2\"><button class=\"edit-performance-btn text-blue-500\" data-index=\"${index}\"><i data-lucide=\"edit\" class=\"w-4 h-4\"></i></button><button class=\"delete-performance-btn text-red-500\" data-index=\"${index}\"><i data-lucide=\"trash-2\" class=\"w-4 h-4\"></i></button></div>` : ''}</div><p class=\"text-sm text-slate-500\">تاریخ: ${toPersianDate(review.reviewDate)} | ارزیاب: ${review.reviewer}</p><div class=\"mt-4 border-t border-dashed pt-4\"><p class=\"text-xs text-slate-700\"><strong>نقاط قوت:</strong> ${review.strengths || '-'} </p><p class=\"text-xs text-slate-700 mt-2\"><strong>زمینه‌های بهبود:</strong> ${review.areasForImprovement || '-'}</p></div></div>`).join('') : '<p class=\"text-sm text-slate-500\">هنوز سابقه ارزیابی عملکردی ثبت نشده است.</p>'}</div>
                                 </div>
                             </div>
-                            <div id="tab-career" class="profile-tab-content hidden"><p class="text-sm text-slate-500">به‌زودی...</p></div>
+                            <div id="tab-career" class="profile-tab-content hidden">
+                                <div class="space-y-4">
+                                    <div class="flex justify-between items-center mb-3">
+                                        <h4 class="font-semibold text-slate-700"><i data-lucide="git-branch" class="ml-2 w-5 h-5" style="color:#6B69D6"></i>مسیر شغلی</h4>
+                                        ${canEdit() ? `<button id="edit-career-path-btn" class="primary-btn text-xs">مدیریت مسیر</button>` : ''}
+                                    </div>
+                                    <div class="bg-white rounded-xl border border-slate-200 p-4">
+                                        ${(() => {
+                                            const steps = (emp.careerPath && emp.careerPath.length) ? emp.careerPath : [{ title: emp.jobTitle || 'قدم اول', date: emp.startDate, team: emp.department || (manager ? manager.name : '') }];
+                                            const items = steps.map((s, i) => `
+                                                <div class=\"relative pl-6 py-3\">
+                                                    <div class=\"absolute right-[-2px] top-3 w-3 h-3 rounded-full\" style=\"background:#6B69D6\"></div>
+                                                    ${i < steps.length - 1 ? '<div class=\\"absolute right-0 top-3 bottom-0 w-px\" style=\\"background:#E2E8F0\\"></div>' : ''}
+                                                    <div class=\"grid grid-cols-1 sm:grid-cols-3 gap-2\">
+                                                        <div class=\"font-bold text-slate-800\">${s.title || '-'}</div>
+                                                        <div class=\"text-sm text-slate-600\">${s.team || '-'}</div>
+                                                        <div class=\"text-sm text-slate-500\">${s.date ? toPersianDate(s.date) : '-'}</div>
+                                                    </div>
+                                                </div>`).join('');
+                                            return `<div class=\"relative\">${items}</div>`;
+                                        })()}
+                                    </div>
+                                </div>
+                            </div>
                             <div id="tab-contracts" class="profile-tab-content hidden"><p class="text-sm text-slate-500">به‌زودی...</p></div>
                             <div id="tab-personal" class="profile-tab-content hidden">
                                 <div class="space-y-4">
