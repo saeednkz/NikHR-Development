@@ -2714,60 +2714,64 @@ analytics: () => {
 // کل این تابع را با نسخه جدید جایگزین کنید
 
 announcements: () => {
-    const list = (state.announcements || []).sort((a,b)=> new Date(a.createdAt?.toDate()) - new Date(b.createdAt?.toDate()));
-    const items = list.map(msg => {
-        const me = state.currentUser?.uid;
-        const isMine = msg.senderUid === me;
+    const list = (state.announcements || []).sort((a,b)=> new Date(b.createdAt?.toDate()) - new Date(a.createdAt?.toDate()));
+    const cards = list.map(msg => {
         const avatar = (state.users.find(u => u.firestoreId===msg.senderUid)?.avatar) || 'icons/icon-128x128.png';
+        const targets = msg.targets || {type:'public'};
+        let targetText = 'عمومی';
+        if (targets.type==='teams') targetText = `تیم‌ها: ${(targets.teamNames||[]).join('، ')}`;
+        else if (targets.type==='users') targetText = `افراد: ${(targets.userNames||[]).join('، ')}`;
+        else if (targets.type==='roles') targetText = `نقش‌ها: ${(targets.roles||[]).join('، ')}`;
+        const badge = msg.type==='info' ? '<span class="px-2 py-0.5 text-[10px] rounded-full bg-amber-100 text-amber-700">اطلاعیه</span>' : '';
         return `
-        <div class="flex ${isMine ? 'justify-end' : 'justify-start'}">
-            <div class="max-w-[70%] flex ${isMine ? 'flex-row-reverse' : 'flex-row'} items-end gap-2">
-                <img src="${avatar}" class="w-8 h-8 rounded-full object-cover" alt="${msg.senderName}">
-                <div class="rounded-2xl p-3 ${isMine ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-800'}">
-                    ${msg.title ? `<div class=\"text-xs font-bold mb-1\">${msg.title}</div>` : ''}
-                    <div class="text-sm whitespace-pre-wrap">${msg.content}</div>
-                    <div class="text-[10px] ${isMine ? 'text-white/80' : 'text-slate-500'} mt-1">${toPersianDate(msg.createdAt)}</div>
+        <div class="bg-white rounded-2xl border border-slate-200 p-4 flex gap-3">
+            <img src="${avatar}" class="w-10 h-10 rounded-full object-cover" alt="${msg.senderName}">
+            <div class="flex-1">
+                <div class="flex items-center gap-2">
+                    <div class="font-bold text-slate-800 text-sm">${msg.senderName}</div>
+                    ${badge}
+                    <div class="text-[10px] text-slate-500 ml-auto">${toPersianDate(msg.createdAt)}</div>
                 </div>
+                ${msg.title ? `<div class=\"text-sm font-semibold mt-1\">${msg.title}</div>` : ''}
+                <div class="text-sm text-slate-700 mt-1 whitespace-pre-wrap">${msg.content}</div>
+                <div class="text-[11px] text-slate-500 mt-2">${targetText}</div>
             </div>
+            <button class="delete-announcement-btn text-red-500 hover:text-red-700" data-id="${msg.firestoreId}" title="حذف"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
         </div>`;
     }).join('');
 
-    // team/user pickers with avatars
-    const teamChips = (state.teams||[]).map(t=> `<label class=\"flex items-center gap-2 p-2 border rounded-lg\"><input type=\"checkbox\" class=\"ann-team-chk\" value=\"${t.firestoreId}\" data-name=\"${t.name}\"><span class=\"w-6 h-6 rounded-full bg-slate-200\"></span><span class=\"text-sm\">${t.name}</span></label>`).join('');
-    const userChips = (state.employees||[]).map(e=> `<label class=\"flex items-center gap-2 p-2 border rounded-lg\"><input type=\"checkbox\" class=\"ann-user-chk\" value=\"${e.firestoreId}\" data-name=\"${e.name}\"><img src=\"${e.avatar}\" class=\"w-6 h-6 rounded-full object-cover\"><span class=\"text-sm\">${e.name}</span></label>`).join('');
+    const teamCards = (state.teams||[]).map(t=> `<label class=\"flex items-center gap-2 p-2 border rounded-lg\"><input type=\"checkbox\" class=\"ann-team-chk\" value=\"${t.firestoreId}\" data-name=\"${t.name}\"><span class=\"w-6 h-6 rounded-full bg-slate-200\"></span><span class=\"text-sm\">${t.name}</span></label>`).join('');
+    const userCards = (state.employees||[]).map(e=> `<label class=\"flex items-center gap-2 p-2 border rounded-lg\"><input type=\"checkbox\" class=\"ann-user-chk\" value=\"${e.firestoreId}\" data-name=\"${e.name}\"><img src=\"${e.avatar}\" class=\"w-6 h-6 rounded-full object-cover\"><span class=\"text-sm\">${e.name}</span></label>`).join('');
 
     return `
         <section class="rounded-2xl overflow-hidden border mb-4" style="background:linear-gradient(90deg,#FF6A3D,#F72585)">
             <div class="p-6 sm:p-8 flex justify-between items-center">
-                <h1 class="text-2xl sm:text-3xl font-extrabold text-white">اعلانات و پیام‌ها</h1>
-                <button id="add-announcement-btn" class="primary-btn text-xs">ارسال پیام</button>
+                <h1 class="text-2xl sm:text-3xl font-extrabold text-white">اعلانات</h1>
+                <button id="add-announcement-btn" class="primary-btn text-xs">فرم پیشرفته پیام</button>
             </div>
         </section>
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 p-4 max-h-[70vh] overflow-y-auto space-y-3">
-                ${items || '<p class="text-center text-slate-500 py-8 text-sm">پیامی موجود نیست.</p>'}
+            <div class="lg:col-span-2 space-y-3" id="ann-cards-container">
+                ${cards || '<p class="text-center text-slate-500 py-8 text-sm">اعلانی موجود نیست.</p>'}
             </div>
             <div class="space-y-4">
                 <div class="bg-white rounded-2xl border border-slate-200 p-4">
-                    <h3 class="font-bold text-slate-800 mb-2">گیرندگان</h3>
-                    <select id="target-type" class="w-full p-2 border rounded-md bg-white mb-2">
+                    <h3 class="font-bold text-slate-800 mb-2">ارسال اطلاعیه</h3>
+                    <select id="info-target-type" class="w-full p-2 border rounded-md bg-white mb-2">
                         <option value="public">عمومی (همه)</option>
                         <option value="teams">تیم‌ها</option>
                         <option value="users">افراد</option>
                         <option value="roles">نقش‌ها</option>
                     </select>
-                    <div id="ann-target-teams" class="hidden grid grid-cols-1 gap-2 max-h-48 overflow-y-auto pr-1">${teamChips}</div>
-                    <div id="ann-target-users" class="hidden grid grid-cols-1 gap-2 max-h-48 overflow-y-auto pr-1">${userChips}</div>
-                    <div id="ann-target-roles" class="hidden grid grid-cols-1 gap-2">
+                    <div id="info-target-teams" class="hidden grid grid-cols-1 gap-2 max-h-48 overflow-y-auto pr-1">${teamCards}</div>
+                    <div id="info-target-users" class="hidden grid grid-cols-1 gap-2 max-h-48 overflow-y-auto pr-1">${userCards}</div>
+                    <div id="info-target-roles" class="hidden grid grid-cols-1 gap-2">
                         <label class="flex items-center gap-2 p-2 border rounded-lg"><input type="checkbox" class="ann-role-chk" value="admin"><span class="text-sm">مدیران</span></label>
                         <label class="flex items-center gap-2 p-2 border rounded-lg"><input type="checkbox" class="ann-role-chk" value="employee"><span class="text-sm">کارمندان</span></label>
                     </div>
-                </div>
-                <div class="bg-white rounded-2xl border border-slate-200 p-4">
-                    <h3 class="font-bold text-slate-800 mb-2">ارسال سریع</h3>
-                    <input id="ann-title" class="w-full p-2 border rounded-md mb-2" placeholder="عنوان (اختیاری)">
-                    <textarea id="ann-content" class="w-full p-2 border rounded-md h-24" placeholder="متن پیام..."></textarea>
-                    <div class="flex justify-end mt-2"><button id="ann-send-btn" class="primary-btn text-xs">ارسال</button></div>
+                    <input id="info-title" class="w-full p-2 border rounded-md mb-2" placeholder="عنوان اطلاعیه (اختیاری)">
+                    <textarea id="info-content" class="w-full p-2 border rounded-md h-24" placeholder="متن اطلاعیه..."></textarea>
+                    <div class="flex justify-end mt-2"><button id="info-send-btn" class="primary-btn text-xs">ارسال اطلاعیه</button></div>
                 </div>
             </div>
         </div>
@@ -3901,6 +3905,46 @@ const setupDashboardQuickActions = () => {
 // کل این تابع را با نسخه جدید جایگزین کنید
 const setupAnnouncementsPageListeners = () => {
     document.getElementById('add-announcement-btn')?.addEventListener('click', showAnnouncementForm);
+    // info panel target type toggles
+    const typeSel = document.getElementById('info-target-type');
+    const tTeams = document.getElementById('info-target-teams');
+    const tUsers = document.getElementById('info-target-users');
+    const tRoles = document.getElementById('info-target-roles');
+    const togglePanels = () => {
+        if (!typeSel) return;
+        const v = typeSel.value;
+        if (tTeams) tTeams.classList.toggle('hidden', v!=='teams');
+        if (tUsers) tUsers.classList.toggle('hidden', v!=='users');
+        if (tRoles) tRoles.classList.toggle('hidden', v!=='roles');
+    };
+    typeSel?.addEventListener('change', togglePanels);
+    togglePanels();
+    // send info-only announcement
+    document.getElementById('info-send-btn')?.addEventListener('click', async () => {
+        const title = (document.getElementById('info-title')||{}).value?.trim();
+        const content = (document.getElementById('info-content')||{}).value?.trim();
+        if (!content) { showToast('متن اطلاعیه را وارد کنید.', 'error'); return; }
+        const targets = { type: (typeSel?.value || 'public') };
+        if (targets.type==='teams') {
+            targets.teamIds = Array.from(document.querySelectorAll('.ann-team-chk:checked')).map(cb=>cb.value);
+            targets.teamNames = Array.from(document.querySelectorAll('.ann-team-chk:checked')).map(cb=>cb.dataset.name);
+        } else if (targets.type==='users') {
+            targets.userIds = Array.from(document.querySelectorAll('.ann-user-chk:checked')).map(cb=>cb.value);
+            targets.userNames = Array.from(document.querySelectorAll('.ann-user-chk:checked')).map(cb=>cb.dataset.name);
+        } else if (targets.type==='roles') {
+            targets.roles = Array.from(document.querySelectorAll('.ann-role-chk:checked')).map(cb=>cb.value);
+        }
+        try {
+            await addDoc(collection(db, `artifacts/${appId}/public/data/announcements`), {
+                type: 'info', title, content, targets,
+                senderUid: state.currentUser.uid,
+                senderName: state.currentUser.name || state.currentUser.email,
+                createdAt: serverTimestamp()
+            });
+            showToast('اطلاعیه ارسال شد.');
+            navigateTo('announcements');
+        } catch (e) { showToast('خطا در ارسال اطلاعیه.', 'error'); }
+    });
 
     document.getElementById('announcements-table-body')?.addEventListener('click', (e) => {
         const deleteBtn = e.target.closest('.delete-announcement-btn');
