@@ -176,7 +176,7 @@ function listenToData() {
     
     const collectionsToListen = [
         'employees', 'teams', 'reminders', 'surveyResponses', 'users', 
-        'competencies', 'requests', 'assignmentRules', 'companyDocuments', 'announcements', 'birthdayWishes'
+        'competencies', 'requests', 'assignmentRules', 'companyDocuments', 'announcements', 'birthdayWishes', 'moments'
     ];
     let initialLoads = collectionsToListen.length;
 
@@ -213,6 +213,16 @@ function listenToData() {
                 if (state.currentUser.role !== 'employee' && !window.location.hash.startsWith('#survey-taker')) {
                     renderPage(state.currentPage);
                 }
+
+                // اگر کاربر کارمند است و روی تب لحظه‌هاست، لیست را تازه‌سازی کن
+                try {
+                    if (state.currentUser.role === 'employee') {
+                        const activeMoments = document.querySelector('#employee-portal-nav .nav-item[href="#moments"].active');
+                        if (activeMoments && typeof window.renderMomentsList === 'function') {
+                            window.renderMomentsList();
+                        }
+                    }
+                } catch {}
             }
         }, (error) => {
             console.error(`Error listening to ${colName}:`, error);
@@ -745,6 +755,92 @@ function renderEmployeePortalPage(pageName, employee) {
             </div>
             <div class="space-y-3">${messagesHtml || '<div class="text-center p-10"><i data-lucide="inbox" class="mx-auto w-12 h-12 text-slate-300"></i><p class="mt-3 text-sm text-slate-500">پیامی ندارید.</p></div>'}</div>`;
     }
+    // --- لحظه‌های نیک‌اندیشی ---
+    if (pageName === 'moments') {
+        const composer = `
+            <div class="glass rounded-2xl p-4 mb-4">
+                <div class="flex items-start gap-3">
+                    <img src="${employee.avatar}" class="w-10 h-10 rounded-full object-cover"/>
+                    <div class="flex-1">
+                        <textarea id="moment-text" class="w-full p-3 border rounded-xl" maxlength="280" placeholder="چه خبر خوب یا فکری می‌خواهی به اشتراک بگذاری؟ (حداکثر ۲۸۰ کاراکتر)"></textarea>
+                        <div class="flex items-center justify-between mt-2">
+                            <input type="file" id="moment-image" accept="image/png,image/jpeg" class="text-xs"/>
+                            <button id="moment-post-btn" class="primary-btn text-xs">ارسال</button>
+                        </div>
+                        <p class="text-[11px] text-slate-500 mt-1">فقط متن یا فقط عکس؛ همزمان هر دو مجاز نیست.</p>
+                    </div>
+                </div>
+            </div>`;
+
+        const listContainer = `<div id="moments-list" class="space-y-3"></div><div id="moments-sentinel" class="h-8"></div>`;
+        contentContainer.innerHTML = `
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 page-header mb-4">
+                <div>
+                    <h1 class="text-2xl font-extrabold" style="color:#242A38">لحظه‌های نیک‌اندیشی</h1>
+                    <p class="text-slate-500 text-sm mt-1">اشتراک‌گذاری افکار و عکس‌ها با هم‌تیمی‌ها</p>
+                </div>
+            </div>
+            ${composer}
+            ${listContainer}
+        `;
+
+        // نگه‌داری وضعیت صفحه‌بندی
+        window._momentsPage = { pageSize: 10, lastTimestamp: null, loading: false, done: false };
+
+        window.renderMomentsList = () => {
+            const container = document.getElementById('moments-list');
+            if (!container) return;
+            const items = (state.moments || []).slice().sort((a,b)=> new Date(b.createdAt?.toDate?.()||0) - new Date(a.createdAt?.toDate?.()||0));
+            // صفحه‌بندی نرم در کلاینت: فقط تا حد تعیین‌شده رندر می‌کنیم
+            const page = window._momentsPage;
+            const slice = items.filter((it, idx) => idx < (page.pageSize + (page.extra || 0)));
+            container.innerHTML = slice.map(m => {
+                const owner = state.employees.find(e => e.uid === m.ownerUid) || {};
+                const meReact = (m.reactions || []).find(r => r.uid === employee.uid)?.emoji;
+                const reactionsHtml = (m.reactions || []).map(r => {
+                    const user = state.employees.find(e => e.uid === r.uid) || {};
+                    return `<div class=\"flex items-center gap-1 text-xs bg-slate-100 rounded-full px-2 py-1\"><span>${r.emoji}</span><img src=\"${user.avatar || 'icons/icon-128x128.png'}\" class=\"w-4 h-4 rounded-full object-cover\"/><span class=\"text-slate-600\">${user.name || ''}</span></div>`;
+                }).join('');
+                return `
+                <div class=\"bg-white rounded-2xl border border-slate-200 p-4\">
+                    <div class=\"flex items-center gap-2 mb-3\">
+                        <img src=\"${owner.avatar || 'icons/icon-128x128.png'}\" class=\"w-10 h-10 rounded-full object-cover\"/>
+                        <div>
+                            <div class=\"font-bold text-slate-800 text-sm\">${owner.name || m.ownerName || 'کاربر'}</div>
+                            <div class=\"text-[11px] text-slate-500\">${toPersianDate(m.createdAt)}</div>
+                        </div>
+                    </div>
+                    ${m.text ? `<div class=\"text-sm text-slate-800 whitespace-pre-wrap mb-3\">${m.text}</div>` : ''}
+                    ${m.imageUrl ? `<img src=\"${m.imageUrl}\" class=\"w-full rounded-xl object-cover mb-3\"/>` : ''}
+                    <div class=\"flex items-center gap-2\">
+                        ${['👍','❤️','😂','🎉','👎'].map(e=> `<button class=\"moment-react-btn text-sm px-2 py-1 rounded-full ${meReact===e ? 'bg-slate-800 text-white':'bg-slate-100 text-slate-700'}\" data-id=\"${m.firestoreId}\" data-emoji=\"${e}\">${e}</button>`).join('')}
+                    </div>
+                    <div class=\"flex flex-wrap gap-2 mt-3\">${reactionsHtml}</div>
+                </div>`;
+            }).join('');
+            if (window.lucide?.createIcons) lucide.createIcons();
+        };
+
+        window.renderMomentsList();
+
+        // اسکرول بی‌نهایت: با نزدیک شدن به انتهای صفحه، تعداد نمایش را افزایش بده
+        try {
+            const sentinel = document.getElementById('moments-sentinel');
+            if (sentinel) {
+                const io = new IntersectionObserver((entries)=>{
+                    entries.forEach(entry=>{
+                        if (entry.isIntersecting) {
+                            window._momentsPage.extra = (window._momentsPage.extra || 0) + 10;
+                            window.renderMomentsList();
+                        }
+                    });
+                }, { root: document.getElementById('employee-main-content'), threshold: 0.2 });
+                io.observe(sentinel);
+            }
+        } catch {}
+        return;
+    }
+
     // --- بخش پیش‌فرض ---
     else {
         contentContainer.innerHTML = `<div class="text-center p-10"><h1>صفحه مورد نظر یافت نشد</h1></div>`;
@@ -908,6 +1004,58 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
             if (sendWishBtn) {
                 showBirthdayWishForm(sendWishBtn.dataset.id, sendWishBtn.dataset.name);
             }
+            // ارسال لحظه جدید
+            const postBtn = e.target.closest('#moment-post-btn');
+            if (postBtn) {
+                (async () => {
+                    try {
+                        const text = (document.getElementById('moment-text')||{}).value?.trim() || '';
+                        const fileInput = document.getElementById('moment-image');
+                        const file = fileInput?.files?.[0];
+                        if ((text && file) || (!text && !file)) { showToast('فقط یکی از متن یا عکس را انتخاب کنید.', 'error'); return; }
+                        let imageUrl = '';
+                        if (file) {
+                            const path = `moments/${employee.uid}_${Date.now()}_${file.name}`;
+                            const sRef = ref(storage, path);
+                            await uploadBytes(sRef, file);
+                            imageUrl = await getDownloadURL(sRef);
+                        }
+                        await addDoc(collection(db, `artifacts/${appId}/public/data/moments`), {
+                            ownerUid: employee.uid,
+                            ownerName: employee.name,
+                            text: text || '',
+                            imageUrl,
+                            reactions: [],
+                            createdAt: serverTimestamp()
+                        });
+                        if (document.getElementById('moment-text')) document.getElementById('moment-text').value = '';
+                        if (fileInput) fileInput.value = '';
+                        showToast('لحظه شما منتشر شد.');
+                    } catch (err) { showToast('خطا در انتشار لحظه.', 'error'); }
+                })();
+                return;
+            }
+            // ری‌اکشن روی لحظه
+            const reactBtn = e.target.closest('.moment-react-btn');
+            if (reactBtn) {
+                (async () => {
+                    const id = reactBtn.dataset.id;
+                    const emoji = reactBtn.dataset.emoji;
+                    try {
+                        const docRef = doc(db, `artifacts/${appId}/public/data/moments`, id);
+                        const snap = await getDoc(docRef);
+                        const data = snap.data() || {}; const reactions = data.reactions || [];
+                        const mineIdx = reactions.findIndex(r => r.uid === employee.uid);
+                        if (mineIdx >= 0) {
+                            if (reactions[mineIdx].emoji === emoji) { reactions.splice(mineIdx,1); } else { reactions[mineIdx].emoji = emoji; }
+                        } else {
+                            reactions.push({ uid: employee.uid, emoji });
+                        }
+                        await updateDoc(docRef, { reactions, lastUpdatedAt: serverTimestamp() });
+                    } catch (err) { showToast('خطا در ثبت واکنش.', 'error'); }
+                })();
+                return;
+            }
         });
     }
 }
@@ -955,6 +1103,7 @@ function renderEmployeePortal() {
                     <a href="#directory" class="nav-item"><i data-lucide="users"></i><span>تیم‌ها</span></a>
                     <a href="#documents" class="nav-item"><i data-lucide="folder-kanban"></i><span>دانش‌نامه</span></a>
                     <a href="#inbox" class="nav-item"><i data-lucide="inbox"></i><span>پیام‌ها</span></a>
+                    <a href="#moments" class="nav-item"><i data-lucide="sparkles"></i><span>لحظه‌های نیک‌اندیشی</span></a>
                 </nav>
 
                 <div class="mt-auto space-y-4">
