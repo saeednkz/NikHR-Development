@@ -758,17 +758,22 @@ function renderEmployeePortalPage(pageName, employee) {
     // --- لحظه‌های نیک‌اندیشی ---
     else if (pageName === 'moments') {
         const composer = `
-            <div class="glass rounded-2xl p-4 mb-4">
-                <div class="flex items-start gap-3">
+            <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden mb-4">
+                <div class="flex items-center gap-3 p-3">
                     <img src="${employee.avatar}" class="w-10 h-10 rounded-full object-cover"/>
-                    <div class="flex-1">
-                        <textarea id="moment-text" class="w-full p-3 border rounded-xl" maxlength="280" placeholder="چه خبر خوب یا فکری می‌خواهی به اشتراک بگذاری؟ (حداکثر ۲۸۰ کاراکتر)"></textarea>
-                        <div class="flex items-center justify-between mt-2">
-                            <input type="file" id="moment-image" accept="image/png,image/jpeg" class="text-xs"/>
-                            <button id="moment-post-btn" class="primary-btn text-xs">ارسال</button>
-                        </div>
-                        <p class="text-[11px] text-slate-500 mt-1">فقط متن یا فقط عکس؛ همزمان هر دو مجاز نیست.</p>
+                    <div class="font-semibold text-slate-800">${employee.name || ''}</div>
+                </div>
+                <div class="px-3 pb-3">
+                    <div class="mb-2"><textarea id="moment-text" class="w-full p-3 border rounded-xl" maxlength="280" placeholder="کپشن بنویسید... (حداکثر ۲۸۰ کاراکتر)"></textarea></div>
+                    <div class="rounded-xl overflow-hidden bg-slate-100 aspect-square flex items-center justify-center">
+                        <img id="moment-image-preview" class="w-full h-full object-cover hidden"/>
+                        <div class="text-xs text-slate-500">می‌توانید یک عکس اضافه کنید</div>
                     </div>
+                    <div class="flex items-center justify-between mt-2">
+                        <input type="file" id="moment-image" accept="image/png,image/jpeg" class="text-xs"/>
+                        <button id="moment-post-btn" class="primary-btn text-xs">اشتراک‌گذاری</button>
+                    </div>
+                    <p class="text-[11px] text-slate-500 mt-1">می‌توانید متن و عکس را هم‌زمان ارسال کنید. تصاویر بزرگ به اندازه مناسب شبکه‌های اجتماعی به‌صورت خودکار کوچک می‌شوند.</p>
                 </div>
             </div>`;
 
@@ -797,26 +802,15 @@ function renderEmployeePortalPage(pageName, employee) {
             container.innerHTML = slice.map(m => {
                 const owner = state.employees.find(e => e.uid === m.ownerUid) || {};
                 const meReact = (m.reactions || []).find(r => r.uid === employee.uid)?.emoji;
-                const reactionsHtml = (m.reactions || []).map(r => {
+                const reactors = (m.reactions || []);
+                const topReactors = reactors.slice(0, 5);
+                const reactionsHtml = topReactors.map(r => {
                     const user = state.employees.find(e => e.uid === r.uid) || {};
                     return `<div class=\"flex items-center gap-1 text-xs bg-slate-100 rounded-full px-2 py-1\"><span>${r.emoji}</span><img src=\"${user.avatar || 'icons/icon-128x128.png'}\" class=\"w-4 h-4 rounded-full object-cover\"/><span class=\"text-slate-600\">${user.name || ''}</span></div>`;
                 }).join('');
+                const extraCount = Math.max(0, reactors.length - topReactors.length);
                 return `
-                <div class=\"bg-white rounded-2xl border border-slate-200 p-4\">
-                    <div class=\"flex items-center gap-2 mb-3\">
-                        <img src=\"${owner.avatar || 'icons/icon-128x128.png'}\" class=\"w-10 h-10 rounded-full object-cover\"/>
-                        <div>
-                            <div class=\"font-bold text-slate-800 text-sm\">${owner.name || m.ownerName || 'کاربر'}</div>
-                            <div class=\"text-[11px] text-slate-500\">${toPersianDate(m.createdAt)}</div>
-                        </div>
-                    </div>
-                    ${m.text ? `<div class=\"text-sm text-slate-800 whitespace-pre-wrap mb-3\">${m.text}</div>` : ''}
-                    ${m.imageUrl ? `<img src=\"${m.imageUrl}\" class=\"w-full rounded-xl object-cover mb-3\"/>` : ''}
-                    <div class=\"flex items-center gap-2\">
-                        ${['👍','❤️','😂','🎉','👎'].map(e=> `<button class=\"moment-react-btn text-sm px-2 py-1 rounded-full ${meReact===e ? 'bg-slate-800 text-white':'bg-slate-100 text-slate-700'}\" data-id=\"${m.firestoreId}\" data-emoji=\"${e}\">${e}</button>`).join('')}
-                    </div>
-                    <div class=\"flex flex-wrap gap-2 mt-3\">${reactionsHtml}</div>
-                </div>`;
+                <div class=\"bg-white rounded-2xl border border-slate-200 overflow-hidden\">\n                    <div class=\"flex items-center gap-2 p-3\">\n                        <img src=\"${owner.avatar || 'icons/icon-128x128.png'}\" class=\"w-10 h-10 rounded-full object-cover\"/>\n                        <div>\n                            <div class=\"font-bold text-slate-800 text-sm\">${owner.name || m.ownerName || 'کاربر'}</div>\n                            <div class=\"text-[11px] text-slate-500\">${toPersianDate(m.createdAt)}</div>\n                        </div>\n                    </div>\n                    ${m.imageUrl ? `<div class=\\\"w-full aspect-square bg-slate-100 overflow-hidden\\\"><img src=\\\"${m.imageUrl}\\\" class=\\\"w-full h-full object-cover\\\"/></div>` : ''}\n                    <div class=\"px-3 py-2\">\n                        <div class=\"flex items-center gap-2 mb-2\">${['❤️','👍','😂','🎉','👎'].map(e=> `<button class=\\\"moment-react-btn text-sm px-2 py-1 rounded-full ${meReact===e ? 'bg-slate-800 text-white':'bg-slate-100 text-slate-700'}\\\" data-id=\\\"${m.firestoreId}\\\" data-emoji=\\\"${e}\\\">${e}</button>`).join('')}\n                        </div>\n                        <div class=\"flex items-center gap-2 flex-wrap\">${reactionsHtml}${extraCount? `<span class=\\\"text-xs text-slate-500\\\">+${extraCount}</span>`:''}</div>\n                        ${m.text ? `<div class=\\\"text-sm text-slate-800 whitespace-pre-wrap mt-2\\\"><span class=\\\"font-semibold\\\">${owner.name || m.ownerName || 'کاربر'}:</span> ${m.text}</div>` : ''}\n                    </div>\n                </div>`;
             }).join('');
             if (window.lucide?.createIcons) lucide.createIcons();
         };
@@ -1004,6 +998,18 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
             if (sendWishBtn) {
                 showBirthdayWishForm(sendWishBtn.dataset.id, sendWishBtn.dataset.name);
             }
+            // پیش‌نمایش تصویر لحظه
+            const imgInput = e.target.closest('#moment-image');
+            if (imgInput) {
+                const input = document.getElementById('moment-image');
+                const preview = document.getElementById('moment-image-preview');
+                const file = input?.files?.[0];
+                if (file && preview) {
+                    const reader = new FileReader();
+                    reader.onload = () => { preview.src = reader.result; preview.classList.remove('hidden'); };
+                    reader.readAsDataURL(file);
+                }
+            }
             // ارسال لحظه جدید
             const postBtn = e.target.closest('#moment-post-btn');
             if (postBtn) {
@@ -1012,14 +1018,28 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
                         const text = (document.getElementById('moment-text')||{}).value?.trim() || '';
                         const fileInput = document.getElementById('moment-image');
                         const file = fileInput?.files?.[0];
-                        if ((text && file) || (!text && !file)) { showToast('فقط یکی از متن یا عکس را انتخاب کنید.', 'error'); return; }
                         let imageUrl = '';
                         if (file) {
-                            const path = `moments/${employee.uid}_${Date.now()}_${file.name}`;
+                            // Resize/compress to max 1080x1080 like Instagram
+                            const resizedBlob = await (async () => {
+                                const bitmap = await createImageBitmap(file);
+                                const max = 1080;
+                                const ratio = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
+                                const width = Math.round(bitmap.width * ratio);
+                                const height = Math.round(bitmap.height * ratio);
+                                const canvas = document.createElement('canvas');
+                                canvas.width = width; canvas.height = height;
+                                const ctx = canvas.getContext('2d');
+                                ctx.drawImage(bitmap, 0, 0, width, height);
+                                const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.85));
+                                return blob || file;
+                            })();
+                            const path = `moments/${employee.uid}_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9_.-]/g,'_')}`;
                             const sRef = ref(storage, path);
-                            await uploadBytes(sRef, file);
+                            await uploadBytes(sRef, resizedBlob);
                             imageUrl = await getDownloadURL(sRef);
                         }
+                        if (!text && !imageUrl) { showToast('متن یا عکس لازم است.', 'error'); return; }
                         await addDoc(collection(db, `artifacts/${appId}/public/data/moments`), {
                             ownerUid: employee.uid,
                             ownerName: employee.name,
@@ -1030,6 +1050,7 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
                         });
                         if (document.getElementById('moment-text')) document.getElementById('moment-text').value = '';
                         if (fileInput) fileInput.value = '';
+                        const preview = document.getElementById('moment-image-preview'); if (preview) { preview.src=''; preview.classList.add('hidden'); }
                         showToast('لحظه شما منتشر شد.');
                     } catch (err) { showToast('خطا در انتشار لحظه.', 'error'); }
                 })();
@@ -1317,7 +1338,6 @@ const persianToEnglishDate = (persianDateStr) => {
 // --- نسخه نهایی با استراتژی Lazy Initialization (ساخت تقویم فقط در زمان کلیک) ---
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
-
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
 
@@ -2647,7 +2667,6 @@ requests: () => {
             </tr>
         `;
     }).join('');
-
     return `
         <section class="rounded-2xl overflow-hidden border mb-6" style="background:linear-gradient(90deg,#FF6A3D,#F72585)">
             <div class="p-6 sm:p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -2986,7 +3005,6 @@ settings: () => {
         `;
     }).join('');
     const defaultRule = (state.assignmentRules || []).find(r => r.firestoreId === '_default'); // [!code --]
-    
     return `
         <div class="flex items-center justify-between mb-4">
             <div>
@@ -3928,7 +3946,6 @@ const renderEngagementGauge = (canvasId, score) => {
 // کل این تابع را با نسخه جدید و کامل جایگزین کنید
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید و کامل جایگزین کنید
-
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
 const renderAllReminders = () => {
@@ -4272,7 +4289,6 @@ const renderEmployeeTable = () => {
     const csvContent = "data:text/csv;charset=utf-8,\uFEFF" // \uFEFF برای پشتیبانی از زبان فارسی در اکسل
         + headers.join(',') + '\n'
         + rows.join('\n');
-
     // ۵. فایل را برای دانلود آماده می‌کنیم
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
@@ -4948,7 +4964,6 @@ const showExpenseForm = () => {
                 submitBtn.innerText = 'ذخیره';
                 return;
             }
-
             try {
                 if (invoiceFile) {
                     const filePath = `invoices/${Date.now()}_${invoiceFile.name}`;
@@ -5876,8 +5891,6 @@ function formatTargetsText(targets) {
     if (targets.type === 'users') return `افراد: ${(targets.userNames || targets.userIds || []).join('، ')}`;
     return '';
 }
-
-    
 // Minimal personal info editor (fallback)
 if (typeof window.showEditPersonalInfoForm !== 'function') {
     window.showEditPersonalInfoForm = (emp) => {
@@ -5967,257 +5980,6 @@ if (typeof window.showEditPersonalInfoForm !== 'function') {
         });
     };
 }
-        
-        // --- EDIT FORM FUNCTIONS ---
-// Team members editor
-if (typeof window.showEditTeamMembersForm !== 'function') {
-    window.showEditTeamMembersForm = (team) => {
-        const allEmployees = state.employees;
-        const selectedIds = new Set(team.memberIds || []);
-        modalTitle.innerText = `ویرایش اعضای تیم ${team.name}`;
-        const listHtml = allEmployees.map(emp => `
-            <label class="flex items-center gap-2 p-2 border rounded-md">
-                <input type="checkbox" class="emp-chk" value="${emp.id}" ${selectedIds.has(emp.id)?'checked':''}>
-                <span class="text-sm">${emp.name} (${emp.id})</span>
-            </label>`).join('');
-        modalContent.innerHTML = `
-            <form id="edit-team-members-form" class="space-y-4">
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-80 overflow-y-auto pr-2">${listHtml}</div>
-                <div class="flex justify-end gap-2">
-                    <button type="button" id="cancel-team-members" class="bg-slate-200 text-slate-800 py-2 px-4 rounded-md hover:bg-slate-300">انصراف</button>
-                    <button type="submit" class="primary-btn">ذخیره</button>
-                </div>
-            </form>`;
-        openModal(mainModal, mainModalContainer);
-        document.getElementById('cancel-team-members')?.addEventListener('click', () => viewTeamProfile(team.firestoreId));
-        document.getElementById('edit-team-members-form')?.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            try {
-                const newMemberIds = Array.from(document.querySelectorAll('.emp-chk'))
-                    .filter(chk => chk.checked)
-                    .map(chk => chk.value);
-                await updateDoc(doc(db, `artifacts/${appId}/public/data/teams`, team.firestoreId), { memberIds: newMemberIds });
-                showToast('اعضای تیم به‌روزرسانی شد.');
-                viewTeamProfile(team.firestoreId);
-            } catch (error) {
-                console.error('Error updating team members', error);
-                showToast('خطا در ذخیره اعضای تیم.', 'error');
-            }
-        });
-    };
-}
-// Team OKRs editor
-if (typeof window.showEditTeamOkrsForm !== 'function') {
-    window.showEditTeamOkrsForm = (team) => {
-        modalTitle.innerText = `ویرایش اهداف تیم (${team.name})`;
-        const okrsHtml = (team.okrs || []).map((okr) => `
-            <div class="okr-item grid grid-cols-12 gap-2 items-center">
-                <input type="text" value="${okr.title}" class="col-span-8 p-2 border rounded-md okr-title" placeholder="عنوان هدف">
-                <input type="number" value="${okr.progress}" class="col-span-3 p-2 border rounded-md okr-progress" placeholder="پیشرفت %" min="0" max="100">
-                <button type="button" class="col-span-1 remove-okr-btn text-red-500 hover:text-red-700"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
-            </div>`).join('');
-        modalContent.innerHTML = `
-            <form id="edit-team-okrs-form">
-                <div id="team-okrs-container" class="space-y-2">${okrsHtml}</div>
-                <button type="button" id="add-team-okr-btn" class="mt-4 text-sm bg-gray-200 py-2 px-4 rounded-md hover:bg-gray-300">افزودن هدف جدید</button>
-                <div class="pt-6 flex justify-end gap-4">
-                    <button type="button" id="back-to-team-profile-okr" class="bg-gray-500 text-white py-2 px-6 rounded-md hover:bg-gray-600">بازگشت</button>
-                    <button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">ذخیره</button>
-                </div>
-            </form>`;
-        openModal(mainModal, mainModalContainer);
-        lucide.createIcons();
-        document.getElementById('back-to-team-profile-okr').addEventListener('click', () => viewTeamProfile(team.firestoreId));
-        const okrsContainer = document.getElementById('team-okrs-container');
-        document.getElementById('add-team-okr-btn').addEventListener('click', () => {
-            const newItem = document.createElement('div');
-            newItem.className = 'okr-item grid grid-cols-12 gap-2 items-center';
-            newItem.innerHTML = `<input type=\"text\" class=\"col-span-8 p-2 border rounded-md okr-title\" placeholder=\"عنوان هدف\"><input type=\"number\" class=\"col-span-3 p-2 border rounded-md okr-progress\" placeholder=\"پیشرفت %\" min=\"0\" max=\"100\" value=\"0\"><button type=\"button\" class=\"col-span-1 remove-okr-btn text-red-500 hover:text-red-700\"><i data-lucide=\"trash-2\" class=\"w-5 h-5\"></i></button>`;
-            okrsContainer.appendChild(newItem);
-            lucide.createIcons();
-        });
-        okrsContainer.addEventListener('click', (e) => {
-            if (e.target.closest('.remove-okr-btn')) {
-                e.target.closest('.okr-item').remove();
-            }
-        });
-        document.getElementById('edit-team-okrs-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            try {
-                const newOkrs = [];
-                document.querySelectorAll('#team-okrs-container .okr-item').forEach(item => {
-                    const title = item.querySelector('.okr-title').value;
-                    const progress = parseInt(item.querySelector('.okr-progress').value) || 0;
-                    if (title) newOkrs.push({ title, progress });
-                });
-                await updateDoc(doc(db, `artifacts/${appId}/public/data/teams`, team.firestoreId), { okrs: newOkrs });
-                showToast('اهداف تیم به‌روزرسانی شد.');
-                viewTeamProfile(team.firestoreId);
-            } catch (error) {
-                console.error('Error saving team OKRs', error);
-                showToast('خطا در ذخیره اهداف.', 'error');
-            }
-        });
-    };
-}
-const showAddUserForm = () => {
-    modalTitle.innerText = 'افزودن کاربر جدید';
-    modalContent.innerHTML = `
-        <form id="add-user-form" class="space-y-4">
-            <div>
-                <label for="new-user-name" class="block text-sm font-medium text-gray-700">نام کامل</label>
-                <input id="new-user-name" type="text" required class="w-full px-3 py-2 mt-1 border rounded-md">
-            </div>
-            <div>
-                <label for="new-user-email" class="block text-sm font-medium text-gray-700">آدرس ایمیل</label>
-                <input id="new-user-email" type="email" required class="w-full px-3 py-2 mt-1 border rounded-md">
-            </div>
-            <div>
-                <label for="new-user-password" class="block text-sm font-medium text-gray-700">رمز عبور موقت</label>
-                <input id="new-user-password" type="password" required class="w-full px-3 py-2 mt-1 border rounded-md">
-            </div>
-            <div>
-                <label for="new-user-role" class="block text-sm font-medium text-gray-700">سطح دسترسی</label>
-                // ...
-<select id="new-user-role" class="w-full p-2 mt-1 border rounded-md">
-    <option value="viewer">مشاهده‌گر (Viewer)</option>
-    <option value="editor">ویرایشگر (Editor)</option>
-    <option value="admin">مدیر (Admin)</option>
-    <option value="employee">کارمند (Employee)</option> </select>
-// ...
-            </div>
-            <div class="pt-4 flex justify-end">
-                <button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">افزودن کاربر</button>
-            </div>
-        </form>
-    `;
-    openModal(mainModal, mainModalContainer);
-
-    document.getElementById('add-user-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const name = document.getElementById('new-user-name').value;
-        const email = document.getElementById('new-user-email').value;
-        const password = document.getElementById('new-user-password').value;
-        const role = document.getElementById('new-user-role').value;
-        
-        showToast("در حال ایجاد کاربر... این کار ممکن است باعث خروج شما از سیستم شود.", "success");
-        
-        try {
-            // This is a simplified approach. In a real app, you'd use Firebase Functions to create users without logging out the admin.
-            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-            const newUser = userCredential.user;
-
-            const userRef = doc(db, `artifacts/${appId}/public/data/users`, newUser.uid);
-            await setDoc(userRef, {
-                name: name, //  ذخیره نام کاربر
-                email: newUser.email,
-                role: role,
-                createdAt: serverTimestamp()
-            });
-            
-            closeModal(mainModal, mainModalContainer);
-            showToast("کاربر جدید ایجاد شد. لطفا با حساب ادمین مجددا وارد شوید.");
-            
-            await signOut(auth);
-
-        } catch (error) {
-            console.error("Error creating new user:", error);
-            showToast(`خطا در ایجاد کاربر: ${error.message}`, "error");
-        }
-    });
-};
-        const showEditOkrsForm = (emp) => {
-            modalTitle.innerText = `ویرایش OKR برای ${emp.name}`;
-            const okrsHtml = (emp.okrs || []).map((okr) => `<div class="okr-item grid grid-cols-12 gap-2 items-center"><input type="text" value="${okr.title}" class="col-span-8 p-2 border rounded-md okr-title" placeholder="عنوان هدف"><input type="number" value="${okr.progress}" class="col-span-3 p-2 border rounded-md okr-progress" placeholder="پیشرفت %" min="0" max="100"><button type="button" class="col-span-1 remove-okr-btn text-red-500 hover:text-red-700"><i data-lucide="trash-2" class="w-5 h-5"></i></button></div>`).join('');
-            modalContent.innerHTML = `<form id="edit-okrs-form"><div id="okrs-container" class="space-y-2">${okrsHtml}</div><button type="button" id="add-okr-btn" class="mt-4 text-sm bg-gray-200 py-2 px-4 rounded-md hover:bg-gray-300">افزودن هدف جدید</button><div class="pt-6 flex justify-end gap-4"><button type="button" id="back-to-profile-okr" class="bg-gray-500 text-white py-2 px-6 rounded-md hover:bg-gray-600">بازگشت</button><button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">ذخیره</button></div></form>`;
-            lucide.createIcons();
-            document.getElementById('back-to-profile-okr').addEventListener('click', () => viewEmployeeProfile(emp.firestoreId));
-            const okrsContainer = document.getElementById('okrs-container');
-            document.getElementById('add-okr-btn').addEventListener('click', () => { const newItem = document.createElement('div'); newItem.className = 'okr-item grid grid-cols-12 gap-2 items-center'; newItem.innerHTML = `<input type="text" class="col-span-8 p-2 border rounded-md okr-title" placeholder="عنوان هدف"><input type="number" class="col-span-3 p-2 border rounded-md okr-progress" placeholder="پیشرفت %" min="0" max="100" value="0"><button type="button" class="col-span-1 remove-okr-btn text-red-500 hover:text-red-700"><i data-lucide="trash-2" class="w-5 h-5"></i></button>`; okrsContainer.appendChild(newItem); lucide.createIcons(); });
-            okrsContainer.addEventListener('click', (e) => { if(e.target.closest('.remove-okr-btn')) { e.target.closest('.okr-item').remove(); } });
-            document.getElementById('edit-okrs-form').addEventListener('submit', async (e) => { e.preventDefault(); const newOkrs = []; document.querySelectorAll('.okr-item').forEach(item => { const title = item.querySelector('.okr-title').value; const progress = parseInt(item.querySelector('.okr-progress').value) || 0; if (title) { newOkrs.push({ title, progress }); } }); try { const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId); await updateDoc(docRef, { okrs: newOkrs }); showToast("اهداف با موفقیت به‌روزرسانی شدند."); viewEmployeeProfile(emp.firestoreId); } catch (error) { console.error("Error updating OKRs:", error); showToast("خطا در به‌روزرسانی اهداف.", "error"); } });
-        };
-
-        const showEditSkillsForm = (emp) => {
-            modalTitle.innerText = `ویرایش مهارت‌ها برای ${emp.name}`;
-            const skillsHtml = Object.entries(emp.skills || {}).map(([skill, level]) => `<div class="skill-item grid grid-cols-12 gap-2 items-center"><input type="text" value="${skill}" class="col-span-8 p-2 border rounded-md skill-name" placeholder="نام مهارت"><input type="number" value="${level}" class="col-span-3 p-2 border rounded-md skill-level" placeholder="سطح (۱-۵)" min="1" max="5"><button type="button" class="col-span-1 remove-skill-btn text-red-500 hover:text-red-700"><i data-lucide="trash-2" class="w-5 h-5"></i></button></div>`).join('');
-            modalContent.innerHTML = `<form id="edit-skills-form"><div id="skills-container" class="space-y-2">${skillsHtml}</div><button type="button" id="add-skill-btn" class="mt-4 text-sm bg-gray-200 py-2 px-4 rounded-md hover:bg-gray-300">افزودن مهارت جدید</button><div class="pt-6 flex justify-end gap-4"><button type="button" id="back-to-profile-skill" class="bg-gray-500 text-white py-2 px-6 rounded-md hover:bg-gray-600">بازگشت</button><button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">ذخیره</button></div></form>`;
-            lucide.createIcons();
-            document.getElementById('back-to-profile-skill').addEventListener('click', () => viewEmployeeProfile(emp.firestoreId));
-            const skillsContainer = document.getElementById('skills-container');
-            document.getElementById('add-skill-btn').addEventListener('click', () => { const newItem = document.createElement('div'); newItem.className = 'skill-item grid grid-cols-12 gap-2 items-center'; newItem.innerHTML = `<input type="text" class="col-span-8 p-2 border rounded-md skill-name" placeholder="نام مهارت"><input type="number" class="col-span-3 p-2 border rounded-md skill-level" placeholder="سطح (۱-۵)" min="1" max="5" value="1"><button type="button" class="col-span-1 remove-skill-btn text-red-500 hover:text-red-700"><i data-lucide="trash-2" class="w-5 h-5"></i></button>`; skillsContainer.appendChild(newItem); lucide.createIcons(); });
-            skillsContainer.addEventListener('click', (e) => { if(e.target.closest('.remove-skill-btn')) { e.target.closest('.skill-item').remove(); } });
-            document.getElementById('edit-skills-form').addEventListener('submit', async (e) => { e.preventDefault(); const newSkills = {}; document.querySelectorAll('.skill-item').forEach(item => { const name = item.querySelector('.skill-name').value; const level = parseInt(item.querySelector('.skill-level').value) || 0; if (name) { newSkills[name] = level; } }); try { const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId); await updateDoc(docRef, { skills: newSkills }); showToast("مهارت‌ها با موفقیت به‌روزرسانی شدند."); viewEmployeeProfile(emp.firestoreId); } catch (error) { console.error("Error updating skills:", error); showToast("خطا در به‌روزرسانی مهارت‌ها.", "error"); } });
-        };
-
-        const showEditCompetenciesForm = (emp) => {
-            modalTitle.innerText = `ویرایش شایستگی‌ها برای ${emp.name}`;
-            const empCompetencies = emp.competencies || {};
-            const competenciesHtml = state.competencies.map(comp => `
-                <div class="competency-item grid grid-cols-12 gap-2 items-center">
-                    <label class="col-span-8">${comp.name}</label>
-                    <input type="number" value="${empCompetencies[comp.name] || 0}" data-name="${comp.name}" class="col-span-3 p-2 border rounded-md competency-level" placeholder="سطح (۱-۵)" min="0" max="5">
-                </div>
-            `).join('');
-            modalContent.innerHTML = `
-                <form id="edit-competencies-form">
-                    <div id="competencies-container" class="space-y-2">${competenciesHtml || '<p>ابتدا شایستگی‌ها را در بخش تنظیمات تعریف کنید.</p>'}</div>
-                    <div class="pt-6 flex justify-end gap-4">
-                        <button type="button" id="back-to-profile-comp" class="bg-gray-500 text-white py-2 px-6 rounded-md hover:bg-gray-600">بازگشت</button>
-                        <button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">ذخیره</button>
-                    </div>
-                </form>
-            `;
-            document.getElementById('back-to-profile-comp').addEventListener('click', () => viewEmployeeProfile(emp.firestoreId));
-            document.getElementById('edit-competencies-form').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const newCompetencies = {};
-                document.querySelectorAll('.competency-item').forEach(item => {
-                    const name = item.querySelector('.competency-level').dataset.name;
-                    const level = parseInt(item.querySelector('.competency-level').value) || 0;
-                    if (name && level > 0) {
-                        newCompetencies[name] = level;
-                    }
-                });
-                try {
-                    const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
-                    await updateDoc(docRef, { competencies: newCompetencies });
-                    showToast("شایستگی‌ها با موفقیت به‌روزرسانی شدند.");
-                    viewEmployeeProfile(emp.firestoreId);
-                } catch (error) {
-                    console.error("Error updating competencies:", error);
-                    showToast("خطا در به‌روزرسانی شایستگی‌ها.", "error");
-                }
-            });
-        };
-        const showEditTeamOkrsForm = (team) => {
-            modalTitle.innerText = `ویرایش OKR برای تیم ${team.name}`;
-            const okrsHtml = (team.okrs || []).map((okr) => `<div class="okr-item grid grid-cols-12 gap-2 items-center"><input type="text" value="${okr.title}" class="col-span-8 p-2 border rounded-md okr-title" placeholder="عنوان هدف"><input type="number" value="${okr.progress}" class="col-span-3 p-2 border rounded-md okr-progress" placeholder="پیشرفت %" min="0" max="100"><button type="button" class="col-span-1 remove-okr-btn text-red-500 hover:text-red-700"><i data-lucide="trash-2" class="w-5 h-5"></i></button></div>`).join('');
-            modalContent.innerHTML = `<form id="edit-team-okrs-form"><div id="okrs-container" class="space-y-2">${okrsHtml}</div><button type="button" id="add-okr-btn" class="mt-4 text-sm bg-gray-200 py-2 px-4 rounded-md hover:bg-gray-300">افزودن هدف جدید</button><div class="pt-6 flex justify-end gap-4"><button type="button" id="back-to-team-profile-okr" class="bg-gray-500 text-white py-2 px-6 rounded-md hover:bg-gray-600">بازگشت</button><button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">ذخیره</button></div></form>`;
-            lucide.createIcons();
-            document.getElementById('back-to-team-profile-okr').addEventListener('click', () => viewTeamProfile(team.firestoreId));
-            const okrsContainer = document.getElementById('okrs-container');
-            document.getElementById('add-okr-btn').addEventListener('click', () => { const newItem = document.createElement('div'); newItem.className = 'okr-item grid grid-cols-12 gap-2 items-center'; newItem.innerHTML = `<input type="text" class="col-span-8 p-2 border rounded-md okr-title" placeholder="عنوان هدف"><input type="number" class="col-span-3 p-2 border rounded-md okr-progress" placeholder="پیشرفت %" min="0" max="100" value="0"><button type="button" class="col-span-1 remove-okr-btn text-red-500 hover:text-red-700"><i data-lucide="trash-2" class="w-5 h-5"></i></button>`; okrsContainer.appendChild(newItem); lucide.createIcons(); });
-            okrsContainer.addEventListener('click', (e) => { if (e.target.closest('.remove-okr-btn')) { e.target.closest('.okr-item').remove(); } });
-            document.getElementById('edit-team-okrs-form').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const newOkrs = [];
-                document.querySelectorAll('.okr-item').forEach(item => {
-                    const title = item.querySelector('.okr-title').value;
-                    const progress = parseInt(item.querySelector('.okr-progress').value) || 0;
-                    if (title) { newOkrs.push({ title, progress }); }
-                });
-                try {
-                    const docRef = doc(db, `artifacts/${appId}/public/data/teams`, team.firestoreId);
-                    await updateDoc(docRef, { okrs: newOkrs });
-                    showToast("اهداف تیم با موفقیت به‌روزرسانی شدند.");
-                    viewTeamProfile(team.firestoreId);
-                } catch (error) {
-                    console.error("Error updating team OKRs:", error);
-                    showToast("خطا در به‌روزرسانی اهداف تیم.", "error");
-                }
-            });
-        };
         // --- [FIX START] ADDED TEAM HEALTH FORM ---
         const showTeamHealthForm = (team) => {
             modalTitle.innerText = `ویرایش معیارهای سلامت تیم ${team.name}`;
