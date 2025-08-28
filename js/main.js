@@ -809,8 +809,10 @@ function renderEmployeePortalPage(pageName, employee) {
                     return `<div class=\"flex items-center gap-1 text-xs bg-slate-100 rounded-full px-2 py-1\"><span>${r.emoji}</span><img src=\"${user.avatar || 'icons/icon-128x128.png'}\" class=\"w-4 h-4 rounded-full object-cover\"/><span class=\"text-slate-600\">${user.name || ''}</span></div>`;
                 }).join('');
                 const extraCount = Math.max(0, reactors.length - topReactors.length);
+                const rawUrl = (m.imageUrl || '').toString();
+                const cleanedUrl = rawUrl.trim().replace(/^["']+|["']+$/g, '').replace(/\\+$/,'').replace(/^https:\\/(?!\\/)/, 'https://');
                 return `
-                <div class=\"bg-white rounded-2xl border border-slate-200 overflow-hidden\">\n                    <div class=\"flex items-center gap-2 p-3\">\n                        <img src=\"${owner.avatar || 'icons/icon-128x128.png'}\" class=\"w-10 h-10 rounded-full object-cover\"/>\n                        <div>\n                            <div class=\"font-bold text-slate-800 text-sm\">${owner.name || m.ownerName || 'کاربر'}</div>\n                            <div class=\"text-[11px] text-slate-500\">${toPersianDate(m.createdAt)}</div>\n                        </div>\n                    </div>\n                    ${m.imageUrl ? `<div class=\\\"w-full aspect-square bg-slate-100 overflow-hidden\\\"><img src=\\\"${m.imageUrl}\\\" class=\\\"w-full h-full object-cover\\\"/></div>` : ''}\n                    <div class=\"px-3 py-2\">\n                        <div class=\"flex items-center gap-2 mb-2\">${['❤️','👍','😂','🎉','👎'].map(e=> `<button class=\\\"moment-react-btn text-sm px-2 py-1 rounded-full ${meReact===e ? 'bg-slate-800 text-white':'bg-slate-100 text-slate-700'}\\\" data-id=\\\"${m.firestoreId}\\\" data-emoji=\\\"${e}\\\">${e}</button>`).join('')}\n                        </div>\n                        <div class=\"flex items-center gap-2 flex-wrap\">${reactionsHtml}${extraCount? `<span class=\\\"text-xs text-slate-500\\\">+${extraCount}</span>`:''}</div>\n                        ${m.text ? `<div class=\\\"text-sm text-slate-800 whitespace-pre-wrap mt-2\\\"><span class=\\\"font-semibold\\\">${owner.name || m.ownerName || 'کاربر'}:</span> ${m.text}</div>` : ''}\n                    </div>\n                </div>`;
+                <div class=\"bg-white rounded-2xl border border-slate-200 overflow-hidden\">\n                    <div class=\"flex items-center gap-2 p-3\">\n                        <img src=\"${owner.avatar || 'icons/icon-128x128.png'}\" class=\"w-10 h-10 rounded-full object-cover\"/>\n                        <div>\n                            <div class=\"font-bold text-slate-800 text-sm\">${owner.name || m.ownerName || 'کاربر'}</div>\n                            <div class=\"text-[11px] text-slate-500\">${toPersianDate(m.createdAt)}</div>\n                        </div>\n                    </div>\n                    ${m.text ? `<div class=\\\"text-sm text-slate-800 whitespace-pre-wrap mb-3\\\">${m.text}</div>` : ''}\n                    ${cleanedUrl ? `<img src=\\\"${cleanedUrl}\\\" class=\\\"w-full rounded-xl object-cover mb-3\\\"/>` : ''}\n                    <div class=\"flex items-center gap-2\">\n                        ${['👍','❤️','😂','🎉','👎'].map(e=> `<button class=\\\"moment-react-btn text-sm px-2 py-1 rounded-full ${meReact===e ? 'bg-slate-800 text-white':'bg-slate-100 text-slate-700'}\\\" data-id=\\\"${m.firestoreId}\\\" data-emoji=\\\"${e}\\\">${e}</button>`).join('')}\n                    </div>\n                    <div class=\"flex flex-wrap gap-2 mt-3\">${reactionsHtml}${extraCount? `<span class=\\\"text-xs text-slate-500\\\">+${extraCount}</span>`:''}</div>\n                </div>`;
             }).join('');
             if (window.lucide?.createIcons) lucide.createIcons();
         };
@@ -1087,7 +1089,6 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
 // کل این تابع را با نسخه جدید جایگزین کنید
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
-
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
 // در فایل js/main.js
@@ -1340,10 +1341,8 @@ const persianToEnglishDate = (persianDateStr) => {
 // کل این تابع را با نسخه جدید جایگزین کنید
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
-
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
-
 // فایل: main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
 // فایل: main.js
@@ -3109,7 +3108,7 @@ const showEditUserForm = (user) => {
     });
 };
 // در فایل js/main.js
-// کل این تابع را با نسخه جدید و کامل جایگزین کنید
+// کل این تابع را با نسخه جدید جایگزین کنید
 
 function setupProfileModalListeners(emp) {
     const tabs = document.querySelectorAll('#profile-tabs .profile-tab');
@@ -4295,348 +4294,9 @@ const renderEmployeeTable = () => {
     link.setAttribute("href", encodedUri);
     link.setAttribute("download", "employees_export.csv");
     document.body.appendChild(link);
-
     link.click(); // دانلود فایل
     document.body.removeChild(link);
 };
-        const exportTransactionsToCSV = () => {
-    const startDateStr = persianToEnglishDate(document.getElementById('start-date-filter').value);
-    const endDateStr = persianToEnglishDate(document.getElementById('end-date-filter').value);
-
-    const startDate = startDateStr ? new Date(startDateStr) : null;
-    if(startDate) startDate.setHours(0, 0, 0, 0);
-
-    const endDate = endDateStr ? new Date(endDateStr) : null;
-    if(endDate) endDate.setHours(23, 59, 59, 999);
-
-    const expensesWithDetails = state.expenses.map(exp => ({ ...exp, type: 'هزینه' }));
-    const chargesWithDetails = state.chargeHistory.map(chg => ({ ...chg, type: 'شارژ', date: chg.chargedAt?.toDate(), item: `شارژ کارت ${chg.cardName}` }));
-    const allTransactions = [...expensesWithDetails, ...chargesWithDetails]
-        .filter(t => t.date)
-        .sort((a, b) => new Date(b.date) - new Date(a.date));
-
-    const filteredTransactions = allTransactions.filter(t => {
-        const transactionDate = new Date(t.date);
-        if (startDate && endDate) {
-            return transactionDate >= startDate && transactionDate <= endDate;
-        }
-        if (startDate) {
-            return transactionDate >= startDate;
-        }
-        if (endDate) {
-            return transactionDate <= endDate;
-        }
-        return true;
-    });
-
-    if (filteredTransactions.length === 0) {
-        showToast("هیچ تراکنشی در بازه زمانی انتخابی یافت نشد.", "error");
-        return;
-    }
-
-    const headers = ["تاریخ", "نوع", "شرح", "کارت", "مبلغ"];
-    const rows = filteredTransactions.map(t => {
-        const cardName = t.type === 'هزینه' ? (state.pettyCashCards.find(c => c.firestoreId === t.cardId)?.name || '') : t.cardName;
-        const amount = t.type === 'هزینه' ? -t.amount : t.amount;
-        const cleanValue = val => `"${(val || '').toString().replace(/"/g, '""')}"`;
-        return [
-            cleanValue(toPersianDate(t.date)),
-            cleanValue(t.type),
-            cleanValue(t.item),
-            cleanValue(cardName),
-            amount
-        ].join(',');
-    });
-
-    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + headers.join(',') + '\n' + rows.join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "transactions_export.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-};
-const setupTalentPageListeners = () => {
-    // ریست کردن صفحه به ۱ هنگام جستجو یا فیلتر
-    const resetToFirstPage = () => {
-        state.currentPageTalent = 1;
-        renderEmployeeTable();
-    };
-
-    document.getElementById('searchInput')?.addEventListener('input', resetToFirstPage);
-    document.getElementById('departmentFilter')?.addEventListener('change', resetToFirstPage);
-    document.getElementById('statusFilter')?.addEventListener('change', resetToFirstPage);
-    
-    // اتصال دکمه افزودن کارمند به تابع مربوطه
-    document.getElementById('add-employee-btn')?.addEventListener('click', () => showEmployeeForm());
-    
-    // اتصال دکمه خروجی CSV به تابع مربوطه
-    document.getElementById('export-csv-btn')?.addEventListener('click', exportToCSV);
-
-    // مدیریت کلیک روی کارت‌ها (مشاهده، ویرایش، حذف)
-    const mainContentArea = document.getElementById('main-content');
-    
-    mainContentArea.addEventListener('click', (e) => {
-        const viewEmpBtn = e.target.closest('.view-employee-profile-btn');
-        const editEmpBtn = e.target.closest('.edit-employee-btn');
-        const deleteEmpBtn = e.target.closest('.delete-employee-btn');
-        const paginationBtn = e.target.closest('.pagination-btn');
-
-        if (paginationBtn && !paginationBtn.disabled) {
-            state.currentPageTalent = Number(paginationBtn.dataset.page);
-            renderEmployeeTable();
-        }
-
-        if (viewEmpBtn) {
-            viewEmployeeProfile(viewEmpBtn.dataset.employeeId);
-        } else if (editEmpBtn) {
-            showEmployeeForm(editEmpBtn.dataset.employeeId);
-        } else if (deleteEmpBtn) {
-            showConfirmationModal("حذف کارمند", "آیا از حذف این کارمند مطمئن هستید؟", async () => {
-                try {
-                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/employees`, deleteEmpBtn.dataset.employeeId));
-                    showToast("کارمند با موفقیت حذف شد.");
-                } catch (error) {
-                    console.error("Error deleting employee:", error);
-                    showToast("خطا در حذف کارمند.", "error");
-                }
-            });
-        }
-    });
-};
-// کل این تابع را با نسخه جدید جایگزین کنید
-const setupOrganizationPageListeners = () => {
-    document.getElementById('add-team-btn')?.addEventListener('click', () => showTeamForm());
-    document.getElementById('add-team-btn-empty')?.addEventListener('click', () => showTeamForm());
-
-    // از شناسه جدید برای پیدا کردن کانتینر استفاده می‌کنیم
-    const teamsContainer = document.getElementById('teams-container');
-    if(teamsContainer) {
-        teamsContainer.addEventListener('click', (e) => {
-            const viewTeamBtn = e.target.closest('.view-team-profile-btn');
-            const deleteTeamBtn = e.target.closest('.delete-team-btn');
-
-            if (viewTeamBtn) {
-                viewTeamProfile(viewTeamBtn.dataset.teamId);
-            } else if (deleteTeamBtn) {
-                showConfirmationModal("حذف تیم", "آیا از حذف این تیم مطمئن هستید؟", async () => { 
-                    try { 
-                        await deleteDoc(doc(db, `artifacts/${appId}/public/data/teams`, deleteTeamBtn.dataset.teamId)); 
-                        showToast("تیم با موفقیت حذف شد."); 
-                    } catch (error) { 
-                        console.error("Error deleting team:", error); 
-                        showToast("خطا در حذف تیم.", "error"); 
-                    } 
-                });
-            }
-        });
-    }
-};
-// این تابع جدید را به js/main.js اضافه کنید
-// در فایل js/main.js
-// کل این تابع را با نسخه جدید جایگزین کنید
-// در فایل js/main.js
-// کل این تابع را با نسخه جدید و کامل جایگزین کنید
-
-// در فایل js/main.js
-// کل این تابع را با نسخه جدید و کامل جایگزین کنید
-
-const setupRequestsPageListeners = () => {
-    // بخش ۱: خوانده شده کردن درخواست‌های جدید
-    // این کد چک می‌کند اگر در حال مشاهده "درخواست‌های من" هستیم، آن‌ها را به وضعیت "خوانده شده" تغییر دهد.
-    if (state.requestFilter === 'mine' && state.currentUser) {
-        const unreadRequests = (state.requests || []).filter(req =>
-            req.assignedTo === state.currentUser.uid && !req.isReadByAssignee
-        );
-
-        if (unreadRequests.length > 0) {
-            const batch = writeBatch(db);
-            unreadRequests.forEach(req => {
-                const docRef = doc(db, `artifacts/${appId}/public/data/requests`, req.firestoreId);
-                batch.update(docRef, { isReadByAssignee: true });
-            });
-              batch.commit().then(() => {
-                updateNotificationBell(); // [!code ++] بروزرسانی فوری زنگوله
-            }).catch(err => console.error("Error marking requests as read:", err));
-        }
-    }
-
-    // بخش ۲: فعال‌سازی دکمه‌های فیلتر ("همه" و "واگذار شده به من")
-    document.querySelectorAll('.request-filter-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            state.requestFilter = btn.dataset.filter;
-            renderPage('requests');
-        });
-    });
-
-    const tableBody = document.getElementById('requests-table-body');
-    if (!tableBody) return;
-
-    // بخش ۳: فعال‌سازی منوی کشویی "واگذار به" (برای واگذاری مجدد)
-    tableBody.addEventListener('input', async (e) => {
-        if (e.target.classList.contains('assign-request-select')) {
-            const selectElement = e.target;
-            const requestId = selectElement.dataset.id;
-            const adminUid = selectElement.value;
-
-            const requestRef = doc(db, `artifacts/${appId}/public/data/requests`, requestId);
-
-            try {
-                // هنگام واگذاری مجدد، وضعیت خوانده شده را ریست می‌کنیم تا برای نفر جدید، نوتیفیکیشن ارسال شود
-                await updateDoc(requestRef, {
-                    assignedTo: adminUid || null,
-                    isReadByAssignee: false
-                });
-                showToast(`درخواست به کاربر مورد نظر واگذار شد.`);
-            } catch (error) {
-                console.error("Error re-assigning request:", error);
-                showToast("خطا در واگذاری درخواست.", "error");
-            }
-        }
-    });
-
-    // بخش ۴: فعال‌سازی دکمه جدید "پردازش"
-    tableBody.addEventListener('click', async (e) => {
-        const processBtn = e.target.closest('.process-request-btn');
-        if (processBtn) {
-            const requestId = processBtn.dataset.id;
-            (window.showProcessRequestForm || (()=>{}))(requestId);
-        }
-    });
-};
-// این تابع جدید را به js/main.js اضافه کنید
-// در فایل js/main.js
-// کل این تابع را با نسخه جدید جایگزین کنید
-const setupTasksPageListeners = () => {
-    const tableBody = document.getElementById('tasks-table-body');
-    if (!tableBody) return;
-
-    // منطق واگذاری مجدد یادآورها
-    tableBody.addEventListener('input', async (e) => {
-        if (e.target.classList.contains('assign-reminder-select')) {
-            const reminderId = e.target.dataset.id;
-            const adminUid = e.target.value;
-            const reminderRef = doc(db, `artifacts/${appId}/public/data/reminders`, reminderId);
-            try {
-                await updateDoc(reminderRef, { assignedTo: adminUid, isReadByAssignee: false });
-                showToast(`یادآور به کاربر مورد نظر واگذار شد.`);
-            } catch (error) { showToast("خطا در واگذاری یادآور.", "error"); }
-        }
-    });
-
-    // منطق کلیک روی دکمه پردازش
-    tableBody.addEventListener('click', (e) => {
-        const processBtn = e.target.closest('.process-reminder-btn');
-        if (processBtn) {
-            (window.showProcessReminderForm || (()=>{}))(processBtn.dataset.id);
-        }
-    });
-};
-// Minimal processing modal for reminders (fallback)
-if (typeof window.showProcessReminderForm !== 'function') {
-    window.showProcessReminderForm = (reminderId) => {
-        const reminder = (state.reminders || []).find(r => r.firestoreId === reminderId);
-        if (!reminder) { showToast('یادآور یافت نشد.', 'error'); return; }
-        modalTitle.innerText = `پردازش یادآور: ${reminder.type || ''}`;
-        modalContent.innerHTML = `
-            <form id="process-reminder-form" class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium">وضعیت</label>
-                    <select id="reminder-status" class="w-full p-2 border rounded-md bg-white">
-                        <option ${reminder.status==='جدید'?'selected':''} value="جدید">جدید</option>
-                        <option ${reminder.status==='در حال انجام'?'selected':''} value="در حال انجام">در حال انجام</option>
-                        <option ${reminder.status==='انجام شده'?'selected':''} value="انجام شده">انجام شده</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium">یادداشت پردازش</label>
-                    <textarea id="reminder-notes" rows="4" class="w-full p-2 border rounded-md">${reminder.processingNotes || ''}</textarea>
-                </div>
-                <div class="flex justify-end gap-2">
-                    <button type="button" id="cancel-process-reminder" class="bg-slate-200 text-slate-800 py-2 px-4 rounded-md hover:bg-slate-300">انصراف</button>
-                    <button type="submit" class="primary-btn">ذخیره</button>
-                </div>
-            </form>`;
-        openModal(mainModal, mainModalContainer);
-        document.getElementById('cancel-process-reminder')?.addEventListener('click', () => closeModal(mainModal, mainModalContainer));
-        document.getElementById('process-reminder-form')?.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            try {
-                const newStatus = document.getElementById('reminder-status').value;
-                const notes = document.getElementById('reminder-notes').value.trim();
-                await updateDoc(doc(db, `artifacts/${appId}/public/data/reminders`, reminderId), {
-                    status: newStatus,
-                    processingNotes: notes,
-                    lastUpdatedAt: serverTimestamp()
-                });
-                showToast('یادآور به‌روزرسانی شد.');
-                closeModal(mainModal, mainModalContainer);
-                renderPage('tasks');
-            } catch (error) {
-                console.error('Error processing reminder:', error);
-                showToast('خطا در ذخیره یادآور.', 'error');
-            }
-        });
-    };
-}
-// در فایل js/main.js
-// کل این تابع را با نسخه جدید جایگزین کنید
-// در فایل js/main.js
-// کل این تابع را با نسخه جدید جایگزین کنید
-const setupSettingsPageListeners = () => {
-    const mainContentArea = document.getElementById('main-content');
-    if (!mainContentArea) return;
-
-    mainContentArea.querySelectorAll('.settings-tab').forEach(tab => {
-        tab.addEventListener('click', () => {
-            mainContentArea.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('border-blue-600', 'text-blue-600'));
-            tab.classList.add('border-blue-600', 'text-blue-600');
-            mainContentArea.querySelectorAll('.settings-tab-pane').forEach(pane => {
-                pane.classList.toggle('hidden', pane.id !== `tab-${tab.dataset.tab}`);
-            });
-        });
-    });
-
-    mainContentArea.addEventListener('click', (e) => {
-        const addUserBtn = e.target.closest('#add-user-btn');
-        const editUserBtn = e.target.closest('.edit-user-btn');
-        const deleteUserBtn = e.target.closest('.delete-user-btn');
-        const deleteCompetencyBtn = e.target.closest('.delete-competency-btn');
-        const addRuleBtn = e.target.closest('#add-rule-btn');
-        const editRuleBtn = e.target.closest('.edit-rule-btn');
-        const deleteRuleBtn = e.target.closest('.delete-rule-btn');
-        
-        if (addUserBtn) showAddUserForm();
-        if (editUserBtn) {
-            const user = state.users.find(u => u.firestoreId === editUserBtn.dataset.uid);
-            if(user) showEditUserForm(user);
-        }
-        if (deleteUserBtn) { /* ... کد قبلی ... */ }
-        if (deleteCompetencyBtn) {
-            const compId = deleteCompetencyBtn.dataset.id;
-            showConfirmationModal('حذف شایستگی', 'این شایستگی از لیست حذف خواهد شد. ادامه می‌دهید؟', async () => {
-                try {
-                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/competencies`, compId));
-                    showToast('شایستگی حذف شد.');
-                } catch (err) {
-                    console.error('Error deleting competency', err);
-                    showToast('خطا در حذف شایستگی.', 'error');
-                }
-            });
-        }
-        
-        if (addRuleBtn) showAssignmentRuleForm();
-        if (editRuleBtn) showAssignmentRuleForm(editRuleBtn.dataset.id);
-        if (deleteRuleBtn) {
-            showConfirmationModal('حذف قانون', 'آیا از حذف این قانون واگذاری مطمئن هستید؟', async () => {
-                try {
-                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/assignmentRules`, deleteRuleBtn.dataset.id));
-                    showToast("قانون با موفقیت حذف شد.");
-                } catch (error) { showToast("خطا در حذف قانون.", "error"); }
-            });
-        }
-    });
     const addCompetencyForm = document.getElementById('add-competency-form');
     if (addCompetencyForm) {
         addCompetencyForm.addEventListener('submit', async (e) => {
