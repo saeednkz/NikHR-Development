@@ -764,8 +764,17 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
     // همبرگری
     document.getElementById('portal-menu-btn')?.addEventListener('click', () => {
         const aside = document.querySelector('.employee-sidebar');
+        const overlay = document.getElementById('portal-sidebar-overlay');
         if (!aside) return;
+        const willShow = aside.classList.contains('hidden');
         aside.classList.toggle('hidden');
+        if (overlay) overlay.classList.toggle('hidden', !willShow);
+    });
+    document.getElementById('portal-sidebar-overlay')?.addEventListener('click', () => {
+        const aside = document.querySelector('.employee-sidebar');
+        const overlay = document.getElementById('portal-sidebar-overlay');
+        if (aside) aside.classList.add('hidden');
+        if (overlay) overlay.classList.add('hidden');
     });
 
     // دکمه‌های منوی ناوبری
@@ -787,6 +796,10 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
     document.getElementById('quick-edit-profile-btn')?.addEventListener('click', (e) => {
         e.preventDefault();
         showMyProfileEditForm(employee);
+    });
+    document.getElementById('quick-change-password-btn')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        showChangePasswordForm();
     });
     // Dark mode toggle
     const root = document.documentElement;
@@ -879,7 +892,7 @@ function renderEmployeePortal() {
 
     portalContainer.innerHTML = `
         <div class="flex h-screen" style="background:#F5F6FA;">
-            <aside class="w-72 employee-sidebar">
+            <aside class="w-72 employee-sidebar hidden sm:flex z-30">
                 <div class="text-center">
                     <img src="${employee.avatar}" alt="Avatar" class="profile-pic object-cover">
                     <h2 class="employee-name">${employeeName}</h2>
@@ -904,6 +917,7 @@ function renderEmployeePortal() {
             </aside>
 
             <div class="flex-1 flex flex-col h-screen overflow-y-hidden relative">
+                <div id="portal-sidebar-overlay" class="hidden fixed inset-0 bg-black/40 z-20 sm:hidden"></div>
                 <!-- decorative blobs -->
                 <div class="blob" style="top:-40px; right:-60px; width:220px; height:220px; background:#FF6A3D"></div>
                 <div class="blob" style="bottom:-60px; left:-40px; width:180px; height:180px; background:#F72585"></div>
@@ -934,6 +948,10 @@ function renderEmployeePortal() {
                             <button id="quick-edit-profile-btn" class="hidden sm:inline-flex items-center gap-2 text-xs font-semibold bg-white/80 hover:bg-white text-slate-800 px-3 py-2 rounded-lg transition">
                                 <i data-lucide="user-cog" class="w-4 h-4"></i>
                                 <span>ویرایش پروفایل</span>
+                            </button>
+                            <button id="quick-change-password-btn" class="hidden sm:inline-flex items-center gap-2 text-xs font-semibold bg-white/80 hover:bg-white text-slate-800 px-3 py-2 rounded-lg transition">
+                                <i data-lucide="key-round" class="w-4 h-4"></i>
+                                <span>رمز عبور</span>
                             </button>
                             <button id="theme-toggle-btn" class="hidden sm:inline-flex items-center gap-2 text-xs font-semibold bg-white/15 hover:bg-white/20 text-white px-3 py-2 rounded-lg transition" title="حالت تیره/روشن">
                                 <i data-lucide="moon" class="w-4 h-4"></i>
