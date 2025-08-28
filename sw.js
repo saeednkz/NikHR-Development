@@ -1,7 +1,7 @@
 // فایل: sw.js
 // کل محتوای این فایل را با کد زیر جایگزین کنید
 
-const CACHE_NAME = 'nikhr-cache-v3'; // bump to force new SW and fresh assets
+const CACHE_NAME = 'nikhr-cache-v4'; // bump to force new SW and fresh assets
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -43,19 +43,14 @@ self.addEventListener('activate', event => {
 // ۳. هنگام دریافت درخواست: استراتژی Cache-First
 self.addEventListener('fetch', event => {
   const req = event.request;
-  // Network-first for JS to avoid stale cached app code
-  if (req.destination === 'script') {
-    event.respondWith(
-      fetch(req)
-        .then(resp => {
-          const copy = resp.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(req, copy));
-          return resp;
-        })
-        .catch(() => caches.match(req))
-    );
+  // Bypass service worker for JS/ESM entirely to prevent HTML fallbacks
+  const url = new URL(req.url);
+  if (req.destination === 'script' || url.pathname.endsWith('.js')) {
+    event.respondWith(fetch(req));
     return;
   }
+  // Network-first for JS to avoid stale cached app code
+  // (handled above)
 
   // Cache-first for other assets
   event.respondWith(
