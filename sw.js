@@ -1,320 +1,59 @@
-<!DOCTYPE html>
-<html lang="fa" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>سیستم مدیریت منابع انسانی NikHR</title>
-    <link rel="icon" href="logo.png" type="image/png">
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#4f46e5"/>
+// فایل: sw.js
+// کل محتوای این فایل را با کد زیر جایگزین کنید
 
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jalaali-js/dist/jalaali.js"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://unpkg.com/persian-date@1.1.0/dist/persian-date.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/css/persian-datepicker.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js"></script>
-    
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css">
-    
-<style>
-    body {
-        font-family: 'Vazirmatn', sans-serif;
-        background-color: #f8fafc; /* Slate 50 */
-        color: #334155; /* Slate 700 */
-    }
+const CACHE_NAME = 'nikhr-cache-v5'; // bump to force new SW and fresh assets
+const ASSETS_TO_CACHE = [
+  './',
+  './index.html',
+  './js/main.js',
+  './js/auth.js',
+  './logo.png',
+  './manifest.json'
+];
 
-    /* --- استایل‌های عمومی --- */
-    .card {
-        background-color: #ffffff;
-        border-radius: 16px;
-        box-shadow: 0 8px 24px rgba(2,6,23,0.04);
-        border: 1px solid #e2e8f0;
-    }
-    .card-header {
-        padding: 1rem 1.5rem;
-        border-bottom: 1px solid #e2e8f0;
-    }
-    .card-content {
-        padding: 1.5rem;
-    }
-    .page-header { margin-bottom: 2rem; }
-    .primary-btn {
-        background-color: #6B69D6; color: white; padding: 10px 20px;
-        border-radius: 10px; font-weight: 600; transition: background-color 0.2s, box-shadow 0.2s;
-        box-shadow: 0 6px 14px rgba(107,105,214,0.22);
-    }
-    .primary-btn:hover { background-color: #5A58C9; box-shadow: 0 8px 18px rgba(107,105,214,0.28); }
-    .secondary-btn {
-        background-color: #ECEEF3; color: #6B69D6; padding: 10px 20px;
-        border-radius: 10px; font-weight: 600; transition: background-color 0.2s, border-color 0.2s;
-        border: 1px solid rgba(107,105,214,0.25);
-    }
-    .secondary-btn:hover { background-color: #E6E8F1; }
+// ۱. هنگام نصب: فایل‌های اصلی را در کش جدید ذخیره کن
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => {
+        console.log('Opened cache and caching assets');
+        return cache.addAll(ASSETS_TO_CACHE);
+      })
+  );
+  self.skipWaiting(); // سرویس ورکر جدید را بلافاصله فعال کن
+});
 
-    /* --- استایل‌های جدید برای پورتال کارمندان (پالت سفارشی) --- */
-    .employee-sidebar {
-        background-color: #ECEEF3; /* Sidebar */
-        color: #475569; /* slate-600 like */
-        display: flex;
-        flex-direction: column;
-        padding: 1.5rem;
-    }
-    .employee-sidebar .profile-pic {
-        width: 120px; height: 120px;
-        border-radius: 50%;
-        border: 4px solid rgba(107,105,214,0.25);
-        box-shadow: 0 0 0 8px rgba(107,105,214,0.10);
-        margin: 1rem auto 1.5rem auto;
-    }
-    .employee-sidebar .employee-name {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: #1f2937; /* slate-800 */
-    }
-    .employee-sidebar .employee-title {
-        color: #64748b; /* Slate 500 */
-        font-weight: 500;
-    }
-    .employee-sidebar .nav-item {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        padding: 12px 16px;
-        border-radius: 10px;
-        color: #475569; /* Slate 600 */
-        transition: all 0.2s ease;
-        font-weight: 500;
-    }
-    .employee-sidebar .nav-item:hover {
-        background-color: rgba(107,105,214,0.10);
-        color: #1f2937; /* slate-800 */
-    }
-    .employee-sidebar .nav-item.active {
-        background-color: rgba(107,105,214,0.18); /* #6B69D6 tint */
-        color: #6B69D6;
-        font-weight: 700;
-    }
-    .employee-sidebar .nav-item i {
-        color: #64748b;
-    }
-    .employee-sidebar .nav-item.active i {
-        color: #6B69D6;
-    }
-    .employee-sidebar .logout-btn {
-        color: #64748b;
-    }
-    .employee-sidebar .logout-btn:hover {
-        background-color: rgba(107,105,214,0.10);
-        color: #1f2937;
-    }
+// ۲. هنگام فعال‌سازی: تمام کش‌های قدیمی را پاک کن
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cacheName => {
+          if (cacheName !== CACHE_NAME) {
+            console.log('Deleting old cache:', cacheName);
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
+  );
+  return self.clients.claim(); // کنترل کامل صفحه را به دست بگیر
+});
 
-    /* --- استایل‌های پنل ادمین (سایدبار) --- */
-    .sidebar {
-        background-color: #ffffff;
-        border-left: 1px solid #e2e8f0; /* slate-200 */
-    }
-    .sidebar-item {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        padding: 0.75rem 1rem;
-        border-radius: 0.5rem;
-        color: #475569; /* slate-600 */
-        transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
-        border: 1px solid transparent;
-    }
-    .sidebar-item:hover {
-        background-color: rgba(107,105,214,0.08);
-        color: #0f172a; /* slate-900 */
-    }
-    .sidebar-item.active {
-        background-color: rgba(107,105,214,0.18);
-        color: #6B69D6;
-        border-color: rgba(107,105,214,0.35);
-        font-weight: 700;
-    }
-    .sidebar-item i {
-        width: 1.25rem;
-        height: 1.25rem;
-    }
+// ۳. هنگام دریافت درخواست: استراتژی Cache-First
+self.addEventListener('fetch', event => {
+  const req = event.request;
+  // Bypass service worker for JS/ESM entirely to prevent HTML fallbacks
+  const url = new URL(req.url);
+  if (req.destination === 'script' || url.pathname.endsWith('.js')) {
+    event.respondWith(fetch(req));
+    return;
+  }
+  // Network-first for JS to avoid stale cached app code
+  // (handled above)
 
-    /* سایر استایل‌ها */
-    #loading-overlay { position: fixed; inset: 0; background-color: rgba(248, 250, 252, 0.8); display: flex; align-items: center; justify-content: center; z-index: 9999; }
-    .spinner { width: 56px; height: 56px; border: 6px solid #e0e7ff; border-top: 6px solid #4f46e5; border-radius: 50%; animation: spin 1s linear infinite; }
-    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-    /* --- استایل‌های تکمیلی برای جلوه‌های مدرن --- */
-    .glass { background: rgba(255,255,255,0.55); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.3); }
-    .blob { position: absolute; border-radius: 9999px; filter: blur(20px); opacity: .25; animation: float 12s ease-in-out infinite; }
-    @keyframes float { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-10px) } }
-    /* animations */
-    .fade-up { opacity: 0; transform: translateY(8px); animation: fadeUp .5s ease forwards; }
-    .fade-up-delayed { opacity: 0; transform: translateY(8px); animation: fadeUp .6s .08s ease forwards; }
-    @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
-    /* confetti */
-    .confetti { position: fixed; inset: 0; pointer-events: none; z-index: 50; overflow: hidden; }
-    .confetti > i { position: absolute; width: 8px; height: 14px; border-radius: 2px; animation: drop 1.6s ease-in forwards; }
-    @keyframes drop { to { transform: translateY(100vh) rotate(360deg); opacity: 0; } }
-
-    /* Dark theme overrides */
-    body.theme-dark { background: #0B0F19; color: #E2E8F0; }
-    body.theme-dark .employee-sidebar { background: #0F172A; color: #CBD5E1; }
-    body.theme-dark .employee-sidebar .nav-item { color: #94A3B8; }
-    body.theme-dark .employee-sidebar .nav-item:hover { background: rgba(148,163,184,.12); color: #E2E8F0; }
-    body.theme-dark .employee-sidebar .nav-item.active { background: rgba(255,255,255,.08); color: #FFFFFF; }
-    body.theme-dark .employee-sidebar .nav-item.active i { color: #FFFFFF; }
-    body.theme-dark .card, body.theme-dark .bg-white { background: #111827 !important; color: #E5E7EB; border-color: #1F2937 !important; }
-    body.theme-dark .primary-btn { background: #6B69D6; }
-    body.theme-dark .secondary-btn { background: #0F172A; color: #C7D2FE; border-color: #1F2937; }
-
-    /* Tables */
-    table thead { background: #ECEEF3; }
-    table thead th { color: #475569; font-weight: 700; }
-    table tbody tr:hover { background: #F8FAFC; }
-
-    /* Form fields */
-    input[type="text"], input[type="email"], input[type="number"], input[type="file"], select, textarea {
-        border-radius: 10px;
-    }
-    body.theme-dark .text-slate-800 { color: #E5E7EB !important; }
-    body.theme-dark .text-slate-700 { color: #D1D5DB !important; }
-    body.theme-dark .text-slate-600 { color: #9CA3AF !important; }
-    body.theme-dark .bg-slate-50 { background: #0B1220 !important; }
-</style>
-</head>
-<body class="bg-slate-100">
-
-    <div id="login-container" class="hidden relative min-h-screen flex items-center justify-center p-4" style="background:#F5F6FA;overflow:hidden;">
-        <!-- abstract background lines -->
-        <svg class="pointer-events-none absolute -top-24 -left-24 opacity-30" width="520" height="520" viewBox="0 0 520 520" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-                <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0%" stop-color="#FF6A3D"/>
-                    <stop offset="100%" stop-color="#6B69D6"/>
-                </linearGradient>
-            </defs>
-            <path d="M40 80 C140 10, 240 160, 360 80 S480 220, 520 120" stroke="url(#g1)" stroke-width="2" fill="none"/>
-            <path d="M0 220 C120 140, 220 260, 340 180 S480 320, 520 240" stroke="url(#g1)" stroke-width="2" fill="none"/>
-            <path d="M0 360 C120 280, 240 380, 360 300 S480 420, 520 340" stroke="url(#g1)" stroke-width="2" fill="none"/>
-        </svg>
-        <svg class="pointer-events-none absolute -bottom-24 -right-24 opacity-25 rotate-180" width="520" height="520" viewBox="0 0 520 520" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-                <linearGradient id="g2" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0%" stop-color="#F72585"/>
-                    <stop offset="100%" stop-color="#6B69D6"/>
-                </linearGradient>
-            </defs>
-            <path d="M40 80 C140 10, 240 160, 360 80 S480 220, 520 120" stroke="url(#g2)" stroke-width="2" fill="none"/>
-            <path d="M0 220 C120 140, 220 260, 340 180 S480 320, 520 240" stroke="url(#g2)" stroke-width="2" fill="none"/>
-            <path d="M0 360 C120 280, 240 380, 360 300 S480 420, 520 340" stroke="url(#g2)" stroke-width="2" fill="none"/>
-        </svg>
-
-        <div class="w-full max-w-md p-8 space-y-6 glass rounded-2xl shadow-xl border border-white/30 relative z-10">
-            <div class="text-center">
-                <div class="mx-auto w-16 h-16 rounded-xl overflow-hidden ring-4 ring-indigo-200">
-                    <img src="logo.png" alt="NikHR Logo" class="w-full h-full object-cover">
-                </div>
-                <h2 class="mt-4 text-2xl font-extrabold" style="color:#242A38">ورود به NikHR</h2>
-                <p class="text-xs text-slate-500 mt-1">به دنیای کار هوشمند خوش آمدی</p>
-            </div>
-            <form id="login-form" class="space-y-5">
-                <div>
-                    <label for="email" class="text-xs font-semibold text-slate-600">نام کاربری (ایمیل)</label>
-                    <input id="email" type="email" autocomplete="email" required class="w-full px-3 py-2 mt-1 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white/80">
-                </div>
-                <div>
-                    <label for="password" class="text-xs font-semibold text-slate-600">رمز عبور</label>
-                    <input id="password" type="password" autocomplete="current-password" required class="w-full px-3 py-2 mt-1 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white/80">
-                </div>
-                <button type="submit" class="w-full py-2.5 rounded-lg text-sm font-semibold" style="background:#6B69D6;color:#fff">ورود</button>
-            </form>
-        </div>
-    </div>
-    
-    <div id="signup-container" class="hidden"></div>
-
-    <div id="dashboard-container" class="hidden h-screen">
-        <aside id="sidebar" class="sidebar w-64 space-y-6 py-7 px-2 fixed inset-y-0 right-0 transform translate-x-full md:relative md:translate-x-0 z-30 flex flex-col">
-            <div>
-                <a href="#dashboard" class="sidebar-logo text-2xl font-bold px-4 flex items-center gap-3">
-                    <img src="logo.png" alt="NikHR Logo" class="w-8 h-8">
-                    <span>NikHR</span>
-                </a>
-                <nav id="sidebar-nav" class="mt-10">
-                    <a href="#dashboard" class="sidebar-item"><i data-lucide="layout-dashboard"></i><span>داشبورد</span></a>
-                    <a href="#talent" class="sidebar-item"><i data-lucide="users"></i><span>استعدادها</span></a>
-                    <a href="#organization" class="sidebar-item"><i data-lucide="building-2"></i><span>سازمان</span></a>
-                    <a href="#surveys" class="sidebar-item"><i data-lucide="clipboard-list"></i><span>نظرسنجی‌ها</span></a>
-                    <a href="#requests" class="sidebar-item"><i data-lucide="archive"></i><span>درخواست‌ها</span></a>
-                    <a href="#tasks" class="sidebar-item"><i data-lucide="clipboard-check"></i><span>وظایف من</span></a>
-                    <a href="#analytics" class="sidebar-item"><i data-lucide="bar-chart-3"></i><span>تحلیل هوشمند</span></a>
-                    <a href="#documents" class="sidebar-item"><i data-lucide="folder-kanban"></i><span>اسناد سازمان</span></a>
-                    <a href="#announcements" class="sidebar-item"><i data-lucide="megaphone"></i><span>اعلانات</span></a>
-                    <a href="#settings" id="settings-nav-link" class="sidebar-item"><i data-lucide="settings"></i><span>تنظیمات</span></a>
-                </nav>
-            </div>
-            <div class="mt-auto">
-                <a href="#" id="logout-btn" class="sidebar-item !text-red-500 hover:!bg-red-50 hover:!border-red-500"><i data-lucide="log-out"></i><span>خروج</span></a>
-            </div>
-        </aside>
-        
-        <div class="flex-1 flex flex-col h-screen overflow-y-hidden">
-            <header class="flex justify-between items-center p-4 bg-white border-b border-slate-200 shadow-sm z-10">
-                <button id="menu-btn" class="text-slate-600 z-40 md:hidden"><i data-lucide="menu" class="w-6 h-6"></i></button>
-                <div class="flex-grow"></div>
-<div class="flex items-center gap-4">
-    <span id="user-email" class="text-sm text-slate-600 hidden sm:block"></span>
-    
-    <div id="notification-bell-wrapper" class="relative">
-        <button id="notification-bell-btn" class="relative cursor-pointer p-2 rounded-full hover:bg-slate-100">
-            <i data-lucide="bell" class="text-slate-600"></i>
-            <span id="notification-count" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full border-2 border-white"></span>
-        </button>
-        <div id="notification-dropdown" class="hidden absolute left-0 mt-2 w-80 bg-white rounded-lg shadow-xl border z-20">
-            <div class="p-3 border-b font-semibold">اعلانات</div>
-            <div id="notification-list" class="max-h-96 overflow-y-auto">
-                </div>
-        </div>
-    </div>
-</div>
-            </header>
-            <main id="main-content" class="flex-1 p-6 sm:p-10 overflow-y-auto"></main>
-        </div>
-    </div>
-
-    <div id="employee-portal-container" class="hidden"></div>
-    <div id="survey-taker-container" class="hidden"></div>
-    <div id="loading-overlay"><div class="spinner"></div></div>
-    <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-20 hidden md:hidden"></div>
-
-    <div id="mainModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-40 p-4">
-        <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full md:w-3/4 lg:w-4/5 max-w-4xl max-h-[90vh] flex flex-col transform transition-all duration-300 scale-95 opacity-0">
-            <div class="flex justify-between items-center p-4 border-b border-slate-200">
-                <h3 id="modalTitle" class="text-xl font-semibold text-slate-800"></h3>
-                <button id="closeModal" class="text-slate-500 hover:text-slate-800"><i data-lucide="x" class="w-6 h-6"></i></button>
-            </div>
-            <div id="modalContent" class="p-6 overflow-y-auto"></div>
-        </div>
-    </div>
-
-    <div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-        <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl w-11/12 max-w-sm p-6 transform transition-all duration-300 scale-95 opacity-0">
-            <h3 id="confirmTitle" class="text-lg font-bold text-slate-800 mb-4">آیا مطمئن هستید؟</h3>
-            <p id="confirmMessage" class="text-slate-600 mb-6"></p>
-            <div class="flex justify-end gap-4">
-                <button id="confirmCancel" class="secondary-btn">انصراف</button>
-                <button id="confirmAccept" class="primary-btn">تایید</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="toast-container"></div>
-    <input type="file" id="image-upload-input" class="hidden" accept="image/*">
-
-    <script type="module" src="js/auth.js"></script>
-    <script type="module" src="js/main.js"></script>
-</body>
-</html>
+  // Cache-first for other assets
+  event.respondWith(
+    caches.match(req).then(cached => cached || fetch(req))
+  );
+});
