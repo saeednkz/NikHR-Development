@@ -245,7 +245,7 @@ export const router = () => {
         const pageName = hash.substring(1) || 'dashboard';
         navigateTo(pageName);
     }
-};
+// removed stray closing brace that caused syntax error
 // این دو تابع جدید را به فایل js/main.js اضافه کنید (مثلاً قبل از تابع renderEmployeePortal)
 
 // این دو تابع جدید را به js/main.js اضافه کنید
