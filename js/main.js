@@ -814,6 +814,13 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
     const mainContent = document.getElementById('employee-main-content');
     if (mainContent) {
         mainContent.addEventListener('click', (e) => {
+            const empDocsBtn = e.target.closest('.doc-category-btn');
+            if (empDocsBtn) {
+                const key = empDocsBtn.getAttribute('data-category');
+                if (key) {
+                    showViewCategoryDocsModal(key);
+                }
+            }
             if (e.target.closest('#edit-my-profile-btn')) {
                 showMyProfileEditForm(employee);
             }
@@ -1734,7 +1741,7 @@ const updateNotificationBell = () => {
                 });
             };
         }
-        if (typeof window.showDocumentUploadForm !== 'function') { window.showDocumentUploadForm = () => { modalTitle.innerText='آپلود سند سازمان'; modalContent.innerHTML = `<form id=\"doc-upload-form\" class=\"space-y-4\"><div><label class=\"block text-sm\">عنوان</label><input id=\"doc-title\" class=\"w-full p-2 border rounded-md\" required></div><div><label class=\"block text-sm\">فایل</label><input id=\"doc-file\" type=\"file\" class=\"w-full\" required></div><div class=\"flex justify-end\"><button type=\"submit\" class=\"bg-blue-600 text-white py-2 px-4 rounded-md\">آپلود</button></div></form>`; openModal(mainModal, mainModalContainer); document.getElementById('doc-upload-form').addEventListener('submit', async (e)=>{ e.preventDefault(); const f=document.getElementById('doc-file').files[0]; const t=document.getElementById('doc-title').value.trim(); if(!f||!t) return; try { const sRef = ref(storage, `companyDocs/${Date.now()}_${f.name}`); await uploadBytes(sRef, f); const url = await getDownloadURL(sRef); await addDoc(collection(db, `artifacts/${appId}/public/data/companyDocuments`), { title: t, fileUrl: url, uploadedAt: serverTimestamp() }); showToast('سند آپلود شد.'); closeModal(mainModal, mainModalContainer); renderPage('documents'); } catch(err){ console.error(err); showToast('خطا در آپلود.', 'error'); } }); }; }
+        if (typeof window.showDocumentUploadForm !== 'function') { window.showDocumentUploadForm = () => { modalTitle.innerText='آپلود سند سازمان'; modalContent.innerHTML = `<form id=\"doc-upload-form\" class=\"space-y-4\"><div><label class=\"block text-sm\">عنوان</label><input id=\"doc-title\" class=\"w-full p-2 border rounded-md\" required></div><div><label class=\"block text-sm\">دسته‌بندی</label><select id=\"doc-category\" class=\"w-full p-2 border rounded-md bg-white\" required><option value=\"learning\">آموزش و رشد</option><option value=\"rules\">قوانین و بازی</option><option value=\"toolkit\">کیت ابزار کاری</option><option value=\"story\">داستان ما</option><option value=\"benefits\">مزایا و حقوق</option><option value=\"projects\">مستندات پروژه‌ها</option></select></div><div><label class=\"block text-sm\">فایل</label><input id=\"doc-file\" type=\"file\" class=\"w-full\" required></div><div><label class=\"block text-sm\">گیرندگان</label><select id=\"doc-target-type\" class=\"w-full p-2 border rounded-md bg-white\"><option value=\"public\">عمومی (همه)</option><option value=\"roles\">نقش‌ها</option><option value=\"teams\">تیم‌ها</option><option value=\"users\">افراد</option></select><div id=\"doc-target-details\" class=\"hidden p-2 border rounded-md max-h-40 overflow-y-auto mt-2\"><div id=\"doc-target-teams\" class=\"hidden grid grid-cols-2 gap-2\">${state.teams.map(t => `<div class='flex items-center'><input type='checkbox' value='${t.firestoreId}' data-name='${t.name}' class='doc-target-checkbox-team' id='doc-team-${t.firestoreId}'><label for='doc-team-${t.firestoreId}' class='mr-2'>${t.name}</label></div>`).join('')}</div><div id=\"doc-target-users\" class=\"hidden grid grid-cols-2 gap-2\">${state.employees.map(u => `<div class='flex items-center'><input type='checkbox' value='${u.firestoreId}' data-name='${u.name}' class='doc-target-checkbox-user' id='doc-user-${u.firestoreId}'><label for='doc-user-${u.firestoreId}' class='mr-2'>${u.name}</label></div>`).join('')}</div><div id=\"doc-target-roles\" class=\"hidden space-y-1\"><div class='flex items-center'><input type='checkbox' value='admin' class='doc-target-checkbox-role' id='doc-role-admin'><label for='doc-role-admin' class='mr-2'>مدیران</label></div><div class='flex items-center'><input type='checkbox' value='employee' class='doc-target-checkbox-role' id='doc-role-employee'><label for='doc-role-employee' class='mr-2'>کارمندان</label></div></div></div></div><div class=\"flex justify-end\"><button type=\"submit\" class=\"bg-blue-600 text-white py-2 px-4 rounded-md\">آپلود</button></div></form>`; openModal(mainModal, mainModalContainer); const targetTypeSel = document.getElementById('doc-target-type'); const targetDetails = document.getElementById('doc-target-details'); const lists = { teams: document.getElementById('doc-target-teams'), users: document.getElementById('doc-target-users'), roles: document.getElementById('doc-target-roles') }; targetTypeSel.addEventListener('change', (e)=>{ const v=e.target.value; Object.values(lists).forEach(el=>el.classList.add('hidden')); if(lists[v]){ targetDetails.classList.remove('hidden'); lists[v].classList.remove('hidden'); } else { targetDetails.classList.add('hidden'); } }); document.getElementById('doc-upload-form').addEventListener('submit', async (e)=>{ e.preventDefault(); const f=document.getElementById('doc-file').files[0]; const t=document.getElementById('doc-title').value.trim(); const cat=document.getElementById('doc-category').value; if(!f||!t||!cat) return; try { const sRef = ref(storage, `companyDocs/${Date.now()}_${f.name}`); await uploadBytes(sRef, f); const url = await getDownloadURL(sRef); const targets = { type: targetTypeSel.value }; if(targets.type==='teams'){ targets.teamIds = Array.from(document.querySelectorAll('.doc-target-checkbox-team:checked')).map(cb=>cb.value); targets.teamNames = Array.from(document.querySelectorAll('.doc-target-checkbox-team:checked')).map(cb=>cb.dataset.name); } else if (targets.type==='users'){ targets.userIds = Array.from(document.querySelectorAll('.doc-target-checkbox-user:checked')).map(cb=>cb.value); targets.userNames = Array.from(document.querySelectorAll('.doc-target-checkbox-user:checked')).map(cb=>cb.dataset.name); } else if (targets.type==='roles'){ targets.roles = Array.from(document.querySelectorAll('.doc-target-checkbox-role:checked')).map(cb=>cb.value); } await addDoc(collection(db, `artifacts/${appId}/public/data/companyDocuments`), { title: t, categoryKey: cat, fileUrl: url, uploadedAt: serverTimestamp(), targets }); showToast('سند آپلود شد.'); closeModal(mainModal, mainModalContainer); renderPage('documents'); } catch(err){ console.error(err); showToast('خطا در آپلود.', 'error'); } }); }; }
         // Provide safe fallbacks for missing survey link helpers
         if (typeof window.generateAndShowSurveyLink !== 'function') {
             window.generateAndShowSurveyLink = (surveyId) => {
@@ -2545,41 +2552,45 @@ analytics: () => {
     `;
 },
   documents: () => {
-    const categories = [...new Set((state.companyDocuments || []).map(doc => doc.category))];
-
-    const documentsHtml = categories.map(category => {
-        const docsInCategory = state.companyDocuments.filter(doc => doc.category === category);
+    const docSections = [
+        { id: 'آموزش و رشد', key: 'learning', desc: 'منابع و دوره‌های رشد فردی و شغلی.' },
+        { id: 'قوانین و بازی', key: 'rules', desc: 'آیین‌نامه‌ها، اصول همکاری و راهنمای رفتاری.' },
+        { id: 'کیت ابزار کاری', key: 'toolkit', desc: 'فرم‌ها، قالب‌ها و الگوهای کاربردی روزانه.' },
+        { id: 'داستان ما', key: 'story', desc: 'رسالت، چشم‌انداز و ارزش‌های سازمان.' },
+        { id: 'مزایا و حقوق', key: 'benefits', desc: 'حقوق، مزایا، بیمه و سیاست‌های مالی.' },
+        { id: 'مستندات پروژه‌ها', key: 'projects', desc: 'مستندات فنی و اجرایی پروژه‌ها.' }
+    ];
+    const colors = ['#6B69D6','#FF6A3D','#10B981','#F59E0B','#0EA5E9','#F43F5E'];
+    const cards = docSections.map((s, idx) => {
+        const color = colors[idx % colors.length];
+        const count = (state.companyDocuments || []).filter(d => d.categoryKey === s.key).length;
         return `
-            <div class="mb-6">
-                <h3 class="text-lg font-semibold text-slate-600 border-b pb-2 mb-3">${category}</h3>
-                <div class="space-y-2">
-                    ${docsInCategory.map(doc => `
-                        <div class="flex justify-between items-center bg-slate-50 p-3 rounded-lg">
-                            <a href="${doc.fileUrl}" target="_blank" class="flex items-center gap-2 text-blue-600 hover:underline">
-                                <i data-lucide="file-text" class="w-4 h-4"></i>
-                                <span>${doc.title}</span>
-                            </a>
-                            <div>
-                                <button class="delete-document-btn p-2 text-slate-400 hover:text-red-500" data-id="${doc.firestoreId}" title="حذف"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                            </div>
-                        </div>
-                    `).join('')}
+            <div class="bg-white rounded-2xl border border-slate-200 p-5 hover:shadow-lg transition-shadow">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background:rgba(107,105,214,.12)">
+                        <img src="icons/icon-128x128.png" alt="${s.id}" class="w-full h-full object-cover p-2">
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-lg font-bold text-slate-800">${s.id}</h3>
+                        <p class="text-xs text-slate-500">${s.desc}</p>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded-full" style="background:${color}1a;color:${color}">${count} فایل</span>
                 </div>
-            </div>
-        `;
+                <div class="mt-4 flex justify-between">
+                    <button class="manage-docs-btn text-xs font-semibold px-3 py-1.5 rounded-lg" data-category-key="${s.key}" style="color:#fff;background:${color}">مدیریت</button>
+                    <button class="view-docs-btn text-xs font-semibold px-3 py-1.5 rounded-lg border" data-category-key="${s.key}" style="border-color:${color};color:${color}">نمایش</button>
+                </div>
+            </div>`;
     }).join('');
 
     return `
-        <div class="flex justify-between items-center mb-6">
-            <h1 class="text-3xl font-bold text-slate-800">اسناد سازمان</h1>
-            <button id="upload-document-btn" class="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 flex items-center gap-2">
-                <i data-lucide="upload" class="w-4 h-4"></i>
-                <span>آپلود سند جدید</span>
-            </button>
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
+            <div>
+                <h1 class="text-3xl font-bold text-slate-800">اسناد سازمان</h1>
+                <p class="text-slate-500 text-sm mt-1">مدیریت دانش‌نامه برای کل سازمان</p>
+            </div>
         </div>
-        <div class="bg-white p-6 rounded-xl shadow-md">
-            ${documentsHtml || '<p class="text-center text-slate-500 py-8">هنوز سندی آپلود نشده است.</p>'}
-        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">${cards}</div>
     `;
 },
 // در فایل js/main.js، داخل آبجکت pages
@@ -5014,9 +5025,21 @@ const handleNavClick = (e) => {
     window.addEventListener('hashchange', router);
 };
 const setupDocumentsPageListeners = () => {
-    document.getElementById('upload-document-btn')?.addEventListener('click', showDocumentUploadForm);
-
-    document.getElementById('main-content').addEventListener('click', (e) => {
+    const main = document.getElementById('main-content');
+    if (!main) return;
+    main.addEventListener('click', (e) => {
+        const manageBtn = e.target.closest('.manage-docs-btn');
+        if (manageBtn) {
+            const key = manageBtn.dataset.categoryKey;
+            showManageCategoryDocsModal(key);
+            return;
+        }
+        const viewBtn = e.target.closest('.view-docs-btn');
+        if (viewBtn) {
+            const key = viewBtn.dataset.categoryKey;
+            showViewCategoryDocsModal(key);
+            return;
+        }
         const deleteBtn = e.target.closest('.delete-document-btn');
         if (deleteBtn) {
             const docId = deleteBtn.dataset.id;
@@ -5029,6 +5052,143 @@ const setupDocumentsPageListeners = () => {
         }
     });
 };
+
+// Modal: Manage documents for a category (list existing + upload new with targeting)
+function showManageCategoryDocsModal(categoryKey) {
+    const mapKeyToTitle = {
+        learning: 'آموزش و رشد', rules: 'قوانین و بازی', toolkit: 'کیت ابزار کاری',
+        story: 'داستان ما', benefits: 'مزایا و حقوق', projects: 'مستندات پروژه‌ها'
+    };
+    const docs = (state.companyDocuments || []).filter(d => d.categoryKey === categoryKey);
+    const rows = docs.map(d => `
+        <tr class="border-b">
+            <td class="p-2 text-sm">${d.title}</td>
+            <td class="p-2 text-xs text-slate-500"><a href="${d.fileUrl}" target="_blank" class="text-indigo-600 hover:underline">دانلود</a></td>
+            <td class="p-2 text-xs">${formatTargetsText(d.targets)}</td>
+            <td class="p-2 text-left"><button class="delete-document-btn text-rose-500" data-id="${d.firestoreId}"><i data-lucide="trash-2" class="w-4 h-4"></i></button></td>
+        </tr>`).join('');
+
+    modalTitle.innerText = `مدیریت: ${mapKeyToTitle[categoryKey] || ''}`;
+    modalContent.innerHTML = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 rounded-lg p-3">
+                <form id="cat-doc-upload-form" class="grid grid-cols-1 md:grid-cols-2 gap-3 items-end">
+                    <div>
+                        <label class="block text-xs mb-1">عنوان</label>
+                        <input id="cat-doc-title" class="w-full p-2 border rounded-md" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs mb-1">فایل</label>
+                        <input id="cat-doc-file" type="file" class="w-full" required>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs mb-1">گیرندگان</label>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-2">
+                            <select id="cat-doc-target-type" class="p-2 border rounded-md bg-white">
+                                <option value="public">عمومی (همه)</option>
+                                <option value="roles">نقش‌ها</option>
+                                <option value="teams">تیم‌ها</option>
+                                <option value="users">افراد</option>
+                            </select>
+                            <div id="cat-doc-target-details" class="md:col-span-3 hidden p-2 border rounded-md max-h-32 overflow-y-auto">
+                                <div id="cat-doc-target-teams" class="hidden grid grid-cols-2 gap-2">${state.teams.map(t => `<div class='flex items-center'><input type='checkbox' value='${t.firestoreId}' data-name='${t.name}' class='cat-doc-target-checkbox-team' id='cat-doc-team-${t.firestoreId}'><label for='cat-doc-team-${t.firestoreId}' class='mr-2'>${t.name}</label></div>`).join('')}</div>
+                                <div id="cat-doc-target-users" class="hidden grid grid-cols-2 gap-2">${state.employees.map(u => `<div class='flex items-center'><input type='checkbox' value='${u.firestoreId}' data-name='${u.name}' class='cat-doc-target-checkbox-user' id='cat-doc-user-${u.firestoreId}'><label for='cat-doc-user-${u.firestoreId}' class='mr-2'>${u.name}</label></div>`).join('')}</div>
+                                <div id="cat-doc-target-roles" class="hidden space-y-1">
+                                    <div class='flex items-center'><input type='checkbox' value='admin' class='cat-doc-target-checkbox-role' id='cat-doc-role-admin'><label for='cat-doc-role-admin' class='mr-2'>مدیران</label></div>
+                                    <div class='flex items-center'><input type='checkbox' value='employee' class='cat-doc-target-checkbox-role' id='cat-doc-role-employee'><label for='cat-doc-role-employee' class='mr-2'>کارمندان</label></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="md:col-span-2 flex justify-end">
+                        <button type="submit" class="primary-btn text-xs py-2 px-3">افزودن فایل</button>
+                    </div>
+                </form>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-slate-100 text-slate-600">
+                        <tr><th class="p-2 text-right">عنوان</th><th class="p-2 text-right">فایل</th><th class="p-2 text-right">گیرندگان</th><th class="p-2 text-right"></th></tr>
+                    </thead>
+                    <tbody id="cat-docs-tbody">${rows || `<tr><td colspan='4' class='p-4 text-center text-slate-400'>فایلی ثبت نشده است.</td></tr>`}</tbody>
+                </table>
+            </div>
+        </div>`;
+    openModal(mainModal, mainModalContainer);
+
+    const sel = document.getElementById('cat-doc-target-type');
+    const details = document.getElementById('cat-doc-target-details');
+    const lists = {
+        teams: document.getElementById('cat-doc-target-teams'),
+        users: document.getElementById('cat-doc-target-users'),
+        roles: document.getElementById('cat-doc-target-roles')
+    };
+    sel.addEventListener('change', (e) => {
+        const v = e.target.value; Object.values(lists).forEach(el => el.classList.add('hidden'));
+        if (lists[v]) { details.classList.remove('hidden'); lists[v].classList.remove('hidden'); } else { details.classList.add('hidden'); }
+    });
+
+    document.getElementById('cat-doc-upload-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const file = document.getElementById('cat-doc-file').files[0];
+        const title = document.getElementById('cat-doc-title').value.trim();
+        if (!file || !title) return;
+        try {
+            const sRef = ref(storage, `companyDocs/${Date.now()}_${file.name}`);
+            await uploadBytes(sRef, file);
+            const url = await getDownloadURL(sRef);
+            const targets = { type: sel.value };
+            if (targets.type === 'teams') {
+                targets.teamIds = Array.from(document.querySelectorAll('.cat-doc-target-checkbox-team:checked')).map(cb => cb.value);
+                targets.teamNames = Array.from(document.querySelectorAll('.cat-doc-target-checkbox-team:checked')).map(cb => cb.dataset.name);
+            } else if (targets.type === 'users') {
+                targets.userIds = Array.from(document.querySelectorAll('.cat-doc-target-checkbox-user:checked')).map(cb => cb.value);
+                targets.userNames = Array.from(document.querySelectorAll('.cat-doc-target-checkbox-user:checked')).map(cb => cb.dataset.name);
+            } else if (targets.type === 'roles') {
+                targets.roles = Array.from(document.querySelectorAll('.cat-doc-target-checkbox-role:checked')).map(cb => cb.value);
+            }
+            await addDoc(collection(db, `artifacts/${appId}/public/data/companyDocuments`), {
+                title, categoryKey: categoryKey, fileUrl: url, uploadedAt: serverTimestamp(), targets
+            });
+            showToast('فایل افزوده شد.');
+            closeModal(mainModal, mainModalContainer);
+            renderPage('documents');
+        } catch (err) { console.error(err); showToast('خطا در آپلود.', 'error'); }
+    });
+}
+
+// Modal: View documents for category (read-only, filters by current user visibility)
+function showViewCategoryDocsModal(categoryKey) {
+    const employeeProfile = state.employees.find(e => e.uid === state.currentUser?.uid);
+    const myTeam = employeeProfile ? state.teams.find(t => t.memberIds?.includes(employeeProfile.id)) : null;
+    const myTeamId = myTeam ? myTeam.firestoreId : null;
+    const visibleDocs = (state.companyDocuments || []).filter(d => d.categoryKey === categoryKey).filter(d => {
+        const targets = d.targets || { type: 'public' };
+        if (targets.type === 'public') return true;
+        if (targets.type === 'roles') return employeeProfile ? targets.roles?.includes('employee') || (isAdmin() && targets.roles?.includes('admin')) : false;
+        if (targets.type === 'teams') return myTeamId ? targets.teamIds?.includes(myTeamId) : false;
+        if (targets.type === 'users') return employeeProfile ? targets.userIds?.includes(employeeProfile.firestoreId) : false;
+        return false;
+    });
+    const rows = visibleDocs.map(d => `<tr class="border-b"><td class="p-2 text-sm">${d.title}</td><td class="p-2 text-left"><a href="${d.fileUrl}" target="_blank" class="text-indigo-600 hover:underline">دانلود</a></td></tr>`).join('');
+    modalTitle.innerText = 'نمایش اسناد';
+    modalContent.innerHTML = `
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-slate-100 text-slate-600"><tr><th class="p-2 text-right">عنوان</th><th class="p-2 text-right">فایل</th></tr></thead>
+                <tbody>${rows || `<tr><td colspan='2' class='p-4 text-center text-slate-400'>موردی برای نمایش نیست.</td></tr>`}</tbody>
+            </table>
+        </div>`;
+    openModal(mainModal, mainModalContainer);
+}
+
+function formatTargetsText(targets) {
+    if (!targets || targets.type === 'public') return 'عمومی';
+    if (targets.type === 'roles') return `نقش‌ها: ${(targets.roles || []).join('، ')}`;
+    if (targets.type === 'teams') return `تیم‌ها: ${(targets.teamNames || targets.teamIds || []).join('، ')}`;
+    if (targets.type === 'users') return `افراد: ${(targets.userNames || targets.userIds || []).join('، ')}`;
+    return '';
+}
 // کل تابع فعلی را با این کد جایگزین کنید
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
