@@ -5283,10 +5283,7 @@ function formatTargetsText(targets) {
     return '';
 }
 
-    setTimeout(() => {
-        lucide.createIcons();
-    }, 100);
-};
+    
 // Minimal personal info editor (fallback)
 if (typeof window.showEditPersonalInfoForm !== 'function') {
     window.showEditPersonalInfoForm = (emp) => {
