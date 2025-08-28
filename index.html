@@ -143,6 +143,19 @@
     #loading-overlay { position: fixed; inset: 0; background-color: rgba(248, 250, 252, 0.8); display: flex; align-items: center; justify-content: center; z-index: 9999; }
     .spinner { width: 56px; height: 56px; border: 6px solid #e0e7ff; border-top: 6px solid #4f46e5; border-radius: 50%; animation: spin 1s linear infinite; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    /* --- استایل‌های تکمیلی برای جلوه‌های مدرن --- */
+    .glass { background: rgba(255,255,255,0.55); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.3); }
+    .blob { position: absolute; border-radius: 9999px; filter: blur(20px); opacity: .25; animation: float 12s ease-in-out infinite; }
+    @keyframes float { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-10px) } }
+    /* animations */
+    .fade-up { opacity: 0; transform: translateY(8px); animation: fadeUp .5s ease forwards; }
+    .fade-up-delayed { opacity: 0; transform: translateY(8px); animation: fadeUp .6s .08s ease forwards; }
+    @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+    /* confetti */
+    .confetti { position: fixed; inset: 0; pointer-events: none; z-index: 50; overflow: hidden; }
+    .confetti > i { position: absolute; width: 8px; height: 14px; border-radius: 2px; animation: drop 1.6s ease-in forwards; }
+    @keyframes drop { to { transform: translateY(100vh) rotate(360deg); opacity: 0; } }
 </style>
 </head>
 <body class="bg-slate-100">
