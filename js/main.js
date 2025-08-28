@@ -2726,46 +2726,27 @@ analytics: () => {
 // کل این تابع را با نسخه جدید جایگزین کنید
 
 announcements: () => {
-    const list = (state.announcements || []).sort((a,b)=> new Date(b.createdAt?.toDate()) - new Date(a.createdAt?.toDate()));
-    const cards = list.map(msg => {
-        const avatar = (state.users.find(u => u.firestoreId===msg.senderUid)?.avatar) || 'icons/icon-128x128.png';
-        const targets = msg.targets || {type:'public'};
-        let targetText = 'عمومی';
-        if (targets.type==='teams') targetText = `تیم‌ها: ${(targets.teamNames||[]).join('، ')}`;
-        else if (targets.type==='users') targetText = `افراد: ${(targets.userNames||[]).join('، ')}`;
-        else if (targets.type==='roles') targetText = `نقش‌ها: ${(targets.roles||[]).join('، ')}`;
-        const badge = msg.type==='info' ? '<span class="px-2 py-0.5 text-[10px] rounded-full bg-amber-100 text-amber-700">اطلاعیه</span>' : '';
-        return `
-        <div class="bg-white rounded-2xl border border-slate-200 p-4 flex gap-3">
-            <img src="${avatar}" class="w-10 h-10 rounded-full object-cover" alt="${msg.senderName}">
-            <div class="flex-1">
-                <div class="flex items-center gap-2">
-                    <div class="font-bold text-slate-800 text-sm">${msg.senderName}</div>
-                    ${badge}
-                    <div class="text-[10px] text-slate-500 ml-auto">${toPersianDate(msg.createdAt)}</div>
-                </div>
-                ${msg.title ? `<div class=\"text-sm font-semibold mt-1\">${msg.title}</div>` : ''}
-                <div class="text-sm text-slate-700 mt-1 whitespace-pre-wrap">${msg.content}</div>
-                <div class="text-[11px] text-slate-500 mt-2">${targetText}</div>
-            </div>
-            <button class="delete-announcement-btn text-red-500 hover:text-red-700" data-id="${msg.firestoreId}" title="حذف"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-        </div>`;
-    }).join('');
-
     const teamCards = (state.teams||[]).map(t=> `<label class=\"flex items-center gap-2 p-2 border rounded-lg\"><input type=\"checkbox\" class=\"ann-team-chk\" value=\"${t.firestoreId}\" data-name=\"${t.name}\"><span class=\"w-6 h-6 rounded-full bg-slate-200\"></span><span class=\"text-sm\">${t.name}</span></label>`).join('');
     const userCards = (state.employees||[]).map(e=> `<label class=\"flex items-center gap-2 p-2 border rounded-lg\"><input type=\"checkbox\" class=\"ann-user-chk\" value=\"${e.firestoreId}\" data-name=\"${e.name}\"><img src=\"${e.avatar}\" class=\"w-6 h-6 rounded-full object-cover\"><span class=\"text-sm\">${e.name}</span></label>`).join('');
 
     return `
-        <section class="rounded-2xl overflow-hidden border mb-4" style="background:linear-gradient(90deg,#FF6A3D,#F72585)">
-            <div class="p-6 sm:p-8 flex justify-between items-center">
-                <h1 class="text-2xl sm:text-3xl font-extrabold text-white">اعلانات</h1>
-                <button id="add-announcement-btn" class="primary-btn text-xs">فرم پیشرفته پیام</button>
+        <div class="mb-4 flex items-center justify-between">
+            <h1 class="text-2xl font-extrabold text-slate-800">اعلانات</h1>
+            <button id="add-announcement-btn" class="secondary-btn text-xs">ارسال پیام پیشرفته</button>
+        </div>
+        <div class="mb-4 flex flex-col md:flex-row gap-3 md:items-center">
+            <div class="relative w-full md:w-72">
+                <input id="ann-search" class="w-full p-2 pl-9 border border-slate-300 rounded-lg bg-white" placeholder="جستجو در عنوان و متن">
+                <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
             </div>
-        </section>
+            <div class="flex gap-2">
+                <button class="ann-filter-chip px-3 py-1 rounded-full text-xs bg-slate-800 text-white" data-type="all">همه</button>
+                <button class="ann-filter-chip px-3 py-1 rounded-full text-xs bg-slate-100 text-slate-700" data-type="info">اطلاعیه‌ها</button>
+                <button class="ann-filter-chip px-3 py-1 rounded-full text-xs bg-slate-100 text-slate-700" data-type="message">پیام‌ها</button>
+            </div>
+        </div>
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="lg:col-span-2 space-y-3" id="ann-cards-container">
-                ${cards || '<p class="text-center text-slate-500 py-8 text-sm">اعلانی موجود نیست.</p>'}
-            </div>
+            <div class="lg:col-span-2 space-y-3" id="ann-cards-container"></div>
             <div class="space-y-4">
                 <div class="bg-white rounded-2xl border border-slate-200 p-4">
                     <h3 class="font-bold text-slate-800 mb-2">ارسال اطلاعیه</h3>
@@ -3917,6 +3898,7 @@ const setupDashboardQuickActions = () => {
 // کل این تابع را با نسخه جدید جایگزین کنید
 const setupAnnouncementsPageListeners = () => {
     document.getElementById('add-announcement-btn')?.addEventListener('click', showAnnouncementForm);
+
     // info panel target type toggles
     const typeSel = document.getElementById('info-target-type');
     const tTeams = document.getElementById('info-target-teams');
@@ -3931,6 +3913,7 @@ const setupAnnouncementsPageListeners = () => {
     };
     typeSel?.addEventListener('change', togglePanels);
     togglePanels();
+
     // send info-only announcement
     document.getElementById('info-send-btn')?.addEventListener('click', async () => {
         const title = (document.getElementById('info-title')||{}).value?.trim();
@@ -3958,18 +3941,79 @@ const setupAnnouncementsPageListeners = () => {
         } catch (e) { showToast('خطا در ارسال اطلاعیه.', 'error'); }
     });
 
-    document.getElementById('announcements-table-body')?.addEventListener('click', (e) => {
+    // Clean list rendering + filters
+    const container = document.getElementById('ann-cards-container');
+    const searchInput = document.getElementById('ann-search');
+    const filterChips = Array.from(document.querySelectorAll('.ann-filter-chip'));
+
+    const renderList = () => {
+        if (!container) return;
+        const term = (searchInput?.value || '').toLowerCase().trim();
+        const activeChip = filterChips.find(c => c.classList.contains('bg-slate-800'));
+        const typeFilter = activeChip ? activeChip.dataset.type : 'all';
+
+        let items = (state.announcements || []).slice().sort((a,b)=> new Date(b.createdAt?.toDate?.()||0) - new Date(a.createdAt?.toDate?.()||0));
+        if (typeFilter !== 'all') {
+            items = items.filter(a => (a.type || 'message') === typeFilter);
+        }
+        if (term) {
+            items = items.filter(a => (a.title||'').toLowerCase().includes(term) || (a.content||'').toLowerCase().includes(term));
+        }
+
+        const html = items.map(msg => {
+            const avatar = (state.users.find(u => u.firestoreId===msg.senderUid)?.avatar) || 'icons/icon-128x128.png';
+            const targets = msg.targets || {type:'public'};
+            let targetText = 'عمومی';
+            if (targets.type==='teams') targetText = `تیم‌ها: ${(targets.teamNames||[]).join('، ')}`;
+            else if (targets.type==='users') targetText = `افراد: ${(targets.userNames||[]).join('، ')}`;
+            else if (targets.type==='roles') targetText = `نقش‌ها: ${(targets.roles||[]).join('، ')}`;
+            const badge = msg.type==='info' ? '<span class="px-2 py-0.5 text-[10px] rounded-full bg-amber-100 text-amber-700">اطلاعیه</span>' : '';
+            return `
+            <div class="bg-white rounded-2xl border border-slate-200 p-4 flex gap-3">
+                <img src="${avatar}" class="w-10 h-10 rounded-full object-cover" alt="${msg.senderName}">
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2">
+                        <div class="font-bold text-slate-800 text-sm truncate">${msg.senderName}</div>
+                        ${badge}
+                        <div class="text-[10px] text-slate-500 ml-auto">${toPersianDate(msg.createdAt)}</div>
+                    </div>
+                    ${msg.title ? `<div class=\"text-sm font-semibold mt-1 truncate\">${msg.title}</div>` : ''}
+                    <div class="text-sm text-slate-700 mt-1 whitespace-pre-wrap">${(msg.content||'')}</div>
+                    <div class="text-[11px] text-slate-500 mt-2">${targetText}</div>
+                </div>
+                <button class="delete-announcement-btn text-red-500 hover:text-red-700" data-id="${msg.firestoreId}" title="حذف"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+            </div>`;
+        }).join('');
+        container.innerHTML = html || '<p class="text-center text-slate-500 py-8 text-sm">اعلانی موجود نیست.</p>';
+        if (window.lucide?.createIcons) lucide.createIcons();
+    };
+
+    searchInput?.addEventListener('input', renderList);
+    filterChips.forEach(chip => {
+        chip.addEventListener('click', () => {
+            filterChips.forEach(c => c.classList.remove('bg-slate-800','text-white'));
+            filterChips.forEach(c => c.classList.add('bg-slate-100','text-slate-700'));
+            chip.classList.remove('bg-slate-100','text-slate-700');
+            chip.classList.add('bg-slate-800','text-white');
+            renderList();
+        });
+    });
+
+    container?.addEventListener('click', (e) => {
         const deleteBtn = e.target.closest('.delete-announcement-btn');
         if (deleteBtn) {
             const docId = deleteBtn.dataset.id;
             showConfirmationModal('حذف پیام', 'آیا از حذف این پیام مطمئن هستید؟ این عمل غیرقابل بازگشت است.', async () => {
                 try {
                     await deleteDoc(doc(db, `artifacts/${appId}/public/data/announcements`, docId));
-                    showToast("پیام با موفقیت حذف شد.");
-                } catch (error) { showToast("خطا در حذف پیام.", "error"); }
+                    showToast('پیام با موفقیت حذف شد.');
+                    renderList();
+                } catch (error) { showToast('خطا در حذف پیام.', 'error'); }
             });
         }
     });
+
+    renderList();
 };
 const renderEmployeeTable = () => {
     const TALENT_PAGE_SIZE = 12;
