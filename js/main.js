@@ -432,7 +432,7 @@ function renderEmployeePortalPage(pageName, employee) {
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
                         <div class="flex items-center justify-between mb-4">
                             <h3 class="font-semibold text-slate-800 flex items-center gap-2">
-                                <i data-lucide\"activity\" class="w-5 h-5 text-indigo-500"></i>
+                                <i data-lucide="activity" class="w-5 h-5 text-indigo-500"></i>
                                 روند عملکرد
                             </h3>
                             <div class="text-slate-500 text-xs">نمایش روند ارزیابی‌ها</div>
@@ -735,7 +735,7 @@ function renderEmployeePortal() {
     const employeeName = employee.name || state.currentUser.email;
 
     portalContainer.innerHTML = `
-        <div class="flex h-screen bg-slate-100">
+        <div class="flex h-screen bg-gradient-to-br from-violet-50 via-white to-indigo-50">
             <aside class="w-72 employee-sidebar">
                 <div class="text-center">
                     <img src="${employee.avatar}" alt="Avatar" class="profile-pic object-cover">
@@ -764,13 +764,21 @@ function renderEmployeePortal() {
             </aside>
 
             <div class="flex-1 flex flex-col h-screen overflow-y-hidden">
-                <header class="bg-white shadow-sm">
-                    <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-                        <h1 class="text-xl font-bold text-slate-800">پورتال کارمندان</h1>
+                <header class="bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 shadow-sm">
+                    <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full overflow-hidden ring-2 ring-white/30">
+                                <img src="${employee.avatar}" alt="${employeeName}" class="w-full h-full object-cover">
+                            </div>
+                            <div>
+                                <div class="text-white/80 text-xs">خوش آمدید</div>
+                                <h1 class="text-2xl font-bold text-white">${employeeName}</h1>
+                            </div>
+                        </div>
                         <div id="portal-notification-bell-wrapper" class="relative">
-                            <button id="portal-notification-bell-btn" class="relative cursor-pointer p-2 rounded-full hover:bg-slate-100">
-                                <i data-lucide="bell" class="text-slate-600"></i>
-                                <span id="portal-notification-count" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full border-2 border-white"></span>
+                            <button id="portal-notification-bell-btn" class="relative cursor-pointer p-2 rounded-full hover:bg-white/10">
+                                <i data-lucide="bell" class="text-white"></i>
+                                <span id="portal-notification-count" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify_center rounded-full border-2 border-white"></span>
                             </button>
                         </div>
                     </div>
