@@ -2461,21 +2461,23 @@ requests: () => {
     }).join('');
 
     return `
-        <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-            <h1 class="text-3xl font-bold text-slate-800">مدیریت درخواست‌ها</h1>
-            <div class="flex items-center gap-2 p-1 bg-slate-200 rounded-lg">
-                <button data-filter="all" class="request-filter-btn ${state.requestFilter === 'all' ? 'active' : ''}">همه درخواست‌ها</button>
-                <button data-filter="mine" class="request-filter-btn ${state.requestFilter === 'mine' ? 'active' : ''}">واگذار شده به من</button>
+        <section class="rounded-2xl overflow-hidden border mb-6" style="background:linear-gradient(90deg,#FF6A3D,#F72585)">
+            <div class="p-6 sm:p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <h1 class="text-2xl sm:text-3xl font-extrabold text-white">مدیریت درخواست‌ها</h1>
+                <div class="flex items-center gap-2">
+                    <button data-filter="all" class="request-filter-btn ${state.requestFilter === 'all' ? 'primary-btn' : 'secondary-btn'} text-xs">همه</button>
+                    <button data-filter="mine" class="request-filter-btn ${state.requestFilter === 'mine' ? 'primary-btn' : 'secondary-btn'} text-xs">واگذار به من</button>
+                </div>
             </div>
-        </div>
-        <div class="bg-white p-6 rounded-xl shadow-md">
+        </section>
+        <div class="bg-white p-6 rounded-2xl border border-slate-200">
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
-                    <thead class="text-right bg-slate-50">
+                    <thead style="background:#ECEEF3">
                         <tr>
                             <th class="px-4 py-2 font-semibold">تاریخ</th>
-                            <th class="px-4 py-2 font-semibold">نام کارمند</th>
-                            <th class="px-4 py-2 font-semibold">نوع درخواست</th>
+                            <th class="px-4 py-2 font-semibold">کارمند</th>
+                            <th class="px-4 py-2 font-semibold">نوع</th>
                             <th class="px-4 py-2 font-semibold">وضعیت</th>
                             <th class="px-4 py-2 font-semibold">واگذار به</th>
                             <th class="px-4 py-2 font-semibold">عملیات</th>
@@ -2533,15 +2535,19 @@ tasks: () => {
         `;
     }).join('');
     return `
-        <h1 class="text-3xl font-bold text-slate-800 mb-6">وظایف من</h1>
-        <p class="text-slate-500 mb-4">در این صفحه تمام یادآورها و رویدادهایی که به شما واگذار شده است را مشاهده می‌کنید.</p>
-        <div class="bg-white p-6 rounded-xl shadow-md">
+        <section class="rounded-2xl overflow-hidden border mb-6" style="background:linear-gradient(90deg,#FF6A3D,#F72585)">
+            <div class="p-6 sm:p-8">
+                <h1 class="text-2xl sm:text-3xl font-extrabold text-white">وظایف من</h1>
+                <p class="text-white/90 text-xs mt-1">یادآورها و کارهایی که به شما واگذار شده است</p>
+            </div>
+        </section>
+        <div class="bg-white p-6 rounded-2xl border border-slate-200">
             <table class="w-full text-sm">
-                <thead class="text-right bg-slate-50">
+                <thead style="background:#ECEEF3">
                     <tr>
-                        <th class="px-4 py-2 font-semibold">تاریخ رویداد</th>
+                        <th class="px-4 py-2 font-semibold">تاریخ</th>
                         <th class="px-4 py-2 font-semibold">نوع</th>
-                        <th class="px-4 py-2 font-semibold">عنوان</th>
+                        <th class="px-4 py-2 font-semibold">متن</th>
                         <th class="px-4 py-2 font-semibold">وضعیت</th>
                         <th class="px-4 py-2 font-semibold">واگذار به</th>
                         <th class="px-4 py-2 font-semibold">عملیات</th>
