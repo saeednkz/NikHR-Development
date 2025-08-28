@@ -1,7 +1,7 @@
 // فایل: sw.js
 // کل محتوای این فایل را با کد زیر جایگزین کنید
 
-const CACHE_NAME = 'nikhr-cache-v2'; // << نام کش را تغییر دادیم تا نسخه جدید ساخته شود
+const CACHE_NAME = 'nikhr-cache-v3'; // bump to force new SW and fresh assets
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -42,15 +42,23 @@ self.addEventListener('activate', event => {
 
 // ۳. هنگام دریافت درخواست: استراتژی Cache-First
 self.addEventListener('fetch', event => {
+  const req = event.request;
+  // Network-first for JS to avoid stale cached app code
+  if (req.destination === 'script') {
+    event.respondWith(
+      fetch(req)
+        .then(resp => {
+          const copy = resp.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(req, copy));
+          return resp;
+        })
+        .catch(() => caches.match(req))
+    );
+    return;
+  }
+
+  // Cache-first for other assets
   event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        // اگر در کش بود، از کش برگردان
-        if (response) {
-          return response;
-        }
-        // اگر نبود، از اینترنت بگیر
-        return fetch(event.request);
-      })
+    caches.match(req).then(cached => cached || fetch(req))
   );
 });
