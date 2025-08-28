@@ -2914,12 +2914,23 @@ function setupProfileModalListeners(emp) {
     const tabs = document.querySelectorAll('#profile-tabs .profile-tab');
     const contents = document.querySelectorAll('.profile-tab-content');
     tabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            tabs.forEach(t => t.classList.remove('active'));
-            contents.forEach(c => c.classList.remove('active'));
-            tab.classList.add('active');
+        tab.addEventListener('click', (e) => {
+            e.preventDefault();
             const target = tab.getAttribute('data-tab');
-            document.getElementById(`tab-${target}`)?.classList.add('active');
+            if (!target) return;
+            // update tab button styles
+            tabs.forEach(t => {
+                t.classList.remove('active', 'primary-btn');
+                if (!t.classList.contains('secondary-btn')) t.classList.add('secondary-btn');
+            });
+            tab.classList.add('active');
+            tab.classList.remove('secondary-btn');
+            if (!tab.classList.contains('primary-btn')) tab.classList.add('primary-btn');
+            // show target panel
+            contents.forEach(c => c.classList.add('hidden'));
+            const panel = document.getElementById(`tab-${target}`);
+            if (panel) panel.classList.remove('hidden');
+            try { lucide.createIcons(); } catch {}
         });
     });
 
