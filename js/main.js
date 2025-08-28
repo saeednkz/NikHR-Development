@@ -2971,11 +2971,62 @@ function setupProfileModalListeners(emp) {
             if (id === 'edit-competencies-btn') { showEditCompetenciesForm(emp); return; }
             if (id === 'add-performance-btn') { showPerformanceForm(emp); return; }
             if (id === 'edit-personal-info-btn') { showEditPersonalInfoForm(emp); return; }
+            if (id === 'add-contract-btn') { showContractForm(emp); return; }
             if (id === 'edit-career-path-btn') { showEditCareerPathForm(emp); return; }
             if (btn.classList.contains('edit-performance-btn')) { showPerformanceForm(emp, parseInt(btn.dataset.index)); return; }
             if (btn.classList.contains('delete-performance-btn')) { deletePerformanceReview(emp, parseInt(btn.dataset.index)); return; }
         } finally {
             try { lucide.createIcons(); } catch {}
+        }
+    });
+}
+// Contract editor (add/extend)
+function showContractForm(emp, idx=null) {
+    modalTitle.innerText = `${idx===null ? 'افزودن/تمدید' : 'ویرایش'} قرارداد برای ${emp.name}`;
+    const c = (emp.contracts && idx!=null) ? emp.contracts[idx] : {};
+    modalContent.innerHTML = `
+        <form id=\"contract-form\" class=\"space-y-4\">
+            <div class=\"grid grid-cols-1 md:grid-cols-2 gap-4\">
+                <div><label class=\"block text-xs font-semibold text-slate-500\">تاریخ شروع</label><input id=\"contract-start\" type=\"text\" class=\"mt-2 w-full p-2 border rounded-lg\" value=\"${c.startDate ? toPersianDate(c.startDate) : ''}\"></div>
+                <div><label class=\"block text-xs font-semibold text-slate-500\">تاریخ پایان</label><input id=\"contract-end\" type=\"text\" class=\"mt-2 w-full p-2 border rounded-lg\" value=\"${c.endDate ? toPersianDate(c.endDate) : ''}\"></div>
+                <div><label class=\"block text-xs font-semibold text-slate-500\">سمت شغلی</label><input id=\"contract-title\" type=\"text\" class=\"mt-2 w-full p-2 border rounded-lg\" value=\"${c.jobTitle || ''}\" placeholder=\"مثال: کارشناس ارشد\"></div>
+                <div><label class=\"block text-xs font-semibold text-slate-500\">حقوق (تومان)</label><input id=\"contract-salary\" type=\"number\" class=\"mt-2 w-full p-2 border rounded-lg\" value=\"${c.salary || ''}\" min=\"0\"></div>
+                <div class=\"md:col-span-2\"><label class=\"inline-flex items-center gap-2\"><input id=\"contract-sup\" type=\"checkbox\" ${c.supplementaryInsurance ? 'checked' : ''}><span class=\"text-sm\">بیمه تکمیلی</span></label></div>
+                <div class=\"md:col-span-2\"><label class=\"block text-xs font-semibold text-slate-500\">فایل قرارداد</label><input id=\"contract-file\" type=\"file\" class=\"mt-2 w-full p-2 border rounded-lg\"></div>
+            </div>
+            <div class=\"flex justify-end gap-2\">
+                <button type=\"button\" id=\"cancel-contract\" class=\"secondary-btn\">انصراف</button>
+                <button type=\"submit\" class=\"primary-btn\">ذخیره</button>
+            </div>
+        </form>`;
+    openModal(mainModal, mainModalContainer);
+    activatePersianDatePicker('contract-start');
+    activatePersianDatePicker('contract-end');
+    document.getElementById('cancel-contract').addEventListener('click', () => viewEmployeeProfile(emp.firestoreId));
+    document.getElementById('contract-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+            const start = persianToEnglishDate(document.getElementById('contract-start').value.trim());
+            const end = persianToEnglishDate(document.getElementById('contract-end').value.trim());
+            const jobTitle = document.getElementById('contract-title').value.trim();
+            const salary = parseInt(document.getElementById('contract-salary').value) || 0;
+            const sup = document.getElementById('contract-sup').checked;
+            let fileUrl = c.fileUrl || '';
+            const file = document.getElementById('contract-file').files[0];
+            if (file) {
+                const sRef = ref(storage, `contracts/${emp.firestoreId}_${Date.now()}_${file.name}`);
+                const snap = await uploadBytes(sRef, file);
+                fileUrl = await getDownloadURL(snap.ref);
+            }
+            const newItem = { startDate: start, endDate: end, jobTitle, salary, supplementaryInsurance: sup, fileUrl };
+            const contracts = Array.isArray(emp.contracts) ? emp.contracts.slice() : [];
+            if (idx!=null) contracts[idx] = newItem; else contracts.push(newItem);
+            await updateDoc(doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId), { contracts });
+            showToast('قرارداد ذخیره شد.');
+            viewEmployeeProfile(emp.firestoreId);
+        } catch (error) {
+            console.error('Error saving contract:', error);
+            showToast('خطا در ذخیره قرارداد.', 'error');
         }
     });
 }
@@ -3149,7 +3200,28 @@ const viewEmployeeProfile = (employeeId) => {
                                     </div>
                                 </div>
                             </div>
-                            <div id="tab-contracts" class="profile-tab-content hidden"><p class="text-sm text-slate-500">به‌زودی...</p></div>
+                            <div id="tab-contracts" class="profile-tab-content hidden">
+                                <div class="space-y-4">
+                                    <div class="flex justify-between items-center mb-3">
+                                        <h4 class="font-semibold text-slate-700"><i data-lucide="scroll-text" class="ml-2 w-5 h-5" style="color:#6B69D6"></i>قراردادها</h4>
+                                        ${canEdit() ? `<button id="add-contract-btn" class="primary-btn text-xs">افزودن/تمدید قرارداد</button>` : ''}
+                                    </div>
+                                    <div class="bg-white rounded-xl border border-slate-200 p-4">
+                                        ${(emp.contracts && emp.contracts.length) ? emp.contracts.sort((a,b)=> new Date(b.startDate||0)-new Date(a.startDate||0)).map((c, idx)=> `
+                                            <div class=\"flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 border-b last:border-b-0\">
+                                                <div class=\"text-sm\">
+                                                    <div class=\"font-bold text-slate-800\">${c.jobTitle || '-'}</div>
+                                                    <div class=\"text-slate-600\">از ${c.startDate ? toPersianDate(c.startDate) : '-'} تا ${c.endDate ? toPersianDate(c.endDate) : '-'}</div>
+                                                    <div class=\"text-slate-600\">حقوق: ${c.salary ? c.salary.toLocaleString('fa-IR')+' تومان' : '-'}</div>
+                                                    <div class=\"text-slate-600\">بیمه تکمیلی: ${c.supplementaryInsurance ? 'دارد' : 'ندارد'}</div>
+                                                </div>
+                                                <div class=\"flex items-center gap-2\">
+                                                    ${c.fileUrl ? `<a href=\"${c.fileUrl}\" target=\"_blank\" class=\"secondary-btn text-xs\">دانلود قرارداد</a>` : ''}
+                                                </div>
+                                            </div>`).join('') : '<p class=\"text-sm text-slate-500\">قراردادی ثبت نشده است.</p>'}
+                                    </div>
+                                </div>
+                            </div>
                             <div id="tab-personal" class="profile-tab-content hidden">
                                 <div class="space-y-4">
                                     <div class="flex justify-between items-center mb-3">
@@ -3613,7 +3685,29 @@ const renderEngagementGauge = (canvasId, score) => {
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
 const renderAllReminders = () => {
-    const allUpcomingReminders = (state.reminders || [])
+    // Auto reminders for contract renewals (last contract ending within 30 days)
+    const contractReminders = (() => {
+        const list = [];
+        (state.employees || []).forEach(emp => {
+            const last = (emp.contracts || []).sort((a,b)=> new Date(b.endDate||0) - new Date(a.endDate||0))[0];
+            if (!last || !last.endDate) return;
+            const end = new Date(last.endDate);
+            const now = new Date();
+            const diffDays = Math.ceil((end - now) / 86400000);
+            if (diffDays <= 30 && diffDays >= 0) {
+                list.push({
+                    icon: 'file-clock',
+                    text: `تمدید قرارداد ${emp.name}`,
+                    subtext: `تاریخ پایان: ${toPersianDate(last.endDate)}`,
+                    date: end,
+                    assignedTo: (state.users.find(u=>u.role==='admin')||{}).firestoreId
+                });
+            }
+        });
+        return list;
+    })();
+
+    const allUpcomingReminders = [...(state.reminders || []), ...contractReminders]
         .sort((a, b) => new Date(a.date?.toDate ? a.date.toDate() : a.date) - new Date(b.date?.toDate ? b.date.toDate() : b.date))
         .slice(0, 5); 
 
