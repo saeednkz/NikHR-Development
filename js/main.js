@@ -163,7 +163,6 @@ async function fetchUserRole(user) {
         }
     }
 }
-
 // کل این تابع را با نسخه جدید جایگزین کنید
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید و کامل جایگزین کنید
@@ -237,13 +236,15 @@ export const router = () => {
         navigateTo(pageName);
     }
 };
-// این دو تابع جدید را به فایل js/main.js اضافه کنید
+// این دو تابع جدید را به فایل js/main.js اضافه کنید (مثلاً قبل از تابع renderEmployeePortal)
+
+// این دو تابع جدید را به js/main.js اضافه کنید
 
 // در فایل js/main.js
-// تابع renderEmployeePortalPage را با این نسخه جایگزین کنید
+// کل این تابع را با نسخه جدید و کامل جایگزین کنید
 
 // در فایل js/main.js
-// کل این تابع را جایگزین نسخه فعلی کنید
+// کل این تابع را با نسخه جدید و کامل جایگزین کنید
 
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید و کامل جایگزین کنید
@@ -492,7 +493,6 @@ function renderEmployeePortalPage(pageName, employee) {
                         </div>
                     </div>
                 </div>
-
                 <aside class="space-y-6">
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
                         <div class="flex items-center gap-3 mb-3">
@@ -612,6 +612,26 @@ function renderEmployeePortalPage(pageName, employee) {
             const dot = hasNewReply ? '<span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>' : '';
             return `<tr class="bg-white"><td class="p-4 border-b ${borderClass}"><div class="flex items-center gap-2 ${titleClass}">${dot}<span>${req.requestType}</span></div></td><td class="p-4 border-b ${borderClass}">${toPersianDate(req.createdAt)}</td><td class="p-4 border-b ${borderClass}"><span class="px-2 py-1 text-xs font-medium rounded-full ${status.color}">${status.text}</span></td><td class="p-4 border-b ${borderClass}"><button class="view-request-btn text-sm text-indigo-600 hover:underline" data-id="${req.firestoreId}">مشاهده جزئیات</button></td></tr>`;
         }).join('');
+        const byType = {
+            'گواهی اشتغال به کار': [],
+            'بیمه': [],
+            'بیمه تکمیلی': [],
+            'درخواست مرخصی': [],
+            'سایر': []
+        };
+        myRequests.forEach(req => {
+            const key = byType[req.requestType] ? req.requestType : (req.requestType?.includes('مرخصی') ? 'درخواست مرخصی' : 'سایر');
+            byType[key].push(req);
+        });
+        const sectionTable = (title, list) => {
+            if (!list.length) return '';
+            const rows = list.map(req => {
+                const statusMap = {'درحال بررسی': { text: 'در حال بررسی', color: 'bg-yellow-100 text-yellow-800' },'در حال انجام': { text: 'در حال انجام', color: 'bg-blue-100 text-blue-800' },'تایید شده': { text: 'تایید شده', color: 'bg-green-100 text-green-800' },'رد شده': { text: 'رد شده', color: 'bg-red-100 text-red-800' }};
+                const status = statusMap[req.status] || { text: req.status, color: 'bg-slate-100' };
+                return `<tr class=\"bg-white\"><td class=\"p-3 border-b\">${req.requestType}</td><td class=\"p-3 border-b\">${toPersianDate(req.createdAt)}</td><td class=\"p-3 border-b\"><span class=\"px-2 py-1 text-xs font-medium rounded-full ${status.color}\">${status.text}</span></td><td class=\"p-3 border-b\"><button class=\"view-request-btn text-xs text-indigo-600 hover:underline\" data-id=\"${req.firestoreId}\">مشاهده</button></td></tr>`;
+            }).join('');
+            return `<div class=\"mb-6\"><div class=\"flex items-center gap-2 mb-2\"><i data-lucide=\"folder\" class=\"w-4 h-4\"></i><h3 class=\"font-bold text-slate-800\">${title}</h3></div><div class=\"bg-white rounded-xl border overflow-hidden\"><table class=\"w-full text-sm\"><thead style=\"background:#ECEEF3\"><tr><th class=\"p-2\">نوع</th><th class=\"p-2\">تاریخ</th><th class=\"p-2\">وضعیت</th><th class=\"p-2\"></th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+        };
         const emptyState = '<div class="text-center p-10"><i data-lucide="inbox" class="mx-auto w-12 h-12 text-slate-300"></i><p class="mt-3 text-sm text-slate-500">شما هنوز درخواستی ثبت نکرده‌اید.</p><button id="add-new-request-btn" class="mt-4 inline-flex items-center gap-2 text-xs font-semibold" style="background:#6B69D6;color:#fff;padding:.6rem 1rem;border-radius:.75rem"><i data-lucide="plus-circle" class="w-4 h-4"></i><span>ثبت درخواست جدید</span></button></div>';
         contentContainer.innerHTML = `
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 page-header">
@@ -623,21 +643,14 @@ function renderEmployeePortalPage(pageName, employee) {
                     <button id="add-new-request-btn" class="inline-flex items-center gap-2 text-xs font-semibold" style="background:#6B69D6;color:#fff;padding:.6rem 1rem;border-radius:.75rem"><i data-lucide="plus-circle" class="w-4 h-4"></i><span>ثبت درخواست جدید</span></button>
                 </div>
             </div>
-            <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm text-right">
-                        <thead style="background:#ECEEF3">
-                            <tr>
-                                <th class="p-3 font-semibold text-slate-700">نوع درخواست</th>
-                                <th class="p-3 font-semibold text-slate-700">تاریخ ثبت</th>
-                                <th class="p-3 font-semibold text-slate-700">وضعیت</th>
-                                <th class="p-3 font-semibold text-slate-700"></th>
-                            </tr>
-                        </thead>
-                        <tbody>${requestsHtml || `<tr><td colspan=\"4\">${emptyState}</td></tr>`}</tbody>
-                    </table>
-                </div>
-            </div>`;
+            ${myRequests.length ? [
+                sectionTable('گواهی اشتغال به کار', byType['گواهی اشتغال به کار']),
+                sectionTable('بیمه', byType['بیمه']),
+                sectionTable('بیمه تکمیلی', byType['بیمه تکمیلی']),
+                sectionTable('مرخصی', byType['درخواست مرخصی']),
+                sectionTable('عمومی', byType['سایر'])
+            ].join('') : `<div>${emptyState}</div>`}
+            `;
     }
     // --- بخش اسناد ---
     else if (pageName === 'documents') {
@@ -872,7 +885,6 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
 // کل تابع renderEmployeePortal را با این نسخه جایگزین کنید
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
-
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
 
@@ -929,6 +941,9 @@ function renderEmployeePortal() {
                 <header style="background:linear-gradient(90deg,#FF6A3D,#F72585)" class="shadow-sm relative z-10">
                     <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
                         <div class="flex items-center gap-3">
+                            <button id="portal-menu-btn" class="inline-flex sm:hidden items-center justify-center p-2 rounded-md bg-white/20 hover:bg-white/30 text-white" title="منو">
+                                <i data-lucide="menu" class="w-5 h-5"></i>
+                            </button>
                             <img src="logo.png" alt="Logo" class="w-8 h-8 rounded-md ring-2 ring-white/30">
                             <div class="w-10 h-10 rounded-full overflow-hidden ring-2 ring-white/30">
                                 <img src="${employee.avatar}" alt="${employeeName}" class="w-full h-full object-cover">
@@ -939,9 +954,6 @@ function renderEmployeePortal() {
                             </div>
                         </div>
                         <div class="flex items-center gap-2">
-                            <button id="portal-menu-btn" class="inline-flex sm:hidden items-center justify-center p-2 rounded-md bg-white/20 hover:bg-white/30 text-white" title="منو">
-                                <i data-lucide="menu" class="w-5 h-5"></i>
-                            </button>
                             <div id="okr-pill" class="hidden sm:flex items-center gap-2 text-xs font-bold bg-white/20 text-white px-3 py-2 rounded-full">
                                 <i data-lucide="target" class="w-4 h-4"></i>
                                 <span id="okr-pill-text">OKR: 0%</span>
@@ -994,22 +1006,43 @@ function renderEmployeePortal() {
         }
     } catch {}
 
-    // Birthday confetti if today is user's birthday
+    // Birthday postcard + confetti if today is user's birthday
     try {
         const bd = employee.personalInfo?.birthDate ? new Date(employee.personalInfo.birthDate) : null;
         const now = new Date();
-        if (bd && bd.getMonth() === now.getMonth() && bd.getDate() === now.getDate()) {
+        if (bd && bd.getMonth() === now.getMonth() && bd.getDate() === now.getDate() && !localStorage.getItem('birthdayPostcardShown')) {
+            // Confetti
             const confetti = document.createElement('div');
             confetti.className = 'confetti';
-            for (let i=0; i<80; i++) {
+            for (let i=0; i<150; i++) {
                 const piece = document.createElement('i');
                 piece.style.left = Math.random()*100 + 'vw';
-                piece.style.background = ['#6B69D6','#8B5CF6','#22D3EE','#F59E0B','#10B981'][Math.floor(Math.random()*5)];
-                piece.style.animationDelay = (Math.random()*0.8)+'s';
+                piece.style.background = ['#6B69D6','#8B5CF6','#22D3EE','#F59E0B','#10B981','#F72585'][Math.floor(Math.random()*6)];
+                piece.style.animationDelay = (Math.random()*1.2)+'s';
                 confetti.appendChild(piece);
             }
             document.body.appendChild(confetti);
-            setTimeout(()=> confetti.remove(), 2200);
+
+            // Postcard modal
+            const wishes = (state.birthdayWishes || []).filter(w => w.targetUid === employee.uid).sort((a,b)=> new Date(b.createdAt?.toDate?.()||0) - new Date(a.createdAt?.toDate?.()||0));
+            const wishesHtml = wishes.map(w => `<div class=\"p-3 rounded-lg bg-white/80 backdrop-blur border mt-2\"><p class=\"text-slate-700 text-sm\">${w.message}</p><p class=\"text-xs text-slate-500 text-left mt-1\">- ${w.wisherName}</p></div>`).join('') || '<p class=\"text-sm text-slate-600\">اولین پیام تبریک را دریافت کنید! 🎉</p>';
+            modalTitle.innerText = '🎂 کارت پستال تولد';
+            modalContent.innerHTML = `
+                <div class=\"rounded-2xl overflow-hidden border\" style=\"background:linear-gradient(135deg,#FFDEE9 0%, #B5FFFC 100%)\">
+                    <div class=\"p-6 sm:p-8\">
+                        <div class=\"flex items-center gap-3\">
+                            <div class=\"w-12 h-12 rounded-xl bg-white/60 flex items-center justify-center\"><i data-lucide=\"party-popper\" class=\"w-6 h-6\" style=\"color:#F72585\"></i></div>
+                            <div>
+                                <div class=\"text-sm text-slate-600\">تولدت مبارک ${employee.name}!</div>
+                                <div class=\"text-lg font-extrabold text-slate-800\">یک سال پر از موفقیت پیش‌رو داشته باشی</div>
+                            </div>
+                        </div>
+                        <div class=\"mt-4\">${wishesHtml}</div>
+                    </div>
+                </div>`;
+            openModal(mainModal, mainModalContainer);
+            setTimeout(()=> confetti.remove(), 3200);
+            localStorage.setItem('birthdayPostcardShown', String(now.getFullYear()));
         }
     } catch {}
 }
@@ -1377,7 +1410,6 @@ const generateSmartReminders = async () => {
             riskScore += 10;
             reasons.push('عضو تیمی با مشارکت پایین');
         }
-
         return {
             score: Math.min(100, riskScore), // امتیاز نهایی بین ۰ تا ۱۰۰
             reasons: reasons.length > 0 ? reasons : ['ریسک پایین']
@@ -1813,49 +1845,102 @@ const updateNotificationBell = () => {
         // 1) Edit My Profile
         async function showMyProfileEditForm(employee) {
             const info = employee.personalInfo || {};
+            const immutableFilled = {
+                name: employee.name || '',
+                nationalId: info.nationalId || '',
+                email: info.email || '',
+                address: info.address || ''
+            };
             modalTitle.innerText = 'ویرایش اطلاعات من';
             modalContent.innerHTML = `
-                <form id="edit-my-profile-form" class="space-y-4">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium">ایمیل</label>
-                            <input id="my-email" type="email" class="w-full p-2 border rounded-md" value="${info.email || ''}">
+                <form id=\"edit-my-profile-form\" class=\"space-y-5\">
+                    <div class=\"grid grid-cols-1 md:grid-cols-2 gap-4\">
+                        <div class=\"bg-white border rounded-xl p-4\">
+                            <label class=\"block text-xs font-semibold text-slate-500\">نام</label>
+                            <input id=\"my-name\" type=\"text\" class=\"mt-2 w-full p-2 border rounded-lg bg-slate-100\" value=\"${immutableFilled.name}\" disabled>
+                            <button type=\"button\" data-field=\"name\" class=\"request-edit-btn text-xs text-indigo-600 mt-1\">درخواست ویرایش</button>
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium">تلفن</label>
-                            <input id="my-phone" type="text" class="w-full p-2 border rounded-md" value="${info.phone || ''}">
+                        <div class=\"bg-white border rounded-xl p-4\">
+                            <label class=\"block text-xs font-semibold text-slate-500\">کد ملی</label>
+                            <input id=\"my-nid\" type=\"text\" class=\"mt-2 w-full p-2 border rounded-lg bg-slate-100\" value=\"${immutableFilled.nationalId}\" disabled>
+                            <button type=\"button\" data-field=\"nationalId\" class=\"request-edit-btn text-xs text-indigo-600 mt-1\">درخواست ویرایش</button>
                         </div>
-                        <div class="md:col-span-2">
-                            <label class="block text-sm font-medium">آدرس</label>
-                            <input id="my-address" type="text" class="w-full p-2 border rounded-md" value="${info.address || ''}">
+                        <div class=\"bg-white border rounded-xl p-4\">
+                            <label class=\"block text-xs font-semibold text-slate-500\">ایمیل</label>
+                            <input id=\"my-email\" type=\"email\" class=\"mt-2 w-full p-2 border rounded-lg bg-slate-100\" value=\"${immutableFilled.email}\" disabled>
+                            <button type=\"button\" data-field=\"email\" class=\"request-edit-btn text-xs text-indigo-600 mt-1\">درخواست ویرایش</button>
+                        </div>
+                        <div class=\"bg-white border rounded-xl p-4\">
+                            <label class=\"block text-xs font-semibold text-slate-500\">آدرس</label>
+                            <input id=\"my-address\" type=\"text\" class=\"mt-2 w-full p-2 border rounded-lg ${immutableFilled.address ? 'bg-slate-100' : ''}\" value=\"${immutableFilled.address}\" ${immutableFilled.address ? 'disabled' : ''}>
+                            ${immutableFilled.address ? '<button type=\"button\" data-field=\"address\" class=\"request-edit-btn text-xs text-indigo-600 mt-1\">درخواست ویرایش</button>' : ''}
+                        </div>
+                        <div class=\"bg-white border rounded-xl p-4 md:col-span-2\">
+                            <label class=\"block text-xs font-semibold text-slate-500\">تلفن</label>
+                            <input id=\"my-phone\" type=\"text\" class=\"mt-2 w-full p-2 border rounded-lg\" value=\"${info.phone || ''}\">
                         </div>
                     </div>
-                    <div class="flex justify-end gap-2 pt-4">
-                        <button type="button" id="cancel-edit-my-profile" class="bg-slate-200 text-slate-800 py-2 px-4 rounded-md hover:bg-slate-300">انصراف</button>
-                        <button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">ذخیره</button>
+                    <div class=\"flex justify-between items-center\">
+                        <button type=\"button\" id=\"change-avatar-btn\" class=\"secondary-btn text-xs\">تغییر عکس پروفایل</button>
+                        <div class=\"flex items-center gap-2\">
+                            <button type=\"button\" id=\"cancel-edit-my-profile\" class=\"secondary-btn\">انصراف</button>
+                            <button type=\"submit\" class=\"primary-btn\">ذخیره</button>
+                        </div>
                     </div>
                 </form>`;
             openModal(mainModal, mainModalContainer);
             document.getElementById('cancel-edit-my-profile').addEventListener('click', () => closeModal(mainModal, mainModalContainer));
+            document.getElementById('change-avatar-btn').addEventListener('click', async () => {
+                try {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = 'image/*';
+                    input.onchange = async () => {
+                        const file = input.files[0];
+                        if (!file) return;
+                        const sRef = ref(storage, `avatars/${employee.uid}_${Date.now()}`);
+                        const snapshot = await uploadBytes(sRef, file);
+                        const url = await getDownloadURL(snapshot.ref);
+                        await updateDoc(doc(db, `artifacts/${appId}/public/data/employees`, employee.firestoreId), { avatar: url });
+                        showToast('عکس پروفایل بروزرسانی شد.');
+                    };
+                    input.click();
+                } catch (e) { showToast('خطا در تغییر عکس.', 'error'); }
+            });
             document.getElementById('edit-my-profile-form').addEventListener('submit', async (e) => {
                 e.preventDefault();
                 try {
                     const updatedInfo = {
                         ...info,
-                        email: document.getElementById('my-email').value.trim(),
                         phone: document.getElementById('my-phone').value.trim(),
-                        address: document.getElementById('my-address').value.trim(),
+                        address: immutableFilled.address ? immutableFilled.address : document.getElementById('my-address').value.trim()
                     };
                     const docRef = doc(db, `artifacts/${appId}/public/data/employees`, employee.firestoreId);
                     await updateDoc(docRef, { personalInfo: updatedInfo });
                     showToast('اطلاعات با موفقیت ذخیره شد.');
                     closeModal(mainModal, mainModalContainer);
-                    // رندر مجدد برای نمایش تغییرات
                     renderEmployeePortalPage('profile', { ...employee, personalInfo: updatedInfo });
                 } catch (err) {
                     console.error('Error updating my profile', err);
                     showToast('خطا در ذخیره اطلاعات.', 'error');
                 }
+            });
+            document.querySelectorAll('.request-edit-btn').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const field = btn.getAttribute('data-field');
+                    try {
+                        await addDoc(collection(db, `artifacts/${appId}/public/data/requests`), {
+                            uid: employee.uid,
+                            employeeId: employee.id,
+                            employeeName: employee.name,
+                            requestType: 'درخواست ویرایش اطلاعات',
+                            details: `درخواست ویرایش ${field}`,
+                            status: 'درحال بررسی',
+                            createdAt: serverTimestamp()
+                        });
+                        showToast('درخواست ویرایش ارسال شد.');
+                    } catch { showToast('خطا در ارسال درخواست.', 'error'); }
+                });
             });
         }
 
@@ -1949,7 +2034,6 @@ const updateNotificationBell = () => {
                 }
             });
         }
-
         // 3) Request Details Modal (+ mark lastSeenAt)
         async function showRequestDetailsModal(requestId, employee) {
             const request = state.requests.find(r => r.firestoreId === requestId);
@@ -2108,7 +2192,6 @@ dashboard: () => {
             </div>
         `).join('') 
         : '<div class="p-4 text-center text-sm text-slate-400">موردی با ریسک بالا یافت نشد.</div>';
-
     return `
         <section class="relative mb-8 rounded-2xl overflow-hidden">
             <div class="absolute inset-0" style="background:linear-gradient(90deg,#FF6A3D,#F72585)"></div>
@@ -2722,14 +2805,16 @@ settings: () => {
     const defaultRule = (state.assignmentRules || []).find(r => r.firestoreId === '_default'); // [!code --]
     
     return `
-        <div>
-            <h1 class="text-3xl font-bold text-slate-800">تنظیمات سیستم</h1>
-            <p class="text-sm text-slate-500 mt-1 mb-6">مدیریت کاربران، دسترسی‌ها و پیکربندی‌های اصلی سازمان</p>
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h1 class="text-3xl font-bold text-slate-800">تنظیمات سیستم</h1>
+                <p class="text-sm text-slate-500 mt-1">مدیریت کاربران، دسترسی‌ها و پیکربندی سازمان</p>
+            </div>
         </div>
-        <div class="border-b border-slate-200 mb-6">
-            <nav id="settings-tabs" class="flex -mb-px space-x-6 space-x-reverse" aria-label="Tabs">
-                <button data-tab="users" class="settings-tab shrink-0 border-b-2 font-semibold px-1 py-3 text-sm border-blue-600 text-blue-600">مدیریت کاربران و دسترسی</button>
-                <button data-tab="configs" class="settings-tab shrink-0 border-b-2 font-semibold px-1 py-3 text-sm border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300">پیکربندی سازمان</button>
+        <div class="bg-gradient-to-l from-[#F72585]/10 to-[#6B69D6]/10 rounded-xl p-4 border mb-6">
+            <nav id="settings-tabs" class="flex gap-2" aria-label="Tabs">
+                <button data-tab="users" class="settings-tab primary-btn text-xs py-2 px-3">کاربران</button>
+                <button data-tab="configs" class="settings-tab secondary-btn text-xs py-2 px-3">پیکربندی سازمان</button>
             </nav>
         </div>
         <div id="settings-tab-content">
@@ -2737,7 +2822,7 @@ settings: () => {
                 <div class="card p-0">
                     <div class="flex flex-col sm:flex-row justify-between items-center p-5 border-b border-slate-200 gap-3">
                         <h3 class="font-semibold text-lg flex items-center"><i data-lucide="users" class="ml-2 text-indigo-500"></i>لیست کاربران سیستم</h3>
-                        <button id="add-user-btn" class="bg-blue-600 text-white text-sm py-2 px-4 rounded-lg hover:bg-blue-700 flex items-center gap-2 w-full sm:w-auto"><i data-lucide="plus" class="w-4 h-4"></i> کاربر جدید</button>
+                        <button id="add-user-btn" class="primary-btn text-sm flex items-center gap-2 w-full sm:w-auto"><i data-lucide="plus" class="w-4 h-4"></i> کاربر جدید</button>
                     </div>
                     <div id="users-list-container" class="p-5 grid grid-cols-1 xl:grid-cols-2 gap-4">${usersHtml}</div>
                 </div>
@@ -2748,13 +2833,13 @@ settings: () => {
                     <div id="competencies-list" class="flex flex-wrap gap-2 mb-4">${competenciesHtml}</div>
                     <form id="add-competency-form" class="flex flex-col sm:flex-row gap-2">
                         <input type="text" id="new-competency-name" placeholder="نام شایستگی جدید..." class="w-full p-2 border border-slate-300 rounded-lg text-sm" required>
-                        <button type="submit" class="bg-slate-800 text-white py-2 px-4 rounded-lg hover:bg-slate-900 shrink-0">افزودن</button>
+                        <button type="submit" class="primary-btn shrink-0">افزودن</button>
                     </form>
                 </div>
                 <div class="card p-6">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="font-semibold text-lg flex items-center"><i data-lucide="git-branch-plus" class="ml-2 text-purple-500"></i>قوانین واگذاری هوشمند</h3>
-                        <button id="add-rule-btn" class="bg-blue-600 text-white text-sm py-2 px-4 rounded-lg hover:bg-blue-700">افزودن قانون جدید</button>
+                        <button id="add-rule-btn" class="primary-btn text-sm">افزودن قانون جدید</button>
                     </div>
                     <div id="rules-list" class="space-y-3">${rulesHtml || '<p class="text-center text-sm text-slate-400">قانونی تعریف نشده است.</p>'}</div>
                     <div class="mt-6 border-t pt-4">
@@ -3015,7 +3100,6 @@ const viewTeamProfile = (teamId) => {
             </div>
         </div>
     `;
-
     openModal(mainModal, mainModalContainer);
     // Minimal listener to handle avatar change in team profile and future actions
     if (typeof window.setupTeamProfileModalListeners !== 'function') {
@@ -3374,7 +3458,6 @@ const renderEngagementGauge = (canvasId, score) => {
         // --- PAGE-SPECIFIC LOGIC ---
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید و کامل جایگزین کنید
-
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید و کامل جایگزین کنید
 
@@ -3744,7 +3827,6 @@ const setupOrganizationPageListeners = () => {
 // این تابع جدید را به js/main.js اضافه کنید
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
-
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید و کامل جایگزین کنید
 
@@ -3946,7 +4028,6 @@ const setupSettingsPageListeners = () => {
             });
         }
     });
-    
     const addCompetencyForm = document.getElementById('add-competency-form');
     if (addCompetencyForm) {
         addCompetencyForm.addEventListener('submit', async (e) => {
@@ -4141,7 +4222,6 @@ const setupAnalyticsPage = () => {
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
         });
     };
-    
     const renderTeamHealthChart = () => {
         const ctx = document.getElementById('teamHealthChart')?.getContext('2d');
         if (!ctx || state.teams.length === 0) return;
@@ -4516,7 +4596,6 @@ async function resizeAndUploadAvatar(file, emp) {
     };
     reader.readAsDataURL(file);
 }
-
         const generateSmartAnalysis = (emp) => {
             const analysis = {};
             if (emp.performanceHistory && emp.performanceHistory.length > 1) {
@@ -4570,27 +4649,38 @@ const showEmployeeForm = (employeeId = null) => {
 
     modalTitle.innerText = isEditing ? 'ویرایش اطلاعات کارمند' : 'افزودن کارمند جدید';
     modalContent.innerHTML = `
-        <form id="employee-form" class="space-y-4" data-old-team-id="${currentTeam?.firestoreId || ''}">
+        <div class="bg-gradient-to-l from-[#F72585]/10 to-[#6B69D6]/10 rounded-xl p-4 mb-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-white flex items-center justify-center border">
+                    <i data-lucide="user-plus" class="w-5 h-5" style="color:#6B69D6"></i>
+                </div>
+                <div>
+                    <div class="text-sm text-slate-600">${isEditing ? 'ویرایش پروفایل' : 'کارمند جدید'}</div>
+                    <div class="text-lg font-bold text-slate-800">${emp.name || 'ثبت اطلاعات کارمند'}</div>
+                </div>
+            </div>
+        </div>
+        <form id="employee-form" class="space-y-5" data-old-team-id="${currentTeam?.firestoreId || ''}">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label for="name" class="block text-sm font-medium text-slate-700">نام کامل</label>
-                    <input type="text" id="name" value="${emp.name || ''}" class="mt-1 block w-full p-2 border border-slate-300 rounded-lg" required>
+                <div class="bg-white border rounded-xl p-4">
+                    <label for="name" class="block text-xs font-semibold text-slate-500">نام کامل</label>
+                    <input type="text" id="name" value="${emp.name || ''}" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg" required>
                 </div>
-                <div>
-                    <label for="id" class="block text-sm font-medium text-slate-700">کد پرسنلی</label>
-                    <input type="text" id="id" value="${emp.id || ''}" class="mt-1 block w-full p-2 border border-slate-300 rounded-lg" ${isEditing ? 'readonly' : ''} required>
+                <div class="bg-white border rounded-xl p-4">
+                    <label for="id" class="block text-xs font-semibold text-slate-500">کد پرسنلی</label>
+                    <input type="text" id="id" value="${emp.id || ''}" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg" ${isEditing ? 'readonly' : ''} required>
                 </div>
-                <div class="md:col-span-2">
-                    <label for="employee-email" class="block text-sm font-medium text-slate-700">آدرس ایمیل (برای ورود به پورتال)</label>
-                    <input type="email" id="employee-email" value="${emp.personalInfo?.email || ''}" class="mt-1 block w-full p-2 border border-slate-300 rounded-lg" ${isEditing ? 'readonly' : ''} required>
+                <div class="md:col-span-2 bg-white border rounded-xl p-4">
+                    <label for="employee-email" class="block text-xs font-semibold text-slate-500">آدرس ایمیل (برای ورود)</label>
+                    <input type="email" id="employee-email" value="${emp.personalInfo?.email || ''}" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg" ${isEditing ? 'readonly' : ''} required>
                 </div>
-                <div>
-                    <label for="jobTitle" class="block text-sm font-medium text-slate-700">عنوان شغلی</label>
-                    <input type="text" id="jobTitle" value="${emp.jobTitle || ''}" placeholder="مثال: کارشناس بازاریابی دیجیتال" class="mt-1 block w-full p-2 border border-slate-300 rounded-lg">
+                <div class="bg-white border rounded-xl p-4">
+                    <label for="jobTitle" class="block text-xs font-semibold text-slate-500">عنوان شغلی</label>
+                    <input type="text" id="jobTitle" value="${emp.jobTitle || ''}" placeholder="مثال: کارشناس بازاریابی دیجیتال" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg">
                 </div>
-                <div>
-                    <label for="level" class="block text-sm font-medium text-slate-700">سطح</label>
-                    <select id="level" class="mt-1 block w-full p-2 border border-slate-300 rounded-lg">
+                <div class="bg-white border rounded-xl p-4">
+                    <label for="level" class="block text-xs font-semibold text-slate-500">سطح</label>
+                    <select id="level" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg">
                         <option value="Junior" ${emp.level === 'Junior' ? 'selected' : ''}>Junior (کارشناس)</option>
                         <option value="Mid-level" ${emp.level === 'Mid-level' ? 'selected' : ''}>Mid-level (کارشناس ارشد)</option>
                         <option value="Senior" ${emp.level === 'Senior' ? 'selected' : ''}>Senior (خبره)</option>
@@ -4598,27 +4688,27 @@ const showEmployeeForm = (employeeId = null) => {
                         <option value="Manager" ${emp.level === 'Manager' ? 'selected' : ''}>Manager (مدیر)</option>
                     </select>
                 </div>
-                <div>
-                    <label for="department-team-select" class="block text-sm font-medium text-slate-700">دپارتمان / تیم</label>
-                    <select id="department-team-select" class="mt-1 block w-full p-2 border border-slate-300 rounded-lg">
+                <div class="bg-white border rounded-xl p-4">
+                    <label for="department-team-select" class="block text-xs font-semibold text-slate-500">دپارتمان / تیم</label>
+                    <select id="department-team-select" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg">
                         <option value="">انتخاب کنید...</option>
                         ${teamOptions}
                     </select>
                 </div>
-                <div>
-                    <label for="status" class="block text-sm font-medium text-slate-700">وضعیت</label>
-                    <select id="status" class="mt-1 block w-full p-2 border border-slate-300 rounded-lg">
+                <div class="bg-white border rounded-xl p-4">
+                    <label for="status" class="block text-xs font-semibold text-slate-500">وضعیت</label>
+                    <select id="status" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg">
                         <option value="فعال" ${emp.status === 'فعال' ? 'selected' : ''}>فعال</option>
                         <option value="غیرفعال" ${emp.status === 'غیرفعال' ? 'selected' : ''}>غیرفعال</option>
                     </select>
                 </div>
-                <div class="md:col-span-2">
-                     <label for="startDate" class="block text-sm font-medium text-slate-700">تاریخ استخدام</label>
-                     <input type="text" id="startDate" class="mt-1 block w-full p-2 border border-slate-300 rounded-lg">
+                <div class="md:col-span-2 bg-white border rounded-xl p-4">
+                     <label for="startDate" class="block text-xs font-semibold text-slate-500">تاریخ استخدام</label>
+                     <input type="text" id="startDate" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg">
                 </div>
             </div>
-            <div class="pt-4 flex justify-end">
-                <button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded-lg hover:bg-indigo-600 shadow-md transition">ذخیره</button>
+            <div class="pt-2 flex justify-end">
+                <button type="submit" class="primary-btn">ذخیره</button>
             </div>
         </form>
     `;
@@ -4888,7 +4978,6 @@ const showMessageDetailsModal = (announcementId) => {
         } catch (err) { console.error('Error marking announcement as read:', err); }
     })();
 };
-
 // مودال نمایش اعضای تیم برای دایرکتوری کارمندان
 const showTeamDirectoryModal = (team) => {
     const leader = state.employees.find(e => e.id === team.leaderId);
@@ -4918,18 +5007,23 @@ const showTeamDirectoryModal = (team) => {
 
     modalTitle.innerText = `تیم ${team.name}`;
     modalContent.innerHTML = `
+        <div class="bg-gradient-to-l from-[#F72585]/10 to-[#6B69D6]/10 rounded-xl p-4 mb-4">
+            <div class="flex items-center gap-3">
+                <img src="${team.avatar || ''}" alt="${team.name}" class="w-12 h-12 rounded-xl object-cover border" onerror="this.remove()">
+                <div>
+                    <div class="text-sm text-slate-600">پروفایل تیم</div>
+                    <div class="text-lg font-bold text-slate-800">${team.name}</div>
+                </div>
+            </div>
+        </div>
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="lg:col-span-2 bg-white border rounded-xl p-4">
+            <div class="lg:col-span-2 bg-white border rounded-2xl p-4">
                 <div class="flex items-center gap-3 mb-4">
-                    <img src="${team.avatar || ''}" alt="${team.name}" class="w-14 h-14 rounded-lg object-cover border" onerror="this.remove()">
-                    <div>
-                        <div class="text-xl font-bold text-slate-800">${team.name}</div>
-                        <div class="text-sm text-slate-500">مدیر تیم: ${leader?.name || 'نامشخص'}</div>
-                    </div>
+                    <div class="text-sm text-slate-500">مدیر تیم: <span class="font-semibold text-slate-800">${leader?.name || 'نامشخص'}</span></div>
                 </div>
                 <div class="divide-y">${membersCards || '<p class="text-sm text-slate-500">عضوی ثبت نشده است.</p>'}</div>
             </div>
-            <div class="bg-white border rounded-xl p-4">
+            <div class="bg-white border rounded-2xl p-4">
                 <div class="font-semibold text-slate-800 mb-3">اهداف تیم (OKRs)</div>
                 <div class="space-y-3">${okrHtml}</div>
             </div>
@@ -5052,7 +5146,6 @@ const setupDocumentsPageListeners = () => {
         }
     });
 };
-
 // Modal: Manage documents for a category (list existing + upload new with targeting)
 function showManageCategoryDocsModal(categoryKey) {
     const mapKeyToTitle = {
@@ -5189,24 +5282,6 @@ function formatTargetsText(targets) {
     if (targets.type === 'users') return `افراد: ${(targets.userNames || targets.userIds || []).join('، ')}`;
     return '';
 }
-// کل تابع فعلی را با این کد جایگزین کنید
-// در فایل js/main.js
-// کل این تابع را با نسخه جدید جایگزین کنید
-
-const setupProfileModalListeners = (emp) => {
-    const tabs = document.querySelectorAll('#profile-tabs .profile-tab');
-    const tabContents = document.querySelectorAll('.profile-tab-content');
-    tabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            tabs.forEach(t => t.classList.remove('active'));
-            tab.classList.add('active');
-            const target = tab.getAttribute('data-tab');
-            tabContents.forEach(content => {
-                content.classList.toggle('active', content.id === `tab-${target}`);
-            });
-        });
-    });
-
     renderEngagementGauge('engagementGaugeProfile', emp.engagementScore);
 
     if (canEdit()) {
@@ -5363,7 +5438,6 @@ if (typeof window.showEditTeamMembersForm !== 'function') {
         });
     };
 }
-
 // Team OKRs editor
 if (typeof window.showEditTeamOkrsForm !== 'function') {
     window.showEditTeamOkrsForm = (team) => {
@@ -5548,7 +5622,6 @@ const showAddUserForm = () => {
                 }
             });
         };
-
         const showEditTeamOkrsForm = (team) => {
             modalTitle.innerText = `ویرایش OKR برای تیم ${team.name}`;
             const okrsHtml = (team.okrs || []).map((okr) => `<div class="okr-item grid grid-cols-12 gap-2 items-center"><input type="text" value="${okr.title}" class="col-span-8 p-2 border rounded-md okr-title" placeholder="عنوان هدف"><input type="number" value="${okr.progress}" class="col-span-3 p-2 border rounded-md okr-progress" placeholder="پیشرفت %" min="0" max="100"><button type="button" class="col-span-1 remove-okr-btn text-red-500 hover:text-red-700"><i data-lucide="trash-2" class="w-5 h-5"></i></button></div>`).join('');
