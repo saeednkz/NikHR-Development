@@ -5556,20 +5556,20 @@ if (typeof window.showEditPersonalInfoForm !== 'function') {
             <form id=\"edit-personal-form\" class=\"space-y-4\">
                 <div class=\"grid grid-cols-1 md:grid-cols-2 gap-4\">
                     <div><label class=\"block text-sm\">نام و نام خانوادگی</label><input id=\"pi-fullname\" class=\"w-full p-2 border rounded-md\" value=\"${emp.name || ''}\"></div>
-                    <div><label class=\"block text-sm\">جنسیت</label><input id=\"pi-gender\" class=\"w-full p-2 border rounded-md\" value=\"${info.gender || emp.gender || ''}\"></div>
+                    <div><label class=\"block text-sm\">جنسیت</label><select id=\"pi-gender\" class=\"w-full p-2 border rounded-md bg-white\"><option value=\"\" ${!(info.gender||emp.gender)?'selected':''}>انتخاب کنید</option><option value=\"male\" ${(info.gender||emp.gender)==='male'?'selected':''}>مرد</option><option value=\"female\" ${(info.gender||emp.gender)==='female'?'selected':''}>زن</option></select></div>
                     <div><label class=\"block text-sm\">تاریخ تولد</label><input id=\"pi-birth\" class=\"w-full p-2 border rounded-md\" value=\"${info.birthDate ? toPersianDate(info.birthDate) : ''}\" placeholder=\"YYYY/MM/DD\"></div>
                     <div><label class=\"block text-sm\">محل تولد</label><input id=\"pi-birth-place\" class=\"w-full p-2 border rounded-md\" value=\"${info.birthPlace || ''}\"></div>
                     <div><label class=\"block text-sm\">کد ملی</label><input id=\"pi-nid\" class=\"w-full p-2 border rounded-md\" value=\"${info.nationalId || ''}\"></div>
-                    <div><label class=\"block text-sm\">وضعیت تأهل</label><input id=\"pi-marital\" class=\"w-full p-2 border rounded-md\" value=\"${info.maritalStatus || ''}\"></div>
+                    <div><label class=\"block text-sm\">وضعیت تأهل</label><select id=\"pi-marital\" class=\"w-full p-2 border rounded-md bg-white\"><option value=\"\" ${!info.maritalStatus?'selected':''}>انتخاب کنید</option><option value=\"مجرد\" ${info.maritalStatus==='مجرد'?'selected':''}>مجرد</option><option value=\"متاهل\" ${info.maritalStatus==='متاهل'?'selected':''}>متاهل</option></select></div>
                     <div><label class=\"block text-sm\">تعداد فرزندان</label><input id=\"pi-children\" type=\"number\" class=\"w-full p-2 border rounded-md\" value=\"${info.numChildren ?? ''}\" min=\"0\"></div>
-                    <div><label class=\"block text-sm\">وضعیت خدمت سربازی</label><input id=\"pi-military\" class=\"w-full p-2 border rounded-md\" value=\"${info.militaryStatus || ''}\"></div>
+                    <div id=\"pi-military-wrap\"><label class=\"block text-sm\">وضعیت خدمت سربازی</label><select id=\"pi-military\" class=\"w-full p-2 border rounded-md bg-white\"><option value=\"\" ${!info.militaryStatus?'selected':''}>انتخاب کنید</option><option value=\"معاف\" ${info.militaryStatus==='معاف'?'selected':''}>معاف</option><option value=\"پایان خدمت\" ${info.militaryStatus==='پایان خدمت'?'selected':''}>پایان خدمت</option><option value=\"مشمول\" ${info.militaryStatus==='مشمول'?'selected':''}>مشمول</option><option value=\"معافیت تحصیلی\" ${info.militaryStatus==='معافیت تحصیلی'?'selected':''}>معافیت تحصیلی</option></select></div>
                     <div><label class=\"block text-sm\">شماره تلفن همراه</label><input id=\"pi-phone\" class=\"w-full p-2 border rounded-md\" value=\"${info.phone || ''}\"></div>
                     <div><label class=\"block text-sm\">ایمیل</label><input id=\"pi-email\" class=\"w-full p-2 border rounded-md\" value=\"${info.email || ''}\"></div>
                     <div><label class=\"block text-sm\">شماره تلفن ثابت</label><input id=\"pi-land\" class=\"w-full p-2 border rounded-md\" value=\"${info.landline || ''}\"></div>
                     <div><label class=\"block text-sm\">شماره تلفن ضروری</label><input id=\"pi-emergency-phone\" class=\"w-full p-2 border rounded-md\" value=\"${info.emergencyPhone || ''}\"></div>
                     <div class=\"md:col-span-2\"><label class=\"block text-sm\">آدرس محل سکونت</label><input id=\"pi-address\" class=\"w-full p-2 border rounded-md\" value=\"${info.address || ''}\"></div>
                     <div><label class=\"block text-sm\">کد پستی</label><input id=\"pi-postal\" class=\"w-full p-2 border rounded-md\" value=\"${info.postalCode || ''}\"></div>
-                    <div><label class=\"block text-sm\">مدرک تحصیلی</label><input id=\"pi-education\" class=\"w-full p-2 border rounded-md\" value=\"${info.education || ''}\"></div>
+                    <div><label class=\"block text-sm\">مدرک تحصیلی</label><select id=\"pi-education\" class=\"w-full p-2 border rounded-md bg-white\"><option value=\"\" ${!info.education?'selected':''}>انتخاب کنید</option><option value=\"دیپلم\" ${info.education==='دیپلم'?'selected':''}>دیپلم</option><option value=\"کاردانی\" ${info.education==='کاردانی'?'selected':''}>کاردانی</option><option value=\"کارشناسی\" ${info.education==='کارشناسی'?'selected':''}>کارشناسی</option><option value=\"کارشناسی ارشد\" ${info.education==='کارشناسی ارشد'?'selected':''}>کارشناسی ارشد</option><option value=\"دکتری\" ${info.education==='دکتری'?'selected':''}>دکتری</option></select></div>
                     <div><label class=\"block text-sm\">رشته تحصیلی</label><input id=\"pi-field\" class=\"w-full p-2 border rounded-md\" value=\"${info.fieldOfStudy || ''}\"></div>
                     <div class=\"md:col-span-2\"><label class=\"block text-sm\">محل اخذ مدرک</label><input id=\"pi-institution\" class=\"w-full p-2 border rounded-md\" value=\"${info.educationInstitution || ''}\"></div>
                     <div class=\"md:col-span-2\"><label class=\"block text-sm\">شماره شبا</label><input id=\"pi-iban\" class=\"w-full p-2 border rounded-md\" value=\"${info.iban || ''}\"></div>
@@ -5584,6 +5584,17 @@ if (typeof window.showEditPersonalInfoForm !== 'function') {
             </form>`;
         openModal(mainModal, mainModalContainer);
         activatePersianDatePicker('pi-birth');
+        // Show military status only for males
+        try {
+            const genderSel = document.getElementById('pi-gender');
+            const milWrap = document.getElementById('pi-military-wrap');
+            const updateMilitaryVis = () => {
+                const g = genderSel.value;
+                if (milWrap) milWrap.style.display = (g === 'male') ? 'block' : 'none';
+            };
+            genderSel.addEventListener('change', updateMilitaryVis);
+            updateMilitaryVis();
+        } catch {}
         document.getElementById('cancel-pi')?.addEventListener('click', () => viewEmployeeProfile(emp.firestoreId));
         document.getElementById('edit-personal-form')?.addEventListener('submit', async (e) => {
             e.preventDefault();
