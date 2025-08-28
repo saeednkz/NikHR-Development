@@ -643,10 +643,36 @@ function renderEmployeePortalPage(pageName, employee) {
     }
     // --- بخش اسناد ---
     else if (pageName === 'documents') {
-        const documentsHtml = (state.companyDocuments || []).map(doc => `<a href="${doc.fileUrl}" target="_blank" class="flex justify-between items-center bg-slate-50 p-3 rounded-lg hover:bg-slate-100 transition"><div class="flex items-center gap-3 text-blue-600"><i data-lucide="file-text" class="w-5 h-5"></i><span class="font-semibold">${doc.title}</span></div><i data-lucide="download" class="w-5 h-5 text-slate-400"></i></a>`).join('');
+        const docSections = [
+            { id: 'آموزش و رشد', icon: 'graduation-cap', desc: 'این بخش، تمام منابع و دوره‌هایی را که برای یادگیری و پیشرفت شخصی و شغلی‌ات نیاز داری، در اختیار می‌گذارد.' },
+            { id: 'قوانین و بازی', icon: 'scroll-text', desc: 'اینجا اصول و قواعد بازی تیم ما را پیدا می‌کنی. از آیین‌نامه‌ها تا راهنمای رفتاری، همه چیز برای یک همکاری عالی اینجا هست.' },
+            { id: 'کیت ابزار کاری', icon: 'tool', desc: 'مجموعه‌ای از فرم‌ها، قالب‌ها و الگوهای کاربردی برای انجام کارهای روزمره. هر ابزاری که نیاز داری، اینجا پیدا می‌شود.' },
+            { id: 'داستان ما', icon: 'heart-handshake', desc: 'با رسالت، چشم‌انداز و ارزش‌های تیم ما آشنا شو. این بخش، قلب تپنده فرهنگ سازمانی ما است.' },
+            { id: 'مزایا و حقوق', icon: 'wallet', desc: 'اطلاعات مربوط به حقوق، مزایا، بیمه و سایر مسائل مالی‌ات را اینجا ببین. همه چیز شفاف و واضح است.' },
+            { id: 'مستندات پروژه‌ها', icon: 'file-code-2', desc: 'تمام اطلاعات فنی و مستندات مربوط به پروژه‌های مختلف، از ایده‌پردازی تا اجرا، اینجا در دسترس توست.' }
+        ];
+        const cards = docSections.map(s => `
+            <div class="bg-white rounded-2xl border border-slate-200 p-5 hover:shadow-lg transition-shadow fade-up">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background:rgba(107,105,214,.12)">
+                        <i data-lucide="${s.icon}" class="w-6 h-6" style="color:#6B69D6"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-800">${s.id}</h3>
+                </div>
+                <p class="text-sm text-slate-600 leading-6">${s.desc}</p>
+                <div class="mt-4 flex justify-end">
+                    <button class="doc-category-btn text-xs font-semibold" data-category="${s.id}" style="color:#6B69D6">مشاهده</button>
+                </div>
+            </div>
+        `).join('');
         contentContainer.innerHTML = `
-            <div class="page-header mb-8"><h1 class="text-3xl font-bold text-slate-800">اسناد سازمان</h1></div>
-            <div class="card"><div class="card-content space-y-2">${documentsHtml || '<p class="text-sm text-center">سندی یافت نشد.</p>'}</div></div>`;
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 page-header mb-6">
+                <div>
+                    <h1 class="text-3xl font-extrabold" style="color:#242A38">اسناد سازمان</h1>
+                    <p class="text-slate-500 text-sm mt-1">دسترسی سریع به منابع و مستندات کلیدی</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">${cards}</div>`;
     }
     // --- بخش صندوق پیام ---
     else if (pageName === 'inbox') {
