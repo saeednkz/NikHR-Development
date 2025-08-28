@@ -2967,6 +2967,8 @@ function setupProfileModalListeners(emp) {
         }
     });
 }
+// expose for legacy callers
+try { window.setupProfileModalListeners = setupProfileModalListeners; } catch {}
 
 const viewEmployeeProfile = (employeeId) => {
     const emp = state.employees.find(e => e.firestoreId === employeeId);
@@ -3090,7 +3092,7 @@ const viewEmployeeProfile = (employeeId) => {
     `;
 
     openModal(mainModal, mainModalContainer);
-    (window.setupProfileModalListeners || (()=>{}))(emp);
+    setupProfileModalListeners(emp);
 };
 const viewTeamProfile = (teamId) => {
     const team = state.teams.find(t => t.firestoreId === teamId);
