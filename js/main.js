@@ -1349,7 +1349,68 @@ const updateNotificationBell = () => {
 
         // --- Admin helper safe stubs (until full implementations below) ---
         if (typeof setupSurveysPageListeners !== 'function') { window.setupSurveysPageListeners = () => { document.querySelectorAll('.create-survey-link-btn').forEach(btn => { btn.addEventListener('click', (e) => { const id = e.currentTarget.dataset.surveyId; const t = surveyTemplates[id]; if (t?.requiresTarget) { window.showSurveyTargetSelector(id); } else { window.generateAndShowSurveyLink(id); } }); }); }; }
-        if (typeof window.showProcessRequestForm !== 'function') { window.showProcessRequestForm = (requestId) => { const emp = state.employees.find(e => e.uid === state.currentUser?.uid); if (emp) { showRequestDetailsModal(requestId, emp); } }; }
+        if (typeof window.showProcessRequestForm !== 'function') {
+            window.showProcessRequestForm = (requestId) => {
+                const emp = state.employees.find(e => e.uid === state.currentUser?.uid);
+                if (emp) {
+                    showRequestDetailsModal(requestId, emp);
+                    return;
+                }
+                // Admin/editor fallback: processing modal without employee context
+                const request = (state.requests || []).find(r => r.firestoreId === requestId);
+                if (!request) { showToast('درخواست یافت نشد.', 'error'); return; }
+                const statusOptions = ['درحال بررسی','در حال انجام','تایید شده','رد شده'];
+                const optionsHtml = statusOptions.map(s => `<option value="${s}" ${request.status===s?'selected':''}>${s}</option>`).join('');
+                const threadHtml = (request.thread || []).map(item => {
+                    const sender = state.users.find(u => u.firestoreId === item.senderUid)?.name || 'کاربر';
+                    const dateTxt = item.createdAt?.toDate ? toPersianDate(item.createdAt) : '';
+                    return `<div class=\"p-3 mt-2 text-sm border rounded-lg bg-slate-50\"><p class=\"whitespace-pre-wrap\">${item.content}</p><div class=\"text-slate-400 text-xs text-left mt-2\">${sender} - ${dateTxt}</div></div>`;
+                }).join('') || '<p class="text-xs text-slate-400">هنوز پاسخی ثبت نشده است.</p>';
+                modalTitle.innerText = `پردازش درخواست: ${request.requestType}`;
+                modalContent.innerHTML = `
+                    <div class="space-y-4">
+                        <div class="p-4 border rounded-lg bg-slate-50 text-sm">
+                            <div class="flex justify-between items-center">
+                                <p><strong>موضوع:</strong> ${request.details}</p>
+                                <select id="req-status" class="p-1.5 border rounded-md bg-white text-xs">${optionsHtml}</select>
+                            </div>
+                        </div>
+                        <div>
+                            <strong class="text-slate-600">تاریخچه مکالمات:</strong>
+                            <div class="mt-2 max-h-60 overflow-y-auto pr-2">${threadHtml}</div>
+                        </div>
+                        <div class="pt-4 border-t">
+                            <form id="admin-reply-form" class="flex items-center gap-2" data-id="${request.firestoreId}">
+                                <input type="text" id="admin-reply-input" placeholder="پاسخ خود را بنویسید..." class="flex-grow p-2 border rounded-md text-sm">
+                                <button type="submit" class="primary-btn py-2 px-3 text-sm">ارسال</button>
+                            </form>
+                        </div>
+                    </div>`;
+                openModal(mainModal, mainModalContainer);
+                // listeners
+                document.getElementById('req-status')?.addEventListener('change', async (e) => {
+                    try {
+                        await updateDoc(doc(db, `artifacts/${appId}/public/data/requests`, requestId), { status: e.target.value, lastUpdatedAt: serverTimestamp() });
+                        showToast('وضعیت درخواست به‌روزرسانی شد.');
+                    } catch (err) { console.error(err); showToast('خطا در به‌روزرسانی وضعیت.', 'error'); }
+                });
+                document.getElementById('admin-reply-form')?.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const content = document.getElementById('admin-reply-input').value.trim();
+                    if (!content) { renderPage('requests'); closeModal(mainModal, mainModalContainer); return; }
+                    try {
+                        const newThread = [ ...(request.thread || []), { content, senderUid: state.currentUser?.uid, createdAt: serverTimestamp() } ];
+                        await updateDoc(doc(db, `artifacts/${appId}/public/data/requests`, requestId), { thread: newThread, lastUpdatedAt: serverTimestamp(), isReadByAssignee: false });
+                        showToast('پاسخ ارسال شد.');
+                        closeModal(mainModal, mainModalContainer);
+                        renderPage('requests');
+                    } catch (err) {
+                        console.error('Error sending reply', err);
+                        showToast('خطا در ارسال پاسخ.', 'error');
+                    }
+                });
+            };
+        }
         if (typeof window.showDocumentUploadForm !== 'function') { window.showDocumentUploadForm = () => { modalTitle.innerText='آپلود سند سازمان'; modalContent.innerHTML = `<form id=\"doc-upload-form\" class=\"space-y-4\"><div><label class=\"block text-sm\">عنوان</label><input id=\"doc-title\" class=\"w-full p-2 border rounded-md\" required></div><div><label class=\"block text-sm\">فایل</label><input id=\"doc-file\" type=\"file\" class=\"w-full\" required></div><div class=\"flex justify-end\"><button type=\"submit\" class=\"bg-blue-600 text-white py-2 px-4 rounded-md\">آپلود</button></div></form>`; openModal(mainModal, mainModalContainer); document.getElementById('doc-upload-form').addEventListener('submit', async (e)=>{ e.preventDefault(); const f=document.getElementById('doc-file').files[0]; const t=document.getElementById('doc-title').value.trim(); if(!f||!t) return; try { const sRef = ref(storage, `companyDocs/${Date.now()}_${f.name}`); await uploadBytes(sRef, f); const url = await getDownloadURL(sRef); await addDoc(collection(db, `artifacts/${appId}/public/data/companyDocuments`), { title: t, fileUrl: url, uploadedAt: serverTimestamp() }); showToast('سند آپلود شد.'); closeModal(mainModal, mainModalContainer); renderPage('documents'); } catch(err){ console.error(err); showToast('خطا در آپلود.', 'error'); } }); }; }
         // Provide safe fallbacks for missing survey link helpers
         if (typeof window.generateAndShowSurveyLink !== 'function') {
