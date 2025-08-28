@@ -1953,6 +1953,11 @@ dashboard: () => {
             <div id="pagination-container" class="p-4 flex justify-center mt-6"></div>
         `;
     },
+    inbox: () => {
+        const employee = state.employees.find(emp => emp.uid === state.currentUser?.uid);
+        const content = employee ? renderEmployeePortalPage('inbox', employee) : `<div class="card p-6 text-sm text-slate-600">صندوق پیام در پورتال کارمند قابل دسترس است.</div>`;
+        return content || `<div class="p-6"></div>`;
+    },
 organization: () => {
     if (state.teams.length === 0) return `<div class="text-center p-10 card"><i data-lucide="users-2" class="mx-auto w-16 h-16 text-slate-400"></i><h2 class="mt-4 text-xl font-semibold text-slate-700">هنوز تیمی ثبت نشده است</h2><p class="mt-2 text-slate-500">برای شروع، اولین تیم سازمان را از طریق دکمه زیر اضافه کنید.</p>${canEdit() ? `<button id="add-team-btn-empty" class="mt-6 bg-blue-600 text-white py-2 px-5 rounded-lg hover:bg-blue-700 shadow-md transition">افزودن تیم جدید</button>` : ''}</div>`;
 
@@ -4624,7 +4629,8 @@ const showTeamDirectoryModal = (team) => {
     const members = (team.memberIds || []).map(id => state.employees.find(e => e.id === id)).filter(Boolean);
 
     const membersCards = members.map(member => {
-        const competencies = (member.competencies || []).slice(0, 4).map(c => `<span class="text-xs px-2 py-1 rounded-full bg-slate-100 text-slate-700 border">${c.name}</span>`).join(' ');
+        const compEntries = Object.entries(member.competencies || {});
+        const competencies = compEntries.slice(0, 4).map(([name, level]) => `<span class="text-xs px-2 py-1 rounded-full bg-slate-100 text-slate-700 border">${name}</span>`).join(' ');
         return `
             <div class="flex items-center gap-3 p-3 border-b last:border-b-0">
                 <img src="${member.avatar}" alt="${member.name}" class="w-12 h-12 rounded-full object-cover border">
