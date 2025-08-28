@@ -1540,6 +1540,7 @@ const showChangePasswordForm = () => {
         </form>
     `;
     openModal(mainModal, mainModalContainer);
+    document.getElementById('edit-team-mission-btn')?.addEventListener('click', () => showEditTeamMissionForm(team));
 
     document.getElementById('change-password-form').addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -3086,6 +3087,35 @@ function showEditCareerPathForm(emp) {
         }
     });
 }
+// Edit team mission line modal
+function showEditTeamMissionForm(team) {
+    modalTitle.innerText = `ویرایش هدف تیم ${team.name}`;
+    modalContent.innerHTML = `
+        <form id=\"team-mission-form\" class=\"space-y-4\">
+            <div>
+                <label class=\"block text-sm\">هدف یک‌خطی تیم</label>
+                <input id=\"team-mission-input\" class=\"w-full p-2 border rounded-md\" value=\"${team.missionLine || ''}\" placeholder=\"مثال: ساخت بهترین تجربه کاربری برای مشتریان\"> 
+            </div>
+            <div class=\"flex justify-end gap-2\">
+                <button type=\"button\" id=\"cancel-team-mission\" class=\"secondary-btn\">انصراف</button>
+                <button type=\"submit\" class=\"primary-btn\">ذخیره</button>
+            </div>
+        </form>`;
+    openModal(mainModal, mainModalContainer);
+    document.getElementById('cancel-team-mission')?.addEventListener('click', () => viewTeamProfile(team.firestoreId));
+    document.getElementById('team-mission-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+            const mission = document.getElementById('team-mission-input').value.trim();
+            await updateDoc(doc(db, `artifacts/${appId}/public/data/teams`, team.firestoreId), { missionLine: mission });
+            showToast('هدف تیم بروزرسانی شد.');
+            viewTeamProfile(team.firestoreId);
+        } catch (error) {
+            console.error('Error updating team mission:', error);
+            showToast('خطا در بروزرسانی هدف تیم.', 'error');
+        }
+    });
+}
 // expose for legacy callers
 try { window.setupProfileModalListeners = setupProfileModalListeners; } catch {}
 
@@ -3290,15 +3320,30 @@ const viewTeamProfile = (teamId) => {
 
     modalTitle.innerText = 'پروفایل تیم: ' + team.name;
     modalContent.innerHTML = `
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="lg:col-span-1 space-y-6">
-                <div class="card p-6 bg-gray-50 rounded-xl text-center relative group">
-                    <div class="w-24 h-24 rounded-full mx-auto mb-4 border-4 border-white shadow-md overflow-hidden bg-gray-200 flex items-center justify-center">
+        <section class="rounded-2xl overflow-hidden border" style="background:linear-gradient(90deg,#FF6A3D,#F72585)">
+            <div class="p-6 sm:p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div class="flex items-center gap-4">
+                    <div class="w-16 h-16 rounded-2xl overflow-hidden ring-4 ring-white/30 bg-white/10">
                         <img src="${team.avatar}" alt="${team.name}" class="w-full h-full object-cover">
                     </div>
-                    ${canEdit() ? `<button id="change-team-avatar-btn" class="absolute top-4 left-4 bg-white p-2 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity text-slate-500 hover:text-blue-600"><i data-lucide="camera" class="w-4 h-4"></i></button>` : ''}
-                    <h2 class="text-2xl font-bold text-gray-800">${team.name}</h2>
-                    <p class="text-gray-500">رهبر تیم: ${leader?.name || 'نامشخص'}</p>
+                    <div>
+                        <h2 class="text-2xl font-extrabold text-white">${team.name}</h2>
+                        <p class="text-white/90 text-xs">رهبر تیم: ${leader?.name || 'نامشخص'}</p>
+                        ${team.missionLine ? `<p class=\"text-white/90 text-xs mt-1\">${team.missionLine}</p>` : ''}
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    ${canEdit() ? `<button id=\"edit-team-mission-btn\" class=\"primary-btn text-xs\">ویرایش هدف تیم</button>` : ''}
+                </div>
+            </div>
+        </section>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+            <div class="lg:col-span-1 space-y-6">
+                <div class="bg-white rounded-2xl border border-slate-200 p-6 text-center">
+                    <div class="w-24 h-24 rounded-full mx-auto mb-4 overflow-hidden ring-4 ring-indigo-100 bg-gray-200 flex items-center justify-center">
+                        <img src="${team.avatar}" alt="${team.name}" class="w-full h-full object-cover">
+                    </div>
+                    ${canEdit() ? `<button id=\"change-team-avatar-btn\" class=\"secondary-btn text-xs\">تغییر عکس</button>` : ''}
                 </div>
                 <div class="card p-6 bg-gray-50 rounded-xl">
                     <h4 class="font-semibold mb-4 text-gray-700 flex items-center"><i data-lucide="brain-circuit" class="ml-2 w-5 h-5 text-purple-500"></i>تحلیل هوشمند</h4>
