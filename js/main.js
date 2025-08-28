@@ -385,10 +385,59 @@ function renderEmployeePortalPage(pageName, employee) {
             .map(review => `<div class="performance-item"><div class="flex justify-between items-center mb-2"><div class="flex items-center gap-2 text-slate-800"><i data-lucide="award" class="w-4 h-4 text-amber-500"></i><span class="font-bold">امتیاز کلی:</span><span class="text-lg font-semibold text-green-600">${review.overallScore}/5</span></div><p class="text-xs text-slate-500">${toPersianDate(review.reviewDate)}</p></div><p class="text-sm text-slate-700 mt-2"><strong>نقاط قوت:</strong> ${review.strengths || 'ثبت نشده'}</p></div>`).join('') 
             || '<div class="text-center py-6"><i data-lucide="inbox" class="w-12 h-12 mx-auto text-slate-300"></i><p class="mt-2 text-sm text-slate-500">سابقه‌ای از ارزیابی عملکرد شما ثبت نشده است.</p></div>';
 
+        // KPI metrics for employee
+        const myTeam = state.teams.find(t => t.memberIds?.includes(employee.id));
+        const okrAvg = (employee.okrs && employee.okrs.length)
+            ? Math.round(employee.okrs.reduce((s, o) => s + (o.progress || 0), 0) / employee.okrs.length)
+            : 0;
+        const requestsOpen = (state.requests || []).filter(r => r.uid === employee.uid && (r.status === 'درحال بررسی' || r.status === 'در حال انجام')).length;
+        const readIds = new Set(employee.readAnnouncements || []);
+        const myTeamId = myTeam ? myTeam.firestoreId : null;
+        const unreadCount = (state.announcements || []).filter(msg => {
+            if (!msg.createdAt?.toDate) return false;
+            const targets = msg.targets;
+            const targeted = (targets?.type === 'public')
+                || (targets?.type === 'roles' && targets.roles?.includes('employee'))
+                || (targets?.type === 'users' && targets.userIds?.includes(employee.firestoreId))
+                || (targets?.type === 'teams' && targets.teamIds?.includes(myTeamId));
+            if (!targeted) return false;
+            return !readIds.has(msg.firestoreId);
+        }).length;
+
         contentContainer.innerHTML = `
             ${renderMyBirthdayWishesWidget(employee)}
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 ${renderMyBirthdayWishesWidget(employee) ? 'mt-8' : ''}">
                 <div class="lg:col-span-2 space-y-6">
+                    <!-- KPI Row -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="glass rounded-2xl p-4 flex items-center justify-between fade-up">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full flex items-center justify-center" style="background:rgba(107,105,214,.12)"><i data-lucide="send" style="color:#6B69D6" class="w-5 h-5"></i></div>
+                                <div>
+                                    <div class="text-xl font-extrabold text-slate-800">${requestsOpen}</div>
+                                    <div class="text-xs text-slate-500">درخواست‌های باز</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="glass rounded-2xl p-4 flex items-center justify-between fade-up">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full flex items-center justify-center" style="background:rgba(107,105,214,.12)"><i data-lucide="mail" style="color:#6B69D6" class="w-5 h-5"></i></div>
+                                <div>
+                                    <div class="text-xl font-extrabold text-slate-800">${unreadCount}</div>
+                                    <div class="text-xs text-slate-500">پیام‌های نخوانده</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="glass rounded-2xl p-4 flex items-center justify-between fade-up">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full flex items-center justify-center" style="background:rgba(107,105,214,.12)"><i data-lucide="target" style="color:#6B69D6" class="w-5 h-5"></i></div>
+                                <div>
+                                    <div class="text-xl font-extrabold text-slate-800">${okrAvg}%</div>
+                                    <div class="text-xs text-slate-500">میانگین OKR</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
                         <div class="flex justify-between items-start mb-4">
                             <div class="flex items-center gap-4">
@@ -763,8 +812,11 @@ function renderEmployeePortal() {
                 </div>
             </aside>
 
-            <div class="flex-1 flex flex-col h-screen overflow-y-hidden">
-                <header style="background:#6B69D6" class="shadow-sm">
+            <div class="flex-1 flex flex-col h-screen overflow-y-hidden relative">
+                <!-- decorative blobs -->
+                <div class="blob" style="top:-40px; right:-60px; width:220px; height:220px; background:#6B69D6"></div>
+                <div class="blob" style="bottom:-60px; left:-40px; width:180px; height:180px; background:#B1B0F0"></div>
+                <header style="background:#6B69D6" class="shadow-sm relative z-10">
                     <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-full overflow-hidden ring-2 ring-white/30">
@@ -775,15 +827,29 @@ function renderEmployeePortal() {
                                 <h1 class="text-2xl font-bold text-white">${employeeName}</h1>
                             </div>
                         </div>
-                        <div id="portal-notification-bell-wrapper" class="relative">
-                            <button id="portal-notification-bell-btn" class="relative cursor-pointer p-2 rounded-full hover:bg-white/10">
-                                <i data-lucide="bell" class="text-white"></i>
-                                <span id="portal-notification-count" class="hidden absolute -top-1 -right-1 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full border-2 border-white" style="background:#6B69D6"></span>
+                        <div class="flex items-center gap-3">
+                            <div id="okr-pill" class="hidden sm:flex items-center gap-2 text-xs font-bold bg-white/20 text-white px-3 py-2 rounded-full">
+                                <i data-lucide="target" class="w-4 h-4"></i>
+                                <span id="okr-pill-text">OKR: 0%</span>
+                            </div>
+                            <button id="quick-new-request-btn" class="hidden sm:inline-flex items-center gap-2 text-xs font-semibold bg-white/15 hover:bg-white/20 text-white px-3 py-2 rounded-lg transition">
+                                <i data-lucide="plus" class="w-4 h-4"></i>
+                                <span>ثبت درخواست</span>
                             </button>
+                            <button id="quick-edit-profile-btn" class="hidden sm:inline-flex items-center gap-2 text-xs font-semibold bg-white/15 hover:bg-white/20 text-white px-3 py-2 rounded-lg transition">
+                                <i data-lucide="user-cog" class="w-4 h-4"></i>
+                                <span>ویرایش پروفایل</span>
+                            </button>
+                            <div id="portal-notification-bell-wrapper" class="relative">
+                                <button id="portal-notification-bell-btn" class="relative cursor-pointer p-2 rounded-full hover:bg-white/10">
+                                    <i data-lucide="bell" class="text-white"></i>
+                                    <span id="portal-notification-count" class="hidden absolute -top-1 -right-1 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full border-2 border-white" style="background:#6B69D6"></span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </header>
-                <main id="employee-main-content" class="flex-1 p-6 sm:p-10 overflow-y-auto"></main>
+                <main id="employee-main-content" class="flex-1 p-6 sm:p-10 overflow-y-auto relative z-10"></main>
             </div>
         </div>
     `;
@@ -793,6 +859,37 @@ function renderEmployeePortal() {
     renderEmployeePortalPage('profile', employee);
   setupEmployeePortalEventListeners(employee, auth, signOut);
     updateEmployeeNotificationBell(employee);
+
+    // Update OKR pill with simple average progress if exists
+    try {
+        const okrs = employee.okrs || [];
+        const okrAvg = okrs.length ? Math.round(okrs.reduce((s, o)=> s + (o.progress||0), 0) / okrs.length) : 0;
+        const okrPill = document.getElementById('okr-pill');
+        const okrText = document.getElementById('okr-pill-text');
+        if (okrPill && okrText) {
+            okrText.textContent = `OKR: ${okrAvg}%`;
+            okrPill.classList.remove('hidden');
+        }
+    } catch {}
+
+    // Birthday confetti if today is user's birthday
+    try {
+        const bd = employee.personalInfo?.birthDate ? new Date(employee.personalInfo.birthDate) : null;
+        const now = new Date();
+        if (bd && bd.getMonth() === now.getMonth() && bd.getDate() === now.getDate()) {
+            const confetti = document.createElement('div');
+            confetti.className = 'confetti';
+            for (let i=0; i<80; i++) {
+                const piece = document.createElement('i');
+                piece.style.left = Math.random()*100 + 'vw';
+                piece.style.background = ['#6B69D6','#8B5CF6','#22D3EE','#F59E0B','#10B981'][Math.floor(Math.random()*5)];
+                piece.style.animationDelay = (Math.random()*0.8)+'s';
+                confetti.appendChild(piece);
+            }
+            document.body.appendChild(confetti);
+            setTimeout(()=> confetti.remove(), 2200);
+        }
+    } catch {}
 }
         // --- UTILITY & HELPER FUNCTIONS ---
         // --- تابع جدید برای تبدیل تاریخ به شمسی ---
@@ -1317,9 +1414,6 @@ const showChangePasswordForm = () => {
         }
     });
 }; 
-    
-        
-        
 // این تابع را به main.js اضافه کنید
 // در فایل js/main.js
 // کل این تابع را جایگزین کنید
@@ -1787,7 +1881,7 @@ const updateNotificationBell = () => {
         async function showBirthdayWishForm(targetUid, targetName) {
             modalTitle.innerText = `ارسال تبریک برای ${targetName}`;
             modalContent.innerHTML = `
-                <form id=\"wish-form\" class=\"space-y-4\">\n                    <div>\n                        <label class=\"block text-sm font-medium\">پیام شما</label>\n                        <textarea id=\"wish-text\" rows=\"4\" class=\"w-full p-2 border rounded-md\" placeholder=\"مثال: تولدت مبارک! آرزوی موفقیت دارم.\" required></textarea>\n                    </div>\n                    <div class=\"flex justify-end gap-2\">\n                        <button type=\"button\" id=\"wish-cancel\" class=\"bg-slate-200 text-slate-800 py-2 px-4 rounded-md hover:bg-slate-300\">انصراف</button>\n                        <button type=\"submit\" class=\"bg-pink-600 text-white py-2 px-4 rounded-md hover:bg-pink-700\">ارسال</button>\n                    </div>\n                </form>`;
+                <form id=\"wish-form\" class=\"space-y-4\"><div><label class=\"block text-sm font-medium\">پیام شما</label><textarea id=\"wish-text\" rows=\"4\" class=\"w-full p-2 border rounded-md\" placeholder=\"مثال: تولدت مبارک! آرزوی موفقیت دارم.\" required></textarea></div><div class=\"flex justify-end gap-2\"><button type=\"button\" id=\"wish-cancel\" class=\"bg-slate-200 text-slate-800 py-2 px-4 rounded-md hover:bg-slate-300\">انصراف</button><button type=\"submit\" class=\"bg-pink-600 text-white py-2 px-4 rounded-md hover:bg-pink-700\">ارسال</button></div></form>`;
             openModal(mainModal, mainModalContainer);
             document.getElementById('wish-cancel').addEventListener('click', () => closeModal(mainModal, mainModalContainer));
             document.getElementById('wish-form').addEventListener('submit', async (e) => {
