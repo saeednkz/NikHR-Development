@@ -5553,20 +5553,33 @@ if (typeof window.showEditPersonalInfoForm !== 'function') {
         const info = emp.personalInfo || {};
         modalTitle.innerText = `ویرایش اطلاعات پرسنلی ${emp.name}`;
         modalContent.innerHTML = `
-            <form id="edit-personal-form" class="space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div><label class="block text-sm">ایمیل</label><input id="pi-email" class="w-full p-2 border rounded-md" value="${info.email || ''}"></div>
-                    <div><label class="block text-sm">تلفن</label><input id="pi-phone" class="w-full p-2 border rounded-md" value="${info.phone || ''}"></div>
-                    <div><label class="block text-sm">کد ملی</label><input id="pi-nid" class="w-full p-2 border rounded-md" value="${info.nationalId || ''}"></div>
-                    <div><label class="block text-sm">کد پستی</label><input id="pi-postal" class="w-full p-2 border rounded-md" value="${info.postalCode || ''}"></div>
-                    <div><label class="block text-sm">شماره ثابت</label><input id="pi-land" class="w-full p-2 border rounded-md" value="${info.landline || ''}"></div>
-                    <div><label class="block text-sm">وضعیت تاهل</label><input id="pi-marital" class="w-full p-2 border rounded-md" value="${info.maritalStatus || ''}"></div>
-                    <div class="md:col-span-2"><label class="block text-sm">آدرس</label><input id="pi-address" class="w-full p-2 border rounded-md" value="${info.address || ''}"></div>
-                    <div><label class="block text-sm">تاریخ تولد</label><input id="pi-birth" class="w-full p-2 border rounded-md" value="${info.birthDate ? toPersianDate(info.birthDate) : ''}" placeholder="YYYY/MM/DD"></div>
+            <form id=\"edit-personal-form\" class=\"space-y-4\">
+                <div class=\"grid grid-cols-1 md:grid-cols-2 gap-4\">
+                    <div><label class=\"block text-sm\">نام و نام خانوادگی</label><input id=\"pi-fullname\" class=\"w-full p-2 border rounded-md\" value=\"${emp.name || ''}\"></div>
+                    <div><label class=\"block text-sm\">جنسیت</label><input id=\"pi-gender\" class=\"w-full p-2 border rounded-md\" value=\"${info.gender || emp.gender || ''}\"></div>
+                    <div><label class=\"block text-sm\">تاریخ تولد</label><input id=\"pi-birth\" class=\"w-full p-2 border rounded-md\" value=\"${info.birthDate ? toPersianDate(info.birthDate) : ''}\" placeholder=\"YYYY/MM/DD\"></div>
+                    <div><label class=\"block text-sm\">محل تولد</label><input id=\"pi-birth-place\" class=\"w-full p-2 border rounded-md\" value=\"${info.birthPlace || ''}\"></div>
+                    <div><label class=\"block text-sm\">کد ملی</label><input id=\"pi-nid\" class=\"w-full p-2 border rounded-md\" value=\"${info.nationalId || ''}\"></div>
+                    <div><label class=\"block text-sm\">وضعیت تأهل</label><input id=\"pi-marital\" class=\"w-full p-2 border rounded-md\" value=\"${info.maritalStatus || ''}\"></div>
+                    <div><label class=\"block text-sm\">تعداد فرزندان</label><input id=\"pi-children\" type=\"number\" class=\"w-full p-2 border rounded-md\" value=\"${info.numChildren ?? ''}\" min=\"0\"></div>
+                    <div><label class=\"block text-sm\">وضعیت خدمت سربازی</label><input id=\"pi-military\" class=\"w-full p-2 border rounded-md\" value=\"${info.militaryStatus || ''}\"></div>
+                    <div><label class=\"block text-sm\">شماره تلفن همراه</label><input id=\"pi-phone\" class=\"w-full p-2 border rounded-md\" value=\"${info.phone || ''}\"></div>
+                    <div><label class=\"block text-sm\">ایمیل</label><input id=\"pi-email\" class=\"w-full p-2 border rounded-md\" value=\"${info.email || ''}\"></div>
+                    <div><label class=\"block text-sm\">شماره تلفن ثابت</label><input id=\"pi-land\" class=\"w-full p-2 border rounded-md\" value=\"${info.landline || ''}\"></div>
+                    <div><label class=\"block text-sm\">شماره تلفن ضروری</label><input id=\"pi-emergency-phone\" class=\"w-full p-2 border rounded-md\" value=\"${info.emergencyPhone || ''}\"></div>
+                    <div class=\"md:col-span-2\"><label class=\"block text-sm\">آدرس محل سکونت</label><input id=\"pi-address\" class=\"w-full p-2 border rounded-md\" value=\"${info.address || ''}\"></div>
+                    <div><label class=\"block text-sm\">کد پستی</label><input id=\"pi-postal\" class=\"w-full p-2 border rounded-md\" value=\"${info.postalCode || ''}\"></div>
+                    <div><label class=\"block text-sm\">مدرک تحصیلی</label><input id=\"pi-education\" class=\"w-full p-2 border rounded-md\" value=\"${info.education || ''}\"></div>
+                    <div><label class=\"block text-sm\">رشته تحصیلی</label><input id=\"pi-field\" class=\"w-full p-2 border rounded-md\" value=\"${info.fieldOfStudy || ''}\"></div>
+                    <div class=\"md:col-span-2\"><label class=\"block text-sm\">محل اخذ مدرک</label><input id=\"pi-institution\" class=\"w-full p-2 border rounded-md\" value=\"${info.educationInstitution || ''}\"></div>
+                    <div class=\"md:col-span-2\"><label class=\"block text-sm\">شماره شبا</label><input id=\"pi-iban\" class=\"w-full p-2 border rounded-md\" value=\"${info.iban || ''}\"></div>
+                    <div><label class=\"block text-sm\">شماره حساب</label><input id=\"pi-account\" class=\"w-full p-2 border rounded-md\" value=\"${info.accountNumber || ''}\"></div>
+                    <div><label class=\"block text-sm\">شماره کارت</label><input id=\"pi-card\" class=\"w-full p-2 border rounded-md\" value=\"${info.cardNumber || ''}\"></div>
+                    <div><label class=\"block text-sm\">نام بانک</label><input id=\"pi-bank\" class=\"w-full p-2 border rounded-md\" value=\"${info.bankName || ''}\"></div>
                 </div>
-                <div class="flex justify-end gap-2">
-                    <button type="button" id="cancel-pi" class="bg-slate-200 text-slate-800 py-2 px-4 rounded-md hover:bg-slate-300">انصراف</button>
-                    <button type="submit" class="primary-btn">ذخیره</button>
+                <div class=\"flex justify-end gap-2\">
+                    <button type=\"button\" id=\"cancel-pi\" class=\"secondary-btn\">انصراف</button>
+                    <button type=\"submit\" class=\"primary-btn\">ذخیره</button>
                 </div>
             </form>`;
         openModal(mainModal, mainModalContainer);
@@ -5577,16 +5590,32 @@ if (typeof window.showEditPersonalInfoForm !== 'function') {
             try {
                 const updated = {
                     ...info,
-                    email: document.getElementById('pi-email').value.trim(),
-                    phone: document.getElementById('pi-phone').value.trim(),
+                    gender: document.getElementById('pi-gender').value.trim(),
+                    birthDate: persianToEnglishDate(document.getElementById('pi-birth').value),
+                    birthPlace: document.getElementById('pi-birth-place').value.trim(),
                     nationalId: document.getElementById('pi-nid').value.trim(),
-                    postalCode: document.getElementById('pi-postal').value.trim(),
-                    landline: document.getElementById('pi-land').value.trim(),
                     maritalStatus: document.getElementById('pi-marital').value.trim(),
+                    numChildren: parseInt(document.getElementById('pi-children').value) || 0,
+                    militaryStatus: document.getElementById('pi-military').value.trim(),
+                    phone: document.getElementById('pi-phone').value.trim(),
+                    email: document.getElementById('pi-email').value.trim(),
+                    landline: document.getElementById('pi-land').value.trim(),
+                    emergencyPhone: document.getElementById('pi-emergency-phone').value.trim(),
                     address: document.getElementById('pi-address').value.trim(),
-                    birthDate: persianToEnglishDate(document.getElementById('pi-birth').value)
+                    postalCode: document.getElementById('pi-postal').value.trim(),
+                    education: document.getElementById('pi-education').value.trim(),
+                    fieldOfStudy: document.getElementById('pi-field').value.trim(),
+                    educationInstitution: document.getElementById('pi-institution').value.trim(),
+                    iban: document.getElementById('pi-iban').value.trim(),
+                    accountNumber: document.getElementById('pi-account').value.trim(),
+                    cardNumber: document.getElementById('pi-card').value.trim(),
+                    bankName: document.getElementById('pi-bank').value.trim()
                 };
-                await updateDoc(doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId), { personalInfo: updated });
+                const newName = document.getElementById('pi-fullname').value.trim();
+                if (newName && newName !== emp.name) {
+                    await updateDoc(doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId), { name: newName });
+                }
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId), { personalInfo: updated, gender: updated.gender });
                 showToast('اطلاعات پرسنلی ذخیره شد.');
                 viewEmployeeProfile(emp.firestoreId);
             } catch (error) {
