@@ -1,7 +1,7 @@
 // فایل: sw.js
 // کل محتوای این فایل را با کد زیر جایگزین کنید
 
-const CACHE_NAME = 'nikhr-cache-v4'; // bump to force new SW and fresh assets
+const CACHE_NAME = 'nikhr-cache-v5'; // bump to force new SW and fresh assets
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
