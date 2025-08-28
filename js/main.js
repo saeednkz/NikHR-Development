@@ -3372,7 +3372,7 @@ const setupRequestsPageListeners = () => {
         const processBtn = e.target.closest('.process-request-btn');
         if (processBtn) {
             const requestId = processBtn.dataset.id;
-            showProcessRequestForm(requestId); // فراخوانی فرم پردازش
+            (window.showProcessRequestForm || (()=>{}))(requestId);
         }
     });
 };
@@ -3400,7 +3400,7 @@ const setupTasksPageListeners = () => {
     tableBody.addEventListener('click', (e) => {
         const processBtn = e.target.closest('.process-reminder-btn');
         if (processBtn) {
-            showProcessReminderForm(processBtn.dataset.id);
+            (window.showProcessReminderForm || (()=>{}))(processBtn.dataset.id);
         }
     });
 };
