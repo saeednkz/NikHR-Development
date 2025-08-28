@@ -438,9 +438,7 @@ function renderEmployeePortalPage(pageName, employee) {
                             </div>
                         </div>
                     </div>
-                    <div class="flex justify-end mt-2">
-                        <button id="view-all-requests-btn" class="text-xs font-semibold text-slate-600 hover:text-slate-800 underline-offset-2 hover:underline">مشاهده همه درخواست‌ها</button>
-                    </div>
+                    
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
                         <div class="flex justify-between items-start mb-4">
                             <div class="flex items-center gap-4">
@@ -727,7 +725,7 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
     });
     
     // دکمه تغییر رمز عبور
-    document.getElementById('change-password-btn')?.addEventListener('click', showChangePasswordForm);
+    // مدیریت رمز عبور به هدر منتقل شده یا در آینده اضافه می‌شود
 
     // دکمه زنگوله نوتیفیکیشن
     document.getElementById('portal-notification-bell-btn')?.addEventListener('click', () => {
@@ -872,9 +870,6 @@ function renderEmployeePortal() {
                 </nav>
 
                 <div class="mt-auto space-y-4">
-                     <button id="change-password-btn" class="w-full text-xs text-indigo-200 hover:text-white font-semibold flex items-center gap-1 justify-center">
-                        <i data-lucide="key-round" class="w-3 h-3"></i><span>مدیریت رمز عبور</span>
-                    </button>
                     <button id="portal-logout-btn" class="w-full flex items-center justify-center gap-3 px-4 py-2 rounded-lg logout-btn">
                         <i data-lucide="log-out"></i><span>خروج از حساب</span>
                     </button>
