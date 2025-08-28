@@ -3032,7 +3032,7 @@ const viewEmployeeProfile = (employeeId) => {
     `;
 
     openModal(mainModal, mainModalContainer);
-    setupProfileModalListeners(emp);
+    (window.setupProfileModalListeners || (()=>{}))(emp);
 };
 const viewTeamProfile = (teamId) => {
     const team = state.teams.find(t => t.firestoreId === teamId);
