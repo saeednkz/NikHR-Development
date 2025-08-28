@@ -2343,7 +2343,7 @@ const updateNotificationBell = () => {
     }
 };   
 // این تابع جدید را به js/main.js اضافه کنید
-const updateNotificationsForCurrentUser = () => {
+window.updateNotificationsForCurrentUser = () => {
     if (!state.currentUser) return;
 
     if (state.currentUser.role === 'employee') {
