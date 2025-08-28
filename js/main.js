@@ -183,7 +183,7 @@ function listenToData() {
     const onDataLoaded = () => {
         initialLoads--;
         if (initialLoads === 0) {
-            calculateAndApplyAnalytics();
+            try { setTimeout(() => { if (window.calculateAndApplyAnalytics) window.calculateAndApplyAnalytics(); }, 0); } catch {}
             
             // فراخوانی تابع نوتیفیکیشن بعد از بارگذاری کامل داده‌ها
             updateNotificationsForCurrentUser(); 
@@ -207,7 +207,7 @@ function listenToData() {
                 onDataLoaded();
             } else {
                 // با هر تغییر در داده‌ها، تمام بخش‌ها را بروز می‌کنیم
-                calculateAndApplyAnalytics();
+                if (window.calculateAndApplyAnalytics) { window.calculateAndApplyAnalytics(); }
                 updateNotificationsForCurrentUser(); // بروزرسانی نوتیفیکیشن‌ها در لحظه
                 
                 if (state.currentUser.role !== 'employee' && !window.location.hash.startsWith('#survey-taker')) {
@@ -1420,7 +1420,7 @@ const activatePersianDatePicker = (elementId, initialValue = null) => {
         container.innerHTML = paginationHtml;
     };
         // --- تابع جدید برای تحلیل داده‌های نظرسنجی و اعمال نتایج ---
-const calculateAndApplyAnalytics = () => {
+window.calculateAndApplyAnalytics = () => {
         if (!state.surveyResponses) return;
         console.log("Running survey and risk analytics...");
         
