@@ -5282,69 +5282,6 @@ function formatTargetsText(targets) {
     if (targets.type === 'users') return `افراد: ${(targets.userNames || targets.userIds || []).join('، ')}`;
     return '';
 }
-    renderEngagementGauge('engagementGaugeProfile', emp.engagementScore);
-
-    if (canEdit()) {
-        const modalContentArea = document.getElementById('modalContent');
-        if (!modalContentArea) return;
-
-        modalContentArea.addEventListener('click', (e) => {
-            const target = e.target.closest('button');
-            if (!target) return;
-
-            const id = target.id;
-
-            // [!code focus:2]
-            if (id === 'change-avatar-btn') {
-                handleAvatarChange(emp); // فراخوانی مستقیم تابع جدید
-            } else if (id === 'delete-avatar-btn') {
-                showConfirmationModal('حذف عکس پروفایل', 'آیا از حذف عکس پروفایل مطمئن هستید؟', async () => {
-                    try {
-                        const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
-                        const defaultAvatar = `https://placehold.co/100x100/E2E8F0/4A5568?text=${emp.name.substring(0,2)}`;
-                        await updateDoc(docRef, { avatar: defaultAvatar });
-                        showToast("عکس پروفایل حذف شد.");
-                        viewEmployeeProfile(emp.firestoreId);
-                    } catch (error) {
-                        console.error("Error deleting avatar:", error);
-                        showToast("خطا در حذف عکس پروفایل.", "error");
-                    }
-                });
-            } else if (id === 'main-edit-employee-btn') {
-                showEmployeeForm(emp.firestoreId);
-            } else if (id === 'edit-competencies-btn') {
-                showEditCompetenciesForm(emp);
-            } else if (id === 'edit-personal-info-btn') {
-                showEditPersonalInfoForm(emp);
-            } else if (id === 'add-performance-btn') {
-                showPerformanceForm(emp);
-            } else if (id === 'add-career-path-btn') {
-                showCareerPathForm(emp);
-            } else if (id === 'add-disciplinary-btn') {
-                showDisciplinaryForm(emp);
-            } else if (id === 'add-contract-btn') {
-                showContractForm(emp);
-            } else if (id === 'add-document-btn') {
-                showDocumentForm(emp);
-            } else if (target.classList.contains('edit-performance-btn')) {
-                showPerformanceForm(emp, parseInt(target.dataset.index));
-            } else if (target.classList.contains('delete-performance-btn')) {
-                deletePerformanceReview(emp, parseInt(target.dataset.index));
-            } else if (target.classList.contains('delete-disciplinary-btn')) {
-                deleteDisciplinaryRecord(emp, parseInt(target.dataset.index));
-            } else if (target.classList.contains('delete-career-path-btn')) {
-                deleteCareerPathEntry(emp, parseInt(target.dataset.index));
-            } else if (target.classList.contains('edit-contract-btn')) {
-                showContractForm(emp, parseInt(target.dataset.index));
-            } else if (target.classList.contains('delete-contract-btn')) {
-                deleteContract(emp, parseInt(target.dataset.index));
-            } else if (target.classList.contains('edit-document-btn')) {
-                showDocumentForm(emp, parseInt(target.dataset.index));
-            } else if (target.classList.contains('delete-document-btn')) {
-                deleteDocument(emp, parseInt(target.dataset.index));
-            }
-        });
-    }
 
     setTimeout(() => {
         lucide.createIcons();
