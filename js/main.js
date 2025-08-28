@@ -644,27 +644,28 @@ function renderEmployeePortalPage(pageName, employee) {
     // --- بخش اسناد ---
     else if (pageName === 'documents') {
         const docSections = [
-            { id: 'آموزش و رشد', icon: 'graduation-cap', desc: 'این بخش، تمام منابع و دوره‌هایی را که برای یادگیری و پیشرفت شخصی و شغلی‌ات نیاز داری، در اختیار می‌گذارد.' },
-            { id: 'قوانین و بازی', icon: 'scroll-text', desc: 'اینجا اصول و قواعد بازی تیم ما را پیدا می‌کنی. از آیین‌نامه‌ها تا راهنمای رفتاری، همه چیز برای یک همکاری عالی اینجا هست.' },
-            { id: 'کیت ابزار کاری', icon: 'tool', desc: 'مجموعه‌ای از فرم‌ها، قالب‌ها و الگوهای کاربردی برای انجام کارهای روزمره. هر ابزاری که نیاز داری، اینجا پیدا می‌شود.' },
-            { id: 'داستان ما', icon: 'heart-handshake', desc: 'با رسالت، چشم‌انداز و ارزش‌های تیم ما آشنا شو. این بخش، قلب تپنده فرهنگ سازمانی ما است.' },
-            { id: 'مزایا و حقوق', icon: 'wallet', desc: 'اطلاعات مربوط به حقوق، مزایا، بیمه و سایر مسائل مالی‌ات را اینجا ببین. همه چیز شفاف و واضح است.' },
-            { id: 'مستندات پروژه‌ها', icon: 'file-code-2', desc: 'تمام اطلاعات فنی و مستندات مربوط به پروژه‌های مختلف، از ایده‌پردازی تا اجرا، اینجا در دسترس توست.' }
+            { id: 'آموزش و رشد', key: 'learning', desc: 'این بخش، تمام منابع و دوره‌هایی را که برای یادگیری و پیشرفت شخصی و شغلی‌ات نیاز داری، در اختیار می‌گذارد.' },
+            { id: 'قوانین و بازی', key: 'rules', desc: 'اینجا اصول و قواعد بازی تیم ما را پیدا می‌کنی. از آیین‌نامه‌ها تا راهنمای رفتاری، همه چیز برای یک همکاری عالی اینجا هست.' },
+            { id: 'کیت ابزار کاری', key: 'toolkit', desc: 'مجموعه‌ای از فرم‌ها، قالب‌ها و الگوهای کاربردی برای انجام کارهای روزمره. هر ابزاری که نیاز داری، اینجا پیدا می‌شود.' },
+            { id: 'داستان ما', key: 'story', desc: 'با رسالت، چشم‌انداز و ارزش‌های تیم ما آشنا شو. این بخش، قلب تپنده فرهنگ سازمانی ما است.' },
+            { id: 'مزایا و حقوق', key: 'benefits', desc: 'اطلاعات مربوط به حقوق، مزایا، بیمه و سایر مسائل مالی‌ات را اینجا ببین. همه چیز شفاف و واضح است.' },
+            { id: 'مستندات پروژه‌ها', key: 'projects', desc: 'تمام اطلاعات فنی و مستندات مربوط به پروژه‌های مختلف، از ایده‌پردازی تا اجرا، اینجا در دسترس توست.' }
         ];
-        const cards = docSections.map(s => `
-            <div class="bg-white rounded-2xl border border-slate-200 p-5 hover:shadow-lg transition-shadow fade-up">
-                <div class="flex items-center gap-3 mb-3">
-                    <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background:rgba(107,105,214,.12)">
-                        <i data-lucide="${s.icon}" class="w-6 h-6" style="color:#6B69D6"></i>
+        const colors = ['#6B69D6','#FF6A3D','#10B981','#F59E0B','#0EA5E9','#F43F5E'];
+        const cards = docSections.map((s, idx) => {
+            const color = colors[idx % colors.length];
+            return `
+                <div class="bg-white rounded-2xl border border-slate-200 p-5 hover:shadow-lg transition-shadow fade-up">
+                    <div class="w-16 h-16 mx-auto rounded-full overflow-hidden ring-4" style="ring-color:${color}; ring: 4px solid ${color}; background:rgba(0,0,0,.03)">
+                        <img src="icons/icon-128x128.png" alt="${s.id}" class="w-full h-full object-cover">
                     </div>
-                    <h3 class="text-lg font-bold text-slate-800">${s.id}</h3>
-                </div>
-                <p class="text-sm text-slate-600 leading-6">${s.desc}</p>
-                <div class="mt-4 flex justify-end">
-                    <button class="doc-category-btn text-xs font-semibold" data-category="${s.id}" style="color:#6B69D6">مشاهده</button>
-                </div>
-            </div>
-        `).join('');
+                    <h3 class="text-center text-base font-bold text-slate-800 mt-3">${s.id}</h3>
+                    <p class="text-center text-xs text-slate-600 leading-6 mt-1">${s.desc}</p>
+                    <div class="mt-4 flex justify-center">
+                        <button class="doc-category-btn text-xs font-semibold px-3 py-1.5 rounded-lg" data-category="${s.key}" style="color:#fff;background:${color}">مشاهده</button>
+                    </div>
+                </div>`;
+        }).join('');
         contentContainer.innerHTML = `
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 page-header mb-6">
                 <div>
