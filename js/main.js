@@ -711,6 +711,16 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
         });
     });
 
+    // اکشن‌های سریع هدر
+    document.getElementById('quick-new-request-btn')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        showNewRequestForm(employee);
+    });
+    document.getElementById('quick-edit-profile-btn')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        showMyProfileEditForm(employee);
+    });
+
     // مدیریت رویدادهای داخل محتوای اصلی
     const mainContent = document.getElementById('employee-main-content');
     if (mainContent) {
@@ -720,6 +730,14 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
             }
             if (e.target.closest('#add-new-request-btn')) {
                 showNewRequestForm(employee);
+            }
+            // مشاهده همه درخواست‌ها از داشبورد
+            const viewAllRequestsBtn = e.target.closest('#view-all-requests-btn');
+            if (viewAllRequestsBtn) {
+                document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+                const reqLink = document.querySelector('.nav-item[href="#requests"]');
+                if (reqLink) reqLink.classList.add('active');
+                renderEmployeePortalPage('requests', employee);
             }
             // مشاهده جزئیات درخواست در پورتال کارمند
             const viewRequestBtn = e.target.closest('.view-request-btn');
@@ -816,7 +834,7 @@ function renderEmployeePortal() {
                 <!-- decorative blobs -->
                 <div class="blob" style="top:-40px; right:-60px; width:220px; height:220px; background:#6B69D6"></div>
                 <div class="blob" style="bottom:-60px; left:-40px; width:180px; height:180px; background:#B1B0F0"></div>
-                <header style="background:#6B69D6" class="shadow-sm relative z-10">
+                <header style="background:linear-gradient(90deg,#9FA2E8,#B9BBEF)" class="shadow-sm relative z-10">
                     <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-full overflow-hidden ring-2 ring-white/30">
