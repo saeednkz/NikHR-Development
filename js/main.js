@@ -5276,6 +5276,7 @@ const showTeamDirectoryModal = (team) => {
                 <div>
                     <div class="text-sm text-slate-600">پروفایل تیم</div>
                     <div class="text-lg font-bold text-slate-800">${team.name}</div>
+                    ${team.missionLine ? `<div class=\"text-xs text-slate-600 mt-1\">${team.missionLine}</div>` : ''}
                 </div>
             </div>
         </div>
