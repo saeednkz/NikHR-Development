@@ -2103,38 +2103,79 @@ dashboard: () => {
         : '<div class="p-4 text-center text-sm text-slate-400">موردی با ریسک بالا یافت نشد.</div>';
 
     return `
-        <div class="mb-8">
-            <h1 class="text-3xl font-bold text-slate-800">داشبورد مدیریتی</h1>
-            <p class="text-slate-500 mt-1">نمای کلی از وضعیت سازمان شما در یک نگاه</p>
-        </div>
+        <section class="relative mb-8 rounded-2xl overflow-hidden">
+            <div class="absolute inset-0" style="background:linear-gradient(90deg,#FF6A3D,#F72585)"></div>
+            <div class="relative z-10 p-6 sm:p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <img src="logo.png" alt="NikHR Logo" class="w-10 h-10 rounded-lg shadow-sm">
+                    <div>
+                        <h1 class="text-2xl sm:text-3xl font-extrabold text-white">داشبورد مدیریت</h1>
+                        <p class="text-white/80 text-sm mt-1">نمایی زنده از سازمان، تیم‌ها و روندها</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button id="dash-quick-requests" class="hidden sm:inline-flex items-center gap-2 text-xs font-semibold bg-white/15 hover:bg-white/20 text-white px-3 py-2 rounded-lg transition"><i data-lucide="archive" class="w-4 h-4"></i><span>درخواست‌ها</span></button>
+                    <button id="dash-quick-add-emp" class="hidden sm:inline-flex items-center gap-2 text-xs font-semibold bg-white/15 hover:bg-white/20 text-white px-3 py-2 rounded-lg transition"><i data-lucide="user-plus" class="w-4 h-4"></i><span>افزودن کارمند</span></button>
+                    <button id="dash-quick-survey" class="hidden sm:inline-flex items-center gap-2 text-xs font-semibold bg-white/15 hover:bg-white/20 text-white px-3 py-2 rounded-lg transition"><i data-lucide="clipboard-list" class="w-4 h-4"></i><span>نظرسنجی</span></button>
+                </div>
+            </div>
+        </section>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div class="bg-white p-5 rounded-xl shadow-sm flex items-center gap-4"><div class="bg-blue-100 p-3 rounded-full"><i data-lucide="users" class="text-blue-600"></i></div><div><p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">پرسنل</p><p class="text-3xl font-bold text-slate-800 mt-1">${metrics.totalEmployees}</p></div></div>
-            <div class="bg-white p-5 rounded-xl shadow-sm flex items-center gap-4"><div class="bg-green-100 p-3 rounded-full"><i data-lucide="trending-up" class="text-green-600"></i></div><div><p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">ماندگاری</p><p class="text-3xl font-bold text-slate-800 mt-1">${metrics.retentionRate}%</p></div></div>
-            <div class="bg-white p-5 rounded-xl shadow-sm flex items-center gap-4"><div class="bg-yellow-100 p-3 rounded-full"><i data-lucide="clock" class="text-yellow-600"></i></div><div><p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">میانگین سابقه</p><p class="text-3xl font-bold text-slate-800 mt-1">${metrics.averageTenure} <span class="text-xl font-medium">سال</span></p></div></div>
-            <div class="bg-white p-5 rounded-xl shadow-sm flex items-center gap-4"><div class="bg-purple-100 p-3 rounded-full"><i data-lucide="recycle" class="text-purple-600"></i></div><div><p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">جابجایی داخلی</p><p class="text-3xl font-bold text-slate-800 mt-1">${metrics.internalMobilityRate}%</p></div></div>
+            <div class="glass p-5 rounded-2xl shadow-sm flex items-center gap-4">
+                <div class="p-3 rounded-xl" style="background:rgba(107,105,214,.12)"><i data-lucide="users" class="w-5 h-5" style="color:#6B69D6"></i></div>
+                <div><p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">پرسنل</p><p class="text-3xl font-extrabold text-slate-800 mt-1">${metrics.totalEmployees}</p></div>
+            </div>
+            <div class="glass p-5 rounded-2xl shadow-sm flex items-center gap-4">
+                <div class="p-3 rounded-xl" style="background:rgba(107,105,214,.12)"><i data-lucide="trending-up" class="w-5 h-5" style="color:#6B69D6"></i></div>
+                <div><p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">ماندگاری</p><p class="text-3xl font-extrabold text-slate-800 mt-1">${metrics.retentionRate}%</p></div>
+            </div>
+            <div class="glass p-5 rounded-2xl shadow-sm flex items-center gap-4">
+                <div class="p-3 rounded-xl" style="background:rgba(107,105,214,.12)"><i data-lucide="clock" class="w-5 h-5" style="color:#6B69D6"></i></div>
+                <div><p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">میانگین سابقه</p><p class="text-3xl font-extrabold text-slate-800 mt-1">${metrics.averageTenure} <span class="text-xl font-medium">سال</span></p></div>
+            </div>
+            <div class="glass p-5 rounded-2xl shadow-sm flex items-center gap-4">
+                <div class="p-3 rounded-xl" style="background:rgba(107,105,214,.12)"><i data-lucide="recycle" class="w-5 h-5" style="color:#6B69D6"></i></div>
+                <div><p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">جابجایی داخلی</p><p class="text-3xl font-extrabold text-slate-800 mt-1">${metrics.internalMobilityRate}%</p></div>
+            </div>
         </div>
         
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm">
-                <h3 class="font-semibold text-slate-800 text-lg mb-4">نمودارهای کلیدی سازمان</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 pt-4">
-                    <div><h4 class="text-center text-sm font-medium text-slate-600 mb-2">توزیع استعدادها</h4><div class="relative w-full h-56"><canvas id="nineBoxChart"></canvas></div></div>
-                    <div><h4 class="text-center text-sm font-medium text-slate-600 mb-2">ترکیب جنسیتی</h4><div class="relative w-full h-56"><canvas id="genderCompositionChart"></canvas></div></div>
-                    <div><h4 class="text-center text-sm font-medium text-slate-600 mb-2">توزیع دپارتمان‌ها</h4><div class="relative w-full h-56"><canvas id="departmentDistributionChart"></canvas></div></div>
-                    <div><h4 class="text-center text-sm font-medium text-slate-600 mb-2">سابقه کار</h4><div class="relative w-full h-56"><canvas id="tenureDistributionChart"></canvas></div></div>
-                    <div><h4 class="text-center text-sm font-medium text-slate-600 mb-2">توزیع سنی</h4><div class="relative w-full h-56"><canvas id="ageDistributionChart"></canvas></div></div>
-                    <div><h4 class="text-center text-sm font-medium text-slate-600 mb-2">میانگین شایستگی</h4><div class="relative w-full h-56"><canvas id="teamCompetencyRadarChart"></canvas></div></div>
+            <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <h3 class="font-bold text-slate-800 text-lg">بینش‌های کلیدی</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pt-4">
+                    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+                        <h4 class="text-center text-xs font-medium text-slate-600 mb-2">نرخ مشارکت</h4>
+                        <div class="relative w-full h-40"><canvas id="engagementGaugeDashboard"></canvas></div>
+                    </div>
+                    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm"><h4 class="text-center text-xs font-medium text-slate-600 mb-2">توزیع استعدادها</h4><div class="relative w-full h-56"><canvas id="nineBoxChart"></canvas></div></div>
+                    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm"><h4 class="text-center text-xs font-medium text-slate-600 mb-2">ترکیب جنسیتی</h4><div class="relative w-full h-56"><canvas id="genderCompositionChart"></canvas></div></div>
+                    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm"><h4 class="text-center text-xs font-medium text-slate-600 mb-2">توزیع دپارتمان‌ها</h4><div class="relative w-full h-56"><canvas id="departmentDistributionChart"></canvas></div></div>
+                    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm"><h4 class="text-center text-xs font-medium text-slate-600 mb-2">سابقه کار</h4><div class="relative w-full h-56"><canvas id="tenureDistributionChart"></canvas></div></div>
+                    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm"><h4 class="text-center text-xs font-medium text-slate-600 mb-2">توزیع سنی</h4><div class="relative w-full h-56"><canvas id="ageDistributionChart"></canvas></div></div>
+                    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm md:col-span-2 xl:col-span-1"><h4 class="text-center text-xs font-medium text-slate-600 mb-2">میانگین شایستگی</h4><div class="relative w-full h-56"><canvas id="teamCompetencyRadarChart"></canvas></div></div>
                 </div>
             </div>
 
             <div class="space-y-8">
-                <div class="bg-white p-6 rounded-xl shadow-sm">
-                    <h3 class="font-semibold text-slate-800 text-lg mb-4">یادآورهای هوشمند</h3>
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-bold text-slate-800 text-lg">یادآورهای هوشمند</h3>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+                        <input id="reminderText" type="text" placeholder="متن یادآور" class="p-2 border rounded-md text-sm">
+                        <div class="flex items-center gap-2">
+                            <input id="reminderDate" type="text" placeholder="تاریخ" class="p-2 border rounded-md text-sm w-full">
+                            <input id="reminderDaysBefore" type="number" min="1" class="p-2 border rounded-md text-sm w-20" value="7" title="روز قبل">
+                        </div>
+                    </div>
+                    <div class="flex justify-end mb-3">
+                        <button id="addReminderBtn" class="primary-btn text-xs py-2 px-3">افزودن یادآور</button>
+                    </div>
                     <div class="space-y-2">${renderAllReminders()}</div>
                 </div>
-                <div class="bg-white p-6 rounded-xl shadow-sm">
-                    <h3 class="font-semibold text-slate-800 text-lg mb-4">استعدادهای در معرض ریسک</h3>
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                    <h3 class="font-bold text-slate-800 text-lg mb-4">استعدادهای در معرض ریسک</h3>
                     <div class="space-y-1">${highRiskHtml}</div>
                 </div>
             </div>
@@ -3036,7 +3077,7 @@ const renderPage = (pageName) => {
         mainContent.innerHTML = pages[pageName]();
         
         // فراخوانی تابع فعال‌سازی مخصوص هر صفحه
-        if (pageName === 'dashboard') { renderDashboardCharts(); setupDashboardListeners(); }
+        if (pageName === 'dashboard') { renderDashboardCharts(); setupDashboardListeners(); setupDashboardQuickActions(); }
         if (pageName === 'talent') { renderEmployeeTable(); setupTalentPageListeners(); }
         if (pageName === 'organization') { setupOrganizationPageListeners(); }
         if (pageName === 'surveys') { setupSurveysPageListeners(); }
@@ -3073,7 +3114,7 @@ const renderDashboardCharts = () => {
                 labels: Object.keys(metrics.genderComposition), 
                 datasets: [{ 
                     data: Object.values(metrics.genderComposition), 
-                    backgroundColor: ['#3b82f6', '#f43f5e', '#94a3b8'],
+                    backgroundColor: ['#6B69D6', '#F72585', '#A1A1AA'],
                     hoverOffset: 4
                 }] 
             }, 
@@ -3097,7 +3138,7 @@ const renderDashboardCharts = () => {
                 datasets: [{ 
                     label: 'تعداد', 
                     data: Object.values(metrics.departmentDistribution), 
-                    backgroundColor: '#10b981',
+                    backgroundColor: '#6B69D6',
                     borderRadius: 5
                 }] 
             }, 
@@ -3124,7 +3165,7 @@ const renderDashboardCharts = () => {
                 datasets: [{ 
                     label: 'تعداد', 
                     data: Object.values(metrics.nineBoxDistribution), 
-                    backgroundColor: '#6366f1',
+                    backgroundColor: '#F72585',
                     borderRadius: 5
                 }] 
             }, 
@@ -3159,7 +3200,7 @@ const renderDashboardCharts = () => {
                 labels: Object.keys(tenureData),
                 datasets: [{
                     data: Object.values(tenureData),
-                    backgroundColor: ['#facc15', '#f97316', '#ef4444'],
+                    backgroundColor: ['#6B69D6', '#A78BFA', '#F72585'],
                     hoverOffset: 4
                 }]
             },
@@ -3191,7 +3232,7 @@ const renderDashboardCharts = () => {
                 datasets: [{
                     label: 'تعداد',
                     data: Object.values(ageData),
-                    backgroundColor: '#e879f9',
+                    backgroundColor: '#6B69D6',
                     borderRadius: 5
                 }]
             },
@@ -3237,12 +3278,12 @@ const renderDashboardCharts = () => {
                     label: 'میانگین امتیاز',
                     data: Object.values(avgCompetencies),
                     fill: true,
-                    backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                    borderColor: '#3b82f6',
-                    pointBackgroundColor: '#3b82f6',
+                    backgroundColor: 'rgba(107, 105, 214, 0.2)',
+                    borderColor: '#6B69D6',
+                    pointBackgroundColor: '#6B69D6',
                     pointBorderColor: '#fff',
                     pointHoverBackgroundColor: '#fff',
-                    pointHoverBorderColor: '#3b82f6'
+                    pointHoverBorderColor: '#6B69D6'
                 }]
             },
             options: {
@@ -3272,7 +3313,7 @@ const renderEngagementGauge = (canvasId, score) => {
             data: { 
                 datasets: [{ 
                     data: [score, 100 - score], 
-                    backgroundColor: ['#22c55e', '#e5e7eb'], 
+                    backgroundColor: ['#6B69D6', '#e5e7eb'], 
                     borderWidth: 0, 
                     circumference: 180, 
                     rotation: 270, 
@@ -3330,7 +3371,7 @@ const renderEngagementGauge = (canvasId, score) => {
 // کل این تابع را با نسخه جدید جایگزین کنید
 const renderAllReminders = () => {
     const allUpcomingReminders = (state.reminders || [])
-        .sort((a, b) => new Date(a.date.toDate()) - new Date(b.date.toDate()))
+        .sort((a, b) => new Date(a.date?.toDate ? a.date.toDate() : a.date) - new Date(b.date?.toDate ? b.date.toDate() : b.date))
         .slice(0, 5); 
 
     if (allUpcomingReminders.length === 0) {
@@ -3409,6 +3450,11 @@ document.getElementById('addReminderBtn')?.addEventListener('click', async () =>
         }
     }
 });
+};
+const setupDashboardQuickActions = () => {
+    document.getElementById('dash-quick-requests')?.addEventListener('click', () => navigateTo('requests'));
+    document.getElementById('dash-quick-add-emp')?.addEventListener('click', () => navigateTo('talent'));
+    document.getElementById('dash-quick-survey')?.addEventListener('click', () => navigateTo('surveys'));
 };
 // این تابع جدید را به main.js اضافه کنید (کنار بقیه setup...Listeners)
 // در فایل js/main.js
