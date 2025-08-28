@@ -1399,7 +1399,7 @@ const updateNotificationBell = () => {
                     const content = document.getElementById('admin-reply-input').value.trim();
                     if (!content) { renderPage('requests'); closeModal(mainModal, mainModalContainer); return; }
                     try {
-                        const newThread = [ ...(request.thread || []), { content, senderUid: state.currentUser?.uid, createdAt: serverTimestamp() } ];
+                        const newThread = [ ...(request.thread || []), { content, senderUid: state.currentUser?.uid, createdAt: new Date() } ];
                         await updateDoc(doc(db, `artifacts/${appId}/public/data/requests`, requestId), { thread: newThread, lastUpdatedAt: serverTimestamp(), isReadByAssignee: false });
                         showToast('پاسخ ارسال شد.');
                         closeModal(mainModal, mainModalContainer);
@@ -1658,7 +1658,7 @@ const updateNotificationBell = () => {
                 const content = document.getElementById('reply-input').value.trim();
                 if (!content) return;
                 try {
-                    const newThread = [ ...(request.thread || []), { content, senderUid: state.currentUser?.uid, createdAt: serverTimestamp() } ];
+                    const newThread = [ ...(request.thread || []), { content, senderUid: state.currentUser?.uid, createdAt: new Date() } ];
                     await updateDoc(doc(db, `artifacts/${appId}/public/data/requests`, requestId), { thread: newThread, lastUpdatedAt: serverTimestamp() });
                     showToast('پاسخ ارسال شد.');
                     closeModal(mainModal, mainModalContainer);
