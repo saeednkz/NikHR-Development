@@ -795,13 +795,18 @@ function renderEmployeePortalPage(pageName, employee) {
         window.renderMomentsList = () => {
             const container = document.getElementById('moments-list');
             if (!container) return;
-            const items = (state.moments || []).slice().sort((a,b)=> new Date(b.createdAt?.toDate?.()||0) - new Date(a.createdAt?.toDate?.()||0));
+            const items = (state.moments || []).slice().sort((a,b)=> {
+                const bt = (b.createdAt && typeof b.createdAt.toDate === 'function') ? b.createdAt.toDate() : 0;
+                const at = (a.createdAt && typeof a.createdAt.toDate === 'function') ? a.createdAt.toDate() : 0;
+                return new Date(bt) - new Date(at);
+            });
             // صفحه‌بندی نرم در کلاینت: فقط تا حد تعیین‌شده رندر می‌کنیم
             const page = window._momentsPage;
             const slice = items.filter((it, idx) => idx < (page.pageSize + (page.extra || 0)));
             container.innerHTML = slice.map(m => {
                 const owner = state.employees.find(e => e.uid === m.ownerUid) || {};
-                const meReact = (m.reactions || []).find(r => r.uid === employee.uid)?.emoji;
+                const meReactObj = (m.reactions || []).find(r => r.uid === employee.uid) || {};
+                const meReact = meReactObj.emoji;
                 const reactors = (m.reactions || []);
                 const topReactors = reactors.slice(0, 5);
                 const reactionsHtml = topReactors.map(r => {
