@@ -573,7 +573,7 @@ function renderEmployeePortalPage(pageName, employee) {
         const teamCardsHtml = (state.teams || []).map(team => {
             const leader = state.employees.find(e => e.id === team.leaderId);
             return `
-                <div class="card p-6 rounded-xl border border-slate-200 bg-white hover:shadow-lg transition-shadow">
+                <div class="card p-6 rounded-2xl border border-slate-200 bg-white hover:shadow-lg transition-shadow fade-up">
                     <div class="flex items-center gap-4">
                         <div class="w-14 h-14 rounded-xl overflow-hidden bg-slate-100 flex items-center justify-center">
                             <img src="${team.avatar || ''}" alt="${team.name}" class="w-full h-full object-cover" onerror="this.parentElement.classList.add('ring-2','ring-indigo-200');this.remove();">
@@ -761,6 +761,16 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
         e.preventDefault();
         showMyProfileEditForm(employee);
     });
+    // Dark mode toggle
+    const root = document.documentElement;
+    const applyTheme = (theme) => { if (theme === 'dark') { document.body.classList.add('theme-dark'); } else { document.body.classList.remove('theme-dark'); } };
+    const savedTheme = localStorage.getItem('portalTheme');
+    if (savedTheme) applyTheme(savedTheme);
+    document.getElementById('theme-toggle-btn')?.addEventListener('click', () => {
+        const next = document.body.classList.contains('theme-dark') ? 'light' : 'dark';
+        localStorage.setItem('portalTheme', next);
+        applyTheme(next);
+    });
 
     // مدیریت رویدادهای داخل محتوای اصلی
     const mainContent = document.getElementById('employee-main-content');
@@ -897,6 +907,10 @@ function renderEmployeePortal() {
                             <button id="quick-edit-profile-btn" class="hidden sm:inline-flex items-center gap-2 text-xs font-semibold bg-white/15 hover:bg-white/20 text-white px-3 py-2 rounded-lg transition">
                                 <i data-lucide="user-cog" class="w-4 h-4"></i>
                                 <span>ویرایش پروفایل</span>
+                            </button>
+                            <button id="theme-toggle-btn" class="hidden sm:inline-flex items-center gap-2 text-xs font-semibold bg-white/15 hover:bg-white/20 text-white px-3 py-2 rounded-lg transition" title="حالت تیره/روشن">
+                                <i data-lucide="moon" class="w-4 h-4"></i>
+                                <span>حالت تیره</span>
                             </button>
                             <div id="portal-notification-bell-wrapper" class="relative">
                                 <button id="portal-notification-bell-btn" class="relative cursor-pointer p-2 rounded-full hover:bg-white/10">
