@@ -735,7 +735,7 @@ function renderEmployeePortal() {
     const employeeName = employee.name || state.currentUser.email;
 
     portalContainer.innerHTML = `
-        <div class="flex h-screen bg-gradient-to-br from-violet-50 via-white to-indigo-50">
+        <div class="flex h-screen" style="background:#F5F6FA;">
             <aside class="w-72 employee-sidebar">
                 <div class="text-center">
                     <img src="${employee.avatar}" alt="Avatar" class="profile-pic object-cover">
@@ -764,7 +764,7 @@ function renderEmployeePortal() {
             </aside>
 
             <div class="flex-1 flex flex-col h-screen overflow-y-hidden">
-                <header class="bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 shadow-sm">
+                <header style="background:#6B69D6" class="shadow-sm">
                     <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-full overflow-hidden ring-2 ring-white/30">
@@ -778,7 +778,7 @@ function renderEmployeePortal() {
                         <div id="portal-notification-bell-wrapper" class="relative">
                             <button id="portal-notification-bell-btn" class="relative cursor-pointer p-2 rounded-full hover:bg-white/10">
                                 <i data-lucide="bell" class="text-white"></i>
-                                <span id="portal-notification-count" class="hidden absolute -top-1 -right-1 bg-cyan-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full border-2 border-white"></span>
+                                <span id="portal-notification-count" class="hidden absolute -top-1 -right-1 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full border-2 border-white" style="background:#6B69D6"></span>
                             </button>
                         </div>
                     </div>
