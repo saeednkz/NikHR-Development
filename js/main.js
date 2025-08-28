@@ -815,7 +815,10 @@ function renderEmployeePortalPage(pageName, employee) {
                 }).join('');
                 const extraCount = Math.max(0, reactors.length - topReactors.length);
                 const rawUrl = (m.imageUrl || '').toString();
-                const cleanedUrl = rawUrl.trim().replace(/^["']+|["']+$/g, '').replace(/\\+$/,'').replace(/^https:\\/(?!\\/)/, 'https://');
+                let cleanedUrl = rawUrl.trim().replace(/^["']+|["']+$/g, '').replace(/\\+$/, '');
+                if (cleanedUrl.indexOf('https:/') === 0 && cleanedUrl.indexOf('https://') !== 0) {
+                    cleanedUrl = 'https://' + cleanedUrl.slice('https:/'.length);
+                }
                 return `
                 <div class=\"bg-white rounded-2xl border border-slate-200 overflow-hidden\">\n                    <div class=\"flex items-center gap-2 p-3\">\n                        <img src=\"${owner.avatar || 'icons/icon-128x128.png'}\" class=\"w-10 h-10 rounded-full object-cover\"/>\n                        <div>\n                            <div class=\"font-bold text-slate-800 text-sm\">${owner.name || m.ownerName || 'کاربر'}</div>\n                            <div class=\"text-[11px] text-slate-500\">${toPersianDate(m.createdAt)}</div>\n                        </div>\n                    </div>\n                    ${m.text ? `<div class=\\\"text-sm text-slate-800 whitespace-pre-wrap mb-3\\\">${m.text}</div>` : ''}\n                    ${cleanedUrl ? `<img src=\\\"${cleanedUrl}\\\" class=\\\"w-full rounded-xl object-cover mb-3\\\"/>` : ''}\n                    <div class=\"flex items-center gap-2\">\n                        ${['👍','❤️','😂','🎉','👎'].map(e=> `<button class=\\\"moment-react-btn text-sm px-2 py-1 rounded-full ${meReact===e ? 'bg-slate-800 text-white':'bg-slate-100 text-slate-700'}\\\" data-id=\\\"${m.firestoreId}\\\" data-emoji=\\\"${e}\\\">${e}</button>`).join('')}\n                    </div>\n                    <div class=\"flex flex-wrap gap-2 mt-3\">${reactionsHtml}${extraCount? `<span class=\\\"text-xs text-slate-500\\\">+${extraCount}</span>`:''}</div>\n                </div>`;
             }).join('');
