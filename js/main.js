@@ -189,7 +189,7 @@ function listenToData() {
             try { setTimeout(() => { if (window.updateNotificationsForCurrentUser) window.updateNotificationsForCurrentUser(); }, 0); } catch {}
             
             if (state.currentUser.role === 'employee') {
-                renderEmployeePortal();
+                if (window.renderEmployeePortal) { window.renderEmployeePortal(); }
             } else {
                 showDashboard();
                 router();
@@ -1101,7 +1101,7 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
 // کل این تابع را با نسخه جدید جایگزین کنید
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
-function renderEmployeePortal() {
+window.renderEmployeePortal = function renderEmployeePortal() {
     document.getElementById('login-container').classList.add('hidden');
     document.getElementById('dashboard-container').classList.add('hidden');
     
