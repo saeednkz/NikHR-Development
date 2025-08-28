@@ -189,7 +189,10 @@ function listenToData() {
             try { setTimeout(() => { if (window.updateNotificationsForCurrentUser) window.updateNotificationsForCurrentUser(); }, 0); } catch {}
             
             if (state.currentUser.role === 'employee') {
-                if (window.renderEmployeePortal) { window.renderEmployeePortal(); }
+                (function tryRender() {
+                    if (window.renderEmployeePortal) { window.renderEmployeePortal(); }
+                    else { setTimeout(tryRender, 0); }
+                })();
             } else {
                 showDashboard();
                 router();
