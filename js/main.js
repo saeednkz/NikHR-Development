@@ -3229,19 +3229,39 @@ const viewEmployeeProfile = (employeeId) => {
                                         ${canEdit() ? `<button id="edit-personal-info-btn" class="primary-btn text-xs">ویرایش</button>` : ''}
                                     </div>
                                     <div class="bg-white rounded-xl border border-slate-200 p-4">
+                                        <h5 class="font-bold text-slate-800 mb-3">اطلاعات هویتی و شناسایی</h5>
                                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-700">
-                                            <p><strong>جنسیت:</strong> ${emp.gender || '-'}</p>
-                                            <p><strong>ایمیل:</strong> ${emp.personalInfo?.email || '-'}</p>
-                                            <p><strong>شماره تماس:</strong> ${emp.personalInfo?.phone || '-'}</p>
+                                            <p><strong>نام و نام خانوادگی:</strong> ${emp.name || '-'}</p>
                                             <p><strong>تاریخ تولد:</strong> ${emp.personalInfo?.birthDate ? toPersianDate(emp.personalInfo.birthDate) : '-'}</p>
+                                            <p><strong>محل تولد:</strong> ${emp.personalInfo?.birthPlace || '-'}</p>
+                                            <p><strong>جنسیت:</strong> ${emp.gender || emp.personalInfo?.gender || '-'}</p>
+                        
                                             <p><strong>کد ملی:</strong> ${emp.personalInfo?.nationalId || '-'}</p>
-                                            <p class="md:col-span-2"><strong>آدرس:</strong> ${emp.personalInfo?.address || '-'}</p>
+                                            <p><strong>وضعیت تأهل:</strong> ${emp.personalInfo?.maritalStatus || '-'}</p>
+                                            <p><strong>تعداد فرزندان:</strong> ${emp.personalInfo?.numChildren ?? '-'}</p>
+                                            <p><strong>وضعیت خدمت سربازی:</strong> ${emp.personalInfo?.militaryStatus || '-'}</p>
+                                        </div>
+                                        <h5 class="font-bold text-slate-800 mt-6 mb-3">اطلاعات تماس و آدرس</h5>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-700">
+                                            <p><strong>شماره تلفن همراه:</strong> ${emp.personalInfo?.phone || '-'}</p>
+                                            <p><strong>ایمیل:</strong> ${emp.personalInfo?.email || '-'}</p>
+                                            <p><strong>شماره تلفن ثابت:</strong> ${emp.personalInfo?.landline || '-'}</p>
+                                            <p><strong>شماره تلفن ضروری:</strong> ${emp.personalInfo?.emergencyPhone || '-'}</p>
+                                            <p class="md:col-span-2"><strong>آدرس محل سکونت:</strong> ${emp.personalInfo?.address || '-'}</p>
                                             <p><strong>کد پستی:</strong> ${emp.personalInfo?.postalCode || '-'}</p>
-                                            <p><strong>شماره ثابت:</strong> ${emp.personalInfo?.landline || '-'}</p>
-                                            <p class="md:col-span-2"><strong>مدرک تحصیلی:</strong> ${emp.personalInfo?.education || '-'}</p>
-                                            <p><strong>وضعیت نظام وظیفه:</strong> ${emp.personalInfo?.militaryStatus || '-'}</p>
-                                            <p><strong>وضعیت تاهل:</strong> ${emp.personalInfo?.maritalStatus || '-'}</p>
-                                            <p><strong>مخاطب اضطراری:</strong> ${emp.personalInfo?.emergencyContactName || '-'}</p>
+                                        </div>
+                                        <h5 class="font-bold text-slate-800 mt-6 mb-3">اطلاعات تحصیلی</h5>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-700">
+                                            <p><strong>مدرک تحصیلی:</strong> ${emp.personalInfo?.education || '-'}</p>
+                                            <p><strong>رشته تحصیلی:</strong> ${emp.personalInfo?.fieldOfStudy || '-'}</p>
+                                            <p class="md:col-span-2"><strong>محل اخذ مدرک:</strong> ${emp.personalInfo?.educationInstitution || '-'}</p>
+                                        </div>
+                                        <h5 class="font-bold text-slate-800 mt-6 mb-3">اطلاعات مالی و بانکی</h5>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-700">
+                                            <p class="md:col-span-2"><strong>شماره شبا:</strong> ${emp.personalInfo?.iban || '-'}</p>
+                                            <p><strong>شماره حساب:</strong> ${emp.personalInfo?.accountNumber || '-'}</p>
+                                            <p><strong>شماره کارت:</strong> ${emp.personalInfo?.cardNumber || '-'}</p>
+                                            <p><strong>نام بانک:</strong> ${emp.personalInfo?.bankName || '-'}</p>
                                         </div>
                                     </div>
                                 </div>
