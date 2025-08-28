@@ -564,22 +564,20 @@ function renderEmployeePortalPage(pageName, employee) {
     }
     // --- بخش دایرکتوری (تیمی) ---
     else if (pageName === 'directory') {
-        const teamCardsHtml = (state.teams || []).map(team => {
+        const colorsDir = ['#6B69D6','#FF6A3D','#10B981','#F59E0B','#0EA5E9','#F43F5E'];
+        const teamCardsHtml = (state.teams || []).map((team, idx) => {
             const leader = state.employees.find(e => e.id === team.leaderId);
+            const color = colorsDir[idx % colorsDir.length];
+            const avatar = team.avatar || 'icons/icon-128x128.png';
             return `
-                <div class="card p-6 rounded-2xl border border-slate-200 bg-white hover:shadow-lg transition-shadow fade-up">
-                    <div class="flex items-center gap-4">
-                        <div class="w-14 h-14 rounded-xl overflow-hidden bg-slate-100 flex items-center justify-center">
-                            <img src="${team.avatar || ''}" alt="${team.name}" class="w-full h-full object-cover" onerror="this.parentElement.classList.add('ring-2','ring-indigo-200');this.remove();">
-                            <i data-lucide="users" class="w-6 h-6 text-indigo-500"></i>
-                        </div>
-                        <div class="flex-1">
-                            <h3 class="text-lg font-bold text-slate-800">${team.name}</h3>
-                            <p class="text-sm text-slate-500">مدیر تیم: <span class="font-medium text-slate-700">${leader?.name || 'نامشخص'}</span></p>
-                        </div>
-                        <button class="view-team-employee-btn bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700 text-sm" data-team-id="${team.firestoreId}">
-                            مشاهده اعضا و OKR
-                        </button>
+                <div class="bg-white rounded-2xl border border-slate-200 p-5 hover:shadow-lg transition-shadow fade-up">
+                    <div class="w-16 h-16 mx-auto rounded-full overflow-hidden ring-4" style="ring-color:${color}; ring: 4px solid ${color}; background:rgba(0,0,0,.03)">
+                        <img src="${avatar}" alt="${team.name}" class="w-full h-full object-cover">
+                    </div>
+                    <h3 class="text-center text-base font-bold text-slate-800 mt-3">${team.name}</h3>
+                    <p class="text-center text-xs text-slate-600 mt-1">مدیر: ${leader?.name || 'نامشخص'}</p>
+                    <div class="mt-4 flex justify-center">
+                        <button class="view-team-employee-btn text-xs font-semibold px-3 py-1.5 rounded-lg" data-team-id="${team.firestoreId}" style="color:#fff;background:${color}">مشاهده</button>
                     </div>
                 </div>`;
         }).join('');
@@ -587,7 +585,7 @@ function renderEmployeePortalPage(pageName, employee) {
         contentContainer.innerHTML = `
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 page-header mb-6">
                 <div>
-                    <h1 class="text-3xl font-extrabold" style="color:#242A38">دایرکتوری سازمان</h1>
+                    <h1 class="text-3xl font-extrabold" style="color:#242A38">تیم‌ها</h1>
                     <p class="text-slate-500 text-sm mt-1">تیم‌ها، اعضا و اطلاعات مرتبط</p>
                 </div>
             </div>
@@ -902,11 +900,11 @@ function renderEmployeePortal() {
                 <div class="my-6 border-t border-white/20"></div>
 
                 <nav id="employee-portal-nav" class="flex flex-col gap-2">
-                    <a href="#profile" class="nav-item active"><i data-lucide="layout-dashboard"></i><span>داشبورد</span></a>
-                    <a href="#requests" class="nav-item"><i data-lucide="send"></i><span>درخواست‌های من</span></a>
-                    <a href="#directory" class="nav-item"><i data-lucide="users"></i><span>دایرکتوری سازمان</span></a>
-                    <a href="#documents" class="nav-item"><i data-lucide="folder-kanban"></i><span>اسناد سازمان</span></a>
-                    <a href="#inbox" class="nav-item"><i data-lucide="inbox"></i><span>صندوق پیام</span></a>
+                    <a href="#profile" class="nav-item active"><i data-lucide="layout-dashboard"></i><span>مسیر من</span></a>
+                    <a href="#requests" class="nav-item"><i data-lucide="send"></i><span>کارهای من</span></a>
+                    <a href="#directory" class="nav-item"><i data-lucide="users"></i><span>تیم‌ها</span></a>
+                    <a href="#documents" class="nav-item"><i data-lucide="folder-kanban"></i><span>دانش‌نامه</span></a>
+                    <a href="#inbox" class="nav-item"><i data-lucide="inbox"></i><span>پیام‌ها</span></a>
                 </nav>
 
                 <div class="mt-auto space-y-4">
