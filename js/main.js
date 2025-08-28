@@ -948,7 +948,7 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
             if (closeInfo) {
                 const bubble = document.getElementById('info-bubble');
                 const infoId = bubble?.getAttribute('data-info-id');
-                const uid = (state.currentUser && state.currentUser.uid) || employee?.uid;
+                const uid = (state.currentUser && state.currentUser.uid) || (employee ? employee.uid : null);
                 if (uid && infoId) {
                     try { localStorage.setItem(`dismiss_info_${uid}`, infoId); } catch {}
                 }
@@ -1010,7 +1010,7 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
             if (imgInput) {
                 const input = document.getElementById('moment-image');
                 const preview = document.getElementById('moment-image-preview');
-                const file = input?.files?.[0];
+                const file = (input && input.files && input.files[0]) || null;
                 if (file && preview) {
                     const reader = new FileReader();
                     reader.onload = () => { preview.src = reader.result; preview.classList.remove('hidden'); };
@@ -1024,7 +1024,7 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
                     try {
                         const text = (document.getElementById('moment-text')||{}).value?.trim() || '';
                         const fileInput = document.getElementById('moment-image');
-                        const file = fileInput?.files?.[0];
+                        const file = (fileInput && fileInput.files && fileInput.files[0]) || null;
                         let imageUrl = '';
                         if (file) {
                             // Resize/compress to max 1080x1080 like Instagram
