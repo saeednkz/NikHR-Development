@@ -328,7 +328,7 @@ function renderBirthdaysWidget(currentEmployee) {
     `;
 }
 // در فایل js/main.js
-// این تابع را نیز جایگزین نسخه فعلی کنید
+// این تابع را جایگزین نسخه فعلی کنید
 // در فایل js/main.js
 // این تابع را با نسخه جدید جایگزین کنید
 // در فایل js/main.js
@@ -437,6 +437,9 @@ function renderEmployeePortalPage(pageName, employee) {
                                 </div>
                             </div>
                         </div>
+                    </div>
+                    <div class="flex justify-end mt-2">
+                        <button id="view-all-requests-btn" class="text-xs font-semibold text-slate-600 hover:text-slate-800 underline-offset-2 hover:underline">مشاهده همه درخواست‌ها</button>
                     </div>
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
                         <div class="flex justify-between items-start mb-4">
@@ -615,9 +618,32 @@ function renderEmployeePortalPage(pageName, employee) {
             const dot = hasNewReply ? '<span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>' : '';
             return `<tr class="bg-white"><td class="p-4 border-b ${borderClass}"><div class="flex items-center gap-2 ${titleClass}">${dot}<span>${req.requestType}</span></div></td><td class="p-4 border-b ${borderClass}">${toPersianDate(req.createdAt)}</td><td class="p-4 border-b ${borderClass}"><span class="px-2 py-1 text-xs font-medium rounded-full ${status.color}">${status.text}</span></td><td class="p-4 border-b ${borderClass}"><button class="view-request-btn text-sm text-indigo-600 hover:underline" data-id="${req.firestoreId}">مشاهده جزئیات</button></td></tr>`;
         }).join('');
+        const emptyState = '<div class="text-center p-10"><i data-lucide="inbox" class="mx-auto w-12 h-12 text-slate-300"></i><p class="mt-3 text-sm text-slate-500">شما هنوز درخواستی ثبت نکرده‌اید.</p><button id="add-new-request-btn" class="mt-4 inline-flex items-center gap-2 text-xs font-semibold" style="background:#6B69D6;color:#fff;padding:.6rem 1rem;border-radius:.75rem"><i data-lucide="plus-circle" class="w-4 h-4"></i><span>ثبت درخواست جدید</span></button></div>';
         contentContainer.innerHTML = `
-            <div class="flex justify-between items-center page-header"><h1 class="text-3xl font-bold text-slate-800">درخواست‌های من</h1><button id="add-new-request-btn" class="primary-btn flex items-center gap-2"><i data-lucide="plus-circle" class="w-4 h-4"></i><span>ثبت درخواست جدید</span></button></div>
-            <div class="card p-0"><div class="overflow-x-auto"><table class="w-full text-sm text-right"><thead class="bg-slate-50"><tr><th class="p-3 font-semibold text-slate-600">نوع درخواست</th><th class="p-3 font-semibold text-slate-600">تاریخ ثبت</th><th class="p-3 font-semibold text-slate-600">وضعیت</th><th class="p-3 font-semibold text-slate-600"></th></tr></thead><tbody>${requestsHtml || '<tr><td colspan="4" class="text-center py-8 text-slate-500">شما هنوز درخواستی ثبت نکرده‌اید.</td></tr>'}</tbody></table></div></div>`;
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 page-header">
+                <div>
+                    <h1 class="text-3xl font-extrabold" style="color:#242A38">درخواست‌های من</h1>
+                    <p class="text-slate-500 text-sm mt-1">پیگیری و ثبت درخواست‌های سازمانی</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button id="add-new-request-btn" class="inline-flex items-center gap-2 text-xs font-semibold" style="background:#6B69D6;color:#fff;padding:.6rem 1rem;border-radius:.75rem"><i data-lucide="plus-circle" class="w-4 h-4"></i><span>ثبت درخواست جدید</span></button>
+                </div>
+            </div>
+            <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-right">
+                        <thead style="background:#ECEEF3">
+                            <tr>
+                                <th class="p-3 font-semibold text-slate-700">نوع درخواست</th>
+                                <th class="p-3 font-semibold text-slate-700">تاریخ ثبت</th>
+                                <th class="p-3 font-semibold text-slate-700">وضعیت</th>
+                                <th class="p-3 font-semibold text-slate-700"></th>
+                            </tr>
+                        </thead>
+                        <tbody>${requestsHtml || `<tr><td colspan=\"4\">${emptyState}</td></tr>`}</tbody>
+                    </table>
+                </div>
+            </div>`;
     }
     // --- بخش اسناد ---
     else if (pageName === 'documents') {
@@ -772,7 +798,6 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
     }
 }
 // این تابع را به فایل js/main.js اضافه کنید
-
 // در فایل js/main.js
 // کل تابع renderEmployeePortal را با این نسخه جایگزین کنید
 
@@ -1705,7 +1730,6 @@ const updateNotificationBell = () => {
         if (typeof renderTeamHealthMetrics !== 'function') { window.renderTeamHealthMetrics = (team) => { const metrics = team.healthMetrics || []; if(!metrics.length) return '<p class=\"text-sm text-slate-500\">معیاری ثبت نشده است.</p>'; return metrics.map(m=>`<div class=\"flex justify-between text-sm\"><span>${m.name}</span><span class=\"font-medium\">${m.value}</span></div>`).join(''); }; }
         if (typeof showTeamForm !== 'function') { window.showTeamForm = (teamId=null) => { const team=(state.teams||[]).find(t=>t.firestoreId===teamId)||{name:'',leaderId:''}; const leaders=state.employees.map(e=>`<option value=\"${e.id}\" ${e.id===team.leaderId?'selected':''}>${e.name}</option>`).join(''); modalTitle.innerText=teamId?'ویرایش تیم':'افزودن تیم جدید'; modalContent.innerHTML = `<form id=\"team-form\" class=\"space-y-4\"><div><label class=\"block text-sm\">نام تیم</label><input id=\"team-name\" class=\"w-full p-2 border rounded-md\" value=\"${team.name}\" required></div><div><label class=\"block text-sm\">مدیر تیم</label><select id=\"team-leader\" class=\"w-full p-2 border rounded-md\">${leaders}</select></div><div class=\"flex justify-end\"><button type=\"submit\" class=\"bg-blue-600 text-white py-2 px-4 rounded-md\">ذخیره</button></div></form>`; openModal(mainModal, mainModalContainer); document.getElementById('team-form').addEventListener('submit', async (e)=>{ e.preventDefault(); const name=document.getElementById('team-name').value.trim(); const leader=document.getElementById('team-leader').value; try { if(teamId){ await updateDoc(doc(db, `artifacts/${appId}/public/data/teams`, teamId), { name, leaderId: leader }); } else { await addDoc(collection(db, `artifacts/${appId}/public/data/teams`), { name, leaderId: leader, memberIds: [] }); } showToast('تیم ذخیره شد.'); closeModal(mainModal, mainModalContainer); renderPage('organization'); } catch(err){ console.error(err); showToast('خطا در ذخیره تیم.', 'error'); } }); }; }
         if (typeof showPerformanceForm !== 'function') { window.showPerformanceForm = (emp, idx=null) => { modalTitle.innerText='ثبت ارزیابی عملکرد'; modalContent.innerHTML = `<div class=\"p-4 text-sm text-slate-600\">فرم ارزیابی عملکرد به‌زودی تکمیل می‌شود.</div>`; openModal(mainModal, mainModalContainer); }; }
-
         // --- Employee Portal Helpers (hoisted function declarations) ---
         // 1) Edit My Profile
         async function showMyProfileEditForm(employee) {
@@ -2188,7 +2212,6 @@ surveys: () => {
 },
 // در فایل js/main.js، داخل آبجکت pages
 // pages.expenses را حذف کرده و این را جایگزین کنید
-
 // در فایل js/main.js، داخل آبجکت pages
 // کل تابع requests را با این نسخه جایگزین کنید
 
@@ -3173,7 +3196,6 @@ const renderDashboardCharts = () => {
         });
     }
 };
-
 const renderEngagementGauge = (canvasId, score) => {
     const gaugeCtx = document.getElementById(canvasId)?.getContext('2d');
     if(gaugeCtx) { 
