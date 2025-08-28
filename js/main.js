@@ -3484,7 +3484,18 @@ const setupSettingsPageListeners = () => {
             if(user) showEditUserForm(user);
         }
         if (deleteUserBtn) { /* ... کد قبلی ... */ }
-        if (deleteCompetencyBtn) { /* ... کد قبلی ... */ }
+        if (deleteCompetencyBtn) {
+            const compId = deleteCompetencyBtn.dataset.id;
+            showConfirmationModal('حذف شایستگی', 'این شایستگی از لیست حذف خواهد شد. ادامه می‌دهید؟', async () => {
+                try {
+                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/competencies`, compId));
+                    showToast('شایستگی حذف شد.');
+                } catch (err) {
+                    console.error('Error deleting competency', err);
+                    showToast('خطا در حذف شایستگی.', 'error');
+                }
+            });
+        }
         
         if (addRuleBtn) showAssignmentRuleForm();
         if (editRuleBtn) showAssignmentRuleForm(editRuleBtn.dataset.id);
@@ -3499,9 +3510,36 @@ const setupSettingsPageListeners = () => {
     });
     
     const addCompetencyForm = document.getElementById('add-competency-form');
-    if (addCompetencyForm) { /* ... کد قبلی ... */ }
+    if (addCompetencyForm) {
+        addCompetencyForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const input = document.getElementById('new-competency-name');
+            const name = (input?.value || '').trim();
+            if (!name) return;
+            try {
+                await addDoc(collection(db, `artifacts/${appId}/public/data/competencies`), { name, createdAt: serverTimestamp() });
+                input.value = '';
+                showToast('شایستگی اضافه شد.');
+            } catch (err) {
+                console.error('Error adding competency', err);
+                showToast('خطا در افزودن شایستگی.', 'error');
+            }
+        });
+    }
     
-    document.querySelectorAll('.role-select').forEach(select => { /* ... کد قبلی ... */ });
+    document.querySelectorAll('.role-select').forEach(select => {
+        select.addEventListener('change', async (e) => {
+            const uid = e.target.getAttribute('data-uid');
+            const newRole = e.target.value;
+            try {
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/users`, uid), { role: newRole });
+                showToast('نقش کاربر به‌روزرسانی شد.');
+            } catch (err) {
+                console.error('Error updating user role', err);
+                showToast('خطا در تغییر نقش کاربر.', 'error');
+            }
+        });
+    });
 
     // [!code focus:12]
     // رویداد اصلاح شده برای واگذاری پیش‌فرض
