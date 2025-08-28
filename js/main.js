@@ -420,7 +420,7 @@ function renderEmployeePortalPage(pageName, employee) {
                 })
                 .sort((a,b)=> new Date(b.createdAt?.toDate?.()||0) - new Date(a.createdAt?.toDate?.()||0))[0];
             if (!latestInfo || dismissed===latestInfo.firestoreId) return '';
-            return `<div id=\"info-bubble\" class=\"glass rounded-2xl p-4 flex items-start gap-3 fade-up\"><i data-lucide=\"megaphone\" class=\"w-5 h-5\" style=\"color:#6B69D6\"></i><div class=\"flex-1\"><div class=\"text-sm font-bold text-slate-800\">اطلاعیه</div><div class=\"text-xs text-slate-700 mt-1\">${latestInfo.content || latestInfo.title || ''}</div></div><button id=\"dismiss-info\" class=\"text-slate-500 hover:text-slate-800\"><i data-lucide=\"x\" class=\"w-5 h-5\"></i></button></div>`;
+            return `<div id=\"info-bubble\" data-info-id=\"${latestInfo.firestoreId}\" class=\"glass rounded-2xl p-4 flex items-start gap-3 fade-up\"><i data-lucide=\"megaphone\" class=\"w-5 h-5\" style=\"color:#6B69D6\"></i><div class=\"flex-1\"><div class=\"text-sm font-bold text-slate-800\">اطلاعیه</div><div class=\"text-xs text-slate-700 mt-1\">${latestInfo.content || latestInfo.title || ''}</div></div><button id=\"dismiss-info\" class=\"text-slate-500 hover:text-slate-800\"><i data-lucide=\"x\" class=\"w-5 h-5\"></i></button></div>`;
         })();
 
         contentContainer.innerHTML = `
@@ -846,6 +846,18 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
     const mainContent = document.getElementById('employee-main-content');
     if (mainContent) {
         mainContent.addEventListener('click', (e) => {
+            // بستن حباب اطلاعیه
+            const closeInfo = e.target.closest('#dismiss-info');
+            if (closeInfo) {
+                const bubble = document.getElementById('info-bubble');
+                const infoId = bubble?.getAttribute('data-info-id');
+                const uid = (state.currentUser && state.currentUser.uid) || employee?.uid;
+                if (uid && infoId) {
+                    try { localStorage.setItem(`dismiss_info_${uid}`, infoId); } catch {}
+                }
+                bubble?.remove();
+                return;
+            }
             const empDocsBtn = e.target.closest('.doc-category-btn');
             if (empDocsBtn) {
                 const key = empDocsBtn.getAttribute('data-category');
