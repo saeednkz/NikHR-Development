@@ -452,10 +452,6 @@ function renderEmployeePortalPage(pageName, employee) {
                                     <div class="text-sm text-slate-500">${employee.jobTitle || 'بدون عنوان شغلی'}</div>
                                 </div>
                             </div>
-                            <button id="edit-my-profile-btn" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-xs">
-                                <i data-lucide="edit-3" class="w-4 h-4"></i>
-                                <span>ویرایش</span>
-                            </button>
                         </div>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                             <div class="bg-slate-50 rounded-lg p-3">
@@ -740,6 +736,12 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
         if (inboxLink) inboxLink.classList.add('active');
         renderEmployeePortalPage('inbox', employee);
     });
+    // همبرگری
+    document.getElementById('portal-menu-btn')?.addEventListener('click', () => {
+        const aside = document.querySelector('.employee-sidebar');
+        if (!aside) return;
+        aside.classList.toggle('hidden');
+    });
 
     // دکمه‌های منوی ناوبری
     document.querySelectorAll('.nav-item').forEach(link => {
@@ -825,9 +827,8 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
 // این تابع را به فایل js/main.js اضافه کنید
 // در فایل js/main.js
 // کل تابع renderEmployeePortal را با این نسخه جایگزین کنید
-
 // در فایل js/main.js
-// کل این تابع را با نسخه جدید و کامل جایگزین کنید
+// کل این تابع را با نسخه جدید جایگزین کنید
 
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
@@ -885,8 +886,9 @@ function renderEmployeePortal() {
                 <div class="blob" style="top:-40px; right:-60px; width:220px; height:220px; background:#FF6A3D"></div>
                 <div class="blob" style="bottom:-60px; left:-40px; width:180px; height:180px; background:#F72585"></div>
                 <header style="background:linear-gradient(90deg,#FF6A3D,#F72585)" class="shadow-sm relative z-10">
-                    <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+                    <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
                         <div class="flex items-center gap-3">
+                            <img src="logo.png" alt="Logo" class="w-8 h-8 rounded-md ring-2 ring-white/30">
                             <div class="w-10 h-10 rounded-full overflow-hidden ring-2 ring-white/30">
                                 <img src="${employee.avatar}" alt="${employeeName}" class="w-full h-full object-cover">
                             </div>
@@ -895,7 +897,10 @@ function renderEmployeePortal() {
                                 <h1 class="text-2xl font-bold text-white">${employeeName}</h1>
                             </div>
                         </div>
-                        <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-2">
+                            <button id="portal-menu-btn" class="inline-flex sm:hidden items-center justify-center p-2 rounded-md bg-white/20 hover:bg-white/30 text-white" title="منو">
+                                <i data-lucide="menu" class="w-5 h-5"></i>
+                            </button>
                             <div id="okr-pill" class="hidden sm:flex items-center gap-2 text-xs font-bold bg-white/20 text-white px-3 py-2 rounded-full">
                                 <i data-lucide="target" class="w-4 h-4"></i>
                                 <span id="okr-pill-text">OKR: 0%</span>
@@ -904,7 +909,7 @@ function renderEmployeePortal() {
                                 <i data-lucide="plus" class="w-4 h-4"></i>
                                 <span>ثبت درخواست</span>
                             </button>
-                            <button id="quick-edit-profile-btn" class="hidden sm:inline-flex items-center gap-2 text-xs font-semibold bg-white/15 hover:bg-white/20 text-white px-3 py-2 rounded-lg transition">
+                            <button id="quick-edit-profile-btn" class="hidden sm:inline-flex items-center gap-2 text-xs font-semibold bg-white/80 hover:bg-white text-slate-800 px-3 py-2 rounded-lg transition">
                                 <i data-lucide="user-cog" class="w-4 h-4"></i>
                                 <span>ویرایش پروفایل</span>
                             </button>
@@ -2243,13 +2248,8 @@ surveys: () => {
 // pages.expenses را حذف کرده و این را جایگزین کنید
 // در فایل js/main.js، داخل آبجکت pages
 // کل تابع requests را با این نسخه جایگزین کنید
-
 // در فایل js/main.js، داخل آبجکت pages
 // کل تابع requests را با این نسخه جایگزین کنید
-
-// در فایل js/main.js، داخل آبجکت pages
-// در فایل js/main.js، داخل آبجکت pages
-// کل این تابع را با نسخه جدید جایگزین کنید
 
 requests: () => {
     let filteredRequests = (state.requests || []);
