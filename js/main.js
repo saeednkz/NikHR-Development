@@ -591,9 +591,11 @@ function renderEmployeePortalPage(pageName, employee) {
         }).join('');
 
         contentContainer.innerHTML = `
-            <div class="page-header mb-8">
-                <h1 class="text-3xl font-bold text-slate-800">دایرکتوری سازمان</h1>
-                <p class="text-slate-500 mt-1">تیم‌ها و اعضای آن‌ها.</p>
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 page-header mb-6">
+                <div>
+                    <h1 class="text-3xl font-extrabold" style="color:#242A38">دایرکتوری سازمان</h1>
+                    <p class="text-slate-500 text-sm mt-1">تیم‌ها، اعضا و اطلاعات مرتبط</p>
+                </div>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">${teamCardsHtml || '<p class="text-slate-500">تیمی ثبت نشده است.</p>'}</div>`;
     }
@@ -670,14 +672,27 @@ function renderEmployeePortalPage(pageName, employee) {
         });
         const messagesHtml = myMessages.map(msg => {
             const isUnread = !readIds.has(msg.firestoreId);
-            const borderClass = isUnread ? 'border-indigo-200' : 'border-slate-200';
-            const titleClass = isUnread ? 'font-bold text-slate-900' : 'font-medium text-slate-700';
-            const dot = isUnread ? '<span class="inline-block w-2 h-2 rounded-full bg-indigo-500"></span>' : '';
-            return `<tr class="bg-white"><td class="p-4 border-b ${borderClass}"><div class="flex items-center gap-2 ${titleClass}">${dot}<span>${msg.title}</span></div></td><td class="p-4 border-b ${borderClass}">${msg.senderName}</td><td class="p-4 border-b ${borderClass}">${toPersianDate(msg.createdAt)}</td><td class="p-4 border-b ${borderClass}"><button class="view-message-btn text-sm text-indigo-600 hover:underline" data-id="${msg.firestoreId}">مشاهده پیام</button></td></tr>`;
+            const badge = isUnread ? '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold" style="background:#FF2E63;color:#fff">جدید</span>' : '';
+            return `
+                <div class="bg-white rounded-2xl border border-slate-200 p-4 flex items-start justify-between gap-3">
+                    <div class="flex items-start gap-3">
+                        <div class="w-9 h-9 rounded-full flex items-center justify-center" style="background:rgba(107,105,214,.12)"><i data-lucide="message-square" style="color:#6B69D6" class="w-4 h-4"></i></div>
+                        <div>
+                            <div class="flex items-center gap-2">${badge}<span class="text-sm ${isUnread ? 'font-bold text-slate-900' : 'font-medium text-slate-700'}">${msg.title}</span></div>
+                            <div class="text-[11px] text-slate-500 mt-1">${msg.senderName} • ${toPersianDate(msg.createdAt)}</div>
+                        </div>
+                    </div>
+                    <button class="view-message-btn text-xs font-semibold" data-id="${msg.firestoreId}" style="color:#6B69D6">مشاهده</button>
+                </div>`;
         }).join('');
         contentContainer.innerHTML = `
-            <div class="page-header mb-8"><h1 class="text-3xl font-bold text-slate-800">صندوق پیام</h1></div>
-            <div class="card p-0"><div class="overflow-x-auto"><table class="w-full text-sm text-right"><thead class="bg-slate-50"><tr><th class="p-3 font-semibold text-slate-600">عنوان</th><th class="p-3 font-semibold text-slate-600">فرستنده</th><th class="p-3 font-semibold text-slate-600">تاریخ</th><th class="p-3 font-semibold text-slate-600"></th></tr></thead><tbody>${messagesHtml || '<tr><td colspan="4" class="text-center py-8 text-slate-500">شما هیچ پیامی ندارید.</td></tr>'}</tbody></table></div></div>`;
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 page-header mb-6">
+                <div>
+                    <h1 class="text-3xl font-extrabold" style="color:#242A38">صندوق پیام</h1>
+                    <p class="text-slate-500 text-sm mt-1">پیام‌های سازمانی شما</p>
+                </div>
+            </div>
+            <div class="space-y-3">${messagesHtml || '<div class="text-center p-10"><i data-lucide="inbox" class="mx-auto w-12 h-12 text-slate-300"></i><p class="mt-3 text-sm text-slate-500">پیامی ندارید.</p></div>'}</div>`;
     }
     // --- بخش پیش‌فرض ---
     else {
