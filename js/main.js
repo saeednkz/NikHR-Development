@@ -2979,108 +2979,107 @@ const viewEmployeeProfile = (employeeId) => {
 
     modalTitle.innerText = 'پروفایل ۳۶۰ درجه: ' + emp.name;
     modalContent.innerHTML = `
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="lg:col-span-1 space-y-6">
-                <div class="card p-6 bg-gray-50 rounded-xl text-center relative group">
-                    <div class="w-24 h-24 rounded-full mx-auto mb-4 border-4 border-white shadow-md overflow-hidden bg-gray-200 flex items-center justify-center">
-                        <img src="${emp.avatar}" alt="${emp.name}" class="w-full h-full object-cover">
-                    </div>
-                    ${canEdit() ? `<div class="absolute top-4 left-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button id="change-avatar-btn" class="bg-white p-2 rounded-full shadow-md text-slate-500 hover:text-blue-600"><i data-lucide="camera" class="w-4 h-4"></i></button>
-                        <button id="delete-avatar-btn" class="bg-white p-2 rounded-full shadow-md text-red-500 hover:text-red-700"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                    </div>` : ''}
-                    <div class="flex items-center justify-center gap-2">
-                        <h2 class="text-2xl font-bold text-slate-800">${emp.name}</h2>
-                        ${canEdit() ? `<button id="main-edit-employee-btn" class="p-1.5 text-slate-500 hover:text-blue-600" title="ویرایش اطلاعات اصلی"><i data-lucide="edit" class="w-5 h-5"></i></button>` : ''}
-                    </div>
-                    <p class="text-blue-600 font-semibold">${emp.jobTitle || 'بدون عنوان شغلی'}</p>
-                    <p class="text-sm text-slate-500">${emp.level || ''}</p>
-                    <span class="mt-2 inline-block px-3 py-1 text-xs font-medium rounded-full ${emp.status === 'فعال' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${emp.status}</span>
-                </div>
-                <div class="card p-6 bg-gray-50 rounded-xl">
-                    <h4 class="font-semibold mb-4 text-slate-700 flex items-center"><i data-lucide="heart-pulse" class="ml-2 w-5 h-5 text-green-500"></i>امتیاز مشارکت (Engagement)</h4>
-                    ${emp.engagementScore != null ? `
-                    <div class="relative w-40 h-20 mx-auto mt-2">
-                        <canvas id="engagementGaugeProfile"></canvas>
-                        <div class="absolute inset-0 flex items-center justify-center -bottom-4">
-                            <span class="text-3xl font-bold text-green-600">${emp.engagementScore}%</span>
+        <div class="space-y-6">
+            <section class="rounded-2xl overflow-hidden border" style="background:linear-gradient(90deg,#FF6A3D,#F72585)">
+                <div class="p-6 sm:p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div class="flex items-center gap-4">
+                        <div class="w-20 h-20 rounded-2xl overflow-hidden ring-4 ring-white/30 bg-white/10">
+                            <img src="${emp.avatar}" alt="${emp.name}" class="w-full h-full object-cover">
+                        </div>
+                        <div>
+                            <h2 class="text-2xl font-extrabold text-white">${emp.name}</h2>
+                            <p class="text-white/90 text-sm">${emp.jobTitle || 'بدون عنوان شغلی'} • ${emp.level || ''}</p>
                         </div>
                     </div>
-                    ` : '<p class="text-sm text-slate-500 text-center">هنوز امتیازی ثبت نشده است.</p>'}
+                    <div class="flex items-center gap-2">
+                        ${canEdit() ? `<button id="main-edit-employee-btn" class="primary-btn text-xs">ویرایش کارمند</button>` : ''}
+                        ${canEdit() ? `<button id="change-avatar-btn" class="secondary-btn text-xs">تغییر عکس</button>` : ''}
+                        ${canEdit() ? `<button id="delete-avatar-btn" class="secondary-btn text-xs">حذف عکس</button>` : ''}
+                        <span class="px-3 py-1 rounded-full text-xs font-bold bg-white/20 text-white">${emp.status}</span>
+                    </div>
                 </div>
-                <div class="card p-6 bg-gray-50 rounded-xl">
-                    <h4 class="font-semibold mb-4 text-slate-700 flex items-center"><i data-lucide="brain-circuit" class="ml-2 w-5 h-5 text-purple-500"></i>تحلیل هوشمند</h4>
-                    <div class="text-sm space-y-3">${Object.values(analysis).map(item => `<div class="flex items-start"><i data-lucide="${item.icon}" class="w-4 h-4 mt-1 ml-2 flex-shrink-0 ${item.color}"></i><div class="${item.color}">${item.text}</div></div>`).join('')}</div>
+            </section>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-1 space-y-6">
+                    <div class="bg-white rounded-2xl border border-slate-200 p-6">
+                        <h4 class="font-bold text-slate-800 mb-4 flex items-center"><i data-lucide="heart-pulse" class="ml-2 w-5 h-5" style="color:#6B69D6"></i>امتیاز مشارکت</h4>
+                        ${emp.engagementScore != null ? `
+                        <div class="relative w-40 h-20 mx-auto mt-2">
+                            <canvas id="engagementGaugeProfile"></canvas>
+                            <div class="absolute inset-0 flex items-center justify-center -bottom-4"><span class="text-3xl font-extrabold" style="color:#6B69D6">${emp.engagementScore}%</span></div>
+                        </div>` : '<p class="text-sm text-slate-500 text-center">هنوز امتیازی ثبت نشده است.</p>'}
+                    </div>
+                    <div class="bg-white rounded-2xl border border-slate-200 p-6">
+                        <h4 class="font-bold text-slate-800 mb-4 flex items-center"><i data-lucide="brain-circuit" class="ml-2 w-5 h-5" style="color:#6B69D6"></i>تحلیل هوشمند</h4>
+                        <div class="text-sm space-y-3">${Object.values(analysis).map(item => `<div class=\"flex items-start\"><i data-lucide=\"${item.icon}\" class=\"w-4 h-4 mt-1 ml-2 flex-shrink-0 ${item.color}\"></i><div class=\"${item.color}\">${item.text}</div></div>`).join('')}</div>
+                    </div>
                 </div>
-            </div>
-            <div class="lg:col-span-2 space-y-6">
-                <div class="bg-white rounded-xl shadow-md">
-                    <div class="border-b border-slate-200"><nav id="profile-tabs" class="flex -mb-px overflow-x-auto"><button data-tab="overview" class="profile-tab active shrink-0">نمای کلی</button><button data-tab="performance" class="profile-tab shrink-0">عملکرد</button><button data-tab="career" class="profile-tab shrink-0">مسیر شغلی</button><button data-tab="contracts" class="profile-tab shrink-0">قراردادها</button><button data-tab="personal" class="profile-tab shrink-0">اطلاعات پرسنلی</button></nav></div>
-                    <div class="p-4">
-                        <div id="tab-overview" class="profile-tab-content active">
-                            <div class="space-y-4">
-                                <div class="card p-4 bg-white rounded-xl border border-slate-200">
-                                    <h4 class="font-semibold mb-3 text-slate-700 flex items-center">
-                                        <i data-lucide="info" class="ml-2 w-5 h-5 text-gray-500"></i>
-                                        اطلاعات اصلی
-                                    </h4>
-                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-slate-600">
-                                        <p><strong>کد پرسنلی:</strong> ${emp.id}</p>
-                                        <p><strong>دپارتمان:</strong> ${emp.department || 'نامشخص'}</p>
-                                        <p><strong>مدیر:</strong> ${manager ? manager.name : 'نامشخص'}</p>
-                                        <p><strong>تاریخ استخدام:</strong> ${toPersianDate(emp.startDate)}</p>
-                                        <p><strong>وضعیت:</strong> <span class="px-2 py-1 text-xs font-medium rounded-full ${emp.status === 'فعال' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${emp.status}</span></p>
-                                    </div>
-                                </div>
-                                <div class="card p-4 bg-white rounded-xl border border-slate-200">
-                                    <div class="flex justify-between items-center mb-3">
-                                        <h4 class="font-semibold text-slate-700">
-                                            <i data-lucide="star" class="ml-2 w-5 h-5 text-amber-500"></i>
-                                            شایستگی‌های کلیدی
-                                        </h4>
-                                        ${canEdit() ? `<button id="edit-competencies-btn" class="text-sm bg-blue-500 text-white py-1 px-3 rounded-md hover:bg-blue-600">ویرایش</button>` : ''}
-                                    </div>
-                                    <div class="space-y-4">
-                                        ${renderCompetencyBars(emp.competencies)}
-                                    </div>
-                                </div>
-                            </div>
+                <div class="lg:col-span-2">
+                    <div class="bg-white rounded-2xl border border-slate-200">
+                        <div class="p-4 border-b border-slate-200">
+                            <nav id="profile-tabs" class="flex flex-wrap gap-2">
+                                <button data-tab="overview" class="profile-tab active primary-btn text-xs">نمای کلی</button>
+                                <button data-tab="performance" class="profile-tab secondary-btn text-xs">عملکرد</button>
+                                <button data-tab="career" class="profile-tab secondary-btn text-xs">مسیر شغلی</button>
+                                <button data-tab="contracts" class="profile-tab secondary-btn text-xs">قراردادها</button>
+                                <button data-tab="personal" class="profile-tab secondary-btn text-xs">اطلاعات پرسنلی</button>
+                            </nav>
                         </div>
-                        <div id="tab-performance" class="profile-tab-content">
-                            <div class="space-y-4">
-                                <div class="flex justify-between items-center mb-3">
-                                    <h4 class="font-semibold text-slate-700"><i data-lucide="clipboard-check" class="ml-2 w-5 h-5 text-green-600"></i>سابقه ارزیابی عملکرد</h4>
-                                    ${canEdit() ? `<button id="add-performance-btn" class="text-sm bg-blue-600 text-white py-1 px-3 rounded-md hover:bg-blue-700">افزودن</button>` : ''}
-                                </div>
+                        <div class="p-6">
+                            <div id="tab-overview" class="profile-tab-content">
                                 <div class="space-y-4">
-                                    ${(emp.performanceHistory && emp.performanceHistory.length > 0) ? emp.performanceHistory.sort((a,b) => new Date(b.reviewDate) - new Date(a.reviewDate)).map((review, index) => `<div class="card p-4 bg-white rounded-xl border border-slate-200"><div class="flex justify-between items-center mb-2"><p class="font-bold text-slate-800">امتیاز کلی: <span class="text-lg text-green-600">${review.overallScore}/5</span></p>${canEdit() ? `<div class="flex gap-2"><button class="edit-performance-btn text-blue-500" data-index="${index}"><i data-lucide="edit" class="w-4 h-4"></i></button><button class="delete-performance-btn text-red-500" data-index="${index}"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>` : ''}</div><p class="text-sm text-slate-500">تاریخ: ${toPersianDate(review.reviewDate)} | ارزیاب: ${review.reviewer}</p><div class="mt-4 border-t border-dashed pt-4"><p class="text-xs text-slate-700"><strong>نقاط قوت:</strong> ${review.strengths || '-'}</p><p class="text-xs text-slate-700 mt-2"><strong>زمینه‌های بهبود:</strong> ${review.areasForImprovement || '-'}</p></div></div>`).join('') : '<p class="text-sm text-slate-500">هنوز سابقه ارزیابی عملکردی ثبت نشده است.</p>'}
+                                    <div class="bg-white rounded-xl border border-slate-200 p-4">
+                                        <h4 class="font-semibold mb-3 text-slate-700 flex items-center"><i data-lucide="info" class="ml-2 w-5 h-5 text-slate-500"></i>اطلاعات اصلی</h4>
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-slate-600">
+                                            <p><strong>کد پرسنلی:</strong> ${emp.id}</p>
+                                            <p><strong>دپارتمان:</strong> ${emp.department || 'نامشخص'}</p>
+                                            <p><strong>مدیر:</strong> ${manager ? manager.name : 'نامشخص'}</p>
+                                            <p><strong>تاریخ استخدام:</strong> ${toPersianDate(emp.startDate)}</p>
+                                            <p><strong>وضعیت:</strong> <span class="px-2 py-1 text-xs font-medium rounded-full ${emp.status === 'فعال' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${emp.status}</span></p>
+                                        </div>
+                                    </div>
+                                    <div class="bg-white rounded-xl border border-slate-200 p-4">
+                                        <div class="flex justify-between items-center mb-3">
+                                            <h4 class="font-semibold text-slate-700"><i data-lucide="star" class="ml-2 w-5 h-5 text-amber-500"></i>شایستگی‌های کلیدی</h4>
+                                            ${canEdit() ? `<button id="edit-competencies-btn" class="primary-btn text-xs">ویرایش</button>` : ''}
+                                        </div>
+                                        <div class="space-y-4">${renderCompetencyBars(emp.competencies)}</div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        <div id="tab-career" class="profile-tab-content">
-                             </div>
-                        <div id="tab-contracts" class="profile-tab-content">
-                            </div>
-                        <div id="tab-personal" class="profile-tab-content">
-                            <div class="space-y-4">
-                                <div class="flex justify-between items-center mb-3">
-                                    <h4 class="font-semibold text-slate-700"><i data-lucide="user-cog" class="ml-2 w-5 h-5 text-gray-600"></i>اطلاعات پرسنلی</h4>
-                                    ${canEdit() ? `<button id="edit-personal-info-btn" class="text-sm bg-blue-600 text-white py-1 px-3 rounded-md hover:bg-blue-700">ویرایش</button>` : ''}
+                            <div id="tab-performance" class="profile-tab-content hidden">
+                                <div class="space-y-4">
+                                    <div class="flex justify-between items-center mb-3">
+                                        <h4 class="font-semibold text-slate-700"><i data-lucide="clipboard-check" class="ml-2 w-5 h-5" style="color:#6B69D6"></i>سابقه ارزیابی عملکرد</h4>
+                                        ${canEdit() ? `<button id="add-performance-btn" class="primary-btn text-xs">افزودن</button>` : ''}
+                                    </div>
+                                    <div class="space-y-4">${(emp.performanceHistory && emp.performanceHistory.length > 0) ? emp.performanceHistory.sort((a,b) => new Date(b.reviewDate) - new Date(a.reviewDate)).map((review, index) => `<div class=\"bg-white rounded-xl border border-slate-200 p-4\"><div class=\"flex justify-between items-center mb-2\"><p class=\"font-bold text-slate-800\">امتیاز کلی: <span style=\"color:#6B69D6\" class=\"text-lg\">${review.overallScore}/5</span></p>${canEdit() ? `<div class=\"flex gap-2\"><button class=\"edit-performance-btn text-blue-500\" data-index=\"${index}\"><i data-lucide=\"edit\" class=\"w-4 h-4\"></i></button><button class=\"delete-performance-btn text-red-500\" data-index=\"${index}\"><i data-lucide=\"trash-2\" class=\"w-4 h-4\"></i></button></div>` : ''}</div><p class=\"text-sm text-slate-500\">تاریخ: ${toPersianDate(review.reviewDate)} | ارزیاب: ${review.reviewer}</p><div class=\"mt-4 border-t border-dashed pt-4\"><p class=\"text-xs text-slate-700\"><strong>نقاط قوت:</strong> ${review.strengths || '-'} </p><p class=\"text-xs text-slate-700 mt-2\"><strong>زمینه‌های بهبود:</strong> ${review.areasForImprovement || '-'}</p></div></div>`).join('') : '<p class=\"text-sm text-slate-500\">هنوز سابقه ارزیابی عملکردی ثبت نشده است.</p>'}</div>
                                 </div>
-                                <div class="card p-4 bg-white rounded-xl border border-slate-200">
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-700">
-                                        <p><strong>جنسیت:</strong> ${emp.gender || '-'}</p>
-                                        <p><strong>ایمیل:</strong> ${emp.personalInfo?.email || '-'}</p>
-                                        <p><strong>شماره تماس:</strong> ${emp.personalInfo?.phone || '-'}</p>
-                                        <p><strong>تاریخ تولد:</strong> ${emp.personalInfo?.birthDate ? toPersianDate(emp.personalInfo.birthDate) : '-'}</p>
-                                        <p><strong>کد ملی:</strong> ${emp.personalInfo?.nationalId || '-'}</p>
-                                        <p class="md:col-span-2"><strong>آدرس:</strong> ${emp.personalInfo?.address || '-'}</p>
-                                        <p><strong>کد پستی:</strong> ${emp.personalInfo?.postalCode || '-'}</p>
-                                        <p><strong>شماره ثابت:</strong> ${emp.personalInfo?.landline || '-'}</p>
-                                        <p class="md:col-span-2"><strong>مدرک تحصیلی:</strong> ${emp.personalInfo?.education || '-'}</p>
-                                        <p><strong>وضعیت نظام وظیفه:</strong> ${emp.personalInfo?.militaryStatus || '-'}</p>
-                                        <p><strong>وضعیت تاهل:</strong> ${emp.personalInfo?.maritalStatus || '-'}</p>
-                                        <p><strong>مخاطب اضطراری:</strong> ${emp.personalInfo?.emergencyContactName || '-'}</p>
+                            </div>
+                            <div id="tab-career" class="profile-tab-content hidden"><p class="text-sm text-slate-500">به‌زودی...</p></div>
+                            <div id="tab-contracts" class="profile-tab-content hidden"><p class="text-sm text-slate-500">به‌زودی...</p></div>
+                            <div id="tab-personal" class="profile-tab-content hidden">
+                                <div class="space-y-4">
+                                    <div class="flex justify-between items-center mb-3">
+                                        <h4 class="font-semibold text-slate-700"><i data-lucide="user-cog" class="ml-2 w-5 h-5 text-slate-600"></i>اطلاعات پرسنلی</h4>
+                                        ${canEdit() ? `<button id="edit-personal-info-btn" class="primary-btn text-xs">ویرایش</button>` : ''}
+                                    </div>
+                                    <div class="bg-white rounded-xl border border-slate-200 p-4">
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-700">
+                                            <p><strong>جنسیت:</strong> ${emp.gender || '-'}</p>
+                                            <p><strong>ایمیل:</strong> ${emp.personalInfo?.email || '-'}</p>
+                                            <p><strong>شماره تماس:</strong> ${emp.personalInfo?.phone || '-'}</p>
+                                            <p><strong>تاریخ تولد:</strong> ${emp.personalInfo?.birthDate ? toPersianDate(emp.personalInfo.birthDate) : '-'}</p>
+                                            <p><strong>کد ملی:</strong> ${emp.personalInfo?.nationalId || '-'}</p>
+                                            <p class="md:col-span-2"><strong>آدرس:</strong> ${emp.personalInfo?.address || '-'}</p>
+                                            <p><strong>کد پستی:</strong> ${emp.personalInfo?.postalCode || '-'}</p>
+                                            <p><strong>شماره ثابت:</strong> ${emp.personalInfo?.landline || '-'}</p>
+                                            <p class="md:col-span-2"><strong>مدرک تحصیلی:</strong> ${emp.personalInfo?.education || '-'}</p>
+                                            <p><strong>وضعیت نظام وظیفه:</strong> ${emp.personalInfo?.militaryStatus || '-'}</p>
+                                            <p><strong>وضعیت تاهل:</strong> ${emp.personalInfo?.maritalStatus || '-'}</p>
+                                            <p><strong>مخاطب اضطراری:</strong> ${emp.personalInfo?.emergencyContactName || '-'}</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -3088,8 +3087,7 @@ const viewEmployeeProfile = (employeeId) => {
                     </div>
                 </div>
             </div>
-        </div>
-    `;
+        </div>`;
 
     openModal(mainModal, mainModalContainer);
     setupProfileModalListeners(emp);
