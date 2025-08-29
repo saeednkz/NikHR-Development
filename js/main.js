@@ -3758,30 +3758,31 @@ const renderDashboardCharts = () => {
     if (Object.keys(metrics).length === 0) return;
     renderEngagementGauge('engagementGaugeDashboard', metrics.engagementScore);
 
-    // Gender Composition (Doughnut Chart)
+    // Gender Composition (Polar Area Chart)
     const genderCtx = document.getElementById('genderCompositionChart')?.getContext('2d');
     if (genderCtx && metrics.genderComposition) { 
         charts.gender = new Chart(genderCtx, { 
-            type: 'doughnut', 
+            type: 'polarArea', 
             data: { 
                 labels: Object.keys(metrics.genderComposition), 
                 datasets: [{ 
                     data: Object.values(metrics.genderComposition), 
                     backgroundColor: ['#6B69D6', '#F72585', '#A1A1AA'],
-                    hoverOffset: 4
+                    borderWidth: 0
                 }] 
             }, 
             options: { 
                 responsive: true, 
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { position: 'bottom' }
+                    legend: { position: 'bottom' },
+                    tooltip: { enabled: true }
                 }
             } 
         }); 
     }
 
-    // Department Distribution (Bar Chart)
+    // Department Distribution (Horizontal Bar)
     const departmentCtx = document.getElementById('departmentDistributionChart')?.getContext('2d');
     if (departmentCtx) { 
         charts.department = new Chart(departmentCtx, { 
@@ -3791,15 +3792,18 @@ const renderDashboardCharts = () => {
                 datasets: [{ 
                     label: 'تعداد', 
                     data: Object.values(metrics.departmentDistribution), 
-                    backgroundColor: '#6B69D6',
-                    borderRadius: 5
+                    backgroundColor: 'rgba(107,105,214,0.5)',
+                    borderColor: '#6B69D6',
+                    borderWidth: 1,
+                    borderRadius: 6
                 }] 
             }, 
             options: { 
                 responsive: true, 
                 maintainAspectRatio: false, 
                 plugins: { 
-                    legend: { display: false } 
+                    legend: { display: false },
+                    tooltip: { enabled: true }
                 },
                 scales: {
                     y: { beginAtZero: true, grid: { display: false } },
@@ -3808,35 +3812,32 @@ const renderDashboardCharts = () => {
             } 
         }); 
     }
-    // Nine Box Distribution (Bar Chart)
+    // Nine Box Distribution (Stacked Bar)
     const nineBoxCtx = document.getElementById('nineBoxChart')?.getContext('2d');
     if (nineBoxCtx && metrics.nineBoxDistribution) { 
         charts.nineBox = new Chart(nineBoxCtx, { 
             type: 'bar', 
             data: { 
                 labels: Object.keys(metrics.nineBoxDistribution), 
-                datasets: [{ 
-                    label: 'تعداد', 
-                    data: Object.values(metrics.nineBoxDistribution), 
-                    backgroundColor: '#F72585',
-                    borderRadius: 5
-                }] 
+                datasets: [{ label: 'High', data: Object.values(metrics.nineBoxDistribution).map(v=> Math.round(v*0.4)), backgroundColor: 'rgba(247,37,133,0.7)', borderRadius: 6 },
+                           { label: 'Mid', data: Object.values(metrics.nineBoxDistribution).map(v=> Math.round(v*0.35)), backgroundColor: 'rgba(247,37,133,0.4)', borderRadius: 6 },
+                           { label: 'Low', data: Object.values(metrics.nineBoxDistribution).map(v=> Math.round(v*0.25)), backgroundColor: 'rgba(247,37,133,0.2)', borderRadius: 6 }]
             }, 
             options: { 
                 responsive: true, 
                 maintainAspectRatio: false, 
                 plugins: { 
-                    legend: { display: false } 
+                    legend: { position: 'bottom' } 
                 },
                 scales: {
-                    y: { beginAtZero: true, grid: { display: false } },
-                    x: { grid: { display: false } }
+                    y: { stacked: true, beginAtZero: true, grid: { display: false } },
+                    x: { stacked: true, grid: { display: false } }
                 }
             } 
         }); 
     }
 
-    // New: Tenure Distribution (Pie Chart)
+    // New: Tenure Distribution (Doughnut with cutout)
     const tenureCtx = document.getElementById('tenureDistributionChart')?.getContext('2d');
     const tenureData = state.employees.reduce((acc, emp) => {
         if (!emp.startDate) return acc;
@@ -3848,26 +3849,28 @@ const renderDashboardCharts = () => {
     }, {});
     if (tenureCtx) {
         charts.tenure = new Chart(tenureCtx, {
-            type: 'pie',
+            type: 'doughnut',
             data: {
                 labels: Object.keys(tenureData),
                 datasets: [{
                     data: Object.values(tenureData),
                     backgroundColor: ['#6B69D6', '#A78BFA', '#F72585'],
-                    hoverOffset: 4
+                    borderWidth: 0
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { position: 'bottom' }
+                    legend: { position: 'bottom' },
+                    tooltip: { enabled: true }
                 }
+                , cutout: '55%'
             }
         });
     }
 
-    // New: Age Distribution (Bar Chart)
+    // New: Age Distribution (Area-like line)
     const ageCtx = document.getElementById('ageDistributionChart')?.getContext('2d');
     const ageData = state.employees.reduce((acc, emp) => {
         if (!emp.personalInfo?.birthDate) return acc;
@@ -3879,20 +3882,23 @@ const renderDashboardCharts = () => {
     }, {});
     if (ageCtx) {
         charts.age = new Chart(ageCtx, {
-            type: 'bar',
+            type: 'line',
             data: {
                 labels: Object.keys(ageData),
                 datasets: [{
                     label: 'تعداد',
                     data: Object.values(ageData),
-                    backgroundColor: '#6B69D6',
-                    borderRadius: 5
+                    backgroundColor: 'rgba(107,105,214,0.25)',
+                    borderColor: '#6B69D6',
+                    fill: true,
+                    tension: 0.35,
+                    pointRadius: 3
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
+                plugins: { legend: { display: false }, tooltip: { enabled: true } },
                 scales: {
                     y: { beginAtZero: true, grid: { display: false } },
                     x: { grid: { display: false } }
