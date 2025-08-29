@@ -2465,6 +2465,24 @@ dashboard: () => {
             </div>
         </section>
 
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm mb-8 flex items-center justify-between gap-4">
+            <div class="flex items-center gap-4 min-w-0">
+                <div class="w-14 h-14 rounded-full overflow-hidden ring-2 ring-indigo-100 flex-shrink-0">
+                    <img src="${((state.users||[]).find(u=>u.firestoreId=== (state.currentUser && state.currentUser.uid))||{}).avatar || 'icons/icon-128x128.png'}" class="w-full h-full object-cover" alt="Admin">
+                </div>
+                <div class="min-w-0">
+                    <div class="text-slate-800 font-extrabold truncate">${((state.users||[]).find(u=>u.firestoreId=== (state.currentUser && state.currentUser.uid))||{}).name || state.currentUser.email}</div>
+                    <div class="text-xs text-slate-500 mt-0.5">${((state.users||[]).find(u=>u.firestoreId=== (state.currentUser && state.currentUser.uid))||{}).email || ''}</div>
+                    <div class="mt-1"><span class="px-2 py-0.5 text-[11px] rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100">مدیر سیستم</span></div>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button id="dash-quick-requests" class="inline-flex items-center gap-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg transition"><i data-lucide="archive" class="w-4 h-4"></i><span>درخواست‌ها</span></button>
+                <button id="dash-quick-add-emp" class="inline-flex items-center gap-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg transition"><i data-lucide="user-plus" class="w-4 h-4"></i><span>افزودن کارمند</span></button>
+                <button id="dash-quick-survey" class="inline-flex items-center gap-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg transition"><i data-lucide="clipboard-list" class="w-4 h-4"></i><span>نظرسنجی</span></button>
+            </div>
+        </div>
+
         
         
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
