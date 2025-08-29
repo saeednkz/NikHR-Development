@@ -45,60 +45,6 @@ import { showToast } from './utils.js';
         };
 
         export const state = { employees: [], teams: [], reminders: [], surveyResponses: [], users: [], competencies: [], expenses: [], pettyCashCards: [], chargeHistory: [], dashboardMetrics: {}, orgAnalytics: {}, currentPage: 'dashboard', currentPageTalent: 1, currentUser: null, };
-        
-// --- PERMISSIONS (non-breaking layer) ---
-const permissionPresets = {
-    viewer: [
-        'menu:dashboard:view'
-    ],
-    editor: [
-        'menu:dashboard:view','menu:talent:view','menu:organization:view','menu:surveys:view','menu:requests:view','menu:tasks:view','menu:analytics:view','menu:documents:view','menu:announcements:view'
-    ],
-    admin: ['*']
-};
-
-const getUserPermissions = (user) => {
-    if (!user) return [];
-    const explicit = Array.isArray(user.permissions) ? user.permissions : null;
-    if (explicit && explicit.length) return explicit;
-    const preset = permissionPresets[user.role] || [];
-    return preset.slice();
-};
-
-window.hasPermission = (key) => {
-    const user = (state.users || []).find(u => u.firestoreId === (state.currentUser && state.currentUser.uid));
-    const perms = getUserPermissions(user);
-    if (perms.includes('*')) return true;
-    return perms.includes(key);
-};
-
-const menuPermissionMap = {
-    dashboard: 'menu:dashboard:view',
-    talent: 'menu:talent:view',
-    organization: 'menu:organization:view',
-    surveys: 'menu:surveys:view',
-    requests: 'menu:requests:view',
-    tasks: 'menu:tasks:view',
-    analytics: 'menu:analytics:view',
-    documents: 'menu:documents:view',
-    announcements: 'menu:announcements:view',
-    settings: 'menu:settings:view'
-};
-
-window.applyAdminMenuPermissions = () => {
-    try {
-        if (!state.currentUser || state.currentUser.role === 'employee') return;
-        const links = document.querySelectorAll('#sidebar-nav .sidebar-item');
-        links.forEach(link => {
-            const hash = link.getAttribute('href') || '';
-            const page = hash.startsWith('#') ? hash.substring(1) : hash;
-            const perm = menuPermissionMap[page];
-            if (!perm) return;
-            const allow = window.hasPermission(perm);
-            link.classList.toggle('hidden', !allow);
-        });
-    } catch {}
-};
         let charts = {};
 let activeListeners = []; // [!code ++] این خط را اضافه کنید
         // این کد را نزدیک به تعریف state قرار دهید
@@ -170,22 +116,6 @@ async function initializeFirebase() {
             if (user) {
                 await fetchUserRole(user);
                 listenToData();
-                // Fallback in case listeners hang (network/rules): force render after 2.5s
-                setTimeout(() => {
-                    const overlay = document.getElementById('loading-overlay');
-                    if (overlay && overlay.style.display !== 'none') {
-                        try {
-                            if (state.currentUser && state.currentUser.role === 'employee' && window.renderEmployeePortal) {
-                                window.renderEmployeePortal();
-                            } else {
-                                showDashboard();
-                                if (typeof router === 'function') router();
-                            }
-                            overlay.style.display = 'none';
-                            if (window.applyAdminMenuPermissions) window.applyAdminMenuPermissions();
-                        } catch (e) { console.warn('Fallback render failed:', e); }
-                    }
-                }, 2500);
             } else {
                 state.currentUser = null;
                 detachAllListeners();
@@ -253,16 +183,13 @@ function listenToData() {
     const onDataLoaded = () => {
         initialLoads--;
         if (initialLoads === 0) {
-            try { setTimeout(() => { if (window.calculateAndApplyAnalytics) window.calculateAndApplyAnalytics(); }, 0); } catch {}
+            calculateAndApplyAnalytics();
             
             // فراخوانی تابع نوتیفیکیشن بعد از بارگذاری کامل داده‌ها
-            try { setTimeout(() => { if (window.updateNotificationsForCurrentUser) window.updateNotificationsForCurrentUser(); }, 0); } catch {}
+            updateNotificationsForCurrentUser(); 
             
             if (state.currentUser.role === 'employee') {
-                (function tryRender() {
-                    if (window.renderEmployeePortal) { window.renderEmployeePortal(); }
-                    else { setTimeout(tryRender, 0); }
-                })();
+                renderEmployeePortal();
             } else {
                 showDashboard();
                 router();
@@ -280,8 +207,8 @@ function listenToData() {
                 onDataLoaded();
             } else {
                 // با هر تغییر در داده‌ها، تمام بخش‌ها را بروز می‌کنیم
-                if (window.calculateAndApplyAnalytics) { window.calculateAndApplyAnalytics(); }
-                if (window.updateNotificationsForCurrentUser) { window.updateNotificationsForCurrentUser(); } // بروزرسانی نوتیفیکیشن‌ها در لحظه
+                calculateAndApplyAnalytics();
+                updateNotificationsForCurrentUser(); // بروزرسانی نوتیفیکیشن‌ها در لحظه
                 
                 if (state.currentUser.role !== 'employee' && !window.location.hash.startsWith('#survey-taker')) {
                     renderPage(state.currentPage);
@@ -316,9 +243,9 @@ export const router = () => {
         renderSurveyTakerPage(surveyId);
     } else {
         const pageName = hash.substring(1) || 'dashboard';
-        if (window.navigateTo) { window.navigateTo(pageName); }
+        navigateTo(pageName);
     }
-// removed stray closing brace that caused syntax error
+};
 // این دو تابع جدید را به فایل js/main.js اضافه کنید (مثلاً قبل از تابع renderEmployeePortal)
 
 // این دو تابع جدید را به js/main.js اضافه کنید
@@ -863,30 +790,35 @@ function renderEmployeePortalPage(pageName, employee) {
         window.renderMomentsList = () => {
             const container = document.getElementById('moments-list');
             if (!container) return;
-            const items = (state.moments || []).slice().sort((a,b)=> {
-                const bt = (b.createdAt && typeof b.createdAt.toDate === 'function') ? b.createdAt.toDate() : 0;
-                const at = (a.createdAt && typeof a.createdAt.toDate === 'function') ? a.createdAt.toDate() : 0;
-                return new Date(bt) - new Date(at);
-            });
+            const items = (state.moments || []).slice().sort((a,b)=> new Date(b.createdAt?.toDate?.()||0) - new Date(a.createdAt?.toDate?.()||0));
             // صفحه‌بندی نرم در کلاینت: فقط تا حد تعیین‌شده رندر می‌کنیم
             const page = window._momentsPage;
             const slice = items.filter((it, idx) => idx < (page.pageSize + (page.extra || 0)));
             container.innerHTML = slice.map(m => {
                 const owner = state.employees.find(e => e.uid === m.ownerUid) || {};
-                const meReactObj = (m.reactions || []).find(r => r.uid === employee.uid) || {};
-                const meReact = meReactObj.emoji;
-                const reactors = (m.reactions || []);
-                const topReactors = reactors.slice(0, 5);
-                const reactionsHtml = topReactors.map(r => {
+                const meReact = (m.reactions || []).find(r => r.uid === employee.uid)?.emoji;
+                const reactionsHtml = (m.reactions || []).map(r => {
                     const user = state.employees.find(e => e.uid === r.uid) || {};
                     return `<div class=\"flex items-center gap-1 text-xs bg-slate-100 rounded-full px-2 py-1\"><span>${r.emoji}</span><img src=\"${user.avatar || 'icons/icon-128x128.png'}\" class=\"w-4 h-4 rounded-full object-cover\"/><span class=\"text-slate-600\">${user.name || ''}</span></div>`;
                 }).join('');
-                const extraCount = Math.max(0, reactors.length - topReactors.length);
-                const cleanedUrl = (m.imageUrl || '').toString();
                 return `
-                <div class=\"bg-white rounded-2xl border border-slate-200 overflow-hidden\">\n                    <div class=\"flex items-center gap-2 p-3\">\n                        <img src=\"${owner.avatar || 'icons/icon-128x128.png'}\" class=\"w-10 h-10 rounded-full object-cover\"/>\n                        <div>\n                            <div class=\"font-bold text-slate-800 text-sm\">${owner.name || m.ownerName || 'کاربر'}</div>\n                            <div class=\"text-[11px] text-slate-500\">${toPersianDate(m.createdAt)}</div>\n                        </div>\n                    </div>\n                    ${m.text ? `<div class=\\\"text-sm text-slate-800 whitespace-pre-wrap mb-3\\\">${m.text}</div>` : ''}\n                    ${cleanedUrl ? `<img src=\\\"${cleanedUrl}\\\" class=\\\"w-full rounded-xl object-cover mb-3\\\"/>` : ''}\n                    <div class=\"flex items-center gap-2\">\n                        ${['👍','❤️','😂','🎉','👎'].map(e=> `<button class=\\\"moment-react-btn text-sm px-2 py-1 rounded-full ${meReact===e ? 'bg-slate-800 text-white':'bg-slate-100 text-slate-700'}\\\" data-id=\\\"${m.firestoreId}\\\" data-emoji=\\\"${e}\\\">${e}</button>`).join('')}\n                    </div>\n                    <div class=\"flex flex-wrap gap-2 mt-3\">${reactionsHtml}${extraCount? `<span class=\\\"text-xs text-slate-500\\\">+${extraCount}</span>`:''}</div>\n                </div>`;
+                <div class=\"bg-white rounded-2xl border border-slate-200 p-4\">
+                    <div class=\"flex items-center gap-2 mb-3\">
+                        <img src=\"${owner.avatar || 'icons/icon-128x128.png'}\" class=\"w-10 h-10 rounded-full object-cover\"/>
+                        <div>
+                            <div class=\"font-bold text-slate-800 text-sm\">${owner.name || m.ownerName || 'کاربر'}</div>
+                            <div class=\"text-[11px] text-slate-500\">${toPersianDate(m.createdAt)}</div>
+                        </div>
+                    </div>
+                    ${m.text ? `<div class=\"text-sm text-slate-800 whitespace-pre-wrap mb-3\">${m.text}</div>` : ''}
+                    ${m.imageUrl ? `<img src=\"${m.imageUrl}\" class=\"w-full rounded-xl object-cover mb-3\"/>` : ''}
+                    <div class=\"flex items-center gap-2\">
+                        ${['👍','❤️','😂','🎉','👎'].map(e=> `<button class=\"moment-react-btn text-sm px-2 py-1 rounded-full ${meReact===e ? 'bg-slate-800 text-white':'bg-slate-100 text-slate-700'}\" data-id=\"${m.firestoreId}\" data-emoji=\"${e}\">${e}</button>`).join('')}
+                    </div>
+                    <div class=\"flex flex-wrap gap-2 mt-3\">${reactionsHtml}</div>
+                </div>`;
             }).join('');
-            if (window.lucide && typeof window.lucide.createIcons === 'function') { lucide.createIcons(); }
+            if (window.lucide?.createIcons) lucide.createIcons();
         };
 
         window.renderMomentsList();
@@ -1015,7 +947,7 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
             if (closeInfo) {
                 const bubble = document.getElementById('info-bubble');
                 const infoId = bubble?.getAttribute('data-info-id');
-                const uid = (state.currentUser && state.currentUser.uid) || (employee ? employee.uid : null);
+                const uid = (state.currentUser && state.currentUser.uid) || employee?.uid;
                 if (uid && infoId) {
                     try { localStorage.setItem(`dismiss_info_${uid}`, infoId); } catch {}
                 }
@@ -1079,7 +1011,7 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
                     try {
                         const text = (document.getElementById('moment-text')||{}).value?.trim() || '';
                         const fileInput = document.getElementById('moment-image');
-                        const file = (fileInput && fileInput.files && fileInput.files[0]) || null;
+                        const file = fileInput?.files?.[0];
                         if ((text && file) || (!text && !file)) { showToast('فقط یکی از متن یا عکس را انتخاب کنید.', 'error'); return; }
                         let imageUrl = '';
                         if (file) {
@@ -1134,11 +1066,12 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
 // کل این تابع را با نسخه جدید جایگزین کنید
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
+
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
-window.renderEmployeePortal = function renderEmployeePortal() {
+function renderEmployeePortal() {
     document.getElementById('login-container').classList.add('hidden');
     document.getElementById('dashboard-container').classList.add('hidden');
     
@@ -1384,10 +1317,13 @@ const persianToEnglishDate = (persianDateStr) => {
 // --- نسخه نهایی با استراتژی Lazy Initialization (ساخت تقویم فقط در زمان کلیک) ---
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
+
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
+
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
+
 // فایل: main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
 // فایل: main.js
@@ -1457,7 +1393,7 @@ const activatePersianDatePicker = (elementId, initialValue = null) => {
         container.innerHTML = paginationHtml;
     };
         // --- تابع جدید برای تحلیل داده‌های نظرسنجی و اعمال نتایج ---
-window.calculateAndApplyAnalytics = () => {
+const calculateAndApplyAnalytics = () => {
         if (!state.surveyResponses) return;
         console.log("Running survey and risk analytics...");
         
@@ -2380,7 +2316,7 @@ const updateNotificationBell = () => {
     }
 };   
 // این تابع جدید را به js/main.js اضافه کنید
-window.updateNotificationsForCurrentUser = () => {
+const updateNotificationsForCurrentUser = () => {
     if (!state.currentUser) return;
 
     if (state.currentUser.role === 'employee') {
@@ -2711,6 +2647,7 @@ requests: () => {
             </tr>
         `;
     }).join('');
+
     return `
         <section class="rounded-2xl overflow-hidden border mb-6" style="background:linear-gradient(90deg,#FF6A3D,#F72585)">
             <div class="p-6 sm:p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -3049,6 +2986,7 @@ settings: () => {
         `;
     }).join('');
     const defaultRule = (state.assignmentRules || []).find(r => r.firestoreId === '_default'); // [!code --]
+    
     return `
         <div class="flex items-center justify-between mb-4">
             <div>
@@ -3060,7 +2998,6 @@ settings: () => {
             <nav id="settings-tabs" class="flex gap-2" aria-label="Tabs">
                 <button data-tab="users" class="settings-tab primary-btn text-xs py-2 px-3">کاربران</button>
                 <button data-tab="configs" class="settings-tab secondary-btn text-xs py-2 px-3">پیکربندی سازمان</button>
-                <button data-tab="access" class="settings-tab secondary-btn text-xs py-2 px-3">دسترسی‌ها</button>
             </nav>
         </div>
         <div id="settings-tab-content">
@@ -3095,21 +3032,6 @@ settings: () => {
                             <option value="">هیچکس</option>
                             ${admins.map(admin => `<option value="${admin.firestoreId}" ${defaultRule?.assigneeUid === admin.firestoreId ? 'selected' : ''}>${admin.name || admin.email}</option>`).join('')}
                          </select>
-                    </div>
-                </div>
-            </div>
-            <div id="tab-access" class="settings-tab-pane hidden space-y-6">
-                <div class="card p-6">
-                    <h3 class="font-semibold text-lg mb-4 flex items-center"><i data-lucide="shield" class="ml-2 text-indigo-500"></i>کنترل دسترسی (Permissions)</h3>
-                    <div class="mb-3">
-                        <label class="block text-sm font-medium mb-1">انتخاب کاربر</label>
-                        <select id="perm-user-select" class="p-2 border rounded-md bg-white">
-                            ${(state.users||[]).map(u=> `<option value="${u.firestoreId}">${u.name || u.email}</option>`).join('')}
-                        </select>
-                    </div>
-                    <div id="perm-editor" class="space-y-2"></div>
-                    <div class="mt-4 flex justify-end">
-                        <button id="save-perms-btn" class="primary-btn text-sm">ذخیره دسترسی‌ها</button>
                     </div>
                 </div>
             </div>
@@ -3169,7 +3091,7 @@ const showEditUserForm = (user) => {
     });
 };
 // در فایل js/main.js
-// کل این تابع را با نسخه جدید جایگزین کنید
+// کل این تابع را با نسخه جدید و کامل جایگزین کنید
 
 function setupProfileModalListeners(emp) {
     const tabs = document.querySelectorAll('#profile-tabs .profile-tab');
@@ -3688,14 +3610,13 @@ const viewTeamProfile = (teamId) => {
 };
 
         // --- NAVIGATION & ROUTING ---
-        window.navigateTo = (pageName) => {
+        const navigateTo = (pageName) => {
             state.currentPage = pageName;
             window.location.hash = pageName;
             document.querySelectorAll('.sidebar-item').forEach(item => {
                 item.classList.toggle('active', item.getAttribute('href') === `#${pageName}`);
             });
             renderPage(pageName);
-            window.applyAdminMenuPermissions && window.applyAdminMenuPermissions();
         };
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید و کامل جایگزین کنید
@@ -3717,7 +3638,6 @@ const renderPage = (pageName) => {
        
 
         mainContent.innerHTML = pages[pageName]();
-        if (window.applyAdminMenuPermissions) { window.applyAdminMenuPermissions(); }
         
         // فراخوانی تابع فعال‌سازی مخصوص هر صفحه
         if (pageName === 'dashboard') { renderDashboardCharts(); setupDashboardListeners(); setupDashboardQuickActions(); }
@@ -4008,6 +3928,7 @@ const renderEngagementGauge = (canvasId, score) => {
 // کل این تابع را با نسخه جدید و کامل جایگزین کنید
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید و کامل جایگزین کنید
+
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
 const renderAllReminders = () => {
@@ -4213,7 +4134,7 @@ const setupAnnouncementsPageListeners = () => {
             </div>`;
         }).join('');
         container.innerHTML = html || '<p class="text-center text-slate-500 py-8 text-sm">اعلانی موجود نیست.</p>';
-        if (window.lucide && typeof window.lucide.createIcons === 'function') { lucide.createIcons(); }
+        if (window.lucide?.createIcons) lucide.createIcons();
     };
 
     searchInput?.addEventListener('input', renderList);
@@ -4243,63 +4164,6 @@ const setupAnnouncementsPageListeners = () => {
 
     renderList();
 };
-
-// Settings listeners (incl. Access Control)
-function setupSettingsPageListeners() {
-    try {
-        // tabs
-        const tabs = document.querySelectorAll('#settings-tabs .settings-tab');
-        const panes = document.querySelectorAll('.settings-tab-pane');
-        tabs.forEach(btn => {
-            btn.addEventListener('click', () => {
-                const tab = btn.getAttribute('data-tab');
-                tabs.forEach(t => t.classList.remove('primary-btn')); tabs.forEach(t => t.classList.add('secondary-btn'));
-                btn.classList.remove('secondary-btn'); btn.classList.add('primary-btn');
-                panes.forEach(p => p.classList.add('hidden'));
-                const pane = document.getElementById(`tab-${tab}`); if (pane) pane.classList.remove('hidden');
-            });
-        });
-
-        // Access Control
-        const permUserSel = document.getElementById('perm-user-select');
-        const permEditor = document.getElementById('perm-editor');
-        const renderPerms = () => {
-            if (!permUserSel || !permEditor) return;
-            const uid = permUserSel.value;
-            const user = (state.users||[]).find(u=> u.firestoreId === uid);
-            const allPerms = Object.values(menuPermissionMap).filter(Boolean);
-            const userPerms = new Set(getUserPermissions(user));
-            permEditor.innerHTML = `
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    ${allPerms.map(p=> `<label class=\"flex items-center gap-2 p-2 border rounded-lg\"><input type=\"checkbox\" class=\"perm-chk\" value=\"${p}\" ${userPerms.has('*') || userPerms.has(p) ? 'checked' : ''}><span class=\"text-sm\">${p}</span></label>`).join('')}
-                </div>
-                <div class="mt-2 flex items-center gap-2"><label class="flex items-center gap-2"><input type="checkbox" id="perm-all" ${userPerms.has('*') ? 'checked' : ''}><span class="text-sm">تمام دسترسی‌ها (*)</span></label></div>
-            `;
-        };
-        permUserSel && permUserSel.addEventListener('change', renderPerms);
-        renderPerms();
-
-        document.getElementById('save-perms-btn')?.addEventListener('click', async () => {
-            const uid = permUserSel && permUserSel.value;
-            if (!uid) return;
-            const userRef = doc(db, `artifacts/${appId}/public/data/users`, uid);
-            const allChk = document.getElementById('perm-all');
-            let perms = [];
-            if (allChk && allChk.checked) {
-                perms = ['*'];
-            } else {
-                perms = Array.from(document.querySelectorAll('.perm-chk:checked')).map(cb=> cb.value);
-            }
-            try {
-                await updateDoc(userRef, { permissions: perms });
-                showToast('دسترسی‌ها ذخیره شد.');
-                // refresh local state user
-                const u = (state.users||[]).find(u=> u.firestoreId === uid); if (u) u.permissions = perms;
-                window.applyAdminMenuPermissions && window.applyAdminMenuPermissions();
-            } catch (e) { showToast('خطا در ذخیره دسترسی‌ها', 'error'); }
-        });
-    } catch {}
-}
 const renderEmployeeTable = () => {
     const TALENT_PAGE_SIZE = 12;
     const searchInput = document.getElementById('searchInput')?.value.toLowerCase() || '';
@@ -4408,15 +4272,355 @@ const renderEmployeeTable = () => {
     const csvContent = "data:text/csv;charset=utf-8,\uFEFF" // \uFEFF برای پشتیبانی از زبان فارسی در اکسل
         + headers.join(',') + '\n'
         + rows.join('\n');
+
     // ۵. فایل را برای دانلود آماده می‌کنیم
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
     link.setAttribute("download", "employees_export.csv");
     document.body.appendChild(link);
+
     link.click(); // دانلود فایل
     document.body.removeChild(link);
 };
+        const exportTransactionsToCSV = () => {
+    const startDateStr = persianToEnglishDate(document.getElementById('start-date-filter').value);
+    const endDateStr = persianToEnglishDate(document.getElementById('end-date-filter').value);
+
+    const startDate = startDateStr ? new Date(startDateStr) : null;
+    if(startDate) startDate.setHours(0, 0, 0, 0);
+
+    const endDate = endDateStr ? new Date(endDateStr) : null;
+    if(endDate) endDate.setHours(23, 59, 59, 999);
+
+    const expensesWithDetails = state.expenses.map(exp => ({ ...exp, type: 'هزینه' }));
+    const chargesWithDetails = state.chargeHistory.map(chg => ({ ...chg, type: 'شارژ', date: chg.chargedAt?.toDate(), item: `شارژ کارت ${chg.cardName}` }));
+    const allTransactions = [...expensesWithDetails, ...chargesWithDetails]
+        .filter(t => t.date)
+        .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    const filteredTransactions = allTransactions.filter(t => {
+        const transactionDate = new Date(t.date);
+        if (startDate && endDate) {
+            return transactionDate >= startDate && transactionDate <= endDate;
+        }
+        if (startDate) {
+            return transactionDate >= startDate;
+        }
+        if (endDate) {
+            return transactionDate <= endDate;
+        }
+        return true;
+    });
+
+    if (filteredTransactions.length === 0) {
+        showToast("هیچ تراکنشی در بازه زمانی انتخابی یافت نشد.", "error");
+        return;
+    }
+
+    const headers = ["تاریخ", "نوع", "شرح", "کارت", "مبلغ"];
+    const rows = filteredTransactions.map(t => {
+        const cardName = t.type === 'هزینه' ? (state.pettyCashCards.find(c => c.firestoreId === t.cardId)?.name || '') : t.cardName;
+        const amount = t.type === 'هزینه' ? -t.amount : t.amount;
+        const cleanValue = val => `"${(val || '').toString().replace(/"/g, '""')}"`;
+        return [
+            cleanValue(toPersianDate(t.date)),
+            cleanValue(t.type),
+            cleanValue(t.item),
+            cleanValue(cardName),
+            amount
+        ].join(',');
+    });
+
+    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + headers.join(',') + '\n' + rows.join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "transactions_export.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
+const setupTalentPageListeners = () => {
+    // ریست کردن صفحه به ۱ هنگام جستجو یا فیلتر
+    const resetToFirstPage = () => {
+        state.currentPageTalent = 1;
+        renderEmployeeTable();
+    };
+
+    document.getElementById('searchInput')?.addEventListener('input', resetToFirstPage);
+    document.getElementById('departmentFilter')?.addEventListener('change', resetToFirstPage);
+    document.getElementById('statusFilter')?.addEventListener('change', resetToFirstPage);
+    
+    // اتصال دکمه افزودن کارمند به تابع مربوطه
+    document.getElementById('add-employee-btn')?.addEventListener('click', () => showEmployeeForm());
+    
+    // اتصال دکمه خروجی CSV به تابع مربوطه
+    document.getElementById('export-csv-btn')?.addEventListener('click', exportToCSV);
+
+    // مدیریت کلیک روی کارت‌ها (مشاهده، ویرایش، حذف)
+    const mainContentArea = document.getElementById('main-content');
+    
+    mainContentArea.addEventListener('click', (e) => {
+        const viewEmpBtn = e.target.closest('.view-employee-profile-btn');
+        const editEmpBtn = e.target.closest('.edit-employee-btn');
+        const deleteEmpBtn = e.target.closest('.delete-employee-btn');
+        const paginationBtn = e.target.closest('.pagination-btn');
+
+        if (paginationBtn && !paginationBtn.disabled) {
+            state.currentPageTalent = Number(paginationBtn.dataset.page);
+            renderEmployeeTable();
+        }
+
+        if (viewEmpBtn) {
+            viewEmployeeProfile(viewEmpBtn.dataset.employeeId);
+        } else if (editEmpBtn) {
+            showEmployeeForm(editEmpBtn.dataset.employeeId);
+        } else if (deleteEmpBtn) {
+            showConfirmationModal("حذف کارمند", "آیا از حذف این کارمند مطمئن هستید؟", async () => {
+                try {
+                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/employees`, deleteEmpBtn.dataset.employeeId));
+                    showToast("کارمند با موفقیت حذف شد.");
+                } catch (error) {
+                    console.error("Error deleting employee:", error);
+                    showToast("خطا در حذف کارمند.", "error");
+                }
+            });
+        }
+    });
+};
+// کل این تابع را با نسخه جدید جایگزین کنید
+const setupOrganizationPageListeners = () => {
+    document.getElementById('add-team-btn')?.addEventListener('click', () => showTeamForm());
+    document.getElementById('add-team-btn-empty')?.addEventListener('click', () => showTeamForm());
+
+    // از شناسه جدید برای پیدا کردن کانتینر استفاده می‌کنیم
+    const teamsContainer = document.getElementById('teams-container');
+    if(teamsContainer) {
+        teamsContainer.addEventListener('click', (e) => {
+            const viewTeamBtn = e.target.closest('.view-team-profile-btn');
+            const deleteTeamBtn = e.target.closest('.delete-team-btn');
+
+            if (viewTeamBtn) {
+                viewTeamProfile(viewTeamBtn.dataset.teamId);
+            } else if (deleteTeamBtn) {
+                showConfirmationModal("حذف تیم", "آیا از حذف این تیم مطمئن هستید؟", async () => { 
+                    try { 
+                        await deleteDoc(doc(db, `artifacts/${appId}/public/data/teams`, deleteTeamBtn.dataset.teamId)); 
+                        showToast("تیم با موفقیت حذف شد."); 
+                    } catch (error) { 
+                        console.error("Error deleting team:", error); 
+                        showToast("خطا در حذف تیم.", "error"); 
+                    } 
+                });
+            }
+        });
+    }
+};
+// این تابع جدید را به js/main.js اضافه کنید
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید جایگزین کنید
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید و کامل جایگزین کنید
+
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید و کامل جایگزین کنید
+
+const setupRequestsPageListeners = () => {
+    // بخش ۱: خوانده شده کردن درخواست‌های جدید
+    // این کد چک می‌کند اگر در حال مشاهده "درخواست‌های من" هستیم، آن‌ها را به وضعیت "خوانده شده" تغییر دهد.
+    if (state.requestFilter === 'mine' && state.currentUser) {
+        const unreadRequests = (state.requests || []).filter(req =>
+            req.assignedTo === state.currentUser.uid && !req.isReadByAssignee
+        );
+
+        if (unreadRequests.length > 0) {
+            const batch = writeBatch(db);
+            unreadRequests.forEach(req => {
+                const docRef = doc(db, `artifacts/${appId}/public/data/requests`, req.firestoreId);
+                batch.update(docRef, { isReadByAssignee: true });
+            });
+              batch.commit().then(() => {
+                updateNotificationBell(); // [!code ++] بروزرسانی فوری زنگوله
+            }).catch(err => console.error("Error marking requests as read:", err));
+        }
+    }
+
+    // بخش ۲: فعال‌سازی دکمه‌های فیلتر ("همه" و "واگذار شده به من")
+    document.querySelectorAll('.request-filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            state.requestFilter = btn.dataset.filter;
+            renderPage('requests');
+        });
+    });
+
+    const tableBody = document.getElementById('requests-table-body');
+    if (!tableBody) return;
+
+    // بخش ۳: فعال‌سازی منوی کشویی "واگذار به" (برای واگذاری مجدد)
+    tableBody.addEventListener('input', async (e) => {
+        if (e.target.classList.contains('assign-request-select')) {
+            const selectElement = e.target;
+            const requestId = selectElement.dataset.id;
+            const adminUid = selectElement.value;
+
+            const requestRef = doc(db, `artifacts/${appId}/public/data/requests`, requestId);
+
+            try {
+                // هنگام واگذاری مجدد، وضعیت خوانده شده را ریست می‌کنیم تا برای نفر جدید، نوتیفیکیشن ارسال شود
+                await updateDoc(requestRef, {
+                    assignedTo: adminUid || null,
+                    isReadByAssignee: false
+                });
+                showToast(`درخواست به کاربر مورد نظر واگذار شد.`);
+            } catch (error) {
+                console.error("Error re-assigning request:", error);
+                showToast("خطا در واگذاری درخواست.", "error");
+            }
+        }
+    });
+
+    // بخش ۴: فعال‌سازی دکمه جدید "پردازش"
+    tableBody.addEventListener('click', async (e) => {
+        const processBtn = e.target.closest('.process-request-btn');
+        if (processBtn) {
+            const requestId = processBtn.dataset.id;
+            (window.showProcessRequestForm || (()=>{}))(requestId);
+        }
+    });
+};
+// این تابع جدید را به js/main.js اضافه کنید
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید جایگزین کنید
+const setupTasksPageListeners = () => {
+    const tableBody = document.getElementById('tasks-table-body');
+    if (!tableBody) return;
+
+    // منطق واگذاری مجدد یادآورها
+    tableBody.addEventListener('input', async (e) => {
+        if (e.target.classList.contains('assign-reminder-select')) {
+            const reminderId = e.target.dataset.id;
+            const adminUid = e.target.value;
+            const reminderRef = doc(db, `artifacts/${appId}/public/data/reminders`, reminderId);
+            try {
+                await updateDoc(reminderRef, { assignedTo: adminUid, isReadByAssignee: false });
+                showToast(`یادآور به کاربر مورد نظر واگذار شد.`);
+            } catch (error) { showToast("خطا در واگذاری یادآور.", "error"); }
+        }
+    });
+
+    // منطق کلیک روی دکمه پردازش
+    tableBody.addEventListener('click', (e) => {
+        const processBtn = e.target.closest('.process-reminder-btn');
+        if (processBtn) {
+            (window.showProcessReminderForm || (()=>{}))(processBtn.dataset.id);
+        }
+    });
+};
+// Minimal processing modal for reminders (fallback)
+if (typeof window.showProcessReminderForm !== 'function') {
+    window.showProcessReminderForm = (reminderId) => {
+        const reminder = (state.reminders || []).find(r => r.firestoreId === reminderId);
+        if (!reminder) { showToast('یادآور یافت نشد.', 'error'); return; }
+        modalTitle.innerText = `پردازش یادآور: ${reminder.type || ''}`;
+        modalContent.innerHTML = `
+            <form id="process-reminder-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium">وضعیت</label>
+                    <select id="reminder-status" class="w-full p-2 border rounded-md bg-white">
+                        <option ${reminder.status==='جدید'?'selected':''} value="جدید">جدید</option>
+                        <option ${reminder.status==='در حال انجام'?'selected':''} value="در حال انجام">در حال انجام</option>
+                        <option ${reminder.status==='انجام شده'?'selected':''} value="انجام شده">انجام شده</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium">یادداشت پردازش</label>
+                    <textarea id="reminder-notes" rows="4" class="w-full p-2 border rounded-md">${reminder.processingNotes || ''}</textarea>
+                </div>
+                <div class="flex justify-end gap-2">
+                    <button type="button" id="cancel-process-reminder" class="bg-slate-200 text-slate-800 py-2 px-4 rounded-md hover:bg-slate-300">انصراف</button>
+                    <button type="submit" class="primary-btn">ذخیره</button>
+                </div>
+            </form>`;
+        openModal(mainModal, mainModalContainer);
+        document.getElementById('cancel-process-reminder')?.addEventListener('click', () => closeModal(mainModal, mainModalContainer));
+        document.getElementById('process-reminder-form')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                const newStatus = document.getElementById('reminder-status').value;
+                const notes = document.getElementById('reminder-notes').value.trim();
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/reminders`, reminderId), {
+                    status: newStatus,
+                    processingNotes: notes,
+                    lastUpdatedAt: serverTimestamp()
+                });
+                showToast('یادآور به‌روزرسانی شد.');
+                closeModal(mainModal, mainModalContainer);
+                renderPage('tasks');
+            } catch (error) {
+                console.error('Error processing reminder:', error);
+                showToast('خطا در ذخیره یادآور.', 'error');
+            }
+        });
+    };
+}
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید جایگزین کنید
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید جایگزین کنید
+const setupSettingsPageListeners = () => {
+    const mainContentArea = document.getElementById('main-content');
+    if (!mainContentArea) return;
+
+    mainContentArea.querySelectorAll('.settings-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            mainContentArea.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('border-blue-600', 'text-blue-600'));
+            tab.classList.add('border-blue-600', 'text-blue-600');
+            mainContentArea.querySelectorAll('.settings-tab-pane').forEach(pane => {
+                pane.classList.toggle('hidden', pane.id !== `tab-${tab.dataset.tab}`);
+            });
+        });
+    });
+
+    mainContentArea.addEventListener('click', (e) => {
+        const addUserBtn = e.target.closest('#add-user-btn');
+        const editUserBtn = e.target.closest('.edit-user-btn');
+        const deleteUserBtn = e.target.closest('.delete-user-btn');
+        const deleteCompetencyBtn = e.target.closest('.delete-competency-btn');
+        const addRuleBtn = e.target.closest('#add-rule-btn');
+        const editRuleBtn = e.target.closest('.edit-rule-btn');
+        const deleteRuleBtn = e.target.closest('.delete-rule-btn');
+        
+        if (addUserBtn) showAddUserForm();
+        if (editUserBtn) {
+            const user = state.users.find(u => u.firestoreId === editUserBtn.dataset.uid);
+            if(user) showEditUserForm(user);
+        }
+        if (deleteUserBtn) { /* ... کد قبلی ... */ }
+        if (deleteCompetencyBtn) {
+            const compId = deleteCompetencyBtn.dataset.id;
+            showConfirmationModal('حذف شایستگی', 'این شایستگی از لیست حذف خواهد شد. ادامه می‌دهید؟', async () => {
+                try {
+                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/competencies`, compId));
+                    showToast('شایستگی حذف شد.');
+                } catch (err) {
+                    console.error('Error deleting competency', err);
+                    showToast('خطا در حذف شایستگی.', 'error');
+                }
+            });
+        }
+        
+        if (addRuleBtn) showAssignmentRuleForm();
+        if (editRuleBtn) showAssignmentRuleForm(editRuleBtn.dataset.id);
+        if (deleteRuleBtn) {
+            showConfirmationModal('حذف قانون', 'آیا از حذف این قانون واگذاری مطمئن هستید؟', async () => {
+                try {
+                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/assignmentRules`, deleteRuleBtn.dataset.id));
+                    showToast("قانون با موفقیت حذف شد.");
+                } catch (error) { showToast("خطا در حذف قانون.", "error"); }
+            });
+        }
+    });
     const addCompetencyForm = document.getElementById('add-competency-form');
     if (addCompetencyForm) {
         addCompetencyForm.addEventListener('submit', async (e) => {
@@ -4744,6 +4948,7 @@ const showExpenseForm = () => {
                 submitBtn.innerText = 'ذخیره';
                 return;
             }
+
             try {
                 if (invoiceFile) {
                     const filePath = `invoices/${Date.now()}_${invoiceFile.name}`;
@@ -5671,6 +5876,8 @@ function formatTargetsText(targets) {
     if (targets.type === 'users') return `افراد: ${(targets.userNames || targets.userIds || []).join('، ')}`;
     return '';
 }
+
+    
 // Minimal personal info editor (fallback)
 if (typeof window.showEditPersonalInfoForm !== 'function') {
     window.showEditPersonalInfoForm = (emp) => {
@@ -5760,6 +5967,257 @@ if (typeof window.showEditPersonalInfoForm !== 'function') {
         });
     };
 }
+        
+        // --- EDIT FORM FUNCTIONS ---
+// Team members editor
+if (typeof window.showEditTeamMembersForm !== 'function') {
+    window.showEditTeamMembersForm = (team) => {
+        const allEmployees = state.employees;
+        const selectedIds = new Set(team.memberIds || []);
+        modalTitle.innerText = `ویرایش اعضای تیم ${team.name}`;
+        const listHtml = allEmployees.map(emp => `
+            <label class="flex items-center gap-2 p-2 border rounded-md">
+                <input type="checkbox" class="emp-chk" value="${emp.id}" ${selectedIds.has(emp.id)?'checked':''}>
+                <span class="text-sm">${emp.name} (${emp.id})</span>
+            </label>`).join('');
+        modalContent.innerHTML = `
+            <form id="edit-team-members-form" class="space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-80 overflow-y-auto pr-2">${listHtml}</div>
+                <div class="flex justify-end gap-2">
+                    <button type="button" id="cancel-team-members" class="bg-slate-200 text-slate-800 py-2 px-4 rounded-md hover:bg-slate-300">انصراف</button>
+                    <button type="submit" class="primary-btn">ذخیره</button>
+                </div>
+            </form>`;
+        openModal(mainModal, mainModalContainer);
+        document.getElementById('cancel-team-members')?.addEventListener('click', () => viewTeamProfile(team.firestoreId));
+        document.getElementById('edit-team-members-form')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                const newMemberIds = Array.from(document.querySelectorAll('.emp-chk'))
+                    .filter(chk => chk.checked)
+                    .map(chk => chk.value);
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/teams`, team.firestoreId), { memberIds: newMemberIds });
+                showToast('اعضای تیم به‌روزرسانی شد.');
+                viewTeamProfile(team.firestoreId);
+            } catch (error) {
+                console.error('Error updating team members', error);
+                showToast('خطا در ذخیره اعضای تیم.', 'error');
+            }
+        });
+    };
+}
+// Team OKRs editor
+if (typeof window.showEditTeamOkrsForm !== 'function') {
+    window.showEditTeamOkrsForm = (team) => {
+        modalTitle.innerText = `ویرایش اهداف تیم (${team.name})`;
+        const okrsHtml = (team.okrs || []).map((okr) => `
+            <div class="okr-item grid grid-cols-12 gap-2 items-center">
+                <input type="text" value="${okr.title}" class="col-span-8 p-2 border rounded-md okr-title" placeholder="عنوان هدف">
+                <input type="number" value="${okr.progress}" class="col-span-3 p-2 border rounded-md okr-progress" placeholder="پیشرفت %" min="0" max="100">
+                <button type="button" class="col-span-1 remove-okr-btn text-red-500 hover:text-red-700"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+            </div>`).join('');
+        modalContent.innerHTML = `
+            <form id="edit-team-okrs-form">
+                <div id="team-okrs-container" class="space-y-2">${okrsHtml}</div>
+                <button type="button" id="add-team-okr-btn" class="mt-4 text-sm bg-gray-200 py-2 px-4 rounded-md hover:bg-gray-300">افزودن هدف جدید</button>
+                <div class="pt-6 flex justify-end gap-4">
+                    <button type="button" id="back-to-team-profile-okr" class="bg-gray-500 text-white py-2 px-6 rounded-md hover:bg-gray-600">بازگشت</button>
+                    <button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">ذخیره</button>
+                </div>
+            </form>`;
+        openModal(mainModal, mainModalContainer);
+        lucide.createIcons();
+        document.getElementById('back-to-team-profile-okr').addEventListener('click', () => viewTeamProfile(team.firestoreId));
+        const okrsContainer = document.getElementById('team-okrs-container');
+        document.getElementById('add-team-okr-btn').addEventListener('click', () => {
+            const newItem = document.createElement('div');
+            newItem.className = 'okr-item grid grid-cols-12 gap-2 items-center';
+            newItem.innerHTML = `<input type=\"text\" class=\"col-span-8 p-2 border rounded-md okr-title\" placeholder=\"عنوان هدف\"><input type=\"number\" class=\"col-span-3 p-2 border rounded-md okr-progress\" placeholder=\"پیشرفت %\" min=\"0\" max=\"100\" value=\"0\"><button type=\"button\" class=\"col-span-1 remove-okr-btn text-red-500 hover:text-red-700\"><i data-lucide=\"trash-2\" class=\"w-5 h-5\"></i></button>`;
+            okrsContainer.appendChild(newItem);
+            lucide.createIcons();
+        });
+        okrsContainer.addEventListener('click', (e) => {
+            if (e.target.closest('.remove-okr-btn')) {
+                e.target.closest('.okr-item').remove();
+            }
+        });
+        document.getElementById('edit-team-okrs-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                const newOkrs = [];
+                document.querySelectorAll('#team-okrs-container .okr-item').forEach(item => {
+                    const title = item.querySelector('.okr-title').value;
+                    const progress = parseInt(item.querySelector('.okr-progress').value) || 0;
+                    if (title) newOkrs.push({ title, progress });
+                });
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/teams`, team.firestoreId), { okrs: newOkrs });
+                showToast('اهداف تیم به‌روزرسانی شد.');
+                viewTeamProfile(team.firestoreId);
+            } catch (error) {
+                console.error('Error saving team OKRs', error);
+                showToast('خطا در ذخیره اهداف.', 'error');
+            }
+        });
+    };
+}
+const showAddUserForm = () => {
+    modalTitle.innerText = 'افزودن کاربر جدید';
+    modalContent.innerHTML = `
+        <form id="add-user-form" class="space-y-4">
+            <div>
+                <label for="new-user-name" class="block text-sm font-medium text-gray-700">نام کامل</label>
+                <input id="new-user-name" type="text" required class="w-full px-3 py-2 mt-1 border rounded-md">
+            </div>
+            <div>
+                <label for="new-user-email" class="block text-sm font-medium text-gray-700">آدرس ایمیل</label>
+                <input id="new-user-email" type="email" required class="w-full px-3 py-2 mt-1 border rounded-md">
+            </div>
+            <div>
+                <label for="new-user-password" class="block text-sm font-medium text-gray-700">رمز عبور موقت</label>
+                <input id="new-user-password" type="password" required class="w-full px-3 py-2 mt-1 border rounded-md">
+            </div>
+            <div>
+                <label for="new-user-role" class="block text-sm font-medium text-gray-700">سطح دسترسی</label>
+                // ...
+<select id="new-user-role" class="w-full p-2 mt-1 border rounded-md">
+    <option value="viewer">مشاهده‌گر (Viewer)</option>
+    <option value="editor">ویرایشگر (Editor)</option>
+    <option value="admin">مدیر (Admin)</option>
+    <option value="employee">کارمند (Employee)</option> </select>
+// ...
+            </div>
+            <div class="pt-4 flex justify-end">
+                <button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">افزودن کاربر</button>
+            </div>
+        </form>
+    `;
+    openModal(mainModal, mainModalContainer);
+
+    document.getElementById('add-user-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('new-user-name').value;
+        const email = document.getElementById('new-user-email').value;
+        const password = document.getElementById('new-user-password').value;
+        const role = document.getElementById('new-user-role').value;
+        
+        showToast("در حال ایجاد کاربر... این کار ممکن است باعث خروج شما از سیستم شود.", "success");
+        
+        try {
+            // This is a simplified approach. In a real app, you'd use Firebase Functions to create users without logging out the admin.
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const newUser = userCredential.user;
+
+            const userRef = doc(db, `artifacts/${appId}/public/data/users`, newUser.uid);
+            await setDoc(userRef, {
+                name: name, //  ذخیره نام کاربر
+                email: newUser.email,
+                role: role,
+                createdAt: serverTimestamp()
+            });
+            
+            closeModal(mainModal, mainModalContainer);
+            showToast("کاربر جدید ایجاد شد. لطفا با حساب ادمین مجددا وارد شوید.");
+            
+            await signOut(auth);
+
+        } catch (error) {
+            console.error("Error creating new user:", error);
+            showToast(`خطا در ایجاد کاربر: ${error.message}`, "error");
+        }
+    });
+};
+        const showEditOkrsForm = (emp) => {
+            modalTitle.innerText = `ویرایش OKR برای ${emp.name}`;
+            const okrsHtml = (emp.okrs || []).map((okr) => `<div class="okr-item grid grid-cols-12 gap-2 items-center"><input type="text" value="${okr.title}" class="col-span-8 p-2 border rounded-md okr-title" placeholder="عنوان هدف"><input type="number" value="${okr.progress}" class="col-span-3 p-2 border rounded-md okr-progress" placeholder="پیشرفت %" min="0" max="100"><button type="button" class="col-span-1 remove-okr-btn text-red-500 hover:text-red-700"><i data-lucide="trash-2" class="w-5 h-5"></i></button></div>`).join('');
+            modalContent.innerHTML = `<form id="edit-okrs-form"><div id="okrs-container" class="space-y-2">${okrsHtml}</div><button type="button" id="add-okr-btn" class="mt-4 text-sm bg-gray-200 py-2 px-4 rounded-md hover:bg-gray-300">افزودن هدف جدید</button><div class="pt-6 flex justify-end gap-4"><button type="button" id="back-to-profile-okr" class="bg-gray-500 text-white py-2 px-6 rounded-md hover:bg-gray-600">بازگشت</button><button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">ذخیره</button></div></form>`;
+            lucide.createIcons();
+            document.getElementById('back-to-profile-okr').addEventListener('click', () => viewEmployeeProfile(emp.firestoreId));
+            const okrsContainer = document.getElementById('okrs-container');
+            document.getElementById('add-okr-btn').addEventListener('click', () => { const newItem = document.createElement('div'); newItem.className = 'okr-item grid grid-cols-12 gap-2 items-center'; newItem.innerHTML = `<input type="text" class="col-span-8 p-2 border rounded-md okr-title" placeholder="عنوان هدف"><input type="number" class="col-span-3 p-2 border rounded-md okr-progress" placeholder="پیشرفت %" min="0" max="100" value="0"><button type="button" class="col-span-1 remove-okr-btn text-red-500 hover:text-red-700"><i data-lucide="trash-2" class="w-5 h-5"></i></button>`; okrsContainer.appendChild(newItem); lucide.createIcons(); });
+            okrsContainer.addEventListener('click', (e) => { if(e.target.closest('.remove-okr-btn')) { e.target.closest('.okr-item').remove(); } });
+            document.getElementById('edit-okrs-form').addEventListener('submit', async (e) => { e.preventDefault(); const newOkrs = []; document.querySelectorAll('.okr-item').forEach(item => { const title = item.querySelector('.okr-title').value; const progress = parseInt(item.querySelector('.okr-progress').value) || 0; if (title) { newOkrs.push({ title, progress }); } }); try { const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId); await updateDoc(docRef, { okrs: newOkrs }); showToast("اهداف با موفقیت به‌روزرسانی شدند."); viewEmployeeProfile(emp.firestoreId); } catch (error) { console.error("Error updating OKRs:", error); showToast("خطا در به‌روزرسانی اهداف.", "error"); } });
+        };
+
+        const showEditSkillsForm = (emp) => {
+            modalTitle.innerText = `ویرایش مهارت‌ها برای ${emp.name}`;
+            const skillsHtml = Object.entries(emp.skills || {}).map(([skill, level]) => `<div class="skill-item grid grid-cols-12 gap-2 items-center"><input type="text" value="${skill}" class="col-span-8 p-2 border rounded-md skill-name" placeholder="نام مهارت"><input type="number" value="${level}" class="col-span-3 p-2 border rounded-md skill-level" placeholder="سطح (۱-۵)" min="1" max="5"><button type="button" class="col-span-1 remove-skill-btn text-red-500 hover:text-red-700"><i data-lucide="trash-2" class="w-5 h-5"></i></button></div>`).join('');
+            modalContent.innerHTML = `<form id="edit-skills-form"><div id="skills-container" class="space-y-2">${skillsHtml}</div><button type="button" id="add-skill-btn" class="mt-4 text-sm bg-gray-200 py-2 px-4 rounded-md hover:bg-gray-300">افزودن مهارت جدید</button><div class="pt-6 flex justify-end gap-4"><button type="button" id="back-to-profile-skill" class="bg-gray-500 text-white py-2 px-6 rounded-md hover:bg-gray-600">بازگشت</button><button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">ذخیره</button></div></form>`;
+            lucide.createIcons();
+            document.getElementById('back-to-profile-skill').addEventListener('click', () => viewEmployeeProfile(emp.firestoreId));
+            const skillsContainer = document.getElementById('skills-container');
+            document.getElementById('add-skill-btn').addEventListener('click', () => { const newItem = document.createElement('div'); newItem.className = 'skill-item grid grid-cols-12 gap-2 items-center'; newItem.innerHTML = `<input type="text" class="col-span-8 p-2 border rounded-md skill-name" placeholder="نام مهارت"><input type="number" class="col-span-3 p-2 border rounded-md skill-level" placeholder="سطح (۱-۵)" min="1" max="5" value="1"><button type="button" class="col-span-1 remove-skill-btn text-red-500 hover:text-red-700"><i data-lucide="trash-2" class="w-5 h-5"></i></button>`; skillsContainer.appendChild(newItem); lucide.createIcons(); });
+            skillsContainer.addEventListener('click', (e) => { if(e.target.closest('.remove-skill-btn')) { e.target.closest('.skill-item').remove(); } });
+            document.getElementById('edit-skills-form').addEventListener('submit', async (e) => { e.preventDefault(); const newSkills = {}; document.querySelectorAll('.skill-item').forEach(item => { const name = item.querySelector('.skill-name').value; const level = parseInt(item.querySelector('.skill-level').value) || 0; if (name) { newSkills[name] = level; } }); try { const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId); await updateDoc(docRef, { skills: newSkills }); showToast("مهارت‌ها با موفقیت به‌روزرسانی شدند."); viewEmployeeProfile(emp.firestoreId); } catch (error) { console.error("Error updating skills:", error); showToast("خطا در به‌روزرسانی مهارت‌ها.", "error"); } });
+        };
+
+        const showEditCompetenciesForm = (emp) => {
+            modalTitle.innerText = `ویرایش شایستگی‌ها برای ${emp.name}`;
+            const empCompetencies = emp.competencies || {};
+            const competenciesHtml = state.competencies.map(comp => `
+                <div class="competency-item grid grid-cols-12 gap-2 items-center">
+                    <label class="col-span-8">${comp.name}</label>
+                    <input type="number" value="${empCompetencies[comp.name] || 0}" data-name="${comp.name}" class="col-span-3 p-2 border rounded-md competency-level" placeholder="سطح (۱-۵)" min="0" max="5">
+                </div>
+            `).join('');
+            modalContent.innerHTML = `
+                <form id="edit-competencies-form">
+                    <div id="competencies-container" class="space-y-2">${competenciesHtml || '<p>ابتدا شایستگی‌ها را در بخش تنظیمات تعریف کنید.</p>'}</div>
+                    <div class="pt-6 flex justify-end gap-4">
+                        <button type="button" id="back-to-profile-comp" class="bg-gray-500 text-white py-2 px-6 rounded-md hover:bg-gray-600">بازگشت</button>
+                        <button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">ذخیره</button>
+                    </div>
+                </form>
+            `;
+            document.getElementById('back-to-profile-comp').addEventListener('click', () => viewEmployeeProfile(emp.firestoreId));
+            document.getElementById('edit-competencies-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const newCompetencies = {};
+                document.querySelectorAll('.competency-item').forEach(item => {
+                    const name = item.querySelector('.competency-level').dataset.name;
+                    const level = parseInt(item.querySelector('.competency-level').value) || 0;
+                    if (name && level > 0) {
+                        newCompetencies[name] = level;
+                    }
+                });
+                try {
+                    const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
+                    await updateDoc(docRef, { competencies: newCompetencies });
+                    showToast("شایستگی‌ها با موفقیت به‌روزرسانی شدند.");
+                    viewEmployeeProfile(emp.firestoreId);
+                } catch (error) {
+                    console.error("Error updating competencies:", error);
+                    showToast("خطا در به‌روزرسانی شایستگی‌ها.", "error");
+                }
+            });
+        };
+        const showEditTeamOkrsForm = (team) => {
+            modalTitle.innerText = `ویرایش OKR برای تیم ${team.name}`;
+            const okrsHtml = (team.okrs || []).map((okr) => `<div class="okr-item grid grid-cols-12 gap-2 items-center"><input type="text" value="${okr.title}" class="col-span-8 p-2 border rounded-md okr-title" placeholder="عنوان هدف"><input type="number" value="${okr.progress}" class="col-span-3 p-2 border rounded-md okr-progress" placeholder="پیشرفت %" min="0" max="100"><button type="button" class="col-span-1 remove-okr-btn text-red-500 hover:text-red-700"><i data-lucide="trash-2" class="w-5 h-5"></i></button></div>`).join('');
+            modalContent.innerHTML = `<form id="edit-team-okrs-form"><div id="okrs-container" class="space-y-2">${okrsHtml}</div><button type="button" id="add-okr-btn" class="mt-4 text-sm bg-gray-200 py-2 px-4 rounded-md hover:bg-gray-300">افزودن هدف جدید</button><div class="pt-6 flex justify-end gap-4"><button type="button" id="back-to-team-profile-okr" class="bg-gray-500 text-white py-2 px-6 rounded-md hover:bg-gray-600">بازگشت</button><button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">ذخیره</button></div></form>`;
+            lucide.createIcons();
+            document.getElementById('back-to-team-profile-okr').addEventListener('click', () => viewTeamProfile(team.firestoreId));
+            const okrsContainer = document.getElementById('okrs-container');
+            document.getElementById('add-okr-btn').addEventListener('click', () => { const newItem = document.createElement('div'); newItem.className = 'okr-item grid grid-cols-12 gap-2 items-center'; newItem.innerHTML = `<input type="text" class="col-span-8 p-2 border rounded-md okr-title" placeholder="عنوان هدف"><input type="number" class="col-span-3 p-2 border rounded-md okr-progress" placeholder="پیشرفت %" min="0" max="100" value="0"><button type="button" class="col-span-1 remove-okr-btn text-red-500 hover:text-red-700"><i data-lucide="trash-2" class="w-5 h-5"></i></button>`; okrsContainer.appendChild(newItem); lucide.createIcons(); });
+            okrsContainer.addEventListener('click', (e) => { if (e.target.closest('.remove-okr-btn')) { e.target.closest('.okr-item').remove(); } });
+            document.getElementById('edit-team-okrs-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const newOkrs = [];
+                document.querySelectorAll('.okr-item').forEach(item => {
+                    const title = item.querySelector('.okr-title').value;
+                    const progress = parseInt(item.querySelector('.okr-progress').value) || 0;
+                    if (title) { newOkrs.push({ title, progress }); }
+                });
+                try {
+                    const docRef = doc(db, `artifacts/${appId}/public/data/teams`, team.firestoreId);
+                    await updateDoc(docRef, { okrs: newOkrs });
+                    showToast("اهداف تیم با موفقیت به‌روزرسانی شدند.");
+                    viewTeamProfile(team.firestoreId);
+                } catch (error) {
+                    console.error("Error updating team OKRs:", error);
+                    showToast("خطا در به‌روزرسانی اهداف تیم.", "error");
+                }
+            });
+        };
         // --- [FIX START] ADDED TEAM HEALTH FORM ---
         const showTeamHealthForm = (team) => {
             modalTitle.innerText = `ویرایش معیارهای سلامت تیم ${team.name}`;
