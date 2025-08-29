@@ -761,22 +761,17 @@ function renderEmployeePortalPage(pageName, employee) {
     // --- لحظه‌های نیک‌اندیشی ---
     else if (pageName === 'moments') {
         const composer = `
-            <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden mb-4">
-                <div class="flex items-center gap-3 p-3">
+            <div class="glass rounded-2xl p-4 mb-4">
+                <div class="flex items-start gap-3">
                     <img src="${employee.avatar}" class="w-10 h-10 rounded-full object-cover"/>
-                    <div class="font-semibold text-slate-800">${employee.name || ''}</div>
-                </div>
-                <div class="px-3 pb-3">
-                    <div class="mb-2"><textarea id="moment-text" class="w-full p-3 border rounded-xl" maxlength="280" placeholder="کپشن بنویسید... (حداکثر ۲۸۰ کاراکتر)"></textarea></div>
-                    <div class="rounded-xl overflow-hidden bg-slate-100 aspect-square flex items-center justify-center">
-                        <img id="moment-image-preview" class="w-full h-full object-cover hidden"/>
-                        <div class="text-xs text-slate-500">می‌توانید یک عکس اضافه کنید</div>
+                    <div class="flex-1">
+                        <textarea id="moment-text" class="w-full p-3 border rounded-xl" maxlength="280" placeholder="چه خبر خوب یا فکری می‌خواهی به اشتراک بگذاری؟ (حداکثر ۲۸۰ کاراکتر)"></textarea>
+                        <div class="flex items-center justify-between mt-2">
+                            <input type="file" id="moment-image" accept="image/png,image/jpeg" class="text-xs"/>
+                            <button id="moment-post-btn" class="primary-btn text-xs">ارسال</button>
+                        </div>
+                        <p class="text-[11px] text-slate-500 mt-1">فقط متن یا فقط عکس؛ همزمان هر دو مجاز نیست.</p>
                     </div>
-                    <div class="flex items-center justify-between mt-2">
-                        <input type="file" id="moment-image" accept="image/png,image/jpeg" class="text-xs"/>
-                        <button id="moment-post-btn" class="primary-btn text-xs">اشتراک‌گذاری</button>
-                    </div>
-                    <p class="text-[11px] text-slate-500 mt-1">می‌توانید متن و عکس را هم‌زمان ارسال کنید. تصاویر بزرگ به اندازه مناسب شبکه‌های اجتماعی به‌صورت خودکار کوچک می‌شوند.</p>
                 </div>
             </div>`;
 
@@ -817,11 +812,7 @@ function renderEmployeePortalPage(pageName, employee) {
                     return `<div class=\"flex items-center gap-1 text-xs bg-slate-100 rounded-full px-2 py-1\"><span>${r.emoji}</span><img src=\"${user.avatar || 'icons/icon-128x128.png'}\" class=\"w-4 h-4 rounded-full object-cover\"/><span class=\"text-slate-600\">${user.name || ''}</span></div>`;
                 }).join('');
                 const extraCount = Math.max(0, reactors.length - topReactors.length);
-                const rawUrl = (m.imageUrl || '').toString();
-                let cleanedUrl = rawUrl.trim().replace(/^["']+|["']+$/g, '').replace(/\\+$/, '');
-                if (cleanedUrl.indexOf('https:/') === 0 && cleanedUrl.indexOf('https://') !== 0) {
-                    cleanedUrl = 'https://' + cleanedUrl.slice('https:/'.length);
-                }
+                const cleanedUrl = (m.imageUrl || '').toString();
                 return `
                 <div class=\"bg-white rounded-2xl border border-slate-200 overflow-hidden\">\n                    <div class=\"flex items-center gap-2 p-3\">\n                        <img src=\"${owner.avatar || 'icons/icon-128x128.png'}\" class=\"w-10 h-10 rounded-full object-cover\"/>\n                        <div>\n                            <div class=\"font-bold text-slate-800 text-sm\">${owner.name || m.ownerName || 'کاربر'}</div>\n                            <div class=\"text-[11px] text-slate-500\">${toPersianDate(m.createdAt)}</div>\n                        </div>\n                    </div>\n                    ${m.text ? `<div class=\\\"text-sm text-slate-800 whitespace-pre-wrap mb-3\\\">${m.text}</div>` : ''}\n                    ${cleanedUrl ? `<img src=\\\"${cleanedUrl}\\\" class=\\\"w-full rounded-xl object-cover mb-3\\\"/>` : ''}\n                    <div class=\"flex items-center gap-2\">\n                        ${['👍','❤️','😂','🎉','👎'].map(e=> `<button class=\\\"moment-react-btn text-sm px-2 py-1 rounded-full ${meReact===e ? 'bg-slate-800 text-white':'bg-slate-100 text-slate-700'}\\\" data-id=\\\"${m.firestoreId}\\\" data-emoji=\\\"${e}\\\">${e}</button>`).join('')}\n                    </div>\n                    <div class=\"flex flex-wrap gap-2 mt-3\">${reactionsHtml}${extraCount? `<span class=\\\"text-xs text-slate-500\\\">+${extraCount}</span>`:''}</div>\n                </div>`;
             }).join('');
@@ -1011,18 +1002,6 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
             if (sendWishBtn) {
                 showBirthdayWishForm(sendWishBtn.dataset.id, sendWishBtn.dataset.name);
             }
-            // پیش‌نمایش تصویر لحظه
-            const imgInput = e.target.closest('#moment-image');
-            if (imgInput) {
-                const input = document.getElementById('moment-image');
-                const preview = document.getElementById('moment-image-preview');
-                const file = (input && input.files && input.files[0]) || null;
-                if (file && preview) {
-                    const reader = new FileReader();
-                    reader.onload = () => { preview.src = reader.result; preview.classList.remove('hidden'); };
-                    reader.readAsDataURL(file);
-                }
-            }
             // ارسال لحظه جدید
             const postBtn = e.target.closest('#moment-post-btn');
             if (postBtn) {
@@ -1031,28 +1010,14 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
                         const text = (document.getElementById('moment-text')||{}).value?.trim() || '';
                         const fileInput = document.getElementById('moment-image');
                         const file = (fileInput && fileInput.files && fileInput.files[0]) || null;
+                        if ((text && file) || (!text && !file)) { showToast('فقط یکی از متن یا عکس را انتخاب کنید.', 'error'); return; }
                         let imageUrl = '';
                         if (file) {
-                            // Resize/compress to max 1080x1080 like Instagram
-                            const resizedBlob = await (async () => {
-                                const bitmap = await createImageBitmap(file);
-                                const max = 1080;
-                                const ratio = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
-                                const width = Math.round(bitmap.width * ratio);
-                                const height = Math.round(bitmap.height * ratio);
-                                const canvas = document.createElement('canvas');
-                                canvas.width = width; canvas.height = height;
-                                const ctx = canvas.getContext('2d');
-                                ctx.drawImage(bitmap, 0, 0, width, height);
-                                const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.85));
-                                return blob || file;
-                            })();
-                            const path = `moments/${employee.uid}_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9_.-]/g,'_')}`;
+                            const path = `moments/${employee.uid}_${Date.now()}_${file.name}`;
                             const sRef = ref(storage, path);
-                            await uploadBytes(sRef, resizedBlob);
+                            await uploadBytes(sRef, file);
                             imageUrl = await getDownloadURL(sRef);
                         }
-                        if (!text && !imageUrl) { showToast('متن یا عکس لازم است.', 'error'); return; }
                         await addDoc(collection(db, `artifacts/${appId}/public/data/moments`), {
                             ownerUid: employee.uid,
                             ownerName: employee.name,
@@ -1063,7 +1028,6 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
                         });
                         if (document.getElementById('moment-text')) document.getElementById('moment-text').value = '';
                         if (fileInput) fileInput.value = '';
-                        const preview = document.getElementById('moment-image-preview'); if (preview) { preview.src=''; preview.classList.add('hidden'); }
                         showToast('لحظه شما منتشر شد.');
                     } catch (err) { showToast('خطا در انتشار لحظه.', 'error'); }
                 })();
