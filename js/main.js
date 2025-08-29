@@ -170,6 +170,22 @@ async function initializeFirebase() {
             if (user) {
                 await fetchUserRole(user);
                 listenToData();
+                // Fallback in case listeners hang (network/rules): force render after 2.5s
+                setTimeout(() => {
+                    const overlay = document.getElementById('loading-overlay');
+                    if (overlay && overlay.style.display !== 'none') {
+                        try {
+                            if (state.currentUser && state.currentUser.role === 'employee' && window.renderEmployeePortal) {
+                                window.renderEmployeePortal();
+                            } else {
+                                showDashboard();
+                                if (typeof router === 'function') router();
+                            }
+                            overlay.style.display = 'none';
+                            if (window.applyAdminMenuPermissions) window.applyAdminMenuPermissions();
+                        } catch (e) { console.warn('Fallback render failed:', e); }
+                    }
+                }, 2500);
             } else {
                 state.currentUser = null;
                 detachAllListeners();
