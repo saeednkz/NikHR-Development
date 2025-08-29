@@ -756,7 +756,7 @@ function renderEmployeePortalPage(pageName, employee) {
             <div class="space-y-3">${messagesHtml || '<div class="text-center p-10"><i data-lucide="inbox" class="mx-auto w-12 h-12 text-slate-300"></i><p class="mt-3 text-sm text-slate-500">پیامی ندارید.</p></div>'}</div>`;
     }
     // --- لحظه‌های نیک‌اندیشی ---
-    if (pageName === 'moments') {
+    else if (pageName === 'moments') {
         const composer = `
             <div class="glass rounded-2xl p-4 mb-4">
                 <div class="flex items-start gap-3">
