@@ -2465,7 +2465,7 @@ dashboard: () => {
             </div>
         </section>
 
-        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm mb-8 flex items-center justify-between gap-4">
+        <div class="glass p-6 rounded-2xl mb-8 flex items-center justify-between gap-4">
             <div class="flex items-center gap-4 min-w-0">
                 <div class="w-14 h-14 rounded-full overflow-hidden ring-2 ring-indigo-100 flex-shrink-0">
                     <img src="${((state.users||[]).find(u=>u.firestoreId=== (state.currentUser && state.currentUser.uid))||{}).avatar || 'icons/icon-128x128.png'}" class="w-full h-full object-cover" alt="Admin">
