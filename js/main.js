@@ -2465,24 +2465,6 @@ dashboard: () => {
             </div>
         </section>
 
-        <div class="glass p-6 rounded-2xl mb-8 flex items-center justify-between gap-4">
-            <div class="flex items-center gap-4 min-w-0">
-                <div class="w-14 h-14 rounded-full overflow-hidden ring-2 ring-indigo-100 flex-shrink-0">
-                    <img src="${((state.users||[]).find(u=>u.firestoreId=== (state.currentUser && state.currentUser.uid))||{}).avatar || 'icons/icon-128x128.png'}" class="w-full h-full object-cover" alt="Admin">
-                </div>
-                <div class="min-w-0">
-                    <div class="text-slate-800 font-extrabold truncate">${((state.users||[]).find(u=>u.firestoreId=== (state.currentUser && state.currentUser.uid))||{}).name || state.currentUser.email}</div>
-                    <div class="text-xs text-slate-500 mt-0.5">${((state.users||[]).find(u=>u.firestoreId=== (state.currentUser && state.currentUser.uid))||{}).email || ''}</div>
-                    <div class="mt-1"><span class="px-2 py-0.5 text-[11px] rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100">مدیر سیستم</span></div>
-                </div>
-            </div>
-            <div class="flex items-center gap-2">
-                <button id="dash-quick-requests" class="inline-flex items-center gap-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg transition"><i data-lucide="archive" class="w-4 h-4"></i><span>درخواست‌ها</span></button>
-                <button id="dash-quick-add-emp" class="inline-flex items-center gap-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg transition"><i data-lucide="user-plus" class="w-4 h-4"></i><span>افزودن کارمند</span></button>
-                <button id="dash-quick-survey" class="inline-flex items-center gap-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg transition"><i data-lucide="clipboard-list" class="w-4 h-4"></i><span>نظرسنجی</span></button>
-            </div>
-        </div>
-
         
         
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -3729,16 +3711,16 @@ const renderPage = (pageName) => {
         mainContent.innerHTML = pages[pageName]();
         if (window.applyAdminMenuPermissions) { window.applyAdminMenuPermissions(); }
         
-        // فراخوانی تابع فعال‌سازی مخصوص هر صفحه (با چک وجودی برای جلوگیری از ReferenceError)
-        if (pageName === 'dashboard') { renderDashboardCharts && renderDashboardCharts(); setupDashboardListeners && setupDashboardListeners(); setupDashboardQuickActions && setupDashboardQuickActions(); }
-        if (pageName === 'talent') { renderEmployeeTable && renderEmployeeTable(); (window.setupTalentPageListeners || (()=>{}))(); }
-        if (pageName === 'organization') { (window.setupOrganizationPageListeners || (()=>{}))(); }
-        if (pageName === 'surveys') { (window.setupSurveysPageListeners || (()=>{}))(); }
-        if (pageName === 'requests') { (window.setupRequestsPageListeners || (()=>{}))(); }
-        if (pageName === 'tasks') { (window.setupTasksPageListeners || (()=>{}))(); }
-        if (pageName === 'analytics') { (window.setupAnalyticsPage || (()=>{}))(); }
-        if (pageName === 'documents') { setupDocumentsPageListeners && setupDocumentsPageListeners(); }
-        if (pageName === 'announcements') { setupAnnouncementsPageListeners && setupAnnouncementsPageListeners(); }
+        // فراخوانی تابع فعال‌سازی مخصوص هر صفحه
+        if (pageName === 'dashboard') { renderDashboardCharts(); setupDashboardListeners(); setupDashboardQuickActions(); }
+        if (pageName === 'talent') { renderEmployeeTable(); setupTalentPageListeners(); }
+        if (pageName === 'organization') { setupOrganizationPageListeners(); }
+        if (pageName === 'surveys') { setupSurveysPageListeners(); }
+        if (pageName === 'requests') { setupRequestsPageListeners(); }
+        if (pageName === 'tasks') { setupTasksPageListeners(); }
+        if (pageName === 'analytics') { setupAnalyticsPage(); }
+        if (pageName === 'documents') { setupDocumentsPageListeners(); }
+        if (pageName === 'announcements') { setupAnnouncementsPageListeners(); } // [!code ++] این خط مشکل را حل می‌کند
         if (pageName === 'settings') {
             if(isAdmin()) {
                 setupSettingsPageListeners();
@@ -3758,31 +3740,30 @@ const renderDashboardCharts = () => {
     if (Object.keys(metrics).length === 0) return;
     renderEngagementGauge('engagementGaugeDashboard', metrics.engagementScore);
 
-    // Gender Composition (Polar Area Chart)
+    // Gender Composition (Doughnut Chart)
     const genderCtx = document.getElementById('genderCompositionChart')?.getContext('2d');
     if (genderCtx && metrics.genderComposition) { 
         charts.gender = new Chart(genderCtx, { 
-            type: 'polarArea', 
+            type: 'doughnut', 
             data: { 
                 labels: Object.keys(metrics.genderComposition), 
                 datasets: [{ 
                     data: Object.values(metrics.genderComposition), 
                     backgroundColor: ['#6B69D6', '#F72585', '#A1A1AA'],
-                    borderWidth: 0
+                    hoverOffset: 4
                 }] 
             }, 
             options: { 
                 responsive: true, 
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { position: 'bottom' },
-                    tooltip: { enabled: true }
+                    legend: { position: 'bottom' }
                 }
             } 
         }); 
     }
 
-    // Department Distribution (Horizontal Bar)
+    // Department Distribution (Bar Chart)
     const departmentCtx = document.getElementById('departmentDistributionChart')?.getContext('2d');
     if (departmentCtx) { 
         charts.department = new Chart(departmentCtx, { 
@@ -3792,18 +3773,15 @@ const renderDashboardCharts = () => {
                 datasets: [{ 
                     label: 'تعداد', 
                     data: Object.values(metrics.departmentDistribution), 
-                    backgroundColor: 'rgba(107,105,214,0.5)',
-                    borderColor: '#6B69D6',
-                    borderWidth: 1,
-                    borderRadius: 6
+                    backgroundColor: '#6B69D6',
+                    borderRadius: 5
                 }] 
             }, 
             options: { 
                 responsive: true, 
                 maintainAspectRatio: false, 
                 plugins: { 
-                    legend: { display: false },
-                    tooltip: { enabled: true }
+                    legend: { display: false } 
                 },
                 scales: {
                     y: { beginAtZero: true, grid: { display: false } },
@@ -3812,32 +3790,35 @@ const renderDashboardCharts = () => {
             } 
         }); 
     }
-    // Nine Box Distribution (Stacked Bar)
+    // Nine Box Distribution (Bar Chart)
     const nineBoxCtx = document.getElementById('nineBoxChart')?.getContext('2d');
     if (nineBoxCtx && metrics.nineBoxDistribution) { 
         charts.nineBox = new Chart(nineBoxCtx, { 
             type: 'bar', 
             data: { 
                 labels: Object.keys(metrics.nineBoxDistribution), 
-                datasets: [{ label: 'High', data: Object.values(metrics.nineBoxDistribution).map(v=> Math.round(v*0.4)), backgroundColor: 'rgba(247,37,133,0.7)', borderRadius: 6 },
-                           { label: 'Mid', data: Object.values(metrics.nineBoxDistribution).map(v=> Math.round(v*0.35)), backgroundColor: 'rgba(247,37,133,0.4)', borderRadius: 6 },
-                           { label: 'Low', data: Object.values(metrics.nineBoxDistribution).map(v=> Math.round(v*0.25)), backgroundColor: 'rgba(247,37,133,0.2)', borderRadius: 6 }]
+                datasets: [{ 
+                    label: 'تعداد', 
+                    data: Object.values(metrics.nineBoxDistribution), 
+                    backgroundColor: '#F72585',
+                    borderRadius: 5
+                }] 
             }, 
             options: { 
                 responsive: true, 
                 maintainAspectRatio: false, 
                 plugins: { 
-                    legend: { position: 'bottom' } 
+                    legend: { display: false } 
                 },
                 scales: {
-                    y: { stacked: true, beginAtZero: true, grid: { display: false } },
-                    x: { stacked: true, grid: { display: false } }
+                    y: { beginAtZero: true, grid: { display: false } },
+                    x: { grid: { display: false } }
                 }
             } 
         }); 
     }
 
-    // New: Tenure Distribution (Doughnut with cutout)
+    // New: Tenure Distribution (Pie Chart)
     const tenureCtx = document.getElementById('tenureDistributionChart')?.getContext('2d');
     const tenureData = state.employees.reduce((acc, emp) => {
         if (!emp.startDate) return acc;
@@ -3849,28 +3830,26 @@ const renderDashboardCharts = () => {
     }, {});
     if (tenureCtx) {
         charts.tenure = new Chart(tenureCtx, {
-            type: 'doughnut',
+            type: 'pie',
             data: {
                 labels: Object.keys(tenureData),
                 datasets: [{
                     data: Object.values(tenureData),
                     backgroundColor: ['#6B69D6', '#A78BFA', '#F72585'],
-                    borderWidth: 0
+                    hoverOffset: 4
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { position: 'bottom' },
-                    tooltip: { enabled: true }
+                    legend: { position: 'bottom' }
                 }
-                , cutout: '55%'
             }
         });
     }
 
-    // New: Age Distribution (Area-like line)
+    // New: Age Distribution (Bar Chart)
     const ageCtx = document.getElementById('ageDistributionChart')?.getContext('2d');
     const ageData = state.employees.reduce((acc, emp) => {
         if (!emp.personalInfo?.birthDate) return acc;
@@ -3882,23 +3861,20 @@ const renderDashboardCharts = () => {
     }, {});
     if (ageCtx) {
         charts.age = new Chart(ageCtx, {
-            type: 'line',
+            type: 'bar',
             data: {
                 labels: Object.keys(ageData),
                 datasets: [{
                     label: 'تعداد',
                     data: Object.values(ageData),
-                    backgroundColor: 'rgba(107,105,214,0.25)',
-                    borderColor: '#6B69D6',
-                    fill: true,
-                    tension: 0.35,
-                    pointRadius: 3
+                    backgroundColor: '#6B69D6',
+                    borderRadius: 5
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { legend: { display: false }, tooltip: { enabled: true } },
+                plugins: { legend: { display: false } },
                 scales: {
                     y: { beginAtZero: true, grid: { display: false } },
                     x: { grid: { display: false } }
