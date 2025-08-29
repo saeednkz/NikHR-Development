@@ -246,7 +246,7 @@ export const router = () => {
         renderSurveyTakerPage(surveyId);
     } else {
         const pageName = hash.substring(1) || 'dashboard';
-        navigateTo(pageName);
+        if (window.navigateTo) { window.navigateTo(pageName); }
     }
 // removed stray closing brace that caused syntax error
 // این دو تابع جدید را به فایل js/main.js اضافه کنید (مثلاً قبل از تابع renderEmployeePortal)
@@ -3638,7 +3638,7 @@ const viewTeamProfile = (teamId) => {
 };
 
         // --- NAVIGATION & ROUTING ---
-        const navigateTo = (pageName) => {
+        window.navigateTo = (pageName) => {
             state.currentPage = pageName;
             window.location.hash = pageName;
             document.querySelectorAll('.sidebar-item').forEach(item => {
