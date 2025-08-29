@@ -3711,16 +3711,16 @@ const renderPage = (pageName) => {
         mainContent.innerHTML = pages[pageName]();
         if (window.applyAdminMenuPermissions) { window.applyAdminMenuPermissions(); }
         
-        // فراخوانی تابع فعال‌سازی مخصوص هر صفحه
-        if (pageName === 'dashboard') { renderDashboardCharts(); setupDashboardListeners(); setupDashboardQuickActions(); }
-        if (pageName === 'talent') { renderEmployeeTable(); setupTalentPageListeners(); }
-        if (pageName === 'organization') { setupOrganizationPageListeners(); }
-        if (pageName === 'surveys') { setupSurveysPageListeners(); }
-        if (pageName === 'requests') { setupRequestsPageListeners(); }
-        if (pageName === 'tasks') { setupTasksPageListeners(); }
-        if (pageName === 'analytics') { setupAnalyticsPage(); }
-        if (pageName === 'documents') { setupDocumentsPageListeners(); }
-        if (pageName === 'announcements') { setupAnnouncementsPageListeners(); } // [!code ++] این خط مشکل را حل می‌کند
+        // فراخوانی تابع فعال‌سازی مخصوص هر صفحه (با چک وجودی برای جلوگیری از ReferenceError)
+        if (pageName === 'dashboard') { renderDashboardCharts && renderDashboardCharts(); setupDashboardListeners && setupDashboardListeners(); setupDashboardQuickActions && setupDashboardQuickActions(); }
+        if (pageName === 'talent') { renderEmployeeTable && renderEmployeeTable(); (window.setupTalentPageListeners || (()=>{}))(); }
+        if (pageName === 'organization') { (window.setupOrganizationPageListeners || (()=>{}))(); }
+        if (pageName === 'surveys') { (window.setupSurveysPageListeners || (()=>{}))(); }
+        if (pageName === 'requests') { (window.setupRequestsPageListeners || (()=>{}))(); }
+        if (pageName === 'tasks') { (window.setupTasksPageListeners || (()=>{}))(); }
+        if (pageName === 'analytics') { (window.setupAnalyticsPage || (()=>{}))(); }
+        if (pageName === 'documents') { setupDocumentsPageListeners && setupDocumentsPageListeners(); }
+        if (pageName === 'announcements') { setupAnnouncementsPageListeners && setupAnnouncementsPageListeners(); }
         if (pageName === 'settings') {
             if(isAdmin()) {
                 setupSettingsPageListeners();
