@@ -4148,7 +4148,10 @@ document.getElementById('addReminderBtn')?.addEventListener('click', async () =>
             await addDoc(collection(db, `artifacts/${appId}/public/data/reminders`), {
                 text: textInput.value,
                 date: gregorianDate,
-                daysBefore: daysBefore // فیلد جدید را ذخیره می‌کنیم
+                daysBefore: daysBefore,
+                icon: 'calendar-plus', // <<-- این خط جدید مشکل را حل می‌کند
+                status: 'جدید',
+                assignedTo: (state.users.find(u=>u.role==='admin')||{}).firestoreId // واگذاری به ادمین پیش‌فرض
             });
 
             textInput.value = '';
