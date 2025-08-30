@@ -279,7 +279,7 @@ function listenToData() {
             // فراخوانی تابع نوتیفیکیشن بعد از بارگذاری کامل داده‌ها
             try { setTimeout(() => { if (window.updateNotificationsForCurrentUser) window.updateNotificationsForCurrentUser(); }, 0); } catch {}
             
-            if (state.currentUser.role === 'employee') {
+            if (!(canEdit() || isAdmin())) {
                 (function tryRender() {
                     if (window.renderEmployeePortal) { window.renderEmployeePortal(); }
                     else { setTimeout(tryRender, 0); }
