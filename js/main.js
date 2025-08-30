@@ -2769,75 +2769,36 @@ surveys: () => {
 // در فایل js/main.js، داخل آبجکت pages
 // کل تابع requests را با این نسخه جایگزین کنید
 
+// فایل: js/main.js
+// تابع pages.requests را با این نسخه جایگزین کنید ▼
+
 requests: () => {
-    const REQUESTS_PAGE_SIZE = 10;
+    const REQUESTS_PAGE_SIZE = 10; // تعداد آیتم در هر صفحه
     let filteredRequests = (state.requests || []);
     if (state.requestFilter === 'mine' && state.currentUser) {
         filteredRequests = filteredRequests.filter(req => req.assignedTo === state.currentUser.uid);
     }
     const allRequests = filteredRequests.sort((a, b) => new Date(b.createdAt?.toDate()) - new Date(a.createdAt?.toDate()));
-        const startIndex = (state.currentPageRequests - 1) * REQUESTS_PAGE_SIZE;
+    
+    // --- منطق جدید صفحه‌بندی ---
+    const startIndex = (state.currentPageRequests - 1) * REQUESTS_PAGE_SIZE;
     const endIndex = startIndex + REQUESTS_PAGE_SIZE;
     const paginatedRequests = allRequests.slice(startIndex, endIndex);
-    
-    const admins = state.users.filter(u => u.role === 'admin');
-    const requestsHtml = allRequests.map(req => {
-        const statusColors = {
-            'درحال بررسی': 'bg-yellow-100 text-yellow-800',
-            'در حال انجام': 'bg-blue-100 text-blue-800',
-            'تایید شده': 'bg-green-100 text-green-800',
-            'رد شده': 'bg-red-100 text-red-800'
-        };
-        
-        const adminOptions = admins.map(admin => `<option value="${admin.firestoreId}" ${req.assignedTo === admin.firestoreId ? 'selected' : ''}>${admin.name || admin.email}</option>`).join('');
+    // --- پایان منطق جدید ---
 
-        return `
-            <tr class="border-b">
-                <td class="px-4 py-3">${toPersianDate(req.createdAt)}</td>
-                <td class="px-4 py-3 font-semibold">${req.employeeName}</td>
-                <td class="px-4 py-3">${req.requestType}</td>
-                <td class="px-4 py-3"><span class="px-2 py-1 text-xs font-medium rounded-full ${statusColors[req.status] || 'bg-slate-100'}">${req.status}</span></td>
-                <td class="px-4 py-3">
-                    <select data-id="${req.firestoreId}" class="assign-request-select w-full p-1.5 border border-slate-300 rounded-lg bg-white text-xs">
-                        <option value="">واگذار نشده</option>
-                        ${adminOptions}
-                    </select>
-                </td>
-                <td class="px-4 py-3">
-                    ${(req.status === 'درحال بررسی' || req.status === 'در حال انجام') ? `
-                        <button class="process-request-btn text-sm bg-slate-700 text-white py-1 px-3 rounded-md hover:bg-slate-800" data-id="${req.firestoreId}">پردازش</button>
-                    ` : '<span class="text-xs text-slate-400">-</span>'}
-                </td>
-            </tr>
-        `;
+    const admins = state.users.filter(u => u.role === 'admin');
+    const requestsHtml = paginatedRequests.map(req => { // <<-- از لیست صفحه‌بندی شده استفاده می‌کنیم
+        // ... (بقیه کد این بخش بدون تغییر باقی می‌ماند)
+        const statusColors = {'درحال بررسی':'bg-yellow-100 text-yellow-800','در حال انجام':'bg-blue-100 text-blue-800','تایید شده':'bg-green-100 text-green-800','رد شده':'bg-red-100 text-red-800'};
+        const adminOptions = admins.map(admin => `<option value="${admin.firestoreId}" ${req.assignedTo === admin.firestoreId ? 'selected' : ''}>${admin.name || admin.email}</option>`).join('');
+        return `<tr class="border-b"><td class="px-4 py-3">${toPersianDate(req.createdAt)}</td><td class="px-4 py-3 font-semibold">${req.employeeName}</td><td class="px-4 py-3">${req.requestType}</td><td class="px-4 py-3"><span class="px-2 py-1 text-xs font-medium rounded-full ${statusColors[req.status] || 'bg-slate-100'}">${req.status}</span></td><td class="px-4 py-3"><select data-id="${req.firestoreId}" class="assign-request-select w-full p-1.5 border border-slate-300 rounded-lg bg-white text-xs"><option value="">واگذار نشده</option>${adminOptions}</select></td><td class="px-4 py-3">${(req.status === 'درحال بررسی' || req.status === 'در حال انجام') ? `<button class="process-request-btn text-sm bg-slate-700 text-white py-1 px-3 rounded-md hover:bg-slate-800" data-id="${req.firestoreId}">پردازش</button>` : '<span class="text-xs text-slate-400">-</span>'}</td></tr>`;
     }).join('');
 
     return `
-        <section class="rounded-2xl overflow-hidden border mb-6" style="background:linear-gradient(90deg,#FF6A3D,#F72585)">
-            <div class="p-6 sm:p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <h1 class="text-2xl sm:text-3xl font-extrabold text-white">مدیریت درخواست‌ها</h1>
-                <div class="flex items-center gap-2">
-                    <button data-filter="all" class="request-filter-btn ${state.requestFilter === 'all' ? 'primary-btn' : 'secondary-btn'} text-xs">همه</button>
-                    <button data-filter="mine" class="request-filter-btn ${state.requestFilter === 'mine' ? 'primary-btn' : 'secondary-btn'} text-xs">واگذار به من</button>
-                </div>
-            </div>
-        </section>
+        <section class="rounded-2xl overflow-hidden border mb-6" style="background:linear-gradient(90deg,#FF6A3D,#F72585)"><div class="p-6 sm:p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4"><h1 class="text-2xl sm:text-3xl font-extrabold text-white">مدیریت درخواست‌ها</h1><div class="flex items-center gap-2"><button data-filter="all" class="request-filter-btn ${state.requestFilter === 'all' ? 'primary-btn' : 'secondary-btn'} text-xs">همه</button><button data-filter="mine" class="request-filter-btn ${state.requestFilter === 'mine' ? 'primary-btn' : 'secondary-btn'} text-xs">واگذار به من</button></div></div></section>
         <div class="bg-white p-6 rounded-2xl border border-slate-200">
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead style="background:#ECEEF3">
-                        <tr>
-                            <th class="px-4 py-2 font-semibold">تاریخ</th>
-                            <th class="px-4 py-2 font-semibold">کارمند</th>
-                            <th class="px-4 py-2 font-semibold">نوع</th>
-                            <th class="px-4 py-2 font-semibold">وضعیت</th>
-                            <th class="px-4 py-2 font-semibold">واگذار به</th>
-                            <th class="px-4 py-2 font-semibold">عملیات</th>
-                        </tr>
-                    </thead>
-                    <tbody id="requests-table-body">${requestsHtml || '<tr><td colspan="6" class="text-center py-8 text-slate-500">هیچ درخواستی ثبت نشده است.</td></tr>'}</tbody>
-                </table>
-            </div>
+            <div class="overflow-x-auto"><table class="w-full text-sm"><thead style="background:#ECEEF3"><tr><th class="px-4 py-2 font-semibold">تاریخ</th><th class="px-4 py-2 font-semibold">کارمند</th><th class="px-4 py-2 font-semibold">نوع</th><th class="px-4 py-2 font-semibold">وضعیت</th><th class="px-4 py-2 font-semibold">واگذار به</th><th class="px-4 py-2 font-semibold">عملیات</th></tr></thead><tbody id="requests-table-body">${requestsHtml || '<tr><td colspan="6" class="text-center py-8 text-slate-500">هیچ درخواستی ثبت نشده است.</td></tr>'}</tbody></table></div>
+            <div id="pagination-container" class="p-4 flex justify-center mt-6"></div>
         </div>
     `;
 },
@@ -4529,6 +4490,9 @@ const setupOrganizationPageListeners = () => {
 
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید و کامل جایگزین کنید
+
+// فایل: js/main.js
+// این تابع را به طور کامل جایگزین نسخه فعلی کنید ▼
 
 // فایل: js/main.js
 // این تابع را به طور کامل جایگزین نسخه فعلی کنید ▼
