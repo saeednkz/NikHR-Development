@@ -1,6 +1,6 @@
 // --- وارد کردن ماژول‌ها ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { onAuthStateChanged, updatePassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { onAuthStateChanged, updatePassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
     getFirestore, doc, getDoc, setDoc, onSnapshot, collection,
     addDoc, getDocs, writeBatch, deleteDoc, updateDoc, query, where, serverTimestamp, arrayUnion
