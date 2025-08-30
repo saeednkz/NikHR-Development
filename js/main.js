@@ -168,7 +168,15 @@ async function initializeFirebase() {
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                await fetchUserRole(user);
+                try {
+                    await Promise.race([
+                        fetchUserRole(user),
+                        new Promise(resolve => setTimeout(resolve, 2000))
+                    ]);
+                } catch {}
+                if (!state.currentUser) {
+                    state.currentUser = { uid: user.uid, email: user.email, role: 'viewer' };
+                }
                 listenToData();
                 // Fallback in case listeners hang (network/rules): force render after 2.5s
                 setTimeout(() => {
