@@ -2921,24 +2921,29 @@ analytics: () => {
         </div>
     `;
 },
-  documents: () => {
+// فایل: js/main.js
+// تابع pages.documents را به طور کامل با این نسخه جایگزین کنید ▼
+
+documents: () => {
+    // در این بخش، برای هر دسته‌بندی یک آیکون مناسب از کتابخانه Lucide تعریف می‌کنیم
     const docSections = [
-        { id: 'آموزش و رشد', key: 'learning', desc: 'منابع و دوره‌های رشد فردی و شغلی.' },
-        { id: 'قوانین و بازی', key: 'rules', desc: 'آیین‌نامه‌ها، اصول همکاری و راهنمای رفتاری.' },
-        { id: 'کیت ابزار کاری', key: 'toolkit', desc: 'فرم‌ها، قالب‌ها و الگوهای کاربردی روزانه.' },
-        { id: 'داستان ما', key: 'story', desc: 'رسالت، چشم‌انداز و ارزش‌های سازمان.' },
-        { id: 'مزایا و حقوق', key: 'benefits', desc: 'حقوق، مزایا، بیمه و سیاست‌های مالی.' },
-        { id: 'مستندات پروژه‌ها', key: 'projects', desc: 'مستندات فنی و اجرایی پروژه‌ها.' }
+        { id: 'آموزش و رشد',      key: 'learning', icon: 'graduation-cap', desc: 'منابع و دوره‌های رشد فردی و شغلی.' },
+        { id: 'قوانین و بازی',    key: 'rules',    icon: 'scale',          desc: 'آیین‌نامه‌ها، اصول همکاری و راهنمای رفتاری.' },
+        { id: 'کیت ابزار کاری',   key: 'toolkit',  icon: 'briefcase',      desc: 'فرم‌ها، قالب‌ها و الگوهای کاربردی روزانه.' },
+        { id: 'داستان ما',       key: 'story',    icon: 'book-open',      desc: 'رسالت، چشم‌انداز و ارزش‌های سازمان.' },
+        { id: 'مزایا و حقوق',     key: 'benefits', icon: 'coins',          desc: 'حقوق، مزایا، بیمه و سیاست‌های مالی.' },
+        { id: 'مستندات پروژه‌ها', key: 'projects', icon: 'folder-kanban',  desc: 'مستندات فنی و اجرایی پروژه‌ها.' }
     ];
     const colors = ['#6B69D6','#FF6A3D','#10B981','#F59E0B','#0EA5E9','#F43F5E'];
+    
     const cards = docSections.map((s, idx) => {
         const color = colors[idx % colors.length];
         const count = (state.companyDocuments || []).filter(d => d.categoryKey === s.key).length;
         return `
             <div class="bg-white rounded-2xl border border-slate-200 p-5 hover:shadow-lg transition-shadow">
                 <div class="flex items-center gap-3 mb-3">
-                    <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background:rgba(107,105,214,.12)">
-                        <img src="icons/icon-128x128.png" alt="${s.id}" class="w-full h-full object-cover p-2">
+                    <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background:${color}1a;">
+                        <i data-lucide="${s.icon}" class="w-6 h-6" style="color:${color}"></i>
                     </div>
                     <div class="flex-1">
                         <h3 class="text-lg font-bold text-slate-800">${s.id}</h3>
