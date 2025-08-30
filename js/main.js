@@ -4028,6 +4028,16 @@ window.setupTalentPageListeners = () => {
         }
     } catch {}
 };
+
+// Organization page listeners (add team)
+window.setupOrganizationPageListeners = () => {
+    try {
+        const addBtn = document.getElementById('add-team-btn') || document.getElementById('add-team-btn-empty');
+        if (addBtn) {
+            addBtn.addEventListener('click', (e) => { e.preventDefault(); window.showTeamForm && window.showTeamForm(); });
+        }
+    } catch {}
+};
 const renderEngagementGauge = (canvasId, score) => {
     const gaugeCtx = document.getElementById(canvasId)?.getContext('2d');
     if(gaugeCtx) { 
