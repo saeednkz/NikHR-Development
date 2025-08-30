@@ -3542,6 +3542,7 @@ const viewTeamProfile = (teamId) => {
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
+                ${canEdit() ? `<button id="edit-team-details-btn" class="secondary-btn text-xs">ویرایش مشخصات</button>` : ''}
                     ${canEdit() ? `<button id="edit-team-mission-btn" class="primary-btn text-xs">ویرایش هدف تیم</button>` : ''}
                 </div>
             </div>
