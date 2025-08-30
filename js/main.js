@@ -177,10 +177,10 @@ async function initializeFirebase() {
                 if (!state.currentUser) {
                     state.currentUser = { uid: user.uid, email: user.email, role: 'viewer' };
                 }
-                // Optimistic render immediately
+                // Optimistic render immediately (non-admins -> employee portal)
                 try {
-                    if (state.currentUser.role === 'employee' && window.renderEmployeePortal) {
-                        window.renderEmployeePortal();
+                    if (!(canEdit() || isAdmin())) {
+                        if (window.renderEmployeePortal) { window.renderEmployeePortal(); }
                     } else {
                         showDashboard();
                         if (typeof router === 'function') router();
@@ -4009,6 +4009,16 @@ const renderDashboardCharts = () => {
             }
         });
     }
+};
+
+// Attach listeners for Talent page (add employee button)
+window.setupTalentPageListeners = () => {
+    try {
+        const addBtn = document.getElementById('add-employee-btn');
+        if (addBtn) {
+            addBtn.addEventListener('click', (e) => { e.preventDefault(); showEmployeeForm(); });
+        }
+    } catch {}
 };
 const renderEngagementGauge = (canvasId, score) => {
     const gaugeCtx = document.getElementById(canvasId)?.getContext('2d');
