@@ -5243,6 +5243,7 @@ async function resizeAndUploadAvatar(file, emp) {
 
             if (!resizedBlob) return;
             showToast("در حال آپلود عکس، لطفاً منتظر بمانید...", "success");
+             setTimeout(async () => {
             try {
                 const filePath = `avatars/${emp.firestoreId}/${Date.now()}.jpg`;
                 const storageRef = ref(storage, filePath);
@@ -5260,6 +5261,7 @@ async function resizeAndUploadAvatar(file, emp) {
                 console.error("Error uploading avatar:", error);
                 showToast("خطا در آپلود عکس پروفایل.", "error");
             }
+            }, 0); // تاخیر صفر کافی است تا اجرا به چرخه بعدی موکول شود.
         };
         img.src = e.target.result;
     };
