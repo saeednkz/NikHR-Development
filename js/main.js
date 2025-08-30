@@ -1567,7 +1567,7 @@ const generateSmartReminders = async () => {
                     assignedUid = defaultRule.assigneeUid;
                 }
 
-                if (assignedUid) {
+               if (assignedUid) {
                     batch.set(reminderRef, {
                         text: event.text,
                         subtext: event.subtext,
@@ -1576,8 +1576,8 @@ const generateSmartReminders = async () => {
                         date: event.date,
                         assignedTo: assignedUid,
                         isReadByAssignee: false,
-                        createdAt: serverTimestamp()
-                        status: 'جدید' // افزودن وضعیت پیش‌فرض
+                        createdAt: serverTimestamp(),
+                       status: 'جدید'
                     });
                     hasNewReminders = true;
                 }
