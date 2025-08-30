@@ -3542,7 +3542,7 @@ const viewTeamProfile = (teamId) => {
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
-                    ${canEdit() ? `<button id=\"edit-team-mission-btn\" class=\"primary-btn text-xs\">ویرایش هدف تیم</button>` : ''}
+                    ${canEdit() ? `<button id="edit-team-mission-btn" class="primary-btn text-xs">ویرایش هدف تیم</button>` : ''}
                 </div>
             </div>
         </section>
@@ -3630,6 +3630,10 @@ const viewTeamProfile = (teamId) => {
                     showEditTeamOkrsForm(teamArg);
                     return;
                 }
+                if (button.id === 'edit-team-details-btn') {
+                showTeamForm(teamId); // باز کردن فرم اصلی ویرایش تیم برای تغییر نام و مدیر
+                return;
+            }
             });
         };
     }
