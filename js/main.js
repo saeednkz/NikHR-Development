@@ -2840,9 +2840,12 @@ requests: () => {
   // در فایل js/main.js، به آبجکت pages این بخش جدید را اضافه کنید
 // در فایل js/main.js، داخل آبجکت pages
 // کل این تابع را با نسخه جدید جایگزین کنید
+// فایل: js/main.js
+// آبجکت pages.tasks را به طور کامل با این نسخه جایگزین کنید ▼
+
 tasks: () => {
     if (!state.currentUser) return '';
-      const unreadTasks = (state.reminders || []).filter(r => r.assignedTo === state.currentUser.uid && !r.isReadByAssignee);
+    const unreadTasks = (state.reminders || []).filter(r => r.assignedTo === state.currentUser.uid && !r.isReadByAssignee);
     if (unreadTasks.length > 0) {
         const batch = writeBatch(db);
         unreadTasks.forEach(task => {
@@ -2854,7 +2857,8 @@ tasks: () => {
     const admins = state.users.filter(u => u.role === 'admin');
     const myTasks = (state.reminders || [])
         .filter(r => r.assignedTo === state.currentUser.uid)
-        .sort((a, b) => new Date(a.date.toDate()) - new Date(b.date.toDate()));
+        // ▼▼▼ این خط برای مدیریت هر دو نوع تاریخ (متن و Timestamp) اصلاح شده است ▼▼▼
+        .sort((a, b) => new Date(a.date?.toDate ? a.date.toDate() : a.date) - new Date(b.date?.toDate ? b.date.toDate() : b.date));
 
     const tasksHtml = myTasks.map(task => {
         const statusColors = {
