@@ -177,6 +177,17 @@ async function initializeFirebase() {
                 if (!state.currentUser) {
                     state.currentUser = { uid: user.uid, email: user.email, role: 'viewer' };
                 }
+                // Optimistic render immediately
+                try {
+                    if (state.currentUser.role === 'employee' && window.renderEmployeePortal) {
+                        window.renderEmployeePortal();
+                    } else {
+                        showDashboard();
+                        if (typeof router === 'function') router();
+                    }
+                    const overlayEl = document.getElementById('loading-overlay');
+                    if (overlayEl) overlayEl.style.display = 'none';
+                } catch {}
                 listenToData();
                 // Fallback in case listeners hang (network/rules): force render after 2.5s
                 setTimeout(() => {
@@ -257,10 +268,12 @@ function listenToData() {
         'competencies', 'requests', 'assignmentRules', 'companyDocuments', 'announcements', 'birthdayWishes', 'moments'
     ];
     let initialLoads = collectionsToListen.length;
+    const pendingCols = new Set(collectionsToListen);
 
     const onDataLoaded = () => {
         initialLoads--;
         if (initialLoads === 0) {
+            try { clearTimeout(initialLoadTimeout); } catch {}
             try { setTimeout(() => { if (window.calculateAndApplyAnalytics) window.calculateAndApplyAnalytics(); }, 0); } catch {}
             
             // فراخوانی تابع نوتیفیکیشن بعد از بارگذاری کامل داده‌ها
@@ -279,10 +292,22 @@ function listenToData() {
         }
     };
 
+    // Fallback: if some collections never respond, force finalize after 3.5s
+    const initialLoadTimeout = setTimeout(() => {
+        if (initialLoads > 0) {
+            console.warn('Initial data load timed out. Pending collections:', Array.from(pendingCols));
+            // Default any missing collections to empty arrays to allow UI render
+            pendingCols.forEach(col => { if (!Array.isArray(state[col])) state[col] = []; });
+            initialLoads = 1; // so that next onDataLoaded() makes it zero safely
+            onDataLoaded();
+        }
+    }, 3500);
+
     collectionsToListen.forEach(colName => {
         const colRef = collection(db, `artifacts/${appId}/public/data/${colName}`);
         const unsubscribe = onSnapshot(colRef, (snapshot) => {
             state[colName] = snapshot.docs.map(doc => ({ firestoreId: doc.id, ...doc.data() }));
+            pendingCols.delete(colName);
             
             if (initialLoads > 0) {
                 onDataLoaded();
@@ -308,6 +333,7 @@ function listenToData() {
         }, (error) => {
             console.error(`Error listening to ${colName}:`, error);
             if (!state[colName]) state[colName] = [];
+            pendingCols.delete(colName);
             if (initialLoads > 0) onDataLoaded();
         });
         
