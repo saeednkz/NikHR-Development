@@ -3538,22 +3538,23 @@ const viewTeamProfile = (teamId) => {
                     <div>
                         <h2 class="text-2xl font-extrabold text-white">${team.name}</h2>
                         <p class="text-white/90 text-xs">رهبر تیم: ${leader?.name || 'نامشخص'}</p>
-                        ${team.missionLine ? `<p class=\"text-white/90 text-xs mt-1\">${team.missionLine}</p>` : ''}
+                        ${team.missionLine ? `<p class="text-white/90 text-xs mt-1">${team.missionLine}</p>` : ''}
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
-                ${canEdit() ? `<button id="edit-team-details-btn" class="secondary-btn text-xs">ویرایش مشخصات</button>` : ''}
+                    ${canEdit() ? `<button id="edit-team-details-btn" class="secondary-btn text-xs">ویرایش مشخصات</button>` : ''}
                     ${canEdit() ? `<button id="edit-team-mission-btn" class="primary-btn text-xs">ویرایش هدف تیم</button>` : ''}
                 </div>
             </div>
         </section>
+        
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
             <div class="lg:col-span-1 space-y-6">
                 <div class="bg-white rounded-2xl border border-slate-200 p-6 text-center">
                     <div class="w-24 h-24 rounded-full mx-auto mb-4 overflow-hidden ring-4 ring-indigo-100 bg-gray-200 flex items-center justify-center">
                         <img src="${team.avatar}" alt="${team.name}" class="w-full h-full object-cover">
                     </div>
-                    ${canEdit() ? `<button id=\"change-team-avatar-btn\" class=\"secondary-btn text-xs\">تغییر عکس</button>` : ''}
+                    ${canEdit() ? `<button id="change-team-avatar-btn" class="secondary-btn text-xs">تغییر عکس</button>` : ''}
                 </div>
                 <div class="card p-6 bg-gray-50 rounded-xl">
                     <h4 class="font-semibold mb-4 text-gray-700 flex items-center"><i data-lucide="brain-circuit" class="ml-2 w-5 h-5 text-purple-500"></i>تحلیل هوشمند</h4>
@@ -3598,46 +3599,59 @@ const viewTeamProfile = (teamId) => {
     `;
     openModal(mainModal, mainModalContainer);
     // Minimal listener to handle avatar change in team profile and future actions
-    if (typeof window.setupTeamProfileModalListeners !== 'function') {
-        window.setupTeamProfileModalListeners = (teamArg) => {
-            const content = document.getElementById('modalContent');
-            content?.addEventListener('click', async (e) => {
-                if (e.target.closest('#change-team-avatar-btn')) {
-                    const input = document.getElementById('image-upload-input');
-                    if (!input) return;
-                    input.onchange = async () => {
-                        const file = input.files[0];
-                        if (!file) return;
-                        try {
-                            const sRef = ref(storage, `teams/${teamArg.firestoreId}/avatar_${Date.now()}_${file.name}`);
-                            await uploadBytes(sRef, file);
-                            const url = await getDownloadURL(sRef);
-                            await updateDoc(doc(db, `artifacts/${appId}/public/data/teams`, teamArg.firestoreId), { avatar: url });
-                            showToast('عکس تیم به‌روزرسانی شد.');
-                            viewTeamProfile(teamArg.firestoreId);
-                        } catch (err) {
-                            console.error('Error uploading team avatar', err);
-                            showToast('خطا در به‌روزرسانی عکس تیم.', 'error');
-                        } finally { input.value = ''; }
-                    };
-                    input.click();
-                    return;
-                }
-                if (e.target.closest('#edit-team-members-btn')) {
-                    showEditTeamMembersForm(teamArg);
-                    return;
-                }
-                if (e.target.closest('#edit-team-okrs-btn')) {
-                    showEditTeamOkrsForm(teamArg);
-                    return;
-                }
-                if (button.id === 'edit-team-details-btn') {
+if (typeof window.setupTeamProfileModalListeners !== 'function') {
+    window.setupTeamProfileModalListeners = (teamArg) => {
+        const content = document.getElementById('modalContent');
+        content?.addEventListener('click', async (e) => {
+            const button = e.target.closest('button');
+            if (!button) return; // اگر روی دکمه کلیک نشده بود، ادامه نده
+
+            const teamId = teamArg.firestoreId;
+
+            // --- رسیدگی به کلیک‌های مختلف ---
+            if (button.id === 'change-team-avatar-btn') {
+                // ... (کد این بخش بدون تغییر باقی می‌ماند)
+                const input = document.getElementById('image-upload-input');
+                if (!input) return;
+                input.onchange = async () => {
+                    const file = input.files[0];
+                    if (!file) return;
+                    try {
+                        const sRef = ref(storage, `teams/${teamId}/avatar_${Date.now()}_${file.name}`);
+                        await uploadBytes(sRef, file);
+                        const url = await getDownloadURL(sRef);
+                        await updateDoc(doc(db, `artifacts/${appId}/public/data/teams`, teamId), { avatar: url });
+                        showToast('عکس تیم به‌روزرسانی شد.');
+                        viewTeamProfile(teamId);
+                    } catch (err) {
+                        console.error('Error uploading team avatar', err);
+                        showToast('خطا در به‌روزرسانی عکس تیم.', 'error');
+                    } finally { input.value = ''; }
+                };
+                input.click();
+                return;
+            }
+            if (button.id === 'edit-team-members-btn') {
+                showEditTeamMembersForm(teamArg);
+                return;
+            }
+            if (button.id === 'edit-team-okrs-btn') {
+                showEditTeamOkrsForm(teamArg);
+                return;
+            }
+            
+            // ▼▼▼ این دو بلاک جدید، مشکلات شما را حل می‌کنند ▼▼▼
+            if (button.id === 'edit-team-mission-btn') {
+                showEditTeamMissionForm(teamArg); // فعال‌سازی دکمه ویرایش هدف
+                return;
+            }
+            if (button.id === 'edit-team-details-btn') {
                 showTeamForm(teamId); // باز کردن فرم اصلی ویرایش تیم برای تغییر نام و مدیر
                 return;
             }
-            });
-        };
-    }
+        });
+    };
+}
     setupTeamProfileModalListeners(team);
 };
 
