@@ -4161,6 +4161,9 @@ document.getElementById('addReminderBtn')?.addEventListener('click', async () =>
         }
     }
 });
+                document.getElementById('view-all-reminders-btn')?.addEventListener('click', () => {
+        showAllRemindersModal();
+    });
 };
 const setupDashboardQuickActions = () => {
     document.getElementById('dash-quick-requests')?.addEventListener('click', () => navigateTo('requests'));
