@@ -1980,6 +1980,11 @@ const updateNotificationBell = () => {
                 modal.classList.remove('flex');
             }, 300);
         }
+        // expose modal helpers globally to avoid scope issues in event handlers
+        window.openModal = openModal;
+        window.closeModal = closeModal;
+        window.mainModal = mainModal;
+        window.mainModalContainer = mainModalContainer;
         document.getElementById('closeModal')?.addEventListener('click', () => closeModal(mainModal, mainModalContainer));
         mainModal?.addEventListener('click', (e) => {
             if (e.target === mainModal) {
@@ -1998,6 +2003,9 @@ const updateNotificationBell = () => {
             confirmCallback = typeof onConfirm === 'function' ? onConfirm : () => {};
             openModal(confirmModal, confirmModalContainer);
         }
+        window.showConfirmationModal = showConfirmationModal;
+        window.confirmModal = confirmModal;
+        window.confirmModalContainer = confirmModalContainer;
         document.getElementById('confirmCancel')?.addEventListener('click', () => closeModal(confirmModal, confirmModalContainer));
         document.getElementById('confirmAccept')?.addEventListener('click', () => { confirmCallback(); closeModal(confirmModal, confirmModalContainer); });
 
