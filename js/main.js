@@ -50,6 +50,7 @@ const allItemTypes = {
     // آیتم‌های سیستمی (از generateSmartReminders)
     'تولد': 'تولد کارمند',
     'تمدید قرارداد': 'تمدید قرارداد کارمند',
+     'سالگرد استخدام': 'سالگرد استخدام کارمند',
     
     // آیتم‌های درخواست کاربر (از showNewRequestForm)
     'درخواست مرخصی': 'درخواست مرخصی',
@@ -1529,7 +1530,29 @@ const generateSmartReminders = async () => {
                 events.push({ type: 'تولد', date: nextBirthday, text: `تولد: ${emp.name}`, subtext: `در ${daysUntilBirthday} روز دیگر`, icon: 'cake', id: `bday-${emp.id}-${nextBirthday.getFullYear()}` });
             }
         }
-        // ... می‌توانید رویدادهای دیگر را هم به همین شکل اضافه کنید
+               if (emp.startDate) {
+            const startDate = new Date(emp.startDate);
+            let nextAnniversary = new Date(now.getFullYear(), startDate.getMonth(), startDate.getDate());
+            
+            // اگر سالگرد امسال گذشته است، آن را برای سال آینده تنظیم کن
+            if (nextAnniversary < now) {
+                nextAnniversary.setFullYear(now.getFullYear() + 1);
+            }
+
+            const daysUntilAnniversary = Math.round((nextAnniversary - now) / oneDay);
+
+            // اگر فردا سالگرد است (یعنی ۱ روز مانده)، یادآور را ایجاد کن
+            if (daysUntilAnniversary === 1) {
+                events.push({
+                    type: 'سالگرد استخدام',
+                    date: nextAnniversary, // تاریخ خود رویداد
+                    text: `یادآوری سالگرد استخدام ${emp.name}`,
+                    subtext: `فردا سالگرد ورود ایشان به شرکت است.`,
+                    icon: 'award', // آیکون مناسب برای تقدیر
+                    id: `anniv-${emp.id}-${nextAnniversary.getFullYear()}`
+                });
+            }
+        }
 
         for (const event of events) {
             const reminderRef = doc(db, `artifacts/${appId}/public/data/reminders`, event.id);
@@ -1554,6 +1577,7 @@ const generateSmartReminders = async () => {
                         assignedTo: assignedUid,
                         isReadByAssignee: false,
                         createdAt: serverTimestamp()
+                        status: 'جدید' // افزودن وضعیت پیش‌فرض
                     });
                     hasNewReminders = true;
                 }
@@ -4002,7 +4026,7 @@ const renderAllReminders = () => {
 
     const allUpcomingReminders = [...(state.reminders || []), ...contractReminders]
         .sort((a, b) => new Date(a.date?.toDate ? a.date.toDate() : a.date) - new Date(b.date?.toDate ? b.date.toDate() : b.date))
-        .slice(0, 5); 
+        //.slice(0, 5); 
 
     if (allUpcomingReminders.length === 0) {
         return '<p class="text-sm text-slate-500 text-center">هیچ یادآوری فعالی وجود ندارد.</p>';
