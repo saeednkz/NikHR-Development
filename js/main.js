@@ -1258,6 +1258,17 @@ function renderEmployeePortal() {
             .replace(/۹/g, '9')
             .replace(/۰/g, '0');
     };
+
+function clearEventListeners(element) {
+    if (!element) return;
+    const parent = element.parentNode;
+    const newElement = element.cloneNode(true);
+    if (parent) {
+        parent.replaceChild(newElement, element);
+    }
+    // برگرداندن عنصر جدید برای مواقعی که نیاز به ارجاع مجدد داریم
+    return newElement; 
+}
 const toPersianDate = (dateInput) => {
     if (!dateInput) return 'نامشخص';
     try {
@@ -3500,6 +3511,7 @@ const viewEmployeeProfile = (employeeId) => {
         </div>`;
 
     openModal(mainModal, mainModalContainer);
+     modalContent = clearEventListeners(document.getElementById('modalContent'));
     setupProfileModalListeners(emp);
 };
 const viewTeamProfile = (teamId) => {
