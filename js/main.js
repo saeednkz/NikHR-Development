@@ -5213,6 +5213,9 @@ function handleAvatarChange(emp) {
     };
     fileInput.click();
 }
+// فایل: js/main.js
+// این تابع را به طور کامل جایگزین نسخه فعلی کنید
+
 async function resizeAndUploadAvatar(file, emp) {
     const MAX_DIMENSION = 256;
     const reader = new FileReader();
@@ -5222,46 +5225,49 @@ async function resizeAndUploadAvatar(file, emp) {
         img.onload = async () => {
             const canvas = document.createElement('canvas');
             let { width, height } = img;
-
+            
+            // ... (بخش تغییر سایز عکس بدون تغییر) ...
             if (width > height) {
-                if (width > MAX_DIMENSION) {
-                    height *= MAX_DIMENSION / width;
-                    width = MAX_DIMENSION;
-                }
+                if (width > MAX_DIMENSION) { height *= MAX_DIMENSION / width; width = MAX_DIMENSION; }
             } else {
-                if (height > MAX_DIMENSION) {
-                    width *= MAX_DIMENSION / height;
-                    height = MAX_DIMENSION;
-                }
+                if (height > MAX_DIMENSION) { width *= MAX_DIMENSION / height; height = MAX_DIMENSION; }
             }
             canvas.width = width;
             canvas.height = height;
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, width, height);
-            
             const resizedBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.9));
-
             if (!resizedBlob) return;
-            showToast("در حال آپلود عکس، لطفاً منتظر بمانید...", "success");
-             setTimeout(async () => {
+
+            let loadingToast = null; // متغیری برای نگهداری اعلان "در حال آپلود"
+
             try {
+                // ۱. یک اعلان ثابت (بدون حذف خودکار) ایجاد می‌کنیم
+                loadingToast = showToast("در حال آپلود عکس، لطفاً منتظر بمانید...", "success", null);
+
                 const filePath = `avatars/${emp.firestoreId}/${Date.now()}.jpg`;
                 const storageRef = ref(storage, filePath);
                 const snapshot = await uploadBytes(storageRef, resizedBlob);
                 const downloadURL = await getDownloadURL(snapshot.ref);
                 const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
                 await updateDoc(docRef, { avatar: downloadURL });
-                showToast("عکس پروفایل با موفقیت به‌روزرسانی شد.");
                 
-                // رفرش کردن مودال با اطلاعات جدید
+                // ۳. اعلان موفقیت‌آمیز (که خودکار حذف می‌شود) را نمایش می‌دهیم
+                showToast("عکس پروفایل با موفقیت به‌روزرسانی شد.");
+
                 const updatedEmp = { ...emp, avatar: downloadURL };
                 state.employees = state.employees.map(e => e.firestoreId === emp.firestoreId ? updatedEmp : e);
-                viewEmployeeProfile(emp.firestoreId); 
+                viewEmployeeProfile(emp.firestoreId);
+
             } catch (error) {
                 console.error("Error uploading avatar:", error);
                 showToast("خطا در آپلود عکس پروفایل.", "error");
+            } finally {
+                // ۲. در هر صورت (موفقیت یا خطا)، اعلان "در حال آپلود" را دستی حذف می‌کنیم
+                if (loadingToast) {
+                    loadingToast.remove();
+                }
             }
-            }, 0); // تاخیر صفر کافی است تا اجرا به چرخه بعدی موکول شود.
         };
         img.src = e.target.result;
     };
