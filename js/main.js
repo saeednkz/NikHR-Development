@@ -43,7 +43,22 @@ import { showToast } from './utils.js';
             'feedback_360': { id: 'feedback_360', title: 'نظرسنجی بازخورد ۳۶۰ درجه', description: 'ارائه بازخورد سازنده به همکاران برای کمک به رشد حرفه‌ای آن‌ها.', requiresTarget: true, questions: [ { id: '360_q1', text: 'این همکار چقدر در ارتباطات خود (گفتاری و نوشتاری) شفاف، محترمانه و موثر است؟', type: 'rating_1_5' }, { id: '360_q2', text: 'این همکار تا چه حد در کار تیمی مشارکت می‌کند، به دیگران کمک می‌کند و دانش خود را به اشتراک می‌گذارد؟', type: 'rating_1_5' }, { id: '360_q3', text: 'این همکار در حل مسائل و رویارویی با چالش‌ها چقدر خلاق، کارآمد و مسئولیت‌پذیر است؟', type: 'rating_1_5' }, { id: '360_q4', text: 'این همکار تا چه حد به اهداف و نتایج متعهد است و کارها را با کیفیت بالا به اتمام می‌رساند؟', type: 'rating_1_5' }, { id: '360_q5', text: 'بزرگترین نقطه قوت این همکار که باید به آن ادامه دهد چیست؟', type: 'open_text' }, { id: '360_q6', text: 'چه پیشنهاد مشخصی برای رشد و پیشرفت این همکار دارید؟ (چه کاری را باید شروع کند، متوقف کند یا ادامه دهد؟)', type: 'open_text' }, ] },
             'exit': { id: 'exit', title: 'نظرسنجی خروج از سازمان', description: 'درک دلایل ترک سازمان برای بهبود محیط کاری برای کارمندان آینده.', questions: [ { id: 'ext_q1', text: 'لطفاً دلیل یا دلایل اصلی خود برای ترک سازمان را بیان کنید.', type: 'open_text' }, { id: 'ext_q2', text: 'از تجربه کاری خود در این شرکت به طور کلی چقدر رضایت داشتید؟', type: 'rating_1_5' }, { id: 'ext_q3', text: 'آیا احساس می‌کردید شغل شما از مهارت‌هایتان به خوبی استفاده می‌کند؟', type: 'rating_1_5' }, { id: 'ext_q4', text: 'رابطه و کیفیت مدیریت مدیر مستقیم خود را چگونه ارزیابی می‌کنید؟', type: 'rating_1_5' }, { id: 'ext_q5', text: 'آیا فرصت‌های کافی برای رشد و پیشرفت شغلی در اختیار شما قرار گرفت؟', type: 'rating_1_5' }, { id: 'ext_q6', text: 'فرهنگ سازمانی شرکت را چگونه توصیف می‌کنید؟', type: 'open_text' }, { id: 'ext_q7', text: 'آیا بسته حقوق و مزایای خود را منصفانه و رقابتی می‌دانستید؟', type: 'yes_no' }, { id: 'ext_q8', text: 'آیا این شرکت را به عنوان یک محیط کاری به دیگران توصیه می‌کنید؟', type: 'yes_no' }, { id: 'ext_q9', text: 'اگر می‌توانستید یک چیز را در شرکت تغییر دهید، آن چه بود؟', type: 'open_text' }, ] }
         };
+// فایل: js/main.js
 
+// این آبجکت را به بالای فایل اضافه کنید
+const allItemTypes = {
+    // آیتم‌های سیستمی (از generateSmartReminders)
+    'تولد': 'تولد کارمند',
+    'تمدید قرارداد': 'تمدید قرارداد کارمند',
+    
+    // آیتم‌های درخواست کاربر (از showNewRequestForm)
+    'درخواست مرخصی': 'درخواست مرخصی',
+    'گواهی اشتغال به کار': 'گواهی اشتغال به کار',
+    'مساعده حقوق': 'مساعده حقوق',
+    'درخواست ویرایش اطلاعات': 'درخواست ویرایش اطلاعات',
+    'سایر': 'سایر درخواست‌ها'
+    // هر آیتم جدید دیگری که در آینده اضافه می‌کنید را اینجا تعریف کنید
+};
         export const state = { employees: [], teams: [], reminders: [], surveyResponses: [], users: [], competencies: [], expenses: [], pettyCashCards: [], chargeHistory: [], dashboardMetrics: {}, orgAnalytics: {}, currentPage: 'dashboard', currentPageTalent: 1, currentUser: null, };
         let charts = {};
 let activeListeners = []; // [!code ++] این خط را اضافه کنید
@@ -4676,11 +4691,29 @@ const setupSettingsPageListeners = () => {
     }
 };
 // Assignment Rule form (add/edit)
+// فایل: js/main.js
+// این تابع را به طور کامل جایگزین نسخه فعلی کنید
+
 if (typeof window.showAssignmentRuleForm !== 'function') {
     window.showAssignmentRuleForm = (ruleId = null) => {
         const existing = (state.assignmentRules || []).find(r => r.firestoreId === ruleId) || {};
         const admins = state.users.filter(u => u.role === 'admin');
-        const adminOptions = admins.map(a => `<option value="${a.firestoreId}" ${existing.assigneeUid===a.firestoreId?'selected':''}>${a.name || a.email}</option>`).join('');
+        const adminOptions = admins.map(a => `<option value="${a.firestoreId}" ${existing.assigneeUid === a.firestoreId ? 'selected' : ''}>${a.name || a.email}</option>`).join('');
+        
+        // --- بخش جدید: ساخت چک‌باکس‌ها از روی آبجکت allItemTypes ---
+        const itemTypesCheckboxes = Object.entries(allItemTypes).map(([key, description]) => `
+            <label class="flex items-center gap-2 p-2 border rounded-lg hover:bg-slate-50 cursor-pointer">
+                <input 
+                    type="checkbox" 
+                    class="rule-item-type-checkbox" 
+                    value="${key}" 
+                    ${(existing.itemTypes || []).includes(key) ? 'checked' : ''}
+                >
+                <span class="text-sm font-medium">${key}</span>
+                <span class="text-xs text-slate-500">- ${description}</span>
+            </label>
+        `).join('');
+
         modalTitle.innerText = ruleId ? 'ویرایش قانون واگذاری' : 'افزودن قانون واگذاری';
         modalContent.innerHTML = `
             <form id="assignment-rule-form" class="space-y-4">
@@ -4689,8 +4722,10 @@ if (typeof window.showAssignmentRuleForm !== 'function') {
                     <input id="rule-name" class="w-full p-2 border rounded-md" value="${existing.ruleName || ''}" required>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium">انواع آیتم (با کاما جدا کنید)</label>
-                    <input id="item-types" class="w-full p-2 border rounded-md" placeholder="مثلا: تمدید قرارداد, تولد" value="${(existing.itemTypes||[]).join(', ')}">
+                    <label class="block text-sm font-medium mb-2">برای کدام آیتم‌ها اعمال شود؟</label>
+                    <div id="item-types-container" class="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-60 overflow-y-auto pr-2">
+                        ${itemTypesCheckboxes}
+                    </div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium">واگذار به</label>
@@ -4707,13 +4742,23 @@ if (typeof window.showAssignmentRuleForm !== 'function') {
             e.preventDefault();
             try {
                 const name = document.getElementById('rule-name').value.trim();
-                const typesStr = document.getElementById('item-types').value.trim();
                 const assigneeUid = document.getElementById('assignee-uid').value;
-                const itemTypes = typesStr ? typesStr.split(',').map(s => s.trim()).filter(Boolean) : [];
+                
+                // --- بخش جدید: خواندن مقادیر از چک‌باکس‌ها ---
+                const itemTypes = Array.from(document.querySelectorAll('.rule-item-type-checkbox:checked'))
+                                     .map(checkbox => checkbox.value);
+
+                if (itemTypes.length === 0) {
+                    showToast('حداقل یک نوع آیتم را انتخاب کنید.', 'error');
+                    return;
+                }
+
+                const ruleData = { ruleName: name, itemTypes, assigneeUid };
+
                 if (ruleId) {
-                    await updateDoc(doc(db, `artifacts/${appId}/public/data/assignmentRules`, ruleId), { ruleName: name, itemTypes, assigneeUid });
+                    await updateDoc(doc(db, `artifacts/${appId}/public/data/assignmentRules`, ruleId), ruleData);
                 } else {
-                    await addDoc(collection(db, `artifacts/${appId}/public/data/assignmentRules`), { ruleName: name, itemTypes, assigneeUid, createdAt: serverTimestamp() });
+                    await addDoc(collection(db, `artifacts/${appId}/public/data/assignmentRules`), { ...ruleData, createdAt: serverTimestamp() });
                 }
                 showToast('قانون واگذاری ذخیره شد.');
                 closeModal(mainModal, mainModalContainer);
