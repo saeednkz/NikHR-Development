@@ -1607,6 +1607,9 @@ const calculateAndApplyAnalytics = () => {
   generateSmartReminders(); // [!code ++] این خط را اضافه کنید
     };
 // این تابع کاملاً جدید را به main.js اضافه کنید
+// فایل: js/main.js
+// این تابع را به طور کامل جایگزین نسخه فعلی کنید
+
 const generateSmartReminders = async () => {
     const now = new Date();
     now.setHours(0, 0, 0, 0);
@@ -1621,14 +1624,31 @@ const generateSmartReminders = async () => {
         
         const events = [];
 
+        // ▼▼▼ بخش تمدید قرارداد اصلاح و تکمیل شده است ▼▼▼
         // رویداد: اتمام قرارداد (در ۹۰ روز آینده)
-        if (emp.contractEndDate) {
-            const endDate = new Date(emp.contractEndDate);
-            const daysUntilEnd = Math.round((endDate - now) / oneDay);
-            if (daysUntilEnd >= 0 && daysUntilEnd <= 90) {
-                events.push({ type: 'تمدید قرارداد', date: endDate, text: `تمدید قرارداد: ${emp.name}`, subtext: `تاریخ اتمام: ${toPersianDate(endDate)}`, icon: 'file-clock', id: `renewal-${emp.id}` });
+        // ابتدا آخرین قرارداد ثبت شده را پیدا می‌کنیم
+        if (emp.contracts && emp.contracts.length > 0) {
+            const lastContract = emp.contracts.sort((a, b) => new Date(b.endDate || 0) - new Date(a.endDate || 0))[0];
+            
+            if (lastContract && lastContract.endDate) {
+                const endDate = new Date(lastContract.endDate);
+                const daysUntilEnd = Math.round((endDate - now) / oneDay);
+
+                // اگر تاریخ پایان قرارداد بین امروز تا ۹۰ روز آینده بود، یادآور را بساز
+                if (daysUntilEnd >= 0 && daysUntilEnd <= 90) {
+                    events.push({
+                        type: 'تمدید قرارداد',
+                        date: endDate,
+                        text: `تمدید قرارداد: ${emp.name}`,
+                        subtext: `تاریخ اتمام: ${toPersianDate(endDate)}`,
+                        icon: 'file-clock',
+                        id: `renewal-${emp.id}-${endDate.getFullYear()}` // شناسه یکتا برای جلوگیری از تکرار
+                    });
+                }
             }
         }
+        // ▲▲▲ پایان بخش اصلاح شده ▲▲▲
+        
         // رویداد: تولد (در ۷ روز آینده)
         if (emp.personalInfo?.birthDate) {
             const birthDate = new Date(emp.personalInfo.birthDate);
@@ -1636,30 +1656,21 @@ const generateSmartReminders = async () => {
             if (nextBirthday < now) nextBirthday.setFullYear(now.getFullYear() + 1);
             const daysUntilBirthday = Math.round((nextBirthday - now) / oneDay);
             if (daysUntilBirthday >= 0 && daysUntilBirthday <= 7) {
-                events.push({ type: 'تولد', date: nextBirthday, text: `تولد: ${emp.name}`, subtext: `در ${daysUntilBirthday} روز دیگر`, icon: 'cake', id: `bday-${emp.id}-${nextBirthday.getFullYear()}` });
+                events.push({ type: 'تولد', date: nextBirthday, text: `تولد: ${emp.name}`, subtext: `در ${daysUntilBirthday === 0 ? 'امروز' : daysUntilBirthday + ' روز دیگر'}`, icon: 'cake', id: `bday-${emp.id}-${nextBirthday.getFullYear()}` });
             }
         }
-               if (emp.startDate) {
+
+        // رویداد: سالگرد استخدام (یادآوری ۱ روز قبل)
+        if (emp.startDate) {
             const startDate = new Date(emp.startDate);
             let nextAnniversary = new Date(now.getFullYear(), startDate.getMonth(), startDate.getDate());
             
-            // اگر سالگرد امسال گذشته است، آن را برای سال آینده تنظیم کن
             if (nextAnniversary < now) {
                 nextAnniversary.setFullYear(now.getFullYear() + 1);
             }
-
             const daysUntilAnniversary = Math.round((nextAnniversary - now) / oneDay);
-
-            // اگر فردا سالگرد است (یعنی ۱ روز مانده)، یادآور را ایجاد کن
             if (daysUntilAnniversary === 1) {
-                events.push({
-                    type: 'سالگرد استخدام',
-                    date: nextAnniversary, // تاریخ خود رویداد
-                    text: `یادآوری سالگرد استخدام ${emp.name}`,
-                    subtext: `فردا سالگرد ورود ایشان به شرکت است.`,
-                    icon: 'award', // آیکون مناسب برای تقدیر
-                    id: `anniv-${emp.id}-${nextAnniversary.getFullYear()}`
-                });
+                events.push({ type: 'سالگرد استخدام', date: nextAnniversary, text: `یادآوری سالگرد استخدام ${emp.name}`, subtext: `فردا سالگرد ورود ایشان به شرکت است.`, icon: 'award', id: `anniv-${emp.id}-${nextAnniversary.getFullYear()}` });
             }
         }
 
@@ -1676,7 +1687,7 @@ const generateSmartReminders = async () => {
                     assignedUid = defaultRule.assigneeUid;
                 }
 
-               if (assignedUid) {
+                if (assignedUid) {
                     batch.set(reminderRef, {
                         text: event.text,
                         subtext: event.subtext,
@@ -1686,7 +1697,7 @@ const generateSmartReminders = async () => {
                         assignedTo: assignedUid,
                         isReadByAssignee: false,
                         createdAt: serverTimestamp(),
-                       status: 'جدید'
+                        status: 'جدید'
                     });
                     hasNewReminders = true;
                 }
