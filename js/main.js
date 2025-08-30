@@ -4608,10 +4608,29 @@ const setupSettingsPageListeners = () => {
         
         if (addUserBtn) showAddUserForm();
         if (editUserBtn) {
-            const user = state.users.find(u => u.firestoreId === editUserBtn.dataset.uid);
-            if(user) showEditUserForm(user);
+            const userId = editUserBtn.dataset.uid;
+            const user = state.users.find(u => u.firestoreId === userId);
+            if (user) {
+                showEditUserForm(user);
+            }
         }
-        if (deleteUserBtn) { /* ... کد قبلی ... */ }
+               if (deleteUserBtn) {
+            const userId = deleteUserBtn.dataset.uid;
+            const user = state.users.find(u => u.firestoreId === userId);
+            if (user) {
+                showConfirmationModal(`حذف کاربر: ${user.name}`, "آیا مطمئن هستید؟ این عمل غیرقابل بازگشت است.", async () => {
+                    try {
+                        // در یک اپلیکیشن واقعی، برای حذف کاربر باید از Cloud Function استفاده کرد
+                        // اما برای این پروژه، ما فقط رکورد کاربر را از دیتابیس خودمان حذف می‌کنیم.
+                        await deleteDoc(doc(db, `artifacts/${appId}/public/data/users`, userId));
+                        showToast("کاربر با موفقیت حذف شد.");
+                    } catch (error) {
+                        console.error("Error deleting user:", error);
+                        showToast("خطا در حذف کاربر.", "error");
+                    }
+                });
+            }
+        }
         if (deleteCompetencyBtn) {
             const compId = deleteCompetencyBtn.dataset.id;
             showConfirmationModal('حذف شایستگی', 'این شایستگی از لیست حذف خواهد شد. ادامه می‌دهید؟', async () => {
