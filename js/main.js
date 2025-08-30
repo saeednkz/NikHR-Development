@@ -1875,7 +1875,7 @@ const updateNotificationBell = () => {
         // --- MODAL (shared) ---
         const mainModal = document.getElementById('mainModal');
         const modalTitle = document.getElementById('modalTitle');
-        const modalContent = document.getElementById('modalContent');
+       let modalContent = document.getElementById('modalContent'); // [!code focus]
         const mainModalContainer = mainModal?.querySelector('div');
 
         function openModal(modal, container) {
@@ -3511,7 +3511,7 @@ const viewEmployeeProfile = (employeeId) => {
         </div>`;
 
     openModal(mainModal, mainModalContainer);
-     modalContent = clearEventListeners(document.getElementById('modalContent'));
+    modalContent = clearEventListeners(document.getElementById('modalContent'));
     setupProfileModalListeners(emp);
 };
 const viewTeamProfile = (teamId) => {
@@ -4400,7 +4400,7 @@ const setupTalentPageListeners = () => {
         }
 
         if (viewEmpBtn) {
-            viewEmployeeProfile(viewEmpBtn.dataset.employeeId);
+        viewEmployeeProfile(viewEmpBtn.dataset.employeeId);
         } else if (editEmpBtn) {
             showEmployeeForm(editEmpBtn.dataset.employeeId);
         } else if (deleteEmpBtn) {
