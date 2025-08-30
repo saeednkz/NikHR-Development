@@ -2847,76 +2847,35 @@ requests: () => {
 // فایل: js/main.js
 // آبجکت pages.tasks را به طور کامل با این نسخه جایگزین کنید ▼
 
+// فایل: js/main.js
+// تابع pages.tasks را به طور کامل با این نسخه جایگزین کنید ▼
+
 tasks: () => {
-     const TASKS_PAGE_SIZE = 10;
+    const TASKS_PAGE_SIZE = 10;
     if (!state.currentUser) return '';
-    const unreadTasks = (state.reminders || []).filter(r => r.assignedTo === state.currentUser.uid && !r.isReadByAssignee);
-    if (unreadTasks.length > 0) {
-        const batch = writeBatch(db);
-        unreadTasks.forEach(task => {
-            const docRef = doc(db, `artifacts/${appId}/public/data/reminders`, task.firestoreId);
-            batch.update(docRef, { isReadByAssignee: true });
-        });
-        batch.commit().catch(err => console.error("Error marking tasks as read:", err));
-    }
-        const startIndex = (state.currentPageTasks - 1) * TASKS_PAGE_SIZE;
-    const endIndex = startIndex + TASKS_PAGE_SIZE;
-    const paginatedTasks = allMyTasks.slice(startIndex, endIndex);
-    const admins = state.users.filter(u => u.role === 'admin');
-    const myTasks = (state.reminders || [])
+    
+    // تمام وظایف مربوط به کاربر فعلی را فیلتر و مرتب می‌کنیم
+    const allMyTasks = (state.reminders || [])
         .filter(r => r.assignedTo === state.currentUser.uid)
-        // ▼▼▼ این خط برای مدیریت هر دو نوع تاریخ (متن و Timestamp) اصلاح شده است ▼▼▼
         .sort((a, b) => new Date(a.date?.toDate ? a.date.toDate() : a.date) - new Date(b.date?.toDate ? b.date.toDate() : b.date));
 
-    const tasksHtml = myTasks.map(task => {
-        const statusColors = {
-            'جدید': 'bg-yellow-100 text-yellow-800',
-            'در حال انجام': 'bg-blue-100 text-blue-800',
-            'انجام شده': 'bg-green-100 text-green-800'
-        };
+    // فقط آیتم‌های مربوط به صفحه فعلی را جدا می‌کنیم
+    const startIndex = (state.currentPageTasks - 1) * TASKS_PAGE_SIZE;
+    const endIndex = startIndex + TASKS_PAGE_SIZE;
+    const paginatedTasks = allMyTasks.slice(startIndex, endIndex);
 
+    const admins = state.users.filter(u => u.role === 'admin');
+    const tasksHtml = paginatedTasks.map(task => {
+        const statusColors = {'جدید':'bg-yellow-100 text-yellow-800','در حال انجام':'bg-blue-100 text-blue-800','انجام شده':'bg-green-100 text-green-800'};
         const adminOptions = admins.map(admin => `<option value="${admin.firestoreId}" ${task.assignedTo === admin.firestoreId ? 'selected' : ''}>${admin.name || admin.email}</option>`).join('');
-
-        return `
-            <tr class="border-b">
-                <td class="px-4 py-3">${toPersianDate(task.date)}</td>
-                <td class="px-4 py-3">${task.type}</td>
-                <td class="px-4 py-3 text-sm">${task.text}</td>
-                <td class="px-4 py-3"><span class="px-2 py-1 text-xs font-medium rounded-full ${statusColors[task.status] || 'bg-slate-100'}">${task.status}</span></td>
-                <td class="px-4 py-3">
-                    <select data-id="${task.firestoreId}" class="assign-reminder-select w-full p-1.5 border border-slate-300 rounded-lg bg-white text-xs">
-                        ${adminOptions}
-                    </select>
-                </td>
-                <td class="px-4 py-3">
-                    <button class="process-reminder-btn text-sm bg-slate-700 text-white py-1 px-3 rounded-md hover:bg-slate-800" data-id="${task.firestoreId}">پردازش</button>
-                </td>
-            </tr>
-        `;
+        return `<tr class="border-b"><td class="px-4 py-3">${toPersianDate(task.date)}</td><td class="px-4 py-3">${task.type}</td><td class="px-4 py-3 text-sm">${task.text}</td><td class="px-4 py-3"><span class="px-2 py-1 text-xs font-medium rounded-full ${statusColors[task.status] || 'bg-slate-100'}">${task.status}</span></td><td class="px-4 py-3"><select data-id="${task.firestoreId}" class="assign-reminder-select w-full p-1.5 border border-slate-300 rounded-lg bg-white text-xs">${adminOptions}</select></td><td class="px-4 py-3"><button class="process-reminder-btn text-sm bg-slate-700 text-white py-1 px-3 rounded-md hover:bg-slate-800" data-id="${task.firestoreId}">پردازش</button></td></tr>`;
     }).join('');
+
     return `
-        <section class="rounded-2xl overflow-hidden border mb-6" style="background:linear-gradient(90deg,#FF6A3D,#F72585)">
-            <div class="p-6 sm:p-8">
-                <h1 class="text-2xl sm:text-3xl font-extrabold text-white">وظایف من</h1>
-                <p class="text-white/90 text-xs mt-1">یادآورها و کارهایی که به شما واگذار شده است</p>
-            </div>
-        </section>
+        <section class="rounded-2xl overflow-hidden border mb-6" style="background:linear-gradient(90deg,#FF6A3D,#F72585)"><div class="p-6 sm:p-8"><h1 class="text-2xl sm:text-3xl font-extrabold text-white">وظایف من</h1><p class="text-white/90 text-xs mt-1">یادآورها و کارهایی که به شما واگذار شده است</p></div></section>
         <div class="bg-white p-6 rounded-2xl border border-slate-200">
-            <table class="w-full text-sm">
-                <thead style="background:#ECEEF3">
-                    <tr>
-                        <th class="px-4 py-2 font-semibold">تاریخ</th>
-                        <th class="px-4 py-2 font-semibold">نوع</th>
-                        <th class="px-4 py-2 font-semibold">متن</th>
-                        <th class="px-4 py-2 font-semibold">وضعیت</th>
-                        <th class="px-4 py-2 font-semibold">واگذار به</th>
-                        <th class="px-4 py-2 font-semibold">عملیات</th>
-                    </tr>
-                </thead>
-                <tbody id="tasks-table-body">
-                    ${tasksHtml || '<tr><td colspan="6" class="text-center py-8 text-slate-500">هیچ وظیفه‌ای به شما واگذار نشده است.</td></tr>'}
-                </tbody>
-            </table>
+            <table class="w-full text-sm"><thead style="background:#ECEEF3"><tr><th class="px-4 py-2 font-semibold">تاریخ</th><th class="px-4 py-2 font-semibold">نوع</th><th class="px-4 py-2 font-semibold">متن</th><th class="px-4 py-2 font-semibold">وضعیت</th><th class="px-4 py-2 font-semibold">واگذار به</th><th class="px-4 py-2 font-semibold">عملیات</th></tr></thead><tbody id="tasks-table-body">${tasksHtml || '<tr><td colspan="6" class="text-center py-8 text-slate-500">هیچ وظیفه‌ای به شما واگذار نشده است.</td></tr>'}</tbody></table>
+            <div id="pagination-container" class="p-4 flex justify-center mt-6"></div>
         </div>
     `;
 },
@@ -4627,38 +4586,43 @@ const setupRequestsPageListeners = () => {
 // فایل: js/main.js
 // این تابع را به طور کامل جایگزین نسخه فعلی کنید ▼
 
+// فایل: js/main.js
+// این تابع را به طور کامل جایگزین نسخه فعلی کنید ▼
+
 const setupTasksPageListeners = () => {
-    const tableBody = document.getElementById('tasks-table-body');
-    if (!tableBody) return;
+    // ابتدا چک می‌کنیم که کانتینر اصلی در صفحه وجود داشته باشد
+    const mainContentArea = document.getElementById('main-content');
+    if (!mainContentArea) return;
 
     // رندر کردن دکمه‌های صفحه‌بندی
     const totalTasks = (state.reminders || []).filter(r => r.assignedTo === state.currentUser?.uid).length;
     renderPagination('pagination-container', state.currentPageTasks, totalTasks, 10);
 
-    const mainContentArea = document.getElementById('main-content');
-    if (mainContentArea) {
-        mainContentArea.addEventListener('click', (e) => {
-            const paginationBtn = e.target.closest('.pagination-btn');
-            if (paginationBtn && !paginationBtn.disabled) {
-                state.currentPageTasks = Number(paginationBtn.dataset.page);
-                renderPage('tasks');
+    // مدیریت کلیک روی دکمه‌های صفحه‌بندی
+    mainContentArea.addEventListener('click', (e) => {
+        const paginationBtn = e.target.closest('.pagination-btn');
+        if (paginationBtn && !paginationBtn.disabled) {
+            state.currentPageTasks = Number(paginationBtn.dataset.page);
+            renderPage('tasks');
+        }
+    });
+    
+    const tableBody = document.getElementById('tasks-table-body');
+    if (tableBody) {
+        tableBody.addEventListener('input', async (e) => {
+            if (e.target.classList.contains('assign-reminder-select')) {
+                const reminderId = e.target.dataset.id; const adminUid = e.target.value; const reminderRef = doc(db, `artifacts/${appId}/public/data/reminders`, reminderId);
+                try { await updateDoc(reminderRef, { assignedTo: adminUid, isReadByAssignee: false }); showToast(`یادآور به کاربر مورد نظر واگذار شد.`); } catch (error) { showToast("خطا در واگذاری یادآور.", "error"); }
+            }
+        });
+
+        tableBody.addEventListener('click', (e) => {
+            const processBtn = e.target.closest('.process-reminder-btn');
+            if (processBtn) {
+                (window.showProcessReminderForm || (()=>{}))(processBtn.dataset.id);
             }
         });
     }
-
-    tableBody.addEventListener('input', async (e) => {
-        if (e.target.classList.contains('assign-reminder-select')) {
-            const reminderId = e.target.dataset.id; const adminUid = e.target.value; const reminderRef = doc(db, `artifacts/${appId}/public/data/reminders`, reminderId);
-            try { await updateDoc(reminderRef, { assignedTo: adminUid, isReadByAssignee: false }); showToast(`یادآور به کاربر مورد نظر واگذار شد.`); } catch (error) { showToast("خطا در واگذاری یادآور.", "error"); }
-        }
-    });
-
-    tableBody.addEventListener('click', (e) => {
-        const processBtn = e.target.closest('.process-reminder-btn');
-        if (processBtn) {
-            (window.showProcessReminderForm || (()=>{}))(processBtn.dataset.id);
-        }
-    });
 };
 // Minimal processing modal for reminders (fallback)
 if (typeof window.showProcessReminderForm !== 'function') {
