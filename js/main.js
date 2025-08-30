@@ -1270,6 +1270,115 @@ function clearEventListeners(element) {
     // برگرداندن عنصر جدید برای مواقعی که نیاز به ارجاع مجدد داریم
     return newElement; 
 }
+// فایل: js/main.js
+// این دو تابع جدید را به طور کامل به فایل اضافه کنید ▼
+
+/**
+ * تمام یادآورهای آینده را از state استخراج، فیلتر و مرتب می‌کند.
+ */
+const getAllUpcomingReminders = () => {
+    const contractReminders = (() => {
+        const list = [];
+        const now = new Date();
+        (state.employees || []).forEach(emp => {
+            const last = (emp.contracts || []).sort((a,b)=> new Date(b.endDate||0) - new Date(a.endDate||0))[0];
+            if (!last || !last.endDate) return;
+            const end = new Date(last.endDate);
+            const diffDays = Math.ceil((end - now) / 86400000);
+            if (diffDays <= 30 && diffDays >= 0) {
+                list.push({ icon: 'file-clock', text: `تمدید قرارداد ${emp.name}`, subtext: `تاریخ پایان: ${toPersianDate(last.endDate)}`, date: end, assignedTo: (state.users.find(u=>u.role==='admin')||{}).firestoreId });
+            }
+        });
+        return list;
+    })();
+
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    return [...(state.reminders || []), ...contractReminders]
+        .filter(r => {
+            const reminderDate = new Date(r.date?.toDate ? r.date.toDate() : r.date);
+            return reminderDate >= now;
+        })
+        .sort((a, b) => new Date(a.date?.toDate ? a.date.toDate() : a.date) - new Date(b.date?.toDate ? b.date.toDate() : b.date));
+};
+
+/**
+ * یک لیست از آیتم‌های یادآور را به HTML تبدیل می‌کند و منطق شمارش معکوس را پیاده‌سازی می‌کند.
+ */
+const renderReminderItems = (reminders) => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const oneDay = 1000 * 60 * 60 * 24;
+
+    const colorClasses = {
+        'file-clock': { bg: 'bg-yellow-50', text: 'text-yellow-600' },
+        'cake': { bg: 'bg-pink-50', text: 'text-pink-600' },
+        'award': { bg: 'bg-blue-50', text: 'text-blue-600' },
+        'clipboard-x': { bg: 'bg-teal-50', text: 'text-teal-600' },
+        'calendar-plus': { bg: 'bg-indigo-50', text: 'text-indigo-600' },
+        'message-square-plus': { bg: 'bg-gray-100', text: 'text-gray-600' }
+    };
+
+    return reminders.map(r => {
+        const colors = colorClasses[r.icon] || colorClasses['calendar-plus'];
+        const assignee = state.users.find(u => u.firestoreId === r.assignedTo);
+        
+        // --- منطق جدید برای شمارش معکوس پویا ---
+        const reminderDate = new Date(r.date?.toDate ? r.date.toDate() : r.date);
+        const daysUntil = Math.round((reminderDate - now) / oneDay);
+        
+        let subtext = r.subtext;
+        // برای انواع خاصی از یادآورها، متن پویا تولید می‌کنیم
+        if (['تولد', 'سالگرد استخدام'].includes(r.type)) {
+            if (daysUntil === 0) {
+                subtext = 'امروز!';
+            } else if (daysUntil === 1) {
+                subtext = 'فردا';
+            } else {
+                subtext = `${daysUntil} روز دیگر`;
+            }
+        } else {
+            subtext = r.subtext || `تاریخ: ${toPersianDate(r.date)}`;
+        }
+        
+        let statusHtml = '';
+        if (r.status === 'انجام شده') {
+            statusHtml = `<p class="mt-1 text-xs text-green-600 font-semibold border-t border-green-200 pt-1">انجام شد: ${r.processingNotes || ''}</p>`;
+        } else if (r.status === 'در حال انجام') {
+            statusHtml = `<p class="mt-1 text-xs text-blue-600 font-semibold border-t border-blue-200 pt-1">در حال انجام توسط ${assignee ? assignee.name : ''}...</p>`;
+        } else if (assignee) {
+             statusHtml = `<p class="mt-1 text-xs text-slate-500 border-t border-slate-200 pt-1">به ${assignee.name} واگذار شده</p>`;
+        }
+
+        return `
+            <div class="flex items-start p-3 ${colors.bg} rounded-xl">
+                <i data-lucide="${r.icon}" class="w-5 h-5 ${colors.text} ml-3 mt-1 flex-shrink-0"></i>
+                <div class="w-full">
+                    <p class="font-medium text-sm">${r.text}</p>
+                    <p class="text-xs text-slate-500 mt-0.5">${subtext}</p>
+                    ${statusHtml}
+                </div>
+            </div>
+        `;
+    }).join('');
+};
+// فایل: js/main.js
+// این تابع جدید را هم اضافه کنید ▼
+
+const showAllRemindersModal = () => {
+    const allReminders = getAllUpcomingReminders();
+    modalTitle.innerText = 'تمام یادآورهای هوشمند فعال';
+    
+    if (allReminders.length === 0) {
+        modalContent.innerHTML = '<p class="text-center text-slate-500 p-8">یادآوری فعالی برای نمایش وجود ندارد.</p>';
+    } else {
+        modalContent.innerHTML = `<div class="space-y-3 max-h-[70vh] overflow-y-auto pr-2">${renderReminderItems(allReminders)}</div>`;
+    }
+    
+    openModal(mainModal, mainModalContainer);
+    lucide.createIcons();
+};
 const toPersianDate = (dateInput) => {
     if (!dateInput) return 'نامشخص';
     try {
@@ -2482,6 +2591,7 @@ dashboard: () => {
                 <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="font-bold text-slate-800 text-lg">یادآورهای هوشمند</h3>
+                        <button id="view-all-reminders-btn" class="text-xs font-semibold text-indigo-600 hover:underline">مشاهده همه</button>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
                         <input id="reminderText" type="text" placeholder="متن یادآور" class="p-2 border rounded-md text-sm">
@@ -3999,74 +4109,21 @@ const renderEngagementGauge = (canvasId, score) => {
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید و کامل جایگزین کنید
 
-// در فایل js/main.js
-// کل این تابع را با نسخه جدید جایگزین کنید
-const renderAllReminders = () => {
-    // Auto reminders for contract renewals (last contract ending within 30 days)
-    const contractReminders = (() => {
-        const list = [];
-        (state.employees || []).forEach(emp => {
-            const last = (emp.contracts || []).sort((a,b)=> new Date(b.endDate||0) - new Date(a.endDate||0))[0];
-            if (!last || !last.endDate) return;
-            const end = new Date(last.endDate);
-            const now = new Date();
-            const diffDays = Math.ceil((end - now) / 86400000);
-            if (diffDays <= 30 && diffDays >= 0) {
-                list.push({
-                    icon: 'file-clock',
-                    text: `تمدید قرارداد ${emp.name}`,
-                    subtext: `تاریخ پایان: ${toPersianDate(last.endDate)}`,
-                    date: end,
-                    assignedTo: (state.users.find(u=>u.role==='admin')||{}).firestoreId
-                });
-            }
-        });
-        return list;
-    })();
+// فایل: js/main.js
+// این تابع را به طور کامل جایگزین نسخه فعلی کنید ▼
 
-    const allUpcomingReminders = [...(state.reminders || []), ...contractReminders]
-        .sort((a, b) => new Date(a.date?.toDate ? a.date.toDate() : a.date) - new Date(b.date?.toDate ? b.date.toDate() : b.date))
-        //.slice(0, 5); 
+const renderAllReminders = () => {
+    const allUpcomingReminders = getAllUpcomingReminders();
 
     if (allUpcomingReminders.length === 0) {
         return '<p class="text-sm text-slate-500 text-center">هیچ یادآوری فعالی وجود ندارد.</p>';
     }
 
-    const colorClasses = {
-        'file-clock': { bg: 'bg-yellow-50', text: 'text-yellow-600' },
-        'cake': { bg: 'bg-pink-50', text: 'text-pink-600' },
-        'award': { bg: 'bg-blue-50', text: 'text-blue-600' },
-        'clipboard-x': { bg: 'bg-teal-50', text: 'text-teal-600' },
-        'calendar-plus': { bg: 'bg-indigo-50', text: 'text-indigo-600' },
-        'message-square-plus': { bg: 'bg-gray-100', text: 'text-gray-600' }
-    };
-
-    return allUpcomingReminders.map(r => {
-        const colors = colorClasses[r.icon] || colorClasses['calendar-plus'];
-        const assignee = state.users.find(u => u.firestoreId === r.assignedTo);
-        
-        // [!code focus:12]
-        // بخش جدید برای نمایش وضعیت و یادداشت‌ها
-        let statusHtml = '';
-        if (r.status === 'انجام شده') {
-            statusHtml = `<p class="mt-1 text-xs text-green-600 font-semibold border-t border-green-200 pt-1">انجام شد: ${r.processingNotes || ''}</p>`;
-        } else if (r.status === 'در حال انجام') {
-            statusHtml = `<p class="mt-1 text-xs text-blue-600 font-semibold border-t border-blue-200 pt-1">در حال انجام توسط ${assignee ? assignee.name : ''}...</p>`;
-        } else if (assignee) {
-             statusHtml = `<p class="mt-1 text-xs text-slate-500 border-t border-slate-200 pt-1">به ${assignee.name} واگذار شده</p>`;
-        }
-
-        return `
-            <div class="flex items-start p-3 ${colors.bg} rounded-xl">
-                <i data-lucide="${r.icon}" class="w-5 h-5 ${colors.text} ml-3 mt-1 flex-shrink-0"></i>
-                <div class="w-full">
-                    <p class="font-medium text-sm">${r.text}</p>
-                    <p class="text-xs text-slate-500 mt-0.5">${r.subtext || `تاریخ: ${toPersianDate(r.date)}`}</p>
-                    ${statusHtml}
-                </div>
-            </div>
-        `;
-    }).join('');
+    // محدود کردن لیست به ۵ آیتم برای نمایش در داشبورد
+    const remindersToShow = allUpcomingReminders.slice(0, 5);
+    
+    // استفاده از تابع کمکی جدید برای ساخت HTML
+    return renderReminderItems(remindersToShow);
 };
         const setupDashboardListeners = () => {
     // فعال کردن تقویم شمسی برای فیلد یادآور در داشبورد
