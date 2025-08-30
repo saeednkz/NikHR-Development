@@ -60,7 +60,7 @@ const allItemTypes = {
     'سایر': 'سایر درخواست‌ها'
     // هر آیتم جدید دیگری که در آینده اضافه می‌کنید را اینجا تعریف کنید
 };
-        export const state = { employees: [], teams: [], reminders: [], surveyResponses: [], users: [], competencies: [], expenses: [], pettyCashCards: [], chargeHistory: [], dashboardMetrics: {}, orgAnalytics: {}, currentPage: 'dashboard', currentPageTalent: 1, currentUser: null, };
+        export const state = { employees: [], teams: [], reminders: [], surveyResponses: [], users: [], competencies: [], expenses: [], pettyCashCards: [], chargeHistory: [], dashboardMetrics: {}, orgAnalytics: {}, currentPage: 'dashboard', currentPageTalent: 1, currentUser: null,currentPageRequests: 1,currentPageTasks: 1,currentPageAnnouncements: 1 };
         let charts = {};
 let activeListeners = []; // [!code ++] این خط را اضافه کنید
         // این کد را نزدیک به تعریف state قرار دهید
@@ -2770,11 +2770,15 @@ surveys: () => {
 // کل تابع requests را با این نسخه جایگزین کنید
 
 requests: () => {
+    const REQUESTS_PAGE_SIZE = 10;
     let filteredRequests = (state.requests || []);
     if (state.requestFilter === 'mine' && state.currentUser) {
         filteredRequests = filteredRequests.filter(req => req.assignedTo === state.currentUser.uid);
     }
     const allRequests = filteredRequests.sort((a, b) => new Date(b.createdAt?.toDate()) - new Date(a.createdAt?.toDate()));
+        const startIndex = (state.currentPageRequests - 1) * REQUESTS_PAGE_SIZE;
+    const endIndex = startIndex + REQUESTS_PAGE_SIZE;
+    const paginatedRequests = allRequests.slice(startIndex, endIndex);
     
     const admins = state.users.filter(u => u.role === 'admin');
     const requestsHtml = allRequests.map(req => {
@@ -2844,6 +2848,7 @@ requests: () => {
 // آبجکت pages.tasks را به طور کامل با این نسخه جایگزین کنید ▼
 
 tasks: () => {
+     const TASKS_PAGE_SIZE = 10;
     if (!state.currentUser) return '';
     const unreadTasks = (state.reminders || []).filter(r => r.assignedTo === state.currentUser.uid && !r.isReadByAssignee);
     if (unreadTasks.length > 0) {
@@ -2854,6 +2859,9 @@ tasks: () => {
         });
         batch.commit().catch(err => console.error("Error marking tasks as read:", err));
     }
+        const startIndex = (state.currentPageTasks - 1) * TASKS_PAGE_SIZE;
+    const endIndex = startIndex + TASKS_PAGE_SIZE;
+    const paginatedTasks = allMyTasks.slice(startIndex, endIndex);
     const admins = state.users.filter(u => u.role === 'admin');
     const myTasks = (state.reminders || [])
         .filter(r => r.assignedTo === state.currentUser.uid)
@@ -4563,90 +4571,88 @@ const setupOrganizationPageListeners = () => {
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید و کامل جایگزین کنید
 
-const setupRequestsPageListeners = () => {
-    // بخش ۱: خوانده شده کردن درخواست‌های جدید
-    // این کد چک می‌کند اگر در حال مشاهده "درخواست‌های من" هستیم، آن‌ها را به وضعیت "خوانده شده" تغییر دهد.
-    if (state.requestFilter === 'mine' && state.currentUser) {
-        const unreadRequests = (state.requests || []).filter(req =>
-            req.assignedTo === state.currentUser.uid && !req.isReadByAssignee
-        );
+// فایل: js/main.js
+// این تابع را به طور کامل جایگزین نسخه فعلی کنید ▼
 
+const setupRequestsPageListeners = () => {
+    // ... (بخش مربوط به خوانده شده کردن درخواست‌ها بدون تغییر) ...
+    if (state.requestFilter === 'mine' && state.currentUser) {
+        const unreadRequests = (state.requests || []).filter(req => req.assignedTo === state.currentUser.uid && !req.isReadByAssignee);
         if (unreadRequests.length > 0) {
             const batch = writeBatch(db);
-            unreadRequests.forEach(req => {
-                const docRef = doc(db, `artifacts/${appId}/public/data/requests`, req.firestoreId);
-                batch.update(docRef, { isReadByAssignee: true });
-            });
-              batch.commit().then(() => {
-                updateNotificationBell(); // [!code ++] بروزرسانی فوری زنگوله
-            }).catch(err => console.error("Error marking requests as read:", err));
+            unreadRequests.forEach(req => { const docRef = doc(db, `artifacts/${appId}/public/data/requests`, req.firestoreId); batch.update(docRef, { isReadByAssignee: true }); });
+            batch.commit().then(() => { updateNotificationBell(); }).catch(err => console.error("Error marking requests as read:", err));
         }
     }
 
-    // بخش ۲: فعال‌سازی دکمه‌های فیلتر ("همه" و "واگذار شده به من")
-    document.querySelectorAll('.request-filter-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            state.requestFilter = btn.dataset.filter;
-            renderPage('requests');
-        });
-    });
+    // --- بخش جدید برای صفحه‌بندی و سایر event ها ---
+    const mainContentArea = document.getElementById('main-content');
+    if (!mainContentArea) return;
 
-    const tableBody = document.getElementById('requests-table-body');
-    if (!tableBody) return;
+    // رندر کردن دکمه‌های صفحه‌بندی
+    const totalRequests = (state.requests || []).filter(req => state.requestFilter !== 'mine' || req.assignedTo === state.currentUser?.uid).length;
+    renderPagination('pagination-container', state.currentPageRequests, totalRequests, 10);
 
-    // بخش ۳: فعال‌سازی منوی کشویی "واگذار به" (برای واگذاری مجدد)
-    tableBody.addEventListener('input', async (e) => {
-        if (e.target.classList.contains('assign-request-select')) {
-            const selectElement = e.target;
-            const requestId = selectElement.dataset.id;
-            const adminUid = selectElement.value;
-
-            const requestRef = doc(db, `artifacts/${appId}/public/data/requests`, requestId);
-
-            try {
-                // هنگام واگذاری مجدد، وضعیت خوانده شده را ریست می‌کنیم تا برای نفر جدید، نوتیفیکیشن ارسال شود
-                await updateDoc(requestRef, {
-                    assignedTo: adminUid || null,
-                    isReadByAssignee: false
-                });
-                showToast(`درخواست به کاربر مورد نظر واگذار شد.`);
-            } catch (error) {
-                console.error("Error re-assigning request:", error);
-                showToast("خطا در واگذاری درخواست.", "error");
-            }
-        }
-    });
-
-    // بخش ۴: فعال‌سازی دکمه جدید "پردازش"
-    tableBody.addEventListener('click', async (e) => {
+    mainContentArea.addEventListener('click', async (e) => {
+        const filterBtn = e.target.closest('.request-filter-btn');
         const processBtn = e.target.closest('.process-request-btn');
+        const paginationBtn = e.target.closest('.pagination-btn');
+
+        if (filterBtn) {
+            state.requestFilter = filterBtn.dataset.filter;
+            state.currentPageRequests = 1; // ریست کردن صفحه هنگام تغییر فیلتر
+            renderPage('requests');
+        }
         if (processBtn) {
-            const requestId = processBtn.dataset.id;
-            (window.showProcessRequestForm || (()=>{}))(requestId);
+            (window.showProcessRequestForm || (()=>{}))(processBtn.dataset.id);
+        }
+        if (paginationBtn && !paginationBtn.disabled) {
+            state.currentPageRequests = Number(paginationBtn.dataset.page);
+            renderPage('requests');
         }
     });
+
+    // ... (بخش مربوط به select واگذاری بدون تغییر) ...
+    const tableBody = document.getElementById('requests-table-body');
+    if (tableBody) {
+        tableBody.addEventListener('input', async (e) => {
+            if (e.target.classList.contains('assign-request-select')) {
+                const selectElement = e.target; const requestId = selectElement.dataset.id; const adminUid = selectElement.value;
+                const requestRef = doc(db, `artifacts/${appId}/public/data/requests`, requestId);
+                try { await updateDoc(requestRef, { assignedTo: adminUid || null, isReadByAssignee: false }); showToast(`درخواست به کاربر مورد نظر واگذار شد.`); } catch (error) { console.error("Error re-assigning request:", error); showToast("خطا در واگذاری درخواست.", "error"); }
+            }
+        });
+    }
 };
-// این تابع جدید را به js/main.js اضافه کنید
-// در فایل js/main.js
-// کل این تابع را با نسخه جدید جایگزین کنید
+// فایل: js/main.js
+// این تابع را به طور کامل جایگزین نسخه فعلی کنید ▼
+
 const setupTasksPageListeners = () => {
     const tableBody = document.getElementById('tasks-table-body');
     if (!tableBody) return;
 
-    // منطق واگذاری مجدد یادآورها
+    // رندر کردن دکمه‌های صفحه‌بندی
+    const totalTasks = (state.reminders || []).filter(r => r.assignedTo === state.currentUser?.uid).length;
+    renderPagination('pagination-container', state.currentPageTasks, totalTasks, 10);
+
+    const mainContentArea = document.getElementById('main-content');
+    if (mainContentArea) {
+        mainContentArea.addEventListener('click', (e) => {
+            const paginationBtn = e.target.closest('.pagination-btn');
+            if (paginationBtn && !paginationBtn.disabled) {
+                state.currentPageTasks = Number(paginationBtn.dataset.page);
+                renderPage('tasks');
+            }
+        });
+    }
+
     tableBody.addEventListener('input', async (e) => {
         if (e.target.classList.contains('assign-reminder-select')) {
-            const reminderId = e.target.dataset.id;
-            const adminUid = e.target.value;
-            const reminderRef = doc(db, `artifacts/${appId}/public/data/reminders`, reminderId);
-            try {
-                await updateDoc(reminderRef, { assignedTo: adminUid, isReadByAssignee: false });
-                showToast(`یادآور به کاربر مورد نظر واگذار شد.`);
-            } catch (error) { showToast("خطا در واگذاری یادآور.", "error"); }
+            const reminderId = e.target.dataset.id; const adminUid = e.target.value; const reminderRef = doc(db, `artifacts/${appId}/public/data/reminders`, reminderId);
+            try { await updateDoc(reminderRef, { assignedTo: adminUid, isReadByAssignee: false }); showToast(`یادآور به کاربر مورد نظر واگذار شد.`); } catch (error) { showToast("خطا در واگذاری یادآور.", "error"); }
         }
     });
 
-    // منطق کلیک روی دکمه پردازش
     tableBody.addEventListener('click', (e) => {
         const processBtn = e.target.closest('.process-reminder-btn');
         if (processBtn) {
