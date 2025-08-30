@@ -5242,7 +5242,7 @@ async function resizeAndUploadAvatar(file, emp) {
             const resizedBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.9));
 
             if (!resizedBlob) return;
-            showToast("در حال آپلود عکس...", "success");
+            showToast("در حال آپلود عکس، لطفاً منتظر بمانید...", "success");
             try {
                 const filePath = `avatars/${emp.firestoreId}/${Date.now()}.jpg`;
                 const storageRef = ref(storage, filePath);
