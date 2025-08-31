@@ -3240,7 +3240,17 @@ settings: () => {
         `;
     }).join('');
     const defaultRule = (state.assignmentRules || []).find(r => r.firestoreId === '_default'); // [!code --]
-    
+     const jobPositionsHtml = (state.jobPositions || []).map(pos => `
+        <tr class="border-b">
+            <td class="p-3 font-semibold">${pos.name}</td>
+            <td class="p-3 text-sm">${(pos.competencyIds || []).length} شایستگی</td>
+            <td class="p-3 text-right">
+                <button class="map-competencies-btn text-blue-600 hover:underline text-xs" data-id="${pos.firestoreId}">اتصال شایستگی</button>
+                <button class="edit-position-btn p-2 text-slate-500 hover:text-blue-600" data-id="${pos.firestoreId}"><i data-lucide="edit" class="w-4 h-4"></i></button>
+                <button class="delete-position-btn p-2 text-slate-500 hover:text-red-600" data-id="${pos.firestoreId}"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+            </td>
+        </tr>
+    `).join('') || '<tr><td colspan="3" class="text-center p-4 text-slate-500">هیچ پوزیشن شغلی تعریف نشده است.</td></tr>';
     return `
            <div class="flex items-center justify-between mb-4">
         <div>
