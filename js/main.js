@@ -1766,110 +1766,86 @@ const generateSmartReminders = async () => {
     }
 };
         // --- تابع هوشمند برای محاسبه ریسک خروج بر اساس مدل امتیازبندی ---
-    const calculateAttritionRisk = (employee, allTeams) => {
-        let riskScore = 0;
-        const reasons = [];
+// فایل: js/main.js
+// این تابع را به طور کامل جایگزین کنید ▼
 
-        // معیار ۱: امتیاز مشارکت (تا ۴۰ امتیاز)
-        if (employee.engagementScore != null) {
-            if (employee.engagementScore < 50) {
-                riskScore += 40;
-                reasons.push('مشارکت بسیار پایین');
-            } else if (employee.engagementScore < 70) {
-                riskScore += 20;
-                reasons.push('مشارکت پایین');
-            }
-        } else {
-            riskScore += 10; // امتياز منفی برای شرکت نکردن در نظرسنجی
-            reasons.push('عدم مشارکت در نظرسنجی');
-        }
+const calculateAttritionRisk = (employee, allTeams) => {
+    let riskScore = 0;
+    const reasons = [];
 
-        // معیار ۲: روند عملکرد (تا ۲۵ امتیاز)
-        if (employee.performanceHistory && employee.performanceHistory.length >= 2) {
-            const lastTwoReviews = employee.performanceHistory.slice(-2);
-            const latestScore = lastTwoReviews[1].overallScore;
-            const previousScore = lastTwoReviews[0].overallScore;
-            if (previousScore - latestScore >= 1) {
-                riskScore += 25;
-                reasons.push('افت شدید عملکرد');
-            } else if (previousScore - latestScore >= 0.5) {
-                riskScore += 15;
-                reasons.push('افت عملکرد');
-            }
-        }
+    // معیار ۱: امتیاز مشارکت (تا ۴۰ امتیاز)
+    if (employee.engagementScore != null) {
+        if (employee.engagementScore < 50) { riskScore += 40; reasons.push('مشارکت بسیار پایین'); }
+        else if (employee.engagementScore < 70) { riskScore += 20; reasons.push('مشارکت پایین'); }
+    } else {
+        riskScore += 10; reasons.push('عدم مشارکت در نظرسنجی');
+    }
 
-        // معیار ۳: رکود شغلی (تا ۲۵ امتیاز)
-        const isHighPerformer = (employee.performanceHistory && employee.performanceHistory.slice(-1)[0]?.overallScore > 4) || ['ستاره', 'مهره کلیدی'].includes(employee.nineBox);
-        if (isHighPerformer && employee.careerPath && employee.careerPath.length > 0) {
-            const lastMoveDate = new Date(employee.careerPath.slice(-1)[0].date);
-            const monthsSinceLastMove = (new Date() - lastMoveDate) / (1000 * 60 * 60 * 24 * 30);
-            if (monthsSinceLastMove > 24) { // بیشتر از ۲ سال بدون تغییر
-                riskScore += 25;
-                reasons.push('رکود شغلی (استعداد کلیدی)');
-            }
+    // معیار ۲: روند عملکرد (تا ۳۰ امتیاز) - حالا هوشمندتر شده
+    if (employee.performanceHistory && employee.performanceHistory.length >= 2) {
+        const lastTwoReviews = employee.performanceHistory.slice(-2);
+        const latestScore = lastTwoReviews[1].overallScore;
+        const previousScore = lastTwoReviews[0].overallScore;
+        if (latestScore < previousScore - 0.75) {
+            riskScore += 30; reasons.push('افت شدید عملکرد');
+        } else if (latestScore < previousScore - 0.25) {
+            riskScore += 15; reasons.push('افت عملکرد');
         }
+    } else if (employee.performanceHistory && employee.performanceHistory.length > 0) {
+        const latestScore = employee.performanceHistory.slice(-1)[0].overallScore;
+        if (latestScore < 2.8) {
+            riskScore += 20; reasons.push('عملکرد پایین');
+        }
+    }
 
-        // معیار ۴: سلامت تیم (تا ۱۰ امتیاز)
-        const team = allTeams.find(t => t.memberIds?.includes(employee.id));
-        if (team && team.engagementScore != null && team.engagementScore < 60) {
-            riskScore += 10;
-            reasons.push('عضو تیمی با مشارکت پایین');
-        }
-        return {
-            score: Math.min(100, riskScore), // امتیاز نهایی بین ۰ تا ۱۰۰
-            reasons: reasons.length > 0 ? reasons : ['ریسک پایین']
-        };
-    };
+    // ... (بقیه معیارها بدون تغییر)
+    const team = allTeams.find(t => t.memberIds?.includes(employee.id));
+    if (team && team.engagementScore != null && team.engagementScore < 60) {
+        riskScore += 10; reasons.push('عضو تیمی با مشارکت پایین');
+    }
+    return { score: Math.min(100, riskScore), reasons: reasons.length > 0 ? reasons : ['ریسک پایین'] };
+};
         // --- تابع جدید برای تعیین هوشمند جعبه در ماتریس ۹ جعبه‌ای ---
-    const determineNineBoxCategory = (employee) => {
-        // ۱. محاسبه امتیاز عملکرد (Performance)
-        let performanceScore = 0;
-        if (employee.performanceHistory && employee.performanceHistory.length > 0) {
-            performanceScore = employee.performanceHistory.slice(-1)[0].overallScore;
+// فایل: js/main.js
+// این تابع را به طور کامل جایگزین کنید ▼
+
+const determineNineBoxCategory = (employee) => {
+    let performanceScore = 0;
+    if (employee.performanceHistory && employee.performanceHistory.length > 0) {
+        // استفاده از امتیاز آخرین ارزیابی ثبت شده
+        performanceScore = employee.performanceHistory.slice(-1)[0].overallScore;
+    }
+
+    let performanceCategory;
+    if (performanceScore >= 4.0) performanceCategory = 'High';
+    else if (performanceScore >= 2.8) performanceCategory = 'Medium';
+    else performanceCategory = 'Low';
+
+    let potentialScore = 0;
+    if (employee.competencies) {
+        const scores = Object.values(employee.competencies);
+        if (scores.length > 0) {
+            potentialScore = scores.reduce((a, b) => a + b, 0) / scores.length;
         }
+    }
 
-        let performanceCategory; // Low, Medium, High
-        if (performanceScore >= 4.2) {
-            performanceCategory = 'High';
-        } else if (performanceScore >= 3.5) {
-            performanceCategory = 'Medium';
-        } else {
-            performanceCategory = 'Low';
-        }
+    let potentialCategory;
+    if (potentialScore >= 4.0) potentialCategory = 'High';
+    else if (potentialScore >= 2.8) potentialCategory = 'Medium';
+    else potentialCategory = 'Low';
 
-        // ۲. محاسبه امتیاز پتانسیل (Potential) - ما از میانگین امتیاز شایستگی‌ها به عنوان یک شاخص استفاده می‌کنیم
-        let potentialScore = 0;
-        if (employee.competencies) {
-            const scores = Object.values(employee.competencies);
-            if (scores.length > 0) {
-                potentialScore = scores.reduce((a, b) => a + b, 0) / scores.length;
-            }
-        }
-
-        let potentialCategory; // Low, Medium, High
-        if (potentialScore >= 4.2) {
-            potentialCategory = 'High';
-        } else if (potentialScore >= 3.5) {
-            potentialCategory = 'Medium';
-        } else {
-            potentialCategory = 'Low';
-        }
-
-        // ۳. تخصیص جعبه بر اساس عملکرد و پتانسیل
-        if (performanceCategory === 'High' && potentialCategory === 'High') return 'ستاره (Star)';
-        if (performanceCategory === 'High' && potentialCategory === 'Medium') return 'استعداد کلیدی (Core Talent)';
-        if (performanceCategory === 'High' && potentialCategory === 'Low') return 'مهره کلیدی (Key Player)';
-
-        if (performanceCategory === 'Medium' && potentialCategory === 'High') return 'پتانسیل بالا (High Potential)';
-        if (performanceCategory === 'Medium' && potentialCategory === 'Medium') return 'عملکرد قابل اتکا (Solid Performer)';
-        if (performanceCategory === 'Medium' && potentialCategory === 'Low') return 'عملکرد متوسط (Average Performer)';
-
-        if (performanceCategory === 'Low' && potentialCategory === 'High') return 'معما (Enigma/Puzzle)';
-        if (performanceCategory === 'Low' && potentialCategory === 'Medium') return 'نیازمند بهبود (Needs Improvement)';
-        if (performanceCategory === 'Low' && potentialCategory === 'Low') return 'ریسک (Risk)';
-        
-        return 'عملکرد قابل اتکا (Solid Performer)'; // مقدار پیش‌فرض
-    };
+    if (performanceCategory === 'High' && potentialCategory === 'High') return 'ستاره (Star)';
+    if (performanceCategory === 'High' && potentialCategory === 'Medium') return 'استعداد کلیدی (Core Talent)';
+    if (performanceCategory === 'High' && potentialCategory === 'Low') return 'مهره کلیدی (Key Player)';
+    if (performanceCategory === 'Medium' && potentialCategory === 'High') return 'پتانسیل بالا (High Potential)';
+    if (performanceCategory === 'Medium' && potentialCategory === 'Medium') return 'عملکرد قابل اتکا (Solid Performer)';
+    if (performanceCategory === 'Medium' && potentialCategory === 'Low') return 'عملکرد متوسط (Average Performer)';
+    if (performanceCategory === 'Low' && potentialCategory === 'High') return 'معما (Enigma/Puzzle)';
+    if (performanceCategory === 'Low' && potentialCategory === 'Medium') return 'نیازمند بهبود (Needs Improvement)';
+    if (performanceCategory === 'Low' && potentialCategory === 'Low') return 'ریسک (Risk)';
+    
+    return 'ارزیابی نشده';
+};
         // --- تابع جدید برای تحلیل عمیق داده‌های یک تیم ---
     const analyzeTeamData = (team, members) => {
         const analysis = {};
@@ -2246,7 +2222,115 @@ const updateNotificationBell = () => {
         const showProcessReminderForm = (...args) => window.showProcessReminderForm?.(...args);
         if (typeof renderTeamHealthMetrics !== 'function') { window.renderTeamHealthMetrics = (team) => { const metrics = team.healthMetrics || []; if(!metrics.length) return '<p class=\"text-sm text-slate-500\">معیاری ثبت نشده است.</p>'; return metrics.map(m=>`<div class=\"flex justify-between text-sm\"><span>${m.name}</span><span class=\"font-medium\">${m.value}</span></div>`).join(''); }; }
         if (typeof showTeamForm !== 'function') { window.showTeamForm = (teamId=null) => { const team=(state.teams||[]).find(t=>t.firestoreId===teamId)||{name:'',leaderId:'',missionLine:''}; const leaders=state.employees.map(e=>`<option value=\"${e.id}\" ${e.id===team.leaderId?'selected':''}>${e.name}</option>`).join(''); modalTitle.innerText=teamId?'ویرایش تیم':'افزودن تیم جدید'; modalContent.innerHTML = `<form id=\"team-form\" class=\"space-y-4\"><div><label class=\"block text-sm\">نام تیم</label><input id=\"team-name\" class=\"w-full p-2 border rounded-md\" value=\"${team.name}\" required></div><div><label class=\"block text-sm\">مدیر تیم</label><select id=\"team-leader\" class=\"w-full p-2 border rounded-md\">${leaders}</select></div><div><label class=\"block text-sm\">هدف یک‌خطی تیم</label><input id=\"team-mission\" class=\"w-full p-2 border rounded-md\" placeholder=\"یک جمله درباره هدف تیم...\" value=\"${team.missionLine || ''}\"></div><div class=\"flex justify-end\"><button type=\"submit\" class=\"bg-blue-600 text-white py-2 px-4 rounded-md\">ذخیره</button></div></form>`; openModal(mainModal, mainModalContainer); document.getElementById('team-form').addEventListener('submit', async (e)=>{ e.preventDefault(); const name=document.getElementById('team-name').value.trim(); const leader=document.getElementById('team-leader').value; const mission=document.getElementById('team-mission').value.trim(); try { if(teamId){ await updateDoc(doc(db, `artifacts/${appId}/public/data/teams`, teamId), { name, leaderId: leader, missionLine: mission }); } else { await addDoc(collection(db, `artifacts/${appId}/public/data/teams`), { name, leaderId: leader, missionLine: mission, memberIds: [] }); } showToast('تیم ذخیره شد.'); closeModal(mainModal, mainModalContainer); renderPage('organization'); } catch(err){ console.error(err); showToast('خطا در ذخیره تیم.', 'error'); } }); }; }
-        if (typeof showPerformanceForm !== 'function') { window.showPerformanceForm = (emp, idx=null) => { modalTitle.innerText='ثبت ارزیابی عملکرد'; modalContent.innerHTML = `<div class=\"p-4 text-sm text-slate-600\">فرم ارزیابی عملکرد به‌زودی تکمیل می‌شود.</div>`; openModal(mainModal, mainModalContainer); }; }
+       // فایل: js/main.js
+// تابع showPerformanceForm را به طور کامل با این نسخه جایگزین کنید ▼
+
+if (typeof window.showPerformanceForm !== 'function') { window.showPerformanceForm = () => {}; }
+const showPerformanceForm = (emp, reviewIndex = null) => {
+    const isEditing = reviewIndex !== null;
+    const reviewData = isEditing ? emp.performanceHistory[reviewIndex] : {};
+
+    modalTitle.innerText = `${isEditing ? 'ویرایش' : 'ثبت'} ارزیابی عملکرد برای: ${emp.name}`;
+
+    // بخش اهداف (OKRs)
+    const okrsHtml = (emp.okrs && emp.okrs.length > 0) ? emp.okrs.map((okr, index) => `
+        <div class="mb-3 p-3 bg-slate-50 rounded-lg">
+            <label class="block text-sm font-medium text-slate-700">${okr.title} (پیشرفت ثبت شده: ${okr.progress}%)</label>
+            <p class="text-xs text-slate-500 mb-2">امتیاز شما به میزان دستیابی به این هدف (۱ تا ۵):</p>
+            <input type="number" class="okr-score w-full p-2 border rounded-md" data-index="${index}" min="1" max="5" value="${reviewData.okrScores?.[index] || 3}" required>
+        </div>
+    `).join('') : '<p class="text-sm text-slate-500">هیچ OKR فعالی برای این کارمند ثبت نشده است.</p>';
+
+    // بخش شایستگی‌ها (Competencies)
+    const competenciesHtml = (state.competencies && state.competencies.length > 0) ? state.competencies.map(comp => `
+        <div class="mb-3 p-3 bg-slate-50 rounded-lg">
+            <label class="block text-sm font-medium text-slate-700">${comp.name}</label>
+            <p class="text-xs text-slate-500 mb-2">امتیاز شما به این شایستگی (۱ تا ۵):</p>
+            <input type="number" class="competency-score w-full p-2 border rounded-md" data-name="${comp.name}" min="1" max="5" value="${reviewData.competencyScores?.[comp.name] || 3}" required>
+        </div>
+    `).join('') : '<p class="text-sm text-slate-500">هیچ شایستگی‌ای در تنظیمات سیستم تعریف نشده است.</p>';
+
+    modalContent.innerHTML = `
+        <form id="performance-review-form" class="space-y-6">
+            <div>
+                <h4 class="font-bold text-lg mb-2 text-indigo-600">۱. ارزیابی اهداف (OKRs)</h4>
+                ${okrsHtml}
+            </div>
+            <div>
+                <h4 class="font-bold text-lg mb-2 text-indigo-600">۲. ارزیابی شایستگی‌ها</h4>
+                ${competenciesHtml}
+            </div>
+            <div>
+                <h4 class="font-bold text-lg mb-2 text-indigo-600">۳. بازخورد کیفی</h4>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">نقاط قوت کلیدی</label>
+                        <textarea id="strengths" class="w-full p-2 border rounded-md" rows="3" required>${reviewData.strengths || ''}</textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">زمینه‌های قابل بهبود</label>
+                        <textarea id="areasForImprovement" class="w-full p-2 border rounded-md" rows="3" required>${reviewData.areasForImprovement || ''}</textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="flex justify-between items-center pt-4 border-t">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">تاریخ ارزیابی</label>
+                    <input type="text" id="review-date" class="w-full p-2 border rounded-md" required>
+                </div>
+                <button type="submit" class="primary-btn">ذخیره ارزیابی</button>
+            </div>
+        </form>
+    `;
+    openModal(mainModal, mainModalContainer);
+    activatePersianDatePicker('review-date', reviewData.reviewDate || new Date());
+
+    document.getElementById('performance-review-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        // جمع‌آوری امتیازات OKR
+        const okrScores = Array.from(document.querySelectorAll('.okr-score')).map(input => parseInt(input.value));
+        const avgOkrScore = okrScores.length > 0 ? okrScores.reduce((a, b) => a + b, 0) / okrScores.length : 0;
+
+        // جمع‌آوری امتیازات شایستگی
+        const competencyScores = {};
+        const competencyInputs = document.querySelectorAll('.competency-score');
+        competencyInputs.forEach(input => {
+            competencyScores[input.dataset.name] = parseInt(input.value);
+        });
+        const avgCompetencyScore = competencyInputs.length > 0 ? Object.values(competencyScores).reduce((a, b) => a + b, 0) / competencyInputs.length : 0;
+        
+        // محاسبه امتیاز نهایی (۵۰٪ اهداف، ۵۰٪ شایستگی‌ها)
+        const overallScore = (avgOkrScore * 0.5) + (avgCompetencyScore * 0.5);
+
+        const newReview = {
+            reviewDate: persianToEnglishDate(document.getElementById('review-date').value),
+            reviewer: state.currentUser.name || state.currentUser.email,
+            okrScores,
+            competencyScores,
+            strengths: document.getElementById('strengths').value,
+            areasForImprovement: document.getElementById('areasForImprovement').value,
+            overallScore: parseFloat(overallScore.toFixed(2)) // گرد کردن به دو رقم اعشار
+        };
+
+        const currentHistory = emp.performanceHistory || [];
+        if (isEditing) {
+            currentHistory[reviewIndex] = newReview;
+        } else {
+            currentHistory.push(newReview);
+        }
+
+        try {
+            const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
+            await updateDoc(docRef, { performanceHistory: currentHistory });
+            showToast("ارزیابی عملکرد با موفقیت ذخیره شد.");
+            viewEmployeeProfile(emp.firestoreId); // رفرش کردن پروفایل برای نمایش نتیجه
+        } catch (error) {
+            console.error("Error saving performance review:", error);
+            showToast("خطا در ذخیره ارزیابی.", "error");
+        }
+    });
+};
         // --- Employee Portal Helpers (hoisted function declarations) ---
         // 1) Edit My Profile
         async function showMyProfileEditForm(employee) {
