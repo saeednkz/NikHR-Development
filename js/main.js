@@ -2271,88 +2271,103 @@ const showPerformanceForm = (emp, reviewIndex = null) => {
 };
         // --- Employee Portal Helpers (hoisted function declarations) ---
         // 1) Edit My Profile
-        async function showMyProfileEditForm(employee) {
-            const info = employee.personalInfo || {};
-            const immutableFilled = {
-                name: employee.name || '',
-                nationalId: info.nationalId || '',
-                email: info.email || '',
-                address: info.address || ''
+async function showMyProfileEditForm(employee) {
+    const info = employee.personalInfo || {};
+    
+    modalTitle.innerText = 'ویرایش اطلاعات من';
+    modalContent.innerHTML = `
+        <form id="edit-my-profile-form" class="space-y-5">
+            <div class="p-4 border rounded-xl bg-slate-50">
+                <h4 class="font-semibold text-slate-700 mb-3">اطلاعات هویتی</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500">نام کامل</label>
+                        <input type="text" class="mt-1 w-full p-2 border rounded-lg bg-slate-200 text-slate-500" value="${employee.name || ''}" disabled>
+                        <button type="button" data-field="نام کامل" class="request-edit-btn text-xs text-indigo-600 mt-1 hover:underline">درخواست ویرایش</button>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500">کد ملی</label>
+                        <input type="text" class="mt-1 w-full p-2 border rounded-lg bg-slate-200 text-slate-500" value="${info.nationalId || ''}" disabled>
+                        <button type="button" data-field="کد ملی" class="request-edit-btn text-xs text-indigo-600 mt-1 hover:underline">درخواست ویرایش</button>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500">تاریخ تولد</label>
+                        <input type="text" id="pi-birth" class="mt-1 w-full p-2 border rounded-lg" value="${info.birthDate ? toPersianDate(info.birthDate) : ''}">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500">وضعیت تأهل</label>
+                        <select id="pi-marital" class="mt-1 w-full p-2 border rounded-lg bg-white">
+                            <option value="">انتخاب کنید</option>
+                            <option value="مجرد" ${info.maritalStatus === 'مجرد' ? 'selected' : ''}>مجرد</option>
+                            <option value="متاهل" ${info.maritalStatus === 'متاهل' ? 'selected' : ''}>متاهل</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 border rounded-xl bg-slate-50">
+                <h4 class="font-semibold text-slate-700 mb-3">اطلاعات تماس</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500">ایمیل</label>
+                        <input type="email" class="mt-1 w-full p-2 border rounded-lg bg-slate-200 text-slate-500" value="${info.email || ''}" disabled>
+                        <button type="button" data-field="ایمیل" class="request-edit-btn text-xs text-indigo-600 mt-1 hover:underline">درخواست ویرایش</button>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500">شماره موبایل</label>
+                        <input type="text" id="pi-phone" class="mt-1 w-full p-2 border rounded-lg" value="${info.phone || ''}">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-semibold text-slate-500">آدرس</label>
+                        <input type="text" id="pi-address" class="mt-1 w-full p-2 border rounded-lg" value="${info.address || ''}">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex justify-between items-center pt-4 border-t">
+                <button type="button" id="change-avatar-btn" class="secondary-btn text-xs">تغییر عکس پروفایل</button>
+                <div class="flex items-center gap-2">
+                    <button type="button" id="cancel-edit-my-profile" class="secondary-btn">انصراف</button>
+                    <button type="submit" class="primary-btn">ذخیره تغییرات</button>
+                </div>
+            </div>
+        </form>
+    `;
+    openModal(mainModal, mainModalContainer);
+    activatePersianDatePicker('pi-birth');
+    
+    // --- Event Listeners ---
+    document.getElementById('cancel-edit-my-profile').addEventListener('click', () => closeModal(mainModal, mainModalContainer));
+    
+    document.getElementById('change-avatar-btn').addEventListener('click', () => {
+        handleAvatarChange(employee); // استفاده از تابع متمرکز تغییر آواتار
+    });
+
+    document.getElementById('edit-my-profile-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+            // فقط فیلدهایی که قابل ویرایش هستند را جمع‌آوری می‌کنیم
+            const updatedInfo = {
+                ...info, // کپی کردن اطلاعات قبلی برای حفظ موارد غیرقابل ویرایش
+                birthDate: persianToEnglishDate(document.getElementById('pi-birth').value),
+                maritalStatus: document.getElementById('pi-marital').value,
+                phone: document.getElementById('pi-phone').value.trim(),
+                address: document.getElementById('pi-address').value.trim(),
+                // در اینجا می‌توانید بقیه فیلدهای قابل ویرایش را نیز اضافه کنید
             };
-            modalTitle.innerText = 'ویرایش اطلاعات من';
-            modalContent.innerHTML = `
-                <form id=\"edit-my-profile-form\" class=\"space-y-5\">
-                    <div class=\"grid grid-cols-1 md:grid-cols-2 gap-4\">
-                        <div class=\"bg-white border rounded-xl p-4\">
-                            <label class=\"block text-xs font-semibold text-slate-500\">نام</label>
-                            <input id=\"my-name\" type=\"text\" class=\"mt-2 w-full p-2 border rounded-lg bg-slate-100\" value=\"${immutableFilled.name}\" disabled>
-                            <button type=\"button\" data-field=\"name\" class=\"request-edit-btn text-xs text-indigo-600 mt-1\">درخواست ویرایش</button>
-                        </div>
-                        <div class=\"bg-white border rounded-xl p-4\">
-                            <label class=\"block text-xs font-semibold text-slate-500\">کد ملی</label>
-                            <input id=\"my-nid\" type=\"text\" class=\"mt-2 w-full p-2 border rounded-lg bg-slate-100\" value=\"${immutableFilled.nationalId}\" disabled>
-                            <button type=\"button\" data-field=\"nationalId\" class=\"request-edit-btn text-xs text-indigo-600 mt-1\">درخواست ویرایش</button>
-                        </div>
-                        <div class=\"bg-white border rounded-xl p-4\">
-                            <label class=\"block text-xs font-semibold text-slate-500\">ایمیل</label>
-                            <input id=\"my-email\" type=\"email\" class=\"mt-2 w-full p-2 border rounded-lg bg-slate-100\" value=\"${immutableFilled.email}\" disabled>
-                            <button type=\"button\" data-field=\"email\" class=\"request-edit-btn text-xs text-indigo-600 mt-1\">درخواست ویرایش</button>
-                        </div>
-                        <div class=\"bg-white border rounded-xl p-4\">
-                            <label class=\"block text-xs font-semibold text-slate-500\">آدرس</label>
-                            <input id=\"my-address\" type=\"text\" class=\"mt-2 w-full p-2 border rounded-lg ${immutableFilled.address ? 'bg-slate-100' : ''}\" value=\"${immutableFilled.address}\" ${immutableFilled.address ? 'disabled' : ''}>
-                            ${immutableFilled.address ? '<button type=\"button\" data-field=\"address\" class=\"request-edit-btn text-xs text-indigo-600 mt-1\">درخواست ویرایش</button>' : ''}
-                        </div>
-                        <div class=\"bg-white border rounded-xl p-4 md:col-span-2\">
-                            <label class=\"block text-xs font-semibold text-slate-500\">تلفن</label>
-                            <input id=\"my-phone\" type=\"text\" class=\"mt-2 w-full p-2 border rounded-lg\" value=\"${info.phone || ''}\">
-                        </div>
-                    </div>
-                    <div class=\"flex justify-between items-center\">
-                        <button type=\"button\" id=\"change-avatar-btn\" class=\"secondary-btn text-xs\">تغییر عکس پروفایل</button>
-                        <div class=\"flex items-center gap-2\">
-                            <button type=\"button\" id=\"cancel-edit-my-profile\" class=\"secondary-btn\">انصراف</button>
-                            <button type=\"submit\" class=\"primary-btn\">ذخیره</button>
-                        </div>
-                    </div>
-                </form>`;
-            openModal(mainModal, mainModalContainer);
-            document.getElementById('cancel-edit-my-profile').addEventListener('click', () => closeModal(mainModal, mainModalContainer));
-            document.getElementById('change-avatar-btn').addEventListener('click', async () => {
-                try {
-                    const input = document.createElement('input');
-                    input.type = 'file';
-                    input.accept = 'image/*';
-                    input.onchange = async () => {
-                        const file = input.files[0];
-                        if (!file) return;
-                        const sRef = ref(storage, `avatars/${employee.uid}_${Date.now()}`);
-                        const snapshot = await uploadBytes(sRef, file);
-                        const url = await getDownloadURL(snapshot.ref);
-                        await updateDoc(doc(db, `artifacts/${appId}/public/data/employees`, employee.firestoreId), { avatar: url });
-                        showToast('عکس پروفایل بروزرسانی شد.');
-                    };
-                    input.click();
-                } catch (e) { showToast('خطا در تغییر عکس.', 'error'); }
-            });
-            document.getElementById('edit-my-profile-form').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                try {
-                    const updatedInfo = {
-                        ...info,
-                        phone: document.getElementById('my-phone').value.trim(),
-                        address: immutableFilled.address ? immutableFilled.address : document.getElementById('my-address').value.trim()
-                    };
-                    const docRef = doc(db, `artifacts/${appId}/public/data/employees`, employee.firestoreId);
-                    await updateDoc(docRef, { personalInfo: updatedInfo });
-                    showToast('اطلاعات با موفقیت ذخیره شد.');
-                    closeModal(mainModal, mainModalContainer);
-                    renderEmployeePortalPage('profile', { ...employee, personalInfo: updatedInfo });
-                } catch (err) {
-                    console.error('Error updating my profile', err);
-                    showToast('خطا در ذخیره اطلاعات.', 'error');
-                }
-            });
+            
+            const docRef = doc(db, `artifacts/${appId}/public/data/employees`, employee.firestoreId);
+            await updateDoc(docRef, { personalInfo: updatedInfo });
+            
+            showToast('اطلاعات با موفقیت ذخیره شد.');
+            closeModal(mainModal, mainModalContainer);
+            // رفرش کردن پورتال برای نمایش اطلاعات جدید (اختیاری اما پیشنهادی)
+            renderEmployeePortal();
+        } catch (err) {
+            console.error('Error updating my profile', err);
+            showToast('خطا در ذخیره اطلاعات.', 'error');
+        }
+    });
             document.querySelectorAll('.request-edit-btn').forEach(btn => {
                 btn.addEventListener('click', async () => {
                     const field = btn.getAttribute('data-field');
