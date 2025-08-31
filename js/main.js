@@ -2306,14 +2306,18 @@ const showPerformanceForm = (emp, reviewIndex = null) => {
 // فایل: js/main.js
 // کل تابع showMyProfileEditForm را با این نسخه جایگزین کنید ▼
 
+// فایل: js/main.js
+// کل تابع showMyProfileEditForm را با این نسخه جایگزین کنید ▼
+
 async function showMyProfileEditForm(employee) {
     const info = employee.personalInfo || {};
     
     modalTitle.innerText = 'ویرایش اطلاعات من';
     modalContent.innerHTML = `
-        <form id="edit-my-profile-form" class="space-y-5 max-h-[75vh] overflow-y-auto pr-3">
+        <form id="edit-my-profile-form" class="space-y-4 max-h-[75vh] overflow-y-auto pr-3">
+            
             <div class="p-4 border rounded-xl bg-slate-50">
-                <h4 class="font-semibold text-slate-700 mb-3">اطلاعات هویتی</h4>
+                <h4 class="font-semibold text-slate-700 mb-3">اطلاعات هویتی و شناسایی</h4>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-semibold text-slate-500">نام کامل</label>
@@ -2327,7 +2331,8 @@ async function showMyProfileEditForm(employee) {
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-500">تاریخ تولد</label>
-                        <input type="text" id="pi-birthDate" class="mt-1 w-full p-2 border rounded-lg" value="${info.birthDate ? toPersianDate(info.birthDate) : ''}">
+                        <input type="text" class="mt-1 w-full p-2 border rounded-lg bg-slate-200 text-slate-500" value="${info.birthDate ? toPersianDate(info.birthDate) : ''}" disabled>
+                        <button type="button" data-field="تاریخ تولد" class="request-edit-btn text-xs text-indigo-600 mt-1 hover:underline">درخواست ویرایش</button>
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-500">محل تولد</label>
@@ -2345,11 +2350,20 @@ async function showMyProfileEditForm(employee) {
                         <label class="block text-xs font-semibold text-slate-500">تعداد فرزندان</label>
                         <input type="number" id="pi-numChildren" class="mt-1 w-full p-2 border rounded-lg" value="${info.numChildren || 0}" min="0">
                     </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500">وضعیت خدمت سربازی</label>
+                        <select id="pi-militaryStatus" class="mt-1 w-full p-2 border rounded-lg bg-white">
+                            <option value="">انتخاب کنید</option>
+                            <option value="معاف" ${info.militaryStatus === 'معاف' ? 'selected' : ''}>معاف</option>
+                            <option value="پایان خدمت" ${info.militaryStatus === 'پایان خدمت' ? 'selected' : ''}>پایان خدمت</option>
+                            <option value="مشمول" ${info.militaryStatus === 'مشمول' ? 'selected' : ''}>مشمول</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
             <div class="p-4 border rounded-xl bg-slate-50">
-                <h4 class="font-semibold text-slate-700 mb-3">اطلاعات تماس</h4>
+                <h4 class="font-semibold text-slate-700 mb-3">اطلاعات تماس و آدرس</h4>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-semibold text-slate-500">ایمیل</label>
@@ -2360,9 +2374,21 @@ async function showMyProfileEditForm(employee) {
                         <label class="block text-xs font-semibold text-slate-500">شماره موبایل</label>
                         <input type="text" id="pi-phone" class="mt-1 w-full p-2 border rounded-lg" value="${info.phone || ''}">
                     </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500">شماره تلفن ثابت</label>
+                        <input type="text" id="pi-landline" class="mt-1 w-full p-2 border rounded-lg" value="${info.landline || ''}">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500">شماره تلفن ضروری</label>
+                        <input type="text" id="pi-emergencyPhone" class="mt-1 w-full p-2 border rounded-lg" value="${info.emergencyPhone || ''}">
+                    </div>
                     <div class="md:col-span-2">
-                        <label class="block text-xs font-semibold text-slate-500">آدرس</label>
+                        <label class="block text-xs font-semibold text-slate-500">آدرس محل سکونت</label>
                         <textarea id="pi-address" class="mt-1 w-full p-2 border rounded-lg" rows="2">${info.address || ''}</textarea>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500">کد پستی</label>
+                        <input type="text" id="pi-postalCode" class="mt-1 w-full p-2 border rounded-lg" value="${info.postalCode || ''}">
                     </div>
                 </div>
             </div>
@@ -2378,6 +2404,10 @@ async function showMyProfileEditForm(employee) {
                         <label class="block text-xs font-semibold text-slate-500">رشته تحصیلی</label>
                         <input type="text" id="pi-fieldOfStudy" class="mt-1 w-full p-2 border rounded-lg" value="${info.fieldOfStudy || ''}">
                     </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-semibold text-slate-500">محل اخذ مدرک</label>
+                        <input type="text" id="pi-educationInstitution" class="mt-1 w-full p-2 border rounded-lg" value="${info.educationInstitution || ''}">
+                    </div>
                 </div>
             </div>
             
@@ -2392,6 +2422,14 @@ async function showMyProfileEditForm(employee) {
                         <label class="block text-xs font-semibold text-slate-500">شماره شبا (بدون IR)</label>
                         <input type="text" id="pi-iban" class="mt-1 w-full p-2 border rounded-lg" value="${info.iban || ''}">
                     </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500">شماره حساب</label>
+                        <input type="text" id="pi-accountNumber" class="mt-1 w-full p-2 border rounded-lg" value="${info.accountNumber || ''}">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500">شماره کارت</label>
+                        <input type="text" id="pi-cardNumber" class="mt-1 w-full p-2 border rounded-lg" value="${info.cardNumber || ''}">
+                    </div>
                 </div>
             </div>
 
@@ -2405,8 +2443,8 @@ async function showMyProfileEditForm(employee) {
         </form>
     `;
     openModal(mainModal, mainModalContainer);
-    activatePersianDatePicker('pi-birthDate');
     
+    // --- Event Listeners ---
     document.getElementById('cancel-edit-my-profile').addEventListener('click', () => closeModal(mainModal, mainModalContainer));
     
     document.getElementById('change-avatar-btn').addEventListener('click', () => {
@@ -2415,29 +2453,19 @@ async function showMyProfileEditForm(employee) {
 
     const form = document.getElementById('edit-my-profile-form');
 
-    // ▼▼▼ بخش جدید: فعال‌سازی دکمه‌های «درخواست ویرایش» ▼▼▼
     form.addEventListener('click', async (e) => {
         const requestEditBtn = e.target.closest('.request-edit-btn');
-        if (!requestEditBtn) return; // اگر روی این دکمه کلیک نشده بود، ادامه نده
-
+        if (!requestEditBtn) return;
         const field = requestEditBtn.dataset.field;
         try {
             await addDoc(collection(db, `artifacts/${appId}/public/data/requests`), {
-                uid: employee.uid,
-                employeeId: employee.id,
-                employeeName: employee.name,
-                requestType: 'درخواست ویرایش اطلاعات',
-                details: `درخواست ویرایش ${field}`,
-                status: 'درحال بررسی',
-                createdAt: serverTimestamp()
+                uid: employee.uid, employeeId: employee.id, employeeName: employee.name,
+                requestType: 'درخواست ویرایش اطلاعات', details: `درخواست ویرایش ${field}`,
+                status: 'درحال بررسی', createdAt: serverTimestamp()
             });
-            requestEditBtn.innerText = 'ارسال شد';
-            requestEditBtn.disabled = true;
+            requestEditBtn.innerText = 'ارسال شد'; requestEditBtn.disabled = true;
             showToast('درخواست ویرایش شما برای ادمین ارسال شد.');
-        } catch (err) {
-            showToast('خطا در ارسال درخواست.', 'error');
-            console.error("Error sending edit request:", err);
-        }
+        } catch (err) { showToast('خطا در ارسال درخواست.', 'error'); }
     });
 
     form.addEventListener('submit', async (e) => {
@@ -2445,16 +2473,22 @@ async function showMyProfileEditForm(employee) {
         try {
             const updatedInfo = {
                 ...info,
-                birthDate: persianToEnglishDate(document.getElementById('pi-birthDate').value),
                 birthPlace: document.getElementById('pi-birthPlace').value.trim(),
                 maritalStatus: document.getElementById('pi-maritalStatus').value,
                 numChildren: parseInt(document.getElementById('pi-numChildren').value) || 0,
+                militaryStatus: document.getElementById('pi-militaryStatus').value.trim(),
                 phone: document.getElementById('pi-phone').value.trim(),
+                landline: document.getElementById('pi-landline').value.trim(),
+                emergencyPhone: document.getElementById('pi-emergencyPhone').value.trim(),
                 address: document.getElementById('pi-address').value.trim(),
+                postalCode: document.getElementById('pi-postalCode').value.trim(),
                 education: document.getElementById('pi-education').value.trim(),
                 fieldOfStudy: document.getElementById('pi-fieldOfStudy').value.trim(),
+                educationInstitution: document.getElementById('pi-educationInstitution').value.trim(),
                 bankName: document.getElementById('pi-bankName').value.trim(),
                 iban: document.getElementById('pi-iban').value.trim(),
+                accountNumber: document.getElementById('pi-accountNumber').value.trim(),
+                cardNumber: document.getElementById('pi-cardNumber').value.trim()
             };
             
             const docRef = doc(db, `artifacts/${appId}/public/data/employees`, employee.firestoreId);
