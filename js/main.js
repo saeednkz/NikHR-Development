@@ -4102,7 +4102,8 @@ document.getElementById('addReminderBtn')?.addEventListener('click', async () =>
                 daysBefore: daysBefore,
                 icon: 'calendar-plus', // <<-- این خط جدید مشکل را حل می‌کند
                 status: 'جدید',
-                assignedTo: (state.users.find(u=>u.role==='admin')||{}).firestoreId // واگذاری به ادمین پیش‌فرض
+                assignedTo: (state.users.find(u=>u.role==='admin')||{}).firestoreId, // واگذاری به ادمین پیش‌فرض
+                createdAt: serverTimestamp() // برای هماهنگی بیشتر
             });
 
             textInput.value = '';
