@@ -416,6 +416,8 @@ function renderEmployeePortalPage(pageName, employee) {
         const manager = state.teams.find(t => t.memberIds?.includes(employee.id))
             ? state.employees.find(e => e.id === state.teams.find(t => t.memberIds.includes(employee.id)).leaderId)
             : null;
+        
+        // --- کد ساخت HTML برای تاریخچه عملکرد ---
         const performanceHistoryHtml = (employee.performanceHistory || []).sort((a,b) => new Date(b.reviewDate) - new Date(a.reviewDate))
             .map(review => `
                 <div class="bg-slate-50 rounded-xl p-4 border hover:border-indigo-200 transition-colors">
@@ -431,7 +433,7 @@ function renderEmployeePortalPage(pageName, employee) {
             `).join('')
             || '<div class="text-center py-6"><i data-lucide="inbox" class="w-12 h-12 mx-auto text-slate-300"></i><p class="mt-2 text-sm text-slate-500">سابقه‌ای از ارزیابی عملکرد شما ثبت نشده است.</p></div>';
 
-        // KPI metrics for employee
+        // --- KPI metrics for employee ---
         const myTeam = state.teams.find(t => t.memberIds?.includes(employee.id));
         const okrAvg = (employee.okrs && employee.okrs.length)
             ? Math.round(employee.okrs.reduce((s, o) => s + (o.progress || 0), 0) / employee.okrs.length)
@@ -450,7 +452,7 @@ function renderEmployeePortalPage(pageName, employee) {
             return !readIds.has(msg.firestoreId);
         }).length;
 
-        // Info banner bubble (admin broadcast)
+        // --- Info banner bubble (admin broadcast) ---
         const infoBanner = (() => {
             const key = `dismiss_info_${employee.uid}`;
             const dismissed = localStorage.getItem(key);
@@ -465,7 +467,7 @@ function renderEmployeePortalPage(pageName, employee) {
                 })
                 .sort((a,b)=> new Date(b.createdAt?.toDate?.()||0) - new Date(a.createdAt?.toDate?.()||0))[0];
             if (!latestInfo || dismissed===latestInfo.firestoreId) return '';
-            return `<div id=\"info-bubble\" data-info-id=\"${latestInfo.firestoreId}\" class=\"glass rounded-2xl p-4 flex items-start gap-3 fade-up\"><i data-lucide=\"megaphone\" class=\"w-5 h-5\" style=\"color:#6B69D6\"></i><div class=\"flex-1\"><div class=\"text-sm font-bold text-slate-800\">اطلاعیه</div><div class=\"text-xs text-slate-700 mt-1\">${latestInfo.content || latestInfo.title || ''}</div></div><button id=\"dismiss-info\" class=\"text-slate-500 hover:text-slate-800\"><i data-lucide=\"x\" class=\"w-5 h-5\"></i></button></div>`;
+            return `<div id="info-bubble" data-info-id="${latestInfo.firestoreId}" class="glass rounded-2xl p-4 flex items-start gap-3 fade-up"><i data-lucide="megaphone" class="w-5 h-5" style="color:#6B69D6"></i><div class="flex-1"><div class="text-sm font-bold text-slate-800">اطلاعیه</div><div class="text-xs text-slate-700 mt-1">${latestInfo.content || latestInfo.title || ''}</div></div><button id="dismiss-info" class="text-slate-500 hover:text-slate-800"><i data-lucide="x" class="w-5 h-5"></i></button></div>`;
         })();
 
         contentContainer.innerHTML = `
@@ -473,71 +475,23 @@ function renderEmployeePortalPage(pageName, employee) {
             ${renderMyBirthdayWishesWidget(employee)}
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 ${renderMyBirthdayWishesWidget(employee) ? 'mt-8' : ''}">
                 <div class="lg:col-span-2 space-y-6">
-                    <!-- KPI Row -->
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div class="glass rounded-2xl p-4 flex items-center justify-between fade-up">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-full flex items-center justify-center" style="background:rgba(107,105,214,.12)"><i data-lucide="send" style="color:#6B69D6" class="w-5 h-5"></i></div>
-                                <div>
-                                    <div class="text-xl font-extrabold text-slate-800">${requestsOpen}</div>
-                                    <div class="text-xs text-slate-500">درخواست‌های باز</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="glass rounded-2xl p-4 flex items-center justify-between fade-up">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-full flex items-center justify-center" style="background:rgba(107,105,214,.12)"><i data-lucide="mail" style="color:#6B69D6" class="w-5 h-5"></i></div>
-                                <div>
-                                    <div class="text-xl font-extrabold text-slate-800">${unreadCount}</div>
-                                    <div class="text-xs text-slate-500">پیام‌های نخوانده</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="glass rounded-2xl p-4 flex items-center justify-between fade-up">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-full flex items-center justify-center" style="background:rgba(107,105,214,.12)"><i data-lucide="target" style="color:#6B69D6" class="w-5 h-5"></i></div>
-                                <div>
-                                    <div class="text-xl font-extrabold text-slate-800">${okrAvg}%</div>
-                                    <div class="text-xs text-slate-500">میانگین OKR</div>
-                                </div>
-                            </div>
-                        </div>
+                        <div class="glass rounded-2xl p-4 flex items-center justify-between fade-up"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full flex items-center justify-center" style="background:rgba(107,105,214,.12)"><i data-lucide="send" style="color:#6B69D6" class="w-5 h-5"></i></div><div><div class="text-xl font-extrabold text-slate-800">${requestsOpen}</div><div class="text-xs text-slate-500">درخواست‌های باز</div></div></div></div>
+                        <div class="glass rounded-2xl p-4 flex items-center justify-between fade-up"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full flex items-center justify-center" style="background:rgba(107,105,214,.12)"><i data-lucide="mail" style="color:#6B69D6" class="w-5 h-5"></i></div><div><div class="text-xl font-extrabold text-slate-800">${unreadCount}</div><div class="text-xs text-slate-500">پیام‌های نخوانده</div></div></div></div>
+                        <div class="glass rounded-2xl p-4 flex items-center justify-between fade-up"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full flex items-center justify-center" style="background:rgba(107,105,214,.12)"><i data-lucide="target" style="color:#6B69D6" class="w-5 h-5"></i></div><div><div class="text-xl font-extrabold text-slate-800">${okrAvg}%</div><div class="text-xs text-slate-500">میانگین OKR</div></div></div></div>
                     </div>
                     
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                        <div class="flex justify-between items-start mb-4">
-                            <div class="flex items-center gap-4">
-                                <div class="w-16 h-16 rounded-full overflow-hidden bg-slate-100 ring-2 ring-indigo-100">
-                                    <img src="${employee.avatar}" alt="${employee.name}" class="w-full h-full object-cover">
-                                </div>
-                                <div>
-                                    <div class="text-lg font-bold text-slate-800">${employee.name}</div>
-                                    <div class="text-sm text-slate-500">${employee.jobTitle || 'بدون عنوان شغلی'}</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                            <div class="bg-slate-50 rounded-lg p-3">
-                                <div class="text-xs text-slate-500 mb-1">ایمیل</div>
-                                <div class="font-medium text-slate-700">${employee.personalInfo?.email || '-'}</div>
-                            </div>
-                            <div class="bg-slate-50 rounded-lg p-3">
-                                <div class="text-xs text-slate-500 mb-1">شماره موبایل</div>
-                                <div class="font-medium text-slate-700">${employee.personalInfo?.phone || '-'}</div>
-                            </div>
-                            <div class="bg-slate-50 rounded-lg p-3">
-                                <div class="text-xs text-slate-500 mb-1">تیم</div>
-                                <div class="font-medium text-slate-700">${(state.teams.find(t=>t.memberIds?.includes(employee.id))?.name) || '-'}</div>
-                            </div>
-                            <div class="bg-slate-50 rounded-lg p-3">
-                                <div class="text-xs text-slate-500 mb-1">مدیر</div>
-                                <div class="font-medium text-slate-700">${manager?.name || '-'}</div>
-                            </div>
-                            <div class="sm:col-span-2 bg-slate-50 rounded-lg p-3">
-                                <div class="text-xs text-slate-500 mb-1">آدرس</div>
-                                <div class="font-medium text-slate-700">${employee.personalInfo?.address || '-'}</div>
-                            </div>
-                        </div>
+                        <div class="flex items-center gap-4 mb-4"><div class="w-16 h-16 rounded-full overflow-hidden bg-slate-100 ring-2 ring-indigo-100"><img src="${employee.avatar}" alt="${employee.name}" class="w-full h-full object-cover"></div><div><div class="text-lg font-bold text-slate-800">${employee.name}</div><div class="text-sm text-slate-500">${employee.jobTitle || 'بدون عنوان شغلی'}</div></div></div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm"><div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500 mb-1">ایمیل</div><div class="font-medium text-slate-700">${employee.personalInfo?.email || '-'}</div></div><div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500 mb-1">شماره موبایل</div><div class="font-medium text-slate-700">${employee.personalInfo?.phone || '-'}</div></div><div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500 mb-1">تیم</div><div class="font-medium text-slate-700">${(state.teams.find(t=>t.memberIds?.includes(employee.id))?.name) || '-'}</div></div><div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500 mb-1">مدیر</div><div class="font-medium text-slate-700">${manager?.name || '-'}</div></div><div class="sm:col-span-2 bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500 mb-1">آدرس</div><div class="font-medium text-slate-700">${employee.personalInfo?.address || '-'}</div></div></div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                        <h3 class="font-semibold text-slate-800 flex items-center gap-2 mb-4">
+                            <i data-lucide="history" class="w-5 h-5 text-indigo-500"></i>
+                            تاریخچه ارزیابی عملکرد
+                        </h3>
+                        <div class="space-y-4">${performanceHistoryHtml}</div>
                     </div>
 
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
@@ -558,44 +512,11 @@ function renderEmployeePortalPage(pageName, employee) {
                     </div>
                 </div>
                 <aside class="space-y-6">
-                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
-                        <div class="flex items-center gap-3 mb-3">
-                            <img src="${employee.avatar}" class="w-12 h-12 rounded-full object-cover ring-2 ring-indigo-100" alt="${employee.name}">
-                            <div>
-                                <div class="font-bold text-slate-800">${employee.name}</div>
-                                <div class="text-xs text-slate-500">${employee.jobTitle || 'بدون عنوان شغلی'}</div>
-                            </div>
-                        </div>
-                        <div class="text-xs text-slate-500">${employee.personalInfo?.email || '-'}</div>
-                    </div>
-
-                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-0">
-                        ${renderBirthdaysWidget(employee)}
-                    </div>
-
-                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
-                        <div class="flex items-center justify-between mb-3">
-                            <h4 class="font-semibold text-slate-800 text-sm flex items-center gap-2"><i data-lucide="message-circle" class="w-4 h-4 text-indigo-500"></i>پیام‌ها</h4>
-                            <a href="#inbox" class="text-xs text-indigo-600 hover:underline">همه</a>
-                        </div>
-                        <div class="space-y-2">${renderEmployeeSidebarMessages(employee)}</div>
-                    </div>
-
-                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
-                        <div class="flex items-center justify-between mb-3">
-                            <h4 class="font-semibold text-slate-800 text-sm flex items-center gap-2"><i data-lucide="users" class="w-4 h-4 text-indigo-500"></i>تیم</h4>
-                            <button class="view-team-employee-btn text-xs text-indigo-600 hover:underline" data-team-id="${(state.teams.find(t=>t.memberIds?.includes(employee.id))?.firestoreId) || ''}">مشاهده</button>
-                        </div>
-                        ${renderEmployeeSidebarTeam(employee)}
-                    </div>
-
-                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
-                        <div class="flex items-center justify-between mb-3">
-                            <h4 class="font-semibold text-slate-800 text-sm flex items-center gap-2"><i data-lucide="inbox" class="w-4 h-4 text-indigo-500"></i>درخواست‌ها</h4>
-                            <a href="#requests" class="text-xs text-indigo-600 hover:underline">همه</a>
-                        </div>
-                        <div class="space-y-2">${renderEmployeeSidebarRequests(employee)}</div>
-                    </div>
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5"><div class="flex items-center gap-3 mb-3"><img src="${employee.avatar}" class="w-12 h-12 rounded-full object-cover ring-2 ring-indigo-100" alt="${employee.name}"><div><div class="font-bold text-slate-800">${employee.name}</div><div class="text-xs text-slate-500">${employee.jobTitle || 'بدون عنوان شغلی'}</div></div></div><div class="text-xs text-slate-500">${employee.personalInfo?.email || '-'}</div></div>
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-0">${renderBirthdaysWidget(employee)}</div>
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4"><div class="flex items-center justify-between mb-3"><h4 class="font-semibold text-slate-800 text-sm flex items-center gap-2"><i data-lucide="message-circle" class="w-4 h-4 text-indigo-500"></i>پیام‌ها</h4><a href="#inbox" class="text-xs text-indigo-600 hover:underline">همه</a></div><div class="space-y-2">${renderEmployeeSidebarMessages(employee)}</div></div>
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4"><div class="flex items-center justify-between mb-3"><h4 class="font-semibold text-slate-800 text-sm flex items-center gap-2"><i data-lucide="users" class="w-4 h-4 text-indigo-500"></i>تیم</h4><button class="view-team-employee-btn text-xs text-indigo-600 hover:underline" data-team-id="${(state.teams.find(t=>t.memberIds?.includes(employee.id))?.firestoreId) || ''}">مشاهده</button></div>${renderEmployeeSidebarTeam(employee)}</div>
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4"><div class="flex items-center justify-between mb-3"><h4 class="font-semibold text-slate-800 text-sm flex items-center gap-2"><i data-lucide="inbox" class="w-4 h-4 text-indigo-500"></i>درخواست‌ها</h4><a href="#requests" class="text-xs text-indigo-600 hover:underline">همه</a></div><div class="space-y-2">${renderEmployeeSidebarRequests(employee)}</div></div>
                 </aside>
             </div>`;
 
