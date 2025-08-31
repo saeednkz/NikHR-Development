@@ -1114,18 +1114,7 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
         });
     }
 }
-// این تابع را به فایل js/main.js اضافه کنید
-// در فایل js/main.js
-// کل تابع renderEmployeePortal را با این نسخه جایگزین کنید
-// در فایل js/main.js
-// کل این تابع را با نسخه جدید جایگزین کنید
-// در فایل js/main.js
-// کل این تابع را با نسخه جدید جایگزین کنید
 
-// در فایل js/main.js
-// کل این تابع را با نسخه جدید جایگزین کنید
-// در فایل js/main.js
-// کل این تابع را با نسخه جدید جایگزین کنید
 function renderEmployeePortal() {
     document.getElementById('login-container').classList.add('hidden');
     document.getElementById('dashboard-container').classList.add('hidden');
@@ -1172,7 +1161,7 @@ function renderEmployeePortal() {
                                 <button id="mobile-options-btn" class="p-2 rounded-full text-white hover:bg-white/20 transition-colors">
                                     <i data-lucide="more-vertical" class="w-5 h-5"></i>
                                 </button>
-                                <div id="mobile-options-dropdown" class="hidden absolute left-0 mt-2 w-48 bg-white rounded-lg shadow-xl z-20 text-slate-700">
+                               <div id="mobile-options-dropdown" class="hidden absolute left-0 mt-2 w-48 bg-white rounded-lg shadow-xl z-30 text-slate-700">
                                     <a href="#" id="mobile-edit-profile" class="flex items-center gap-3 px-4 py-2 hover:bg-slate-100 text-sm"><i data-lucide="user-cog" class="w-4 h-4"></i><span>ویرایش پروفایل</span></a>
                                     <a href="#" id="mobile-change-password" class="flex items-center gap-3 px-4 py-2 hover:bg-slate-100 text-sm"><i data-lucide="key-round" class="w-4 h-4"></i><span>رمز عبور</span></a>
                                     <a href="#" id="mobile-theme-toggle" class="flex items-center gap-3 px-4 py-2 hover:bg-slate-100 text-sm"><i data-lucide="moon" class="w-4 h-4"></i><span>تغییر تم</span></a>
