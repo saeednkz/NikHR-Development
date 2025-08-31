@@ -2303,6 +2303,9 @@ const showPerformanceForm = (emp, reviewIndex = null) => {
 // فایل: js/main.js
 // کل تابع showMyProfileEditForm را با این نسخه جایگزین کنید ▼
 
+// فایل: js/main.js
+// کل تابع showMyProfileEditForm را با این نسخه جایگزین کنید ▼
+
 async function showMyProfileEditForm(employee) {
     const info = employee.personalInfo || {};
     
@@ -2410,7 +2413,34 @@ async function showMyProfileEditForm(employee) {
         handleAvatarChange(employee);
     });
 
-    document.getElementById('edit-my-profile-form').addEventListener('submit', async (e) => {
+    const form = document.getElementById('edit-my-profile-form');
+
+    // ▼▼▼ بخش جدید: فعال‌سازی دکمه‌های «درخواست ویرایش» ▼▼▼
+    form.addEventListener('click', async (e) => {
+        const requestEditBtn = e.target.closest('.request-edit-btn');
+        if (!requestEditBtn) return; // اگر روی این دکمه کلیک نشده بود، ادامه نده
+
+        const field = requestEditBtn.dataset.field;
+        try {
+            await addDoc(collection(db, `artifacts/${appId}/public/data/requests`), {
+                uid: employee.uid,
+                employeeId: employee.id,
+                employeeName: employee.name,
+                requestType: 'درخواست ویرایش اطلاعات',
+                details: `درخواست ویرایش ${field}`,
+                status: 'درحال بررسی',
+                createdAt: serverTimestamp()
+            });
+            requestEditBtn.innerText = 'ارسال شد';
+            requestEditBtn.disabled = true;
+            showToast('درخواست ویرایش شما برای ادمین ارسال شد.');
+        } catch (err) {
+            showToast('خطا در ارسال درخواست.', 'error');
+            console.error("Error sending edit request:", err);
+        }
+    });
+
+    form.addEventListener('submit', async (e) => {
         e.preventDefault();
         try {
             const updatedInfo = {
