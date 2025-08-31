@@ -416,8 +416,19 @@ function renderEmployeePortalPage(pageName, employee) {
         const manager = state.teams.find(t => t.memberIds?.includes(employee.id))
             ? state.employees.find(e => e.id === state.teams.find(t => t.memberIds.includes(employee.id)).leaderId)
             : null;
-        const performanceHistoryHtml = (employee.performanceHistory || []).sort((a,b) => new Date(b.reviewDate) - new Date(a.reviewDate)).slice(0, 3)
-            .map(review => `<div class="performance-item"><div class="flex justify-between items-center mb-2"><div class="flex items-center gap-2 text-slate-800"><i data-lucide="award" class="w-4 h-4 text-amber-500"></i><span class="font-bold">امتیاز کلی:</span><span class="text-lg font-semibold text-green-600">${review.overallScore}/5</span></div><p class="text-xs text-slate-500">${toPersianDate(review.reviewDate)}</p></div><p class="text-sm text-slate-700 mt-2"><strong>نقاط قوت:</strong> ${review.strengths || 'ثبت نشده'}</p></div>`).join('') 
+        const performanceHistoryHtml = (employee.performanceHistory || []).sort((a,b) => new Date(b.reviewDate) - new Date(a.reviewDate))
+            .map(review => `
+                <div class="bg-slate-50 rounded-xl p-4 border hover:border-indigo-200 transition-colors">
+                    <div class="flex justify-between items-center mb-2">
+                        <p class="font-bold text-slate-800">امتیاز کلی: <span class="text-lg font-semibold text-indigo-600">${review.overallScore}/5</span></p>
+                        <p class="text-xs text-slate-500">${toPersianDate(review.reviewDate)}</p>
+                    </div>
+                    <div class="mt-3 border-t pt-3 text-sm">
+                        <p><strong>نقاط قوت:</strong> ${review.strengths || '-'}</p>
+                        <p class="mt-2"><strong>زمینه‌های قابل بهبود:</strong> ${review.areasForImprovement || '-'}</p>
+                    </div>
+                </div>
+            `).join('')
             || '<div class="text-center py-6"><i data-lucide="inbox" class="w-12 h-12 mx-auto text-slate-300"></i><p class="mt-2 text-sm text-slate-500">سابقه‌ای از ارزیابی عملکرد شما ثبت نشده است.</p></div>';
 
         // KPI metrics for employee
