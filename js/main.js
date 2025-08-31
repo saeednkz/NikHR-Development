@@ -136,16 +136,29 @@ async function initializeFirebase() {
 
         setupAuthEventListeners(auth); 
 
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                await fetchUserRole(user);
-                listenToData();
-            } else {
-                state.currentUser = null;
-                detachAllListeners();
-                showLoginPage(); // << استفاده از تابع جدید
-            }
-        });
+onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        // اگر کاربر لاگین بود، مثل قبل داده‌ها را بارگذاری کن و داشبورد را نشان بده
+        await fetchUserRole(user);
+        listenToData();
+    } else {
+        // اگر کاربر لاگین نبود...
+        state.currentUser = null;
+        detachAllListeners();
+        
+        // --- منطق جدید برای لینک نظرسنجی ---
+        const hash = window.location.hash;
+        if (hash.startsWith('#survey-taker')) {
+            // اگر لینک مربوط به نظرسنجی بود، صفحه نظرسنجی را نمایش بده
+            const urlParams = new URLSearchParams(hash.split('?')[1]);
+            const surveyId = urlParams.get('id');
+            renderSurveyTakerPage(surveyId);
+        } else {
+            // در غیر این صورت، صفحه ورود را نمایش بده
+            showLoginPage();
+        }
+    }
+});
     } catch (error) { 
         console.error("Firebase Init Error:", error); 
     }
