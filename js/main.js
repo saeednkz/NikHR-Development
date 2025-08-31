@@ -5,7 +5,7 @@ import {
     getFirestore, doc, getDoc, setDoc, onSnapshot, collection,
     addDoc, getDocs, writeBatch, deleteDoc, updateDoc, query, where, serverTimestamp, arrayUnion
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
 
 // وارد کردن توابع از ماژول‌های محلی
@@ -803,41 +803,55 @@ else if (pageName === 'documents') {
         // نگه‌داری وضعیت صفحه‌بندی
         window._momentsPage = { pageSize: 10, lastTimestamp: null, loading: false, done: false };
 
-        window.renderMomentsList = () => {
-            const container = document.getElementById('moments-list');
-            if (!container) return;
-            const items = (state.moments || []).slice().sort((a,b)=> new Date(b.createdAt?.toDate?.()||0) - new Date(a.createdAt?.toDate?.()||0));
-            // صفحه‌بندی نرم در کلاینت: فقط تا حد تعیین‌شده رندر می‌کنیم
-            const page = window._momentsPage;
-            const slice = items.filter((it, idx) => idx < (page.pageSize + (page.extra || 0)));
-            container.innerHTML = slice.map(m => {
-                const owner = state.employees.find(e => e.uid === m.ownerUid) || {};
-                const meReact = (m.reactions || []).find(r => r.uid === employee.uid)?.emoji;
-                const reactionsHtml = (m.reactions || []).map(r => {
-                    const user = state.employees.find(e => e.uid === r.uid) || {};
-                    return `<div class=\"flex items-center gap-1 text-xs bg-slate-100 rounded-full px-2 py-1\"><span>${r.emoji}</span><img src=\"${user.avatar || 'icons/icon-128x128.png'}\" class=\"w-4 h-4 rounded-full object-cover\"/><span class=\"text-slate-600\">${user.name || ''}</span></div>`;
-                }).join('');
-                return `
-                <div class=\"bg-white rounded-2xl border border-slate-200 p-4\">
-                    <div class=\"flex items-center gap-2 mb-3\">
-                        <img src=\"${owner.avatar || 'icons/icon-128x128.png'}\" class=\"w-10 h-10 rounded-full object-cover\"/>
-                        <div>
-                            <div class=\"font-bold text-slate-800 text-sm\">${owner.name || m.ownerName || 'کاربر'}</div>
-                            <div class=\"text-[11px] text-slate-500\">${toPersianDate(m.createdAt)}</div>
-                        </div>
+// فایل: js/main.js - داخل renderEmployeePortalPage
+// تابع window.renderMomentsList را با این نسخه جایگزین کنید ▼
+
+window.renderMomentsList = () => {
+    const container = document.getElementById('moments-list');
+    if (!container) return;
+    const items = (state.moments || []).slice().sort((a,b)=> new Date(b.createdAt?.toDate?.()||0) - new Date(a.createdAt?.toDate?.()||0));
+    
+    const page = window._momentsPage;
+    const slice = items.filter((it, idx) => idx < (page.pageSize + (page.extra || 0)));
+    container.innerHTML = slice.map(m => {
+        const owner = state.employees.find(e => e.uid === m.ownerUid) || {};
+        const meReact = (m.reactions || []).find(r => r.uid === employee.uid)?.emoji;
+        const reactionsHtml = (m.reactions || []).map(r => {
+            const user = state.employees.find(e => e.uid === r.uid) || {};
+            return `<div class="flex items-center gap-1 text-xs bg-slate-100 rounded-full px-2 py-1"><span>${r.emoji}</span><img src="${user.avatar || 'icons/icon-128x128.png'}" class="w-4 h-4 rounded-full object-cover"/><span class="text-slate-600">${user.name || ''}</span></div>`;
+        }).join('');
+
+        // ▼▼▼ بخش جدید: شرط نمایش دکمه حذف ▼▼▼
+        const isOwner = m.ownerUid === employee.uid;
+        const canDelete = isOwner || isAdmin(); // تابع isAdmin از auth.js می‌آید
+        // ▲▲▲ پایان بخش جدید ▲▲▲
+
+        return `
+            <div class="bg-white rounded-2xl border border-slate-200 p-4 relative">
+                
+                ${canDelete ? `
+                    <button class="moment-delete-btn absolute top-3 left-3 p-1.5 text-slate-400 hover:text-red-500 rounded-full hover:bg-red-50 transition-colors" data-id="${m.firestoreId}" title="حذف">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                ` : ''}
+                
+                <div class="flex items-center gap-2 mb-3">
+                    <img src="${owner.avatar || 'icons/icon-128x128.png'}" class="w-10 h-10 rounded-full object-cover"/>
+                    <div>
+                        <div class="font-bold text-slate-800 text-sm">${owner.name || m.ownerName || 'کاربر'}</div>
+                        <div class="text-[11px] text-slate-500">${toPersianDate(m.createdAt)}</div>
                     </div>
-                    ${m.text ? `<div class=\"text-sm text-slate-800 whitespace-pre-wrap mb-3\">${m.text}</div>` : ''}
-                  ${m.imageUrl ? `
-<img src="${m.imageUrl}" class="w-full h-auto max-h-[32rem] rounded-xl object-cover border bg-slate-100 mb-3"/>
-` : ''}
-                    <div class=\"flex items-center gap-2\">
-                        ${['👍','❤️','😂','🎉','👎'].map(e=> `<button class=\"moment-react-btn text-sm px-2 py-1 rounded-full ${meReact===e ? 'bg-slate-800 text-white':'bg-slate-100 text-slate-700'}\" data-id=\"${m.firestoreId}\" data-emoji=\"${e}\">${e}</button>`).join('')}
-                    </div>
-                    <div class=\"flex flex-wrap gap-2 mt-3\">${reactionsHtml}</div>
-                </div>`;
-            }).join('');
-            if (window.lucide?.createIcons) lucide.createIcons();
-        };
+                </div>
+                ${m.text ? `<div class="text-sm text-slate-800 whitespace-pre-wrap mb-3">${m.text}</div>` : ''}
+                ${m.imageUrl ? `<img src="${m.imageUrl}" class="w-full h-auto max-h-[32rem] rounded-xl object-cover border bg-slate-100 mb-3"/>` : ''}
+                <div class="flex items-center gap-2">
+                    ${['👍','❤️','😂','🎉','👎'].map(e=> `<button class="moment-react-btn text-sm px-2 py-1 rounded-full ${meReact===e ? 'bg-slate-800 text-white':'bg-slate-100 text-slate-700'}" data-id="${m.firestoreId}" data-emoji="${e}">${e}</button>`).join('')}
+                </div>
+                <div class="flex flex-wrap gap-2 mt-3">${reactionsHtml}</div>
+            </div>`;
+    }).join('');
+    if (window.lucide?.createIcons) lucide.createIcons();
+};
 
         window.renderMomentsList();
 
@@ -1134,6 +1148,28 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
                     } catch (err) { showToast('خطا در ثبت واکنش.', 'error'); }
                 })();
                 return;
+            }
+            const deleteBtn = e.target.closest('.moment-delete-btn');
+            if (deleteBtn) {
+                const docId = deleteBtn.dataset.id;
+                showConfirmationModal('حذف لحظه', 'آیا از حذف این پست مطمئن هستید؟ این عمل غیرقابل بازگشت است.', async () => {
+                    try {
+                        const momentToDelete = state.moments.find(m => m.firestoreId === docId);
+                        if (momentToDelete && momentToDelete.imageUrl) {
+                            const imageRef = ref(storage, momentToDelete.imageUrl);
+                            await deleteObject(imageRef).catch(err => {
+                                console.error("Image deletion failed, but proceeding with doc deletion:", err);
+                            });
+                        }
+                        
+                        await deleteDoc(doc(db, `artifacts/${appId}/public/data/moments`, docId));
+                        showToast('پست با موفقیت حذف شد.');
+                    } catch (error) {
+                        console.error("Error deleting moment:", error);
+                        showToast('خطا در حذف پست.', 'error');
+                    }
+                });
+                return; 
             }
         });
     }
