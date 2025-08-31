@@ -2778,26 +2778,26 @@ surveys: () => {
 // فایل: js/main.js
 // تابع pages.requests را با این نسخه جایگزین کنید ▼
 
+// فایل: js/main.js
+// تابع pages.requests را با این نسخه جایگزین کنید ▼
+
 requests: () => {
-    const REQUESTS_PAGE_SIZE = 10; // تعداد آیتم در هر صفحه
+    const REQUESTS_PAGE_SIZE = 10;
     let filteredRequests = (state.requests || []);
     if (state.requestFilter === 'mine' && state.currentUser) {
         filteredRequests = filteredRequests.filter(req => req.assignedTo === state.currentUser.uid);
     }
     const allRequests = filteredRequests.sort((a, b) => new Date(b.createdAt?.toDate()) - new Date(a.createdAt?.toDate()));
     
-    // --- منطق جدید صفحه‌بندی ---
     const startIndex = (state.currentPageRequests - 1) * REQUESTS_PAGE_SIZE;
     const endIndex = startIndex + REQUESTS_PAGE_SIZE;
     const paginatedRequests = allRequests.slice(startIndex, endIndex);
-    // --- پایان منطق جدید ---
 
     const admins = state.users.filter(u => u.role === 'admin');
-    const requestsHtml = paginatedRequests.map(req => { // <<-- از لیست صفحه‌بندی شده استفاده می‌کنیم
-        // ... (بقیه کد این بخش بدون تغییر باقی می‌ماند)
+    const requestsHtml = paginatedRequests.map(req => {
         const statusColors = {'درحال بررسی':'bg-yellow-100 text-yellow-800','در حال انجام':'bg-blue-100 text-blue-800','تایید شده':'bg-green-100 text-green-800','رد شده':'bg-red-100 text-red-800'};
         const adminOptions = admins.map(admin => `<option value="${admin.firestoreId}" ${req.assignedTo === admin.firestoreId ? 'selected' : ''}>${admin.name || admin.email}</option>`).join('');
-        return `<tr class="border-b"><td class="px-4 py-3">${toPersianDate(req.createdAt)}</td><td class="px-4 py-3 font-semibold">${req.employeeName}</td><td class="px-4 py-3">${req.requestType}</td><td class="px-4 py-3"><span class="px-2 py-1 text-xs font-medium rounded-full ${statusColors[req.status] || 'bg-slate-100'}">${req.status}</span></td><td class="px-4 py-3"><select data-id="${req.firestoreId}" class="assign-request-select w-full p-1.5 border border-slate-300 rounded-lg bg-white text-xs"><option value="">واگذار نشده</option>${adminOptions}</select></td><td class="px-4 py-3">${(req.status === 'درحال بررسی' || req.status === 'در حال انجام') ? `<button class="process-request-btn text-sm bg-slate-700 text-white py-1 px-3 rounded-md hover:bg-slate-800" data-id="${req.firestoreId}">پردازش</button>` : '<span class="text-xs text-slate-400">-</span>'}</td></tr>`;
+        return `<tr class="border-b"><td class="px-4 py-3 whitespace-nowrap">${toPersianDate(req.createdAt)}</td><td class="px-4 py-3 font-semibold">${req.employeeName}</td><td class="px-4 py-3">${req.requestType}</td><td class="px-4 py-3"><span class="px-2 py-1 text-xs font-medium rounded-full ${statusColors[req.status] || 'bg-slate-100'}">${req.status}</span></td><td class="px-4 py-3 min-w-[150px]"><select data-id="${req.firestoreId}" class="assign-request-select w-full p-1.5 border border-slate-300 rounded-lg bg-white text-xs"><option value="">واگذار نشده</option>${adminOptions}</select></td><td class="px-4 py-3">${(req.status === 'درحال بررسی' || req.status === 'در حال انجام') ? `<button class="process-request-btn text-sm bg-slate-700 text-white py-1 px-3 rounded-md hover:bg-slate-800" data-id="${req.firestoreId}">پردازش</button>` : '<span class="text-xs text-slate-400">-</span>'}</td></tr>`;
     }).join('');
 
     return `
@@ -2809,7 +2809,6 @@ requests: () => {
             <div id="pagination-container" class="p-4 flex justify-center mt-6"></div>
         </div>
     `;
-    `;
 },
   // در فایل js/main.js، به آبجکت pages این بخش جدید را اضافه کنید
 // در فایل js/main.js، داخل آبجکت pages
@@ -2820,16 +2819,17 @@ requests: () => {
 // فایل: js/main.js
 // تابع pages.tasks را به طور کامل با این نسخه جایگزین کنید ▼
 
+// فایل: js/main.js
+// تابع pages.tasks را به طور کامل با این نسخه صحیح جایگزین کنید ▼
+
 tasks: () => {
     const TASKS_PAGE_SIZE = 10;
     if (!state.currentUser) return '';
     
-    // تمام وظایف مربوط به کاربر فعلی را فیلتر و مرتب می‌کنیم
     const allMyTasks = (state.reminders || [])
         .filter(r => r.assignedTo === state.currentUser.uid)
         .sort((a, b) => new Date(a.date?.toDate ? a.date.toDate() : a.date) - new Date(b.date?.toDate ? b.date.toDate() : b.date));
 
-    // فقط آیتم‌های مربوط به صفحه فعلی را جدا می‌کنیم
     const startIndex = (state.currentPageTasks - 1) * TASKS_PAGE_SIZE;
     const endIndex = startIndex + TASKS_PAGE_SIZE;
     const paginatedTasks = allMyTasks.slice(startIndex, endIndex);
@@ -2838,7 +2838,7 @@ tasks: () => {
     const tasksHtml = paginatedTasks.map(task => {
         const statusColors = {'جدید':'bg-yellow-100 text-yellow-800','در حال انجام':'bg-blue-100 text-blue-800','انجام شده':'bg-green-100 text-green-800'};
         const adminOptions = admins.map(admin => `<option value="${admin.firestoreId}" ${task.assignedTo === admin.firestoreId ? 'selected' : ''}>${admin.name || admin.email}</option>`).join('');
-        return `<tr class="border-b"><td class="px-4 py-3">${toPersianDate(task.date)}</td><td class="px-4 py-3">${task.type}</td><td class="px-4 py-3 text-sm">${task.text}</td><td class="px-4 py-3"><span class="px-2 py-1 text-xs font-medium rounded-full ${statusColors[task.status] || 'bg-slate-100'}">${task.status}</span></td><td class="px-4 py-3"><select data-id="${task.firestoreId}" class="assign-reminder-select w-full p-1.5 border border-slate-300 rounded-lg bg-white text-xs">${adminOptions}</select></td><td class="px-4 py-3"><button class="process-reminder-btn text-sm bg-slate-700 text-white py-1 px-3 rounded-md hover:bg-slate-800" data-id="${task.firestoreId}">پردازش</button></td></tr>`;
+        return `<tr class="border-b"><td class="px-4 py-3 whitespace-nowrap">${toPersianDate(task.date)}</td><td class="px-4 py-3">${task.type}</td><td class="px-4 py-3 text-sm min-w-[200px]">${task.text}</td><td class="px-4 py-3"><span class="px-2 py-1 text-xs font-medium rounded-full ${statusColors[task.status] || 'bg-slate-100'}">${task.status}</span></td><td class="px-4 py-3 min-w-[150px]"><select data-id="${task.firestoreId}" class="assign-reminder-select w-full p-1.5 border border-slate-300 rounded-lg bg-white text-xs">${adminOptions}</select></td><td class="px-4 py-3"><button class="process-reminder-btn text-sm bg-slate-700 text-white py-1 px-3 rounded-md hover:bg-slate-800" data-id="${task.firestoreId}">پردازش</button></td></tr>`;
     }).join('');
 
     return `
