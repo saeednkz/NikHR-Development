@@ -828,9 +828,7 @@ else if (pageName === 'documents') {
                     </div>
                     ${m.text ? `<div class=\"text-sm text-slate-800 whitespace-pre-wrap mb-3\">${m.text}</div>` : ''}
                   ${m.imageUrl ? `
-    <div class="max-h-96 overflow-hidden rounded-xl border mb-3 bg-slate-100">
-        <img src="${m.imageUrl}" class="w-full h-full object-contain"/>
-    </div>
+<img src="${m.imageUrl}" class="w-full h-auto max-h-[32rem] rounded-xl object-cover border bg-slate-100 mb-3"/>
 ` : ''}
                     <div class=\"flex items-center gap-2\">
                         ${['👍','❤️','😂','🎉','👎'].map(e=> `<button class=\"moment-react-btn text-sm px-2 py-1 rounded-full ${meReact===e ? 'bg-slate-800 text-white':'bg-slate-100 text-slate-700'}\" data-id=\"${m.firestoreId}\" data-emoji=\"${e}\">${e}</button>`).join('')}
