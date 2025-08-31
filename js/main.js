@@ -5505,7 +5505,8 @@ const showEmployeeForm = (employeeId = null) => {
                     name: name, 
                     employeeId: employeeId, 
                     email: email, 
-                    employeeData: employeeDataForCreation 
+                    employeeData: employeeDataForCreation,
+  teamId: selectedTeamId
                 });
                 showToast("کارمند و حساب کاربری با موفقیت ایجاد شد!");
                 closeModal(mainModal, mainModalContainer);
