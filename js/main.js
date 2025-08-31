@@ -1141,7 +1141,7 @@ function renderEmployeePortal() {
                 <div class="blob" style="top:-40px; right:-60px; width:220px; height:220px; background:#FF6A3D"></div>
                 <div class="blob" style="bottom:-60px; left:-40px; width:180px; height:180px; background:#F72585"></div>
                 
-                <header style="background:linear-gradient(90deg,#FF6A3D,#F72585)" class="shadow-sm relative z-10">
+                <header style="background:linear-gradient(90deg,#FF6A3D,#F72585)" class="shadow-sm relative z-20">
                     <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
                         <div class="flex items-center gap-3">
                             <button id="portal-menu-btn" class="inline-flex sm:hidden items-center justify-center p-2 rounded-md bg-white/20 hover:bg-white/30 text-white" title="منو"><i data-lucide="menu" class="w-5 h-5"></i></button>
