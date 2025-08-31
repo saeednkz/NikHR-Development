@@ -2225,6 +2225,9 @@ const updateNotificationBell = () => {
        // فایل: js/main.js
 // تابع showPerformanceForm را به طور کامل با این نسخه جایگزین کنید ▼
 
+// فایل: js/main.js
+// تابع showPerformanceForm را به طور کامل با این نسخه نهایی جایگزین کنید ▼
+
 if (typeof window.showPerformanceForm !== 'function') { window.showPerformanceForm = () => {}; }
 const showPerformanceForm = (emp, reviewIndex = null) => {
     const isEditing = reviewIndex !== null;
@@ -2232,16 +2235,20 @@ const showPerformanceForm = (emp, reviewIndex = null) => {
 
     modalTitle.innerText = `${isEditing ? 'ویرایش' : 'ثبت'} ارزیابی عملکرد برای: ${emp.name}`;
 
-    // بخش اهداف (OKRs)
-    const okrsHtml = (emp.okrs && emp.okrs.length > 0) ? emp.okrs.map((okr, index) => `
+    // ▼▼▼ پیدا کردن تیم کارمند برای دسترسی به OKR های تیم ▼▼▼
+    const team = state.teams.find(t => t.memberIds?.includes(emp.id));
+    const teamOkrs = team ? team.okrs : [];
+
+    // بخش اهداف (OKRs) - حالا اهداف تیم را نمایش می‌دهد
+    const okrsHtml = (teamOkrs && teamOkrs.length > 0) ? teamOkrs.map((okr, index) => `
         <div class="mb-3 p-3 bg-slate-50 rounded-lg">
-            <label class="block text-sm font-medium text-slate-700">${okr.title} (پیشرفت ثبت شده: ${okr.progress}%)</label>
-            <p class="text-xs text-slate-500 mb-2">امتیاز شما به میزان دستیابی به این هدف (۱ تا ۵):</p>
+            <label class="block text-sm font-medium text-slate-700">${okr.title} (پیشرفت کلی تیم: ${okr.progress}%)</label>
+            <p class="text-xs text-slate-500 mb-2">امتیاز شما به میزان **مشارکت** این کارمند در این هدف تیمی (۱ تا ۵):</p>
             <input type="number" class="okr-score w-full p-2 border rounded-md" data-index="${index}" min="1" max="5" value="${reviewData.okrScores?.[index] || 3}" required>
         </div>
-    `).join('') : '<p class="text-sm text-slate-500">هیچ OKR فعالی برای این کارمند ثبت نشده است.</p>';
+    `).join('') : '<p class="text-sm text-slate-500">هیچ OKR فعالی برای تیم این کارمند ثبت نشده یا کارمند عضو تیمی نیست.</p>';
 
-    // بخش شایستگی‌ها (Competencies)
+    // بخش شایستگی‌ها (Competencies) - بدون تغییر
     const competenciesHtml = (state.competencies && state.competencies.length > 0) ? state.competencies.map(comp => `
         <div class="mb-3 p-3 bg-slate-50 rounded-lg">
             <label class="block text-sm font-medium text-slate-700">${comp.name}</label>
@@ -2253,7 +2260,7 @@ const showPerformanceForm = (emp, reviewIndex = null) => {
     modalContent.innerHTML = `
         <form id="performance-review-form" class="space-y-6">
             <div>
-                <h4 class="font-bold text-lg mb-2 text-indigo-600">۱. ارزیابی اهداف (OKRs)</h4>
+                <h4 class="font-bold text-lg mb-2 text-indigo-600">۱. ارزیابی مشارکت در اهداف تیمی (OKRs)</h4>
                 ${okrsHtml}
             </div>
             <div>
@@ -2285,22 +2292,18 @@ const showPerformanceForm = (emp, reviewIndex = null) => {
     openModal(mainModal, mainModalContainer);
     activatePersianDatePicker('review-date', reviewData.reviewDate || new Date());
 
+    // منطق ذخیره‌سازی بدون تغییر باقی می‌ماند
     document.getElementById('performance-review-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         
-        // جمع‌آوری امتیازات OKR
         const okrScores = Array.from(document.querySelectorAll('.okr-score')).map(input => parseInt(input.value));
         const avgOkrScore = okrScores.length > 0 ? okrScores.reduce((a, b) => a + b, 0) / okrScores.length : 0;
 
-        // جمع‌آوری امتیازات شایستگی
         const competencyScores = {};
         const competencyInputs = document.querySelectorAll('.competency-score');
-        competencyInputs.forEach(input => {
-            competencyScores[input.dataset.name] = parseInt(input.value);
-        });
+        competencyInputs.forEach(input => { competencyScores[input.dataset.name] = parseInt(input.value); });
         const avgCompetencyScore = competencyInputs.length > 0 ? Object.values(competencyScores).reduce((a, b) => a + b, 0) / competencyInputs.length : 0;
         
-        // محاسبه امتیاز نهایی (۵۰٪ اهداف، ۵۰٪ شایستگی‌ها)
         const overallScore = (avgOkrScore * 0.5) + (avgCompetencyScore * 0.5);
 
         const newReview = {
@@ -2310,7 +2313,7 @@ const showPerformanceForm = (emp, reviewIndex = null) => {
             competencyScores,
             strengths: document.getElementById('strengths').value,
             areasForImprovement: document.getElementById('areasForImprovement').value,
-            overallScore: parseFloat(overallScore.toFixed(2)) // گرد کردن به دو رقم اعشار
+            overallScore: parseFloat(overallScore.toFixed(2))
         };
 
         const currentHistory = emp.performanceHistory || [];
@@ -2324,7 +2327,8 @@ const showPerformanceForm = (emp, reviewIndex = null) => {
             const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
             await updateDoc(docRef, { performanceHistory: currentHistory });
             showToast("ارزیابی عملکرد با موفقیت ذخیره شد.");
-            viewEmployeeProfile(emp.firestoreId); // رفرش کردن پروفایل برای نمایش نتیجه
+            closeModal(mainModal, mainModalContainer); // بستن مودال پس از ذخیره
+            viewEmployeeProfile(emp.firestoreId);
         } catch (error) {
             console.error("Error saving performance review:", error);
             showToast("خطا در ذخیره ارزیابی.", "error");
