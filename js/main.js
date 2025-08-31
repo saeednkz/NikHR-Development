@@ -2802,10 +2802,13 @@ requests: () => {
 
     return `
         <section class="rounded-2xl overflow-hidden border mb-6" style="background:linear-gradient(90deg,#FF6A3D,#F72585)"><div class="p-6 sm:p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4"><h1 class="text-2xl sm:text-3xl font-extrabold text-white">مدیریت درخواست‌ها</h1><div class="flex items-center gap-2"><button data-filter="all" class="request-filter-btn ${state.requestFilter === 'all' ? 'primary-btn' : 'secondary-btn'} text-xs">همه</button><button data-filter="mine" class="request-filter-btn ${state.requestFilter === 'mine' ? 'primary-btn' : 'secondary-btn'} text-xs">واگذار به من</button></div></div></section>
-        <div class="bg-white p-6 rounded-2xl border border-slate-200">
-            <div class="overflow-x-auto"><table class="w-full text-sm"><thead style="background:#ECEEF3"><tr><th class="px-4 py-2 font-semibold">تاریخ</th><th class="px-4 py-2 font-semibold">کارمند</th><th class="px-4 py-2 font-semibold">نوع</th><th class="px-4 py-2 font-semibold">وضعیت</th><th class="px-4 py-2 font-semibold">واگذار به</th><th class="px-4 py-2 font-semibold">عملیات</th></tr></thead><tbody id="requests-table-body">${requestsHtml || '<tr><td colspan="6" class="text-center py-8 text-slate-500">هیچ درخواستی ثبت نشده است.</td></tr>'}</tbody></table></div>
+        <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm"><thead style="background:#ECEEF3"><tr><th class="px-4 py-2 font-semibold">تاریخ</th><th class="px-4 py-2 font-semibold">کارمند</th><th class="px-4 py-2 font-semibold">نوع</th><th class="px-4 py-2 font-semibold">وضعیت</th><th class="px-4 py-2 font-semibold">واگذار به</th><th class="px-4 py-2 font-semibold">عملیات</th></tr></thead><tbody id="requests-table-body">${requestsHtml || '<tr><td colspan="6" class="text-center py-8 text-slate-500">هیچ درخواستی ثبت نشده است.</td></tr>'}</tbody></table>
+            </div>
             <div id="pagination-container" class="p-4 flex justify-center mt-6"></div>
         </div>
+    `;
     `;
 },
   // در فایل js/main.js، به آبجکت pages این بخش جدید را اضافه کنید
@@ -2840,8 +2843,13 @@ tasks: () => {
 
     return `
         <section class="rounded-2xl overflow-hidden border mb-6" style="background:linear-gradient(90deg,#FF6A3D,#F72585)"><div class="p-6 sm:p-8"><h1 class="text-2xl sm:text-3xl font-extrabold text-white">وظایف من</h1><p class="text-white/90 text-xs mt-1">یادآورها و کارهایی که به شما واگذار شده است</p></div></section>
-        <div class="bg-white p-6 rounded-2xl border border-slate-200">
-            <table class="w-full text-sm"><thead style="background:#ECEEF3"><tr><th class="px-4 py-2 font-semibold">تاریخ</th><th class="px-4 py-2 font-semibold">نوع</th><th class="px-4 py-2 font-semibold">متن</th><th class="px-4 py-2 font-semibold">وضعیت</th><th class="px-4 py-2 font-semibold">واگذار به</th><th class="px-4 py-2 font-semibold">عملیات</th></tr></thead><tbody id="tasks-table-body">${tasksHtml || '<tr><td colspan="6" class="text-center py-8 text-slate-500">هیچ وظیفه‌ای به شما واگذار نشده است.</td></tr>'}</tbody></table>
+        <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead style="background:#ECEEF3"><tr><th class="px-4 py-2 font-semibold">تاریخ</th><th class="px-4 py-2 font-semibold">نوع</th><th class="px-4 py-2 font-semibold">متن</th><th class="px-4 py-2 font-semibold">وضعیت</th><th class="px-4 py-2 font-semibold">واگذار به</th><th class="px-4 py-2 font-semibold">عملیات</th></tr></thead>
+                    <tbody id="tasks-table-body">${tasksHtml || '<tr><td colspan="6" class="text-center py-8 text-slate-500">هیچ وظیفه‌ای به شما واگذار نشده است.</td></tr>'}</tbody>
+                </table>
+            </div>
             <div id="pagination-container" class="p-4 flex justify-center mt-6"></div>
         </div>
     `;
