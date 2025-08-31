@@ -829,7 +829,7 @@ else if (pageName === 'documents') {
                     ${m.text ? `<div class=\"text-sm text-slate-800 whitespace-pre-wrap mb-3\">${m.text}</div>` : ''}
                   ${m.imageUrl ? `
     <div class="max-h-96 overflow-hidden rounded-xl border mb-3 bg-slate-100">
-        <img src="${m.imageUrl}" class="w-full h-full object-cover"/>
+        <img src="${m.imageUrl}" class="w-full h-full object-contain"/>
     </div>
 ` : ''}
                     <div class=\"flex items-center gap-2\">
