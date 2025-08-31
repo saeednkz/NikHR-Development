@@ -3639,7 +3639,25 @@ const viewEmployeeProfile = (employeeId) => {
                                         <h4 class="font-semibold text-slate-700"><i data-lucide="clipboard-check" class="ml-2 w-5 h-5" style="color:#6B69D6"></i>سابقه ارزیابی عملکرد</h4>
                                         ${canEdit() ? `<button id="add-performance-btn" class="primary-btn text-xs">افزودن</button>` : ''}
                                     </div>
-                                    <div class="space-y-4">${(emp.performanceHistory && emp.performanceHistory.length > 0) ? emp.performanceHistory.sort((a,b) => new Date(b.reviewDate) - new Date(a.reviewDate)).map((review, index) => `<div class=\"bg-white rounded-xl border border-slate-200 p-4\"><div class=\"flex justify-between items-center mb-2\"><p class=\"font-bold text-slate-800\">امتیاز کلی: <span style=\"color:#6B69D6\" class=\"text-lg\">${review.overallScore}/5</span></p>${canEdit() ? `<div class=\"flex gap-2\"><button class=\"edit-performance-btn text-blue-500\" data-index=\"${index}\"><i data-lucide=\"edit\" class=\"w-4 h-4\"></i></button><button class=\"delete-performance-btn text-red-500\" data-index=\"${index}\"><i data-lucide=\"trash-2\" class=\"w-4 h-4\"></i></button></div>` : ''}</div><p class=\"text-sm text-slate-500\">تاریخ: ${toPersianDate(review.reviewDate)} | ارزیاب: ${review.reviewer}</p><div class=\"mt-4 border-t border-dashed pt-4\"><p class=\"text-xs text-slate-700\"><strong>نقاط قوت:</strong> ${review.strengths || '-'} </p><p class=\"text-xs text-slate-700 mt-2\"><strong>زمینه‌های بهبود:</strong> ${review.areasForImprovement || '-'}</p></div></div>`).join('') : '<p class=\"text-sm text-slate-500\">هنوز سابقه ارزیابی عملکردی ثبت نشده است.</p>'}</div>
+                                    <div class="space-y-4">
+                                        ${(emp.performanceHistory && emp.performanceHistory.length > 0) 
+                                            ? emp.performanceHistory.sort((a,b) => new Date(b.reviewDate) - new Date(a.reviewDate)).map((review, index) => `
+                                                <div class="bg-white rounded-xl border border-slate-200 p-4">
+                                                    <div class="flex justify-between items-center mb-2">
+                                                        <p class="font-bold text-slate-800">امتیاز کلی: <span style="color:#6B69D6" class="text-lg">${review.overallScore}/5</span></p>
+                                                        ${canEdit() ? `<div class="flex gap-2"><button class="edit-performance-btn text-blue-500" data-index="${index}"><i data-lucide="edit" class="w-4 h-4"></i></button><button class="delete-performance-btn text-red-500" data-index="${index}"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>` : ''}
+                                                    </div>
+                                                    <p class="text-sm text-slate-500">تاریخ: ${toPersianDate(review.reviewDate)} | ارزیاب: ${review.reviewer}</p>
+                                                    
+                                                    <div class="mt-4 border-t border-dashed pt-4 text-sm text-slate-700">
+                                                        <p><strong>نقاط قوت:</strong> ${review.strengths || '-'}</p>
+                                                        <p class="mt-2"><strong>زمینه‌های بهبود:</strong> ${review.areasForImprovement || '-'}</p>
+                                                    </div>
+                                                </div>
+                                            `).join('') 
+                                            : '<p class="text-sm text-slate-500">هنوز سابقه ارزیابی عملکردی ثبت نشده است.</p>'
+                                        }
+                                    </div>
                                 </div>
                             </div>
                             <div id="tab-career" class="profile-tab-content hidden">
