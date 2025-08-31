@@ -3178,11 +3178,15 @@ announcements: () => {
 // در فایل js/main.js، داخل آبجکت pages
 // کل این تابع را جایگزین نسخه فعلی کنید
 
+// فایل: js/main.js
+// کل تابع settings را با این نسخه جایگزین کنید ▼
+
 settings: () => {
     if (!isAdmin()) {
         return `<div class="text-center p-10 card"><i data-lucide="lock" class="mx-auto w-16 h-16 text-red-500"></i><h2 class="mt-4 text-xl font-semibold text-slate-700">دسترسی غیر مجاز</h2><p class="mt-2 text-slate-500">شما برای مشاهده این صفحه دسترسی لازم را ندارید.</p></div>`;
     }
 
+    // --- بخش تعریف متغیرها برای ساخت محتوای تب‌ها ---
     const admins = state.users.filter(u => u.role === 'admin');
 
     const usersHtml = state.users.map(user => {
@@ -3227,7 +3231,7 @@ settings: () => {
                 <div>
                     <p class="font-semibold">${rule.ruleName}</p>
                     <p class="text-xs text-slate-500">
-                       برای: ${(rule.itemTypes || []).join('، ')}
+                        برای: ${(rule.itemTypes || []).join('، ')}
                         <i data-lucide="arrow-left" class="inline-block w-3 h-3"></i> 
                         ${assignee ? assignee.name : 'کاربر حذف شده'}
                     </p>
@@ -3239,8 +3243,10 @@ settings: () => {
             </div>
         `;
     }).join('');
-    const defaultRule = (state.assignmentRules || []).find(r => r.firestoreId === '_default'); // [!code --]
-     const jobPositionsHtml = (state.jobPositions || []).map(pos => `
+    
+    const defaultRule = (state.assignmentRules || []).find(r => r.firestoreId === '_default');
+
+    const jobPositionsHtml = (state.jobPositions || []).map(pos => `
         <tr class="border-b">
             <td class="p-3 font-semibold">${pos.name}</td>
             <td class="p-3 text-sm">${(pos.competencyIds || []).length} شایستگی</td>
@@ -3251,70 +3257,41 @@ settings: () => {
             </td>
         </tr>
     `).join('') || '<tr><td colspan="3" class="text-center p-4 text-slate-500">هیچ پوزیشن شغلی تعریف نشده است.</td></tr>';
+
+    // --- بخش Return نهایی با ساختار جدید تب‌ها ---
     return `
-           <div class="flex items-center justify-between mb-4">
-        <div>
-            <h1 class="text-3xl font-bold text-slate-800">تنظیمات سیستم</h1>
-            <p class="text-sm text-slate-500 mt-1">مدیریت کاربران، دسترسی‌ها و پیکربندی سازمان</p>
+        <div class="flex items-center justify-between mb-4">
+            <div><h1 class="text-3xl font-bold text-slate-800">تنظیمات سیستم</h1><p class="text-sm text-slate-500 mt-1">مدیریت کاربران، دسترسی‌ها و پیکربندی سازمان</p></div>
         </div>
-    </div>
-    <div class="bg-gradient-to-l from-[#F72585]/10 to-[#6B69D6]/10 rounded-xl p-4 border mb-6">
-        <nav id="settings-tabs" class="flex gap-2" aria-label="Tabs">
-            <button data-tab="users" class="settings-tab primary-btn text-xs py-2 px-3">کاربران</button>
-            <button data-tab="configs" class="settings-tab secondary-btn text-xs py-2 px-3">پیکربندی سازمان</button>
-        </nav>
-    </div>
-    <div id="settings-tab-content">
-        <div id="tab-users" class="settings-tab-pane">
-            <div class="card p-0">
-                <div class="flex flex-col sm:flex-row justify-between items-center p-5 border-b border-slate-200 gap-3">
-                    <h3 class="font-semibold text-lg flex items-center"><i data-lucide="users" class="ml-2 text-indigo-500"></i>لیست کاربران سیستم</h3>
-                    <button id="add-user-btn" class="primary-btn text-sm flex items-center gap-2 w-full sm:w-auto"><i data-lucide="plus" class="w-4 h-4"></i> کاربر جدید</button>
-                </div>
-                <div id="users-list-container" class="p-5 grid grid-cols-1 xl:grid-cols-2 gap-4">${usersHtml}</div>
-            </div>
+        
+        <div class="bg-gradient-to-l from-[#F72585]/10 to-[#6B69D6]/10 rounded-xl p-4 border mb-6">
+            <nav id="settings-tabs" class="flex flex-wrap gap-2" aria-label="Tabs">
+                <button data-tab="users" class="settings-tab primary-btn text-xs py-2 px-3">کاربران</button>
+                <button data-tab="positions" class="settings-tab secondary-btn text-xs py-2 px-3">پوزیشن‌های شغلی</button>
+                <button data-tab="competencies" class="settings-tab secondary-btn text-xs py-2 px-3">شایستگی‌ها</button>
+                <button data-tab="rules" class="settings-tab secondary-btn text-xs py-2 px-3">قوانین واگذاری</button>
+            </nav>
         </div>
-        <div id="tab-configs" class="settings-tab-pane hidden space-y-6">
-            
-            <div class="card p-0">
-                <div class="flex justify-between items-center p-5 border-b">
-                    <h3 class="font-semibold text-lg flex items-center"><i data-lucide="briefcase" class="ml-2 text-green-500"></i>مدیریت پوزیشن‌های شغلی</h3>
-                    <button id="add-position-btn" class="primary-btn text-sm">افزودن پوزیشن جدید</button>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full">
-                        <thead class="bg-slate-50"><tr><th class="p-3 text-right">نام پوزیشن</th><th class="p-3 text-right">شایستگی‌ها</th><th class="p-3 text-right"></th></tr></thead>
-                        <tbody>${jobPositionsHtml}</tbody>
-                    </table>
-                </div>
+
+        <div id="settings-tab-content">
+            <div id="tab-users" class="settings-tab-pane">
+                <div class="card p-0"><div class="flex flex-col sm:flex-row justify-between items-center p-5 border-b border-slate-200 gap-3"><h3 class="font-semibold text-lg flex items-center"><i data-lucide="users" class="ml-2 text-indigo-500"></i>لیست کاربران سیستم</h3><button id="add-user-btn" class="primary-btn text-sm flex items-center gap-2 w-full sm:w-auto"><i data-lucide="plus" class="w-4 h-4"></i> کاربر جدید</button></div><div id="users-list-container" class="p-5 grid grid-cols-1 xl:grid-cols-2 gap-4">${usersHtml}</div></div>
             </div>
-            <div class="card p-6">
-                <h3 class="font-semibold text-lg mb-4 flex items-center"><i data-lucide="star" class="ml-2 text-amber-500"></i>مدیریت شایستگی‌ها</h3>
-                <div id="competencies-list" class="flex flex-wrap gap-2 mb-4">${competenciesHtml}</div>
-                <form id="add-competency-form" class="flex flex-col sm:flex-row gap-2">
-                    <input type="text" id="new-competency-name" placeholder="نام شایستگی جدید..." class="w-full p-2 border border-slate-300 rounded-lg text-sm" required>
-                    <button type="submit" class="primary-btn shrink-0">افزودن</button>
-                </form>
+
+            <div id="tab-positions" class="settings-tab-pane hidden">
+                <div class="card p-0"><div class="flex justify-between items-center p-5 border-b"><h3 class="font-semibold text-lg flex items-center"><i data-lucide="briefcase" class="ml-2 text-green-500"></i>مدیریت پوزیشن‌های شغلی</h3><button id="add-position-btn" class="primary-btn text-sm">افزودن پوزیشن جدید</button></div><div class="overflow-x-auto"><table class="w-full"><thead class="bg-slate-50"><tr><th class="p-3 text-right">نام پوزیشن</th><th class="p-3 text-right">شایستگی‌ها</th><th class="p-3 text-right"></th></tr></thead><tbody>${jobPositionsHtml}</tbody></table></div></div>
             </div>
-            <div class="card p-6">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="font-semibold text-lg flex items-center"><i data-lucide="git-branch-plus" class="ml-2 text-purple-500"></i>قوانین واگذاری هوشمند</h3>
-                    <button id="add-rule-btn" class="primary-btn text-sm">افزودن قانون جدید</button>
-                </div>
-                <div id="rules-list" class="space-y-3">${rulesHtml || '<p class="text-center text-sm text-slate-400">قانونی تعریف نشده است.</p>'}</div>
-                <div class="mt-6 border-t pt-4">
-                    <h4 class="font-semibold text-md mb-2">واگذاری پیش‌فرض</h4>
-                    <p class="text-sm text-slate-500 mb-2">درخواست‌هایی که با هیچ قانونی مطابقت ندارند به صورت پیش‌فرض به کاربر زیر واگذار می‌شوند:</p>
-                    <select id="default-assignee-select" class="p-2 border rounded-md bg-white">
-                        <option value="">هیچکس</option>
-                        ${admins.map(admin => `<option value="${admin.firestoreId}" ${defaultRule?.assigneeUid === admin.firestoreId ? 'selected' : ''}>${admin.name || admin.email}</option>`).join('')}
-                    </select>
-                </div>
+
+            <div id="tab-competencies" class="settings-tab-pane hidden">
+                <div class="card p-6"><h3 class="font-semibold text-lg mb-4 flex items-center"><i data-lucide="star" class="ml-2 text-amber-500"></i>مدیریت شایستگی‌ها</h3><div id="competencies-list" class="flex flex-wrap gap-2 mb-4">${competenciesHtml}</div><form id="add-competency-form" class="flex flex-col sm:flex-row gap-2"><input type="text" id="new-competency-name" placeholder="نام شایستگی جدید..." class="w-full p-2 border border-slate-300 rounded-lg text-sm" required><button type="submit" class="primary-btn shrink-0">افزودن</button></form></div>
+            </div>
+
+            <div id="tab-rules" class="settings-tab-pane hidden">
+                <div class="card p-6"><div class="flex justify-between items-center mb-4"><h3 class="font-semibold text-lg flex items-center"><i data-lucide="git-branch-plus" class="ml-2 text-purple-500"></i>قوانین واگذاری هوشمند</h3><button id="add-rule-btn" class="primary-btn text-sm">افزودن قانون جدید</button></div><div id="rules-list" class="space-y-3">${rulesHtml || '<p class="text-center text-sm text-slate-400">قانونی تعریف نشده است.</p>'}</div><div class="mt-6 border-t pt-4"><h4 class="font-semibold text-md mb-2">واگذاری پیش‌فرض</h4><p class="text-sm text-slate-500 mb-2">درخواست‌هایی که با هیچ قانونی مطابقت ندارند به صورت پیش‌فرض به کاربر زیر واگذار می‌شوند:</p><select id="default-assignee-select" class="p-2 border rounded-md bg-white"><option value="">هیچکس</option>${admins.map(admin => `<option value="${admin.firestoreId}" ${defaultRule?.assigneeUid === admin.firestoreId ? 'selected' : ''}>${admin.name || admin.email}</option>`).join('')}</select></div></div>
             </div>
         </div>
-    </div>
-`;
-}
+    `;
+},
 }; // <<--- آبجکت pages اینجا تمام می‌شود
 
 const showEditUserForm = (user) => {
