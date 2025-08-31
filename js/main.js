@@ -3755,6 +3755,41 @@ const viewTeamProfile = (teamId) => {
         basicAnalysis.risk = { text: `اعضای پرریسک: <strong>${highRiskNames}</strong>`, icon: 'shield-alert', color: 'text-red-600' };
     }
 
+    // --- بخش جدید: ساخت HTML برای نمایش OKR های جدید ---
+    const okrsHtml = (team.okrs && team.okrs.length > 0) ? team.okrs.map(okr => {
+        // محاسبه پیشرفت هدف بر اساس میانگین نتایج کلیدی (اگر از قبل محاسبه نشده)
+        const objectiveProgress = okr.progress;
+
+        // ساخت HTML برای هر نتیجه کلیدی
+        const keyResultsHtml = (okr.keyResults && okr.keyResults.length > 0) ? okr.keyResults.map(kr => `
+            <div>
+                <div class="flex justify-between items-center text-xs text-slate-600 mb-1">
+                    <span>${kr.title}</span>
+                    <span>${kr.progress}%</span>
+                </div>
+                <div class="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                    <div class="h-1.5 bg-slate-400" style="width:${kr.progress}%;"></div>
+                </div>
+            </div>
+        `).join('') : '<p class="text-xs text-slate-400">نتیجه کلیدی‌ای ثبت نشده است.</p>';
+        
+        return `
+            <div class="bg-slate-50 p-3 rounded-lg border">
+                <div class="flex justify-between items-center text-sm mb-2">
+                    <span class="font-bold text-slate-800">${okr.title}</span>
+                    <span class="font-semibold text-indigo-600">${objectiveProgress}%</span>
+                </div>
+                <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden mb-3">
+                    <div class="h-2 bg-indigo-500" style="width:${objectiveProgress}%;"></div>
+                </div>
+                <div class="space-y-2 border-t pt-2">
+                    ${keyResultsHtml}
+                </div>
+            </div>
+        `;
+    }).join('') : '<p class="text-sm text-slate-500">هدفی برای این تیم ثبت نشده است.</p>';
+
+
     modalTitle.innerText = 'پروفایل تیم: ' + team.name;
     modalContent.innerHTML = `
         <section class="rounded-2xl overflow-hidden border" style="background:linear-gradient(90deg,#FF6A3D,#F72585)">
@@ -3807,19 +3842,12 @@ const viewTeamProfile = (teamId) => {
                                         <h4 class="font-semibold text-gray-700">اهداف تیم (OKRs)</h4>
                                         ${canEdit() ? `<button id="edit-team-okrs-btn" class="text-sm bg-blue-600 text-white py-1 px-3 rounded-md hover:bg-blue-700">افزودن/ویرایش</button>`:''}
                                     </div>
-                                    <div class="space-y-3">${(team.okrs || []).length > 0 ? (team.okrs || []).map(okr => `<div><div class="flex justify-between items-center mb-1 text-sm"><span class="text-gray-600">${okr.title}</span><span class="font-medium text-blue-600">${okr.progress}%</span></div><div class="progress-bar w-full"><div class="progress-bar-fill" style="width: ${okr.progress}%;"></div></div></div>`).join('') : '<p class="text-sm text-gray-500">هدفی برای این تیم ثبت نشده است.</p>'}</div>
+                                    <div class="space-y-4">${okrsHtml}</div>
                                 </div>
                             </div>
                         </div>
-                        <div id="tab-team-health" class="profile-tab-content">
-                            ${renderTeamHealthMetrics(team)}
-                        </div>
-                        <div id="tab-team-talent" class="profile-tab-content">
-                            <div class="card p-6 bg-white rounded-xl border border-slate-200">
-                                <h4 class="font-semibold mb-3 text-gray-700">توزیع استعداد در تیم</h4>
-                                <div class="grid grid-cols-3 gap-1 text-center text-xs border-t-2 border-l-2 border-gray-300 mt-4 bg-white">${ (typeof generateTeamNineBoxGrid==='function' ? generateTeamNineBoxGrid(members) : '') }</div>
-                            </div>
-                        </div>
+                        <div id="tab-team-health" class="profile-tab-content">${renderTeamHealthMetrics(team)}</div>
+                        <div id="tab-team-talent" class="profile-tab-content"><div class="card p-6 bg-white rounded-xl border border-slate-200"><h4 class="font-semibold mb-3 text-gray-700">توزیع استعداد در تیم</h4><div class="grid grid-cols-3 gap-1 text-center text-xs border-t-2 border-l-2 border-gray-300 mt-4 bg-white">${ (typeof generateTeamNineBoxGrid==='function' ? generateTeamNineBoxGrid(members) : '') }</div></div></div>
                     </div>
                 </div>
             </div>
@@ -6566,34 +6594,115 @@ const showAddUserForm = () => {
                 }
             });
         };
-        const showEditTeamOkrsForm = (team) => {
-            modalTitle.innerText = `ویرایش OKR برای تیم ${team.name}`;
-            const okrsHtml = (team.okrs || []).map((okr) => `<div class="okr-item grid grid-cols-12 gap-2 items-center"><input type="text" value="${okr.title}" class="col-span-8 p-2 border rounded-md okr-title" placeholder="عنوان هدف"><input type="number" value="${okr.progress}" class="col-span-3 p-2 border rounded-md okr-progress" placeholder="پیشرفت %" min="0" max="100"><button type="button" class="col-span-1 remove-okr-btn text-red-500 hover:text-red-700"><i data-lucide="trash-2" class="w-5 h-5"></i></button></div>`).join('');
-            modalContent.innerHTML = `<form id="edit-team-okrs-form"><div id="okrs-container" class="space-y-2">${okrsHtml}</div><button type="button" id="add-okr-btn" class="mt-4 text-sm bg-gray-200 py-2 px-4 rounded-md hover:bg-gray-300">افزودن هدف جدید</button><div class="pt-6 flex justify-end gap-4"><button type="button" id="back-to-team-profile-okr" class="bg-gray-500 text-white py-2 px-6 rounded-md hover:bg-gray-600">بازگشت</button><button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">ذخیره</button></div></form>`;
+// فایل: js/main.js
+// تابع showEditTeamOkrsForm را به طور کامل با این نسخه جایگزین کنید ▼
+
+const showEditTeamOkrsForm = (team) => {
+    modalTitle.innerText = `ویرایش OKR برای تیم ${team.name}`;
+    
+    // تابع کمکی برای ساخت HTML یک نتیجه کلیدی (KR)
+    const createKrHtml = (kr = { title: '', progress: 0 }) => `
+        <div class="key-result-item flex items-center gap-2 mt-2">
+            <input type="text" class="kr-title flex-grow p-2 border rounded-md text-sm" placeholder="نتیجه کلیدی (مثال: افزایش نرخ تبدیل به ۲۰٪)" value="${kr.title}">
+            <input type="number" class="kr-progress w-24 p-2 border rounded-md text-sm" placeholder="پیشرفت %" min="0" max="100" value="${kr.progress}">
+            <button type="button" class="remove-kr-btn text-rose-500 p-1 rounded-full hover:bg-rose-50"><i data-lucide="minus-circle" class="w-5 h-5"></i></button>
+        </div>
+    `;
+
+    // تابع کمکی برای ساخت HTML یک هدف کامل (Objective + KRs)
+    const createObjectiveHtml = (obj = { title: '', keyResults: [{ title: '', progress: 0 }] }) => `
+        <div class="objective-item bg-slate-50 border rounded-xl p-4 mb-4">
+            <div class="flex items-center justify-between">
+                <input type="text" class="objective-title w-full p-2 border rounded-md font-semibold" placeholder="هدف اصلی (مثال: بهبود تجربه کاربری در اپلیکیشن)" value="${obj.title}">
+                <button type="button" class="remove-objective-btn text-rose-500 p-2 ml-2"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+            </div>
+            <div class="key-results-container mt-3 border-t pt-3">
+                ${(obj.keyResults || []).map(createKrHtml).join('')}
+            </div>
+            <button type="button" class="add-kr-btn text-xs font-semibold text-indigo-600 mt-3 hover:underline">+ افزودن نتیجه کلیدی</button>
+        </div>
+    `;
+
+    const okrsHtml = (team.okrs && team.okrs.length > 0) ? team.okrs.map(createObjectiveHtml).join('') : createObjectiveHtml();
+    
+    modalContent.innerHTML = `
+        <form id="edit-team-okrs-form">
+            <div id="okrs-container" class="space-y-2 max-h-[60vh] overflow-y-auto pr-2">${okrsHtml}</div>
+            <button type="button" id="add-objective-btn" class="mt-4 text-sm bg-gray-200 py-2 px-4 rounded-md hover:bg-gray-300">افزودن هدف اصلی جدید</button>
+            <div class="pt-6 flex justify-end gap-4">
+                <button type="button" id="back-to-team-profile-okr" class="secondary-btn">بازگشت</button>
+                <button type="submit" class="primary-btn">ذخیره OKR ها</button>
+            </div>
+        </form>
+    `;
+    lucide.createIcons();
+
+    const okrsContainer = document.getElementById('okrs-container');
+
+    // مدیریت رویدادها (Event Delegation)
+    okrsContainer.addEventListener('click', (e) => {
+        if (e.target.closest('.add-kr-btn')) {
+            const krContainer = e.target.closest('.objective-item').querySelector('.key-results-container');
+            krContainer.insertAdjacentHTML('beforeend', createKrHtml());
             lucide.createIcons();
-            document.getElementById('back-to-team-profile-okr').addEventListener('click', () => viewTeamProfile(team.firestoreId));
-            const okrsContainer = document.getElementById('okrs-container');
-            document.getElementById('add-okr-btn').addEventListener('click', () => { const newItem = document.createElement('div'); newItem.className = 'okr-item grid grid-cols-12 gap-2 items-center'; newItem.innerHTML = `<input type="text" class="col-span-8 p-2 border rounded-md okr-title" placeholder="عنوان هدف"><input type="number" class="col-span-3 p-2 border rounded-md okr-progress" placeholder="پیشرفت %" min="0" max="100" value="0"><button type="button" class="col-span-1 remove-okr-btn text-red-500 hover:text-red-700"><i data-lucide="trash-2" class="w-5 h-5"></i></button>`; okrsContainer.appendChild(newItem); lucide.createIcons(); });
-            okrsContainer.addEventListener('click', (e) => { if (e.target.closest('.remove-okr-btn')) { e.target.closest('.okr-item').remove(); } });
-            document.getElementById('edit-team-okrs-form').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const newOkrs = [];
-                document.querySelectorAll('.okr-item').forEach(item => {
-                    const title = item.querySelector('.okr-title').value;
-                    const progress = parseInt(item.querySelector('.okr-progress').value) || 0;
-                    if (title) { newOkrs.push({ title, progress }); }
-                });
-                try {
-                    const docRef = doc(db, `artifacts/${appId}/public/data/teams`, team.firestoreId);
-                    await updateDoc(docRef, { okrs: newOkrs });
-                    showToast("اهداف تیم با موفقیت به‌روزرسانی شدند.");
-                    viewTeamProfile(team.firestoreId);
-                } catch (error) {
-                    console.error("Error updating team OKRs:", error);
-                    showToast("خطا در به‌روزرسانی اهداف تیم.", "error");
+        }
+        if (e.target.closest('.remove-kr-btn')) {
+            e.target.closest('.key-result-item').remove();
+        }
+        if (e.target.closest('.remove-objective-btn')) {
+            e.target.closest('.objective-item').remove();
+        }
+    });
+
+    document.getElementById('add-objective-btn').addEventListener('click', () => {
+        okrsContainer.insertAdjacentHTML('beforeend', createObjectiveHtml());
+        lucide.createIcons();
+    });
+
+    document.getElementById('back-to-team-profile-okr').addEventListener('click', () => viewTeamProfile(team.firestoreId));
+    
+    document.getElementById('edit-team-okrs-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const newOkrs = [];
+        document.querySelectorAll('.objective-item').forEach(objItem => {
+            const objectiveTitle = objItem.querySelector('.objective-title').value.trim();
+            if (!objectiveTitle) return;
+
+            const keyResults = [];
+            let totalProgress = 0;
+            const krItems = objItem.querySelectorAll('.key-result-item');
+            
+            krItems.forEach(krItem => {
+                const krTitle = krItem.querySelector('.kr-title').value.trim();
+                const krProgress = parseInt(krItem.querySelector('.kr-progress').value) || 0;
+                if (krTitle) {
+                    keyResults.push({ title: krTitle, progress: krProgress });
+                    totalProgress += krProgress;
                 }
             });
-        };
+
+            // محاسبه خودکار پیشرفت هدف بر اساس میانگین نتایج کلیدی
+            const objectiveProgress = keyResults.length > 0 ? Math.round(totalProgress / keyResults.length) : 0;
+            
+            newOkrs.push({
+                title: objectiveTitle,
+                progress: objectiveProgress,
+                keyResults: keyResults
+            });
+        });
+
+        try {
+            const docRef = doc(db, `artifacts/${appId}/public/data/teams`, team.firestoreId);
+            await updateDoc(docRef, { okrs: newOkrs });
+            showToast("اهداف تیم با موفقیت به‌روزرسانی شدند.");
+            viewTeamProfile(team.firestoreId);
+        } catch (error) {
+            console.error("Error saving team OKRs:", error);
+            showToast("خطا در به‌روزرسانی اهداف تیم.", "error");
+        }
+    });
+};
+
         // --- [FIX START] ADDED TEAM HEALTH FORM ---
         const showTeamHealthForm = (team) => {
             modalTitle.innerText = `ویرایش معیارهای سلامت تیم ${team.name}`;
