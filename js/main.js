@@ -60,6 +60,14 @@ const allItemTypes = {
     'سایر': 'سایر درخواست‌ها'
     // هر آیتم جدید دیگری که در آینده اضافه می‌کنید را اینجا تعریف کنید
 };
+const documentCategories = [
+    { id: 'آموزش و رشد',      key: 'learning', icon: 'graduation-cap', desc: 'منابع و دوره‌های رشد فردی و شغلی.' },
+    { id: 'قوانین و بازی',    key: 'rules',    icon: 'scale',          desc: 'آیین‌نامه‌ها، اصول همکاری و راهنمای رفتاری.' },
+    { id: 'کیت ابزار کاری',   key: 'toolkit',  icon: 'briefcase',      desc: 'فرم‌ها، قالب‌ها و الگوهای کاربردی روزانه.' },
+    { id: 'داستان ما',       key: 'story',    icon: 'book-open',      desc: 'رسالت، چشم‌انداز و ارزش‌های سازمان.' },
+    { id: 'مزایا و حقوق',     key: 'benefits', icon: 'coins',          desc: 'حقوق، مزایا، بیمه و سیاست‌های مالی.' },
+    { id: 'مستندات پروژه‌ها', key: 'projects', icon: 'folder-kanban',  desc: 'مستندات فنی و اجرایی پروژه‌ها.' }
+];
         export const state = { employees: [], teams: [], reminders: [], surveyResponses: [], users: [], competencies: [], expenses: [], pettyCashCards: [], chargeHistory: [], dashboardMetrics: {}, orgAnalytics: {}, currentPage: 'dashboard', currentPageTalent: 1, currentUser: null,currentPageRequests: 1,currentPageTasks: 1,currentPageAnnouncements: 1 };
         let charts = {};
 let activeListeners = []; // [!code ++] این خط را اضافه کنید
@@ -698,39 +706,31 @@ function renderEmployeePortalPage(pageName, employee) {
             `;
     }
     // --- بخش اسناد ---
-    else if (pageName === 'documents') {
-        const docSections = [
-            { id: 'آموزش و رشد', key: 'learning', desc: 'این بخش، تمام منابع و دوره‌هایی را که برای یادگیری و پیشرفت شخصی و شغلی‌ات نیاز داری، در اختیار می‌گذارد.' },
-            { id: 'قوانین و بازی', key: 'rules', desc: 'اینجا اصول و قواعد بازی تیم ما را پیدا می‌کنی. از آیین‌نامه‌ها تا راهنمای رفتاری، همه چیز برای یک همکاری عالی اینجا هست.' },
-            { id: 'کیت ابزار کاری', key: 'toolkit', desc: 'مجموعه‌ای از فرم‌ها، قالب‌ها و الگوهای کاربردی برای انجام کارهای روزمره. هر ابزاری که نیاز داری، اینجا پیدا می‌شود.' },
-            { id: 'داستان ما', key: 'story', desc: 'با رسالت، چشم‌انداز و ارزش‌های تیم ما آشنا شو. این بخش، قلب تپنده فرهنگ سازمانی ما است.' },
-            { id: 'مزایا و حقوق', key: 'benefits', desc: 'اطلاعات مربوط به حقوق، مزایا، بیمه و سایر مسائل مالی‌ات را اینجا ببین. همه چیز شفاف و واضح است.' },
-            { id: 'مستندات پروژه‌ها', key: 'projects', desc: 'تمام اطلاعات فنی و مستندات مربوط به پروژه‌های مختلف، از ایده‌پردازی تا اجرا، اینجا در دسترس توست.' }
-        ];
-        const colors = ['#6B69D6','#FF6A3D','#10B981','#F59E0B','#0EA5E9','#F43F5E'];
-        const cards = docSections.map((s, idx) => {
-            const color = colors[idx % colors.length];
-            return `
-                <div class="bg-white rounded-2xl border border-slate-200 p-5 hover:shadow-lg transition-shadow fade-up">
-                    <div class="w-16 h-16 mx-auto rounded-full overflow-hidden ring-4" style="ring-color:${color}; ring: 4px solid ${color}; background:rgba(0,0,0,.03)">
-                        <img src="icons/icon-128x128.png" alt="${s.id}" class="w-full h-full object-cover">
-                    </div>
-                    <h3 class="text-center text-base font-bold text-slate-800 mt-3">${s.id}</h3>
-                    <p class="text-center text-xs text-slate-600 leading-6 mt-1">${s.desc}</p>
-                    <div class="mt-4 flex justify-center">
-                        <button class="doc-category-btn text-xs font-semibold px-3 py-1.5 rounded-lg" data-category="${s.key}" style="color:#fff;background:${color}">مشاهده</button>
-                    </div>
-                </div>`;
-        }).join('');
-        contentContainer.innerHTML = `
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 page-header mb-6">
-                <div>
-                    <h1 class="text-3xl font-extrabold" style="color:#242A38">اسناد سازمان</h1>
-                    <p class="text-slate-500 text-sm mt-1">دسترسی سریع به منابع و مستندات کلیدی</p>
+else if (pageName === 'documents') {
+    // حالا از همان ثابت مرکزی استفاده می‌کنیم
+    const docSections = documentCategories; 
+    const colors = ['#6B69D6','#FF6A3D','#10B981','#F59E0B','#0EA5E9','#F43F5E'];
+    const cards = docSections.map((s, idx) => {
+        const color = colors[idx % colors.length];
+        return `
+            <div class="bg-white rounded-2xl border border-slate-200 p-5 hover:shadow-lg transition-shadow fade-up">
+                <div class="w-16 h-16 mx-auto rounded-full flex items-center justify-center ring-4" style="ring-color:${color}33; background:${color}1a;">
+                    <i data-lucide="${s.icon}" class="w-8 h-8" style="color:${color}"></i>
                 </div>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">${cards}</div>`;
-    }
+                <h3 class="text-center text-base font-bold text-slate-800 mt-3">${s.id}</h3>
+                <p class="text-center text-xs text-slate-600 leading-6 mt-1">${s.desc}</p>
+                <div class="mt-4 flex justify-center">
+                    <button class="doc-category-btn text-xs font-semibold px-3 py-1.5 rounded-lg" data-category="${s.key}" style="color:#fff;background:${color}">مشاهده</button>
+                </div>
+            </div>`;
+    }).join('');
+    contentContainer.innerHTML = `
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 page-header mb-6">
+            <div><h1 class="text-3xl font-extrabold" style="color:#242A38">دانش‌نامه</h1><p class="text-slate-500 text-sm mt-1">دسترسی سریع به منابع و مستندات کلیدی</p></div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">${cards}</div>`;
+}
+
     // --- بخش صندوق پیام ---
     else if (pageName === 'inbox') {
         const myTeam = state.teams.find(team => team.memberIds?.includes(employee.id));
@@ -2938,16 +2938,12 @@ analytics: () => {
 // فایل: js/main.js
 // تابع pages.documents را به طور کامل با این نسخه جایگزین کنید ▼
 
+// فایل: js/main.js
+// تابع pages.documents را با این نسخه جایگزین کنید ▼
+
 documents: () => {
-    // در این بخش، برای هر دسته‌بندی یک آیکون مناسب از کتابخانه Lucide تعریف می‌کنیم
-    const docSections = [
-        { id: 'آموزش و رشد',      key: 'learning', icon: 'graduation-cap', desc: 'منابع و دوره‌های رشد فردی و شغلی.' },
-        { id: 'قوانین و بازی',    key: 'rules',    icon: 'scale',          desc: 'آیین‌نامه‌ها، اصول همکاری و راهنمای رفتاری.' },
-        { id: 'کیت ابزار کاری',   key: 'toolkit',  icon: 'briefcase',      desc: 'فرم‌ها، قالب‌ها و الگوهای کاربردی روزانه.' },
-        { id: 'داستان ما',       key: 'story',    icon: 'book-open',      desc: 'رسالت، چشم‌انداز و ارزش‌های سازمان.' },
-        { id: 'مزایا و حقوق',     key: 'benefits', icon: 'coins',          desc: 'حقوق، مزایا، بیمه و سیاست‌های مالی.' },
-        { id: 'مستندات پروژه‌ها', key: 'projects', icon: 'folder-kanban',  desc: 'مستندات فنی و اجرایی پروژه‌ها.' }
-    ];
+    // حالا از ثابت مرکزی استفاده می‌کنیم
+    const docSections = documentCategories;
     const colors = ['#6B69D6','#FF6A3D','#10B981','#F59E0B','#0EA5E9','#F43F5E'];
     
     const cards = docSections.map((s, idx) => {
@@ -2974,10 +2970,7 @@ documents: () => {
 
     return `
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
-            <div>
-                <h1 class="text-3xl font-bold text-slate-800">اسناد سازمان</h1>
-                <p class="text-slate-500 text-sm mt-1">مدیریت دانش‌نامه برای کل سازمان</p>
-            </div>
+            <div><h1 class="text-3xl font-bold text-slate-800">اسناد سازمان</h1><p class="text-slate-500 text-sm mt-1">مدیریت دانش‌نامه برای کل سازمان</p></div>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">${cards}</div>
     `;
