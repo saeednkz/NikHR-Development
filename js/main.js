@@ -827,7 +827,11 @@ else if (pageName === 'documents') {
                         </div>
                     </div>
                     ${m.text ? `<div class=\"text-sm text-slate-800 whitespace-pre-wrap mb-3\">${m.text}</div>` : ''}
-                    ${m.imageUrl ? `<img src=\"${m.imageUrl}\" class=\"w-full rounded-xl object-cover mb-3\"/>` : ''}
+                  ${m.imageUrl ? `
+    <div class="max-h-96 overflow-hidden rounded-xl border mb-3 bg-slate-100">
+        <img src="${m.imageUrl}" class="w-full h-full object-cover"/>
+    </div>
+` : ''}
                     <div class=\"flex items-center gap-2\">
                         ${['👍','❤️','😂','🎉','👎'].map(e=> `<button class=\"moment-react-btn text-sm px-2 py-1 rounded-full ${meReact===e ? 'bg-slate-800 text-white':'bg-slate-100 text-slate-700'}\" data-id=\"${m.firestoreId}\" data-emoji=\"${e}\">${e}</button>`).join('')}
                     </div>
@@ -1060,36 +1064,58 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
                 showBirthdayWishForm(sendWishBtn.dataset.id, sendWishBtn.dataset.name);
             }
             // ارسال لحظه جدید
-            const postBtn = e.target.closest('#moment-post-btn');
-            if (postBtn) {
-                (async () => {
-                    try {
-                        const text = (document.getElementById('moment-text')||{}).value?.trim() || '';
-                        const fileInput = document.getElementById('moment-image');
-                        const file = fileInput?.files?.[0];
-                        if ((text && file) || (!text && !file)) { showToast('فقط یکی از متن یا عکس را انتخاب کنید.', 'error'); return; }
-                        let imageUrl = '';
-                        if (file) {
-                            const path = `moments/${employee.uid}_${Date.now()}_${file.name}`;
-                            const sRef = ref(storage, path);
-                            await uploadBytes(sRef, file);
-                            imageUrl = await getDownloadURL(sRef);
-                        }
-                        await addDoc(collection(db, `artifacts/${appId}/public/data/moments`), {
-                            ownerUid: employee.uid,
-                            ownerName: employee.name,
-                            text: text || '',
-                            imageUrl,
-                            reactions: [],
-                            createdAt: serverTimestamp()
-                        });
-                        if (document.getElementById('moment-text')) document.getElementById('moment-text').value = '';
-                        if (fileInput) fileInput.value = '';
-                        showToast('لحظه شما منتشر شد.');
-                    } catch (err) { showToast('خطا در انتشار لحظه.', 'error'); }
-                })();
-                return;
-            }
+// فایل: js/main.js - داخل تابع setupEmployeePortalEventListeners
+// ... داخل mainContent.addEventListener('click', ...)
+        
+        const postBtn = e.target.closest('#moment-post-btn');
+        if (postBtn) {
+            (async () => {
+                let loadingToast = null;
+                try {
+                    const text = (document.getElementById('moment-text') || {}).value?.trim() || '';
+                    const fileInput = document.getElementById('moment-image');
+                    const file = fileInput?.files?.[0];
+
+                    if ((text && file) || (!text && !file)) {
+                        showToast('فقط متن یا فقط عکس را انتخاب کنید.', 'error');
+                        return;
+                    }
+                    
+                    let imageUrl = '';
+                    if (file) {
+                        // ▼▼▼ اینجا از تابع جدید برای تغییر سایز و آپلود استفاده می‌کنیم ▼▼▼
+                        imageUrl = await resizeAndUploadMomentImage(file, employee.uid);
+                    }
+                    
+                    // بعد از اتمام آپلود، اعلان "در حال آپلود" حذف می‌شود
+                    // این بخش به صورت خودکار توسط تابع resizeAndUploadMomentImage مدیریت می‌شود.
+
+                    await addDoc(collection(db, `artifacts/${appId}/public/data/moments`), {
+                        ownerUid: employee.uid,
+                        ownerName: employee.name,
+                        text: text || '',
+                        imageUrl,
+                        reactions: [],
+                        createdAt: serverTimestamp()
+                    });
+
+                    if (document.getElementById('moment-text')) document.getElementById('moment-text').value = '';
+                    if (fileInput) fileInput.value = '';
+                    showToast('لحظه شما با موفقیت منتشر شد.');
+                } catch (err) {
+                    showToast('خطا در انتشار لحظه.', 'error');
+                    console.error("Error posting moment:", err);
+                } finally {
+                    // پاک کردن تمام اعلان‌های "در حال پردازش"
+                    const processingToasts = document.querySelectorAll('.toast');
+                    processingToasts.forEach(t => {
+                        if (t.innerText.includes("در حال بهینه‌سازی")) t.remove();
+                    });
+                }
+            })();
+            return;
+        }
+
             // ری‌اکشن روی لحظه
             const reactBtn = e.target.closest('.moment-react-btn');
             if (reactBtn) {
@@ -5272,7 +5298,59 @@ function handleAvatarChange(emp) {
 }
 // فایل: js/main.js
 // این تابع را به طور کامل جایگزین نسخه فعلی کنید
+// فایل: js/main.js
+// این تابع جدید را به فایل خود اضافه کنید ▼
 
+/**
+ * یک فایل عکس را می‌گیرد، آن را به یک عرض حداکثر تغییر سایز داده و فشرده می‌کند،
+ * سپس آن را در Firebase Storage آپلود کرده و URL دانلود را برمی‌گرداند.
+ * @param {File} file - فایل عکس انتخاب شده توسط کاربر.
+ * @param {string} employeeUid - شناسه کاربر برای ساخت مسیر فایل.
+ * @returns {Promise<string>} URL دانلود عکس آپلود شده.
+ */
+const resizeAndUploadMomentImage = (file, employeeUid) => {
+    return new Promise((resolve, reject) => {
+        const MAX_WIDTH = 1024; // حداکثر عرض عکس (پیکسل)
+        const reader = new FileReader();
+
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = async () => {
+                const canvas = document.createElement('canvas');
+                let { width, height } = img;
+
+                if (width > MAX_WIDTH) {
+                    height *= MAX_WIDTH / width;
+                    width = MAX_WIDTH;
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                canvas.toBlob(async (blob) => {
+                    if (!blob) {
+                        return reject(new Error("Canvas to Blob conversion failed."));
+                    }
+                    try {
+                        showToast("در حال بهینه‌سازی و آپلود عکس...", "success", null);
+                        const filePath = `moments/${employeeUid}/${Date.now()}.jpg`;
+                        const storageRef = ref(storage, filePath);
+                        const snapshot = await uploadBytes(storageRef, blob);
+                        const downloadURL = await getDownloadURL(snapshot.ref);
+                        resolve(downloadURL);
+                    } catch (error) {
+                        reject(error);
+                    }
+                }, 'image/jpeg', 0.85); // فشرده‌سازی با کیفیت ۸۵ درصد
+            };
+            img.src = e.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+};
 async function resizeAndUploadAvatar(file, emp) {
     const MAX_DIMENSION = 256;
     const reader = new FileReader();
