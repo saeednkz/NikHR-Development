@@ -455,12 +455,11 @@ function renderEmployeePortalPage(pageName, employee) {
 
 // فایل: js/main.js - این کد را به جای بلوک if (pageName === 'profile') فعلی قرار دهید
 
-    if (pageName === 'profile') {
+ if (pageName === 'profile') {
         const manager = state.teams.find(t => t.memberIds?.includes(employee.id))
             ? state.employees.find(e => e.id === state.teams.find(t => t.memberIds.includes(employee.id)).leaderId)
             : null;
         
-        // --- کد ساخت HTML برای تاریخچه عملکرد ---
         const performanceHistoryHtml = (employee.performanceHistory || []).sort((a,b) => new Date(b.reviewDate) - new Date(a.reviewDate))
             .map(review => `
                 <div class="bg-slate-50 rounded-xl p-4 border hover:border-indigo-200 transition-colors">
@@ -476,7 +475,6 @@ function renderEmployeePortalPage(pageName, employee) {
             `).join('')
             || '<div class="text-center py-6"><i data-lucide="inbox" class="w-12 h-12 mx-auto text-slate-300"></i><p class="mt-2 text-sm text-slate-500">سابقه‌ای از ارزیابی عملکرد شما ثبت نشده است.</p></div>';
 
-        // --- KPI metrics for employee ---
         const myTeam = state.teams.find(t => t.memberIds?.includes(employee.id));
         const okrAvg = (employee.okrs && employee.okrs.length)
             ? Math.round(employee.okrs.reduce((s, o) => s + (o.progress || 0), 0) / employee.okrs.length)
@@ -495,7 +493,6 @@ function renderEmployeePortalPage(pageName, employee) {
             return !readIds.has(msg.firestoreId);
         }).length;
 
-        // --- Info banner bubble (admin broadcast) ---
         const infoBanner = (() => {
             const key = `dismiss_info_${employee.uid}`;
             const dismissed = localStorage.getItem(key);
@@ -523,7 +520,7 @@ function renderEmployeePortalPage(pageName, employee) {
                         <div class="glass rounded-2xl p-4 flex items-center justify-between fade-up"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full flex items-center justify-center" style="background:rgba(107,105,214,.12)"><i data-lucide="mail" style="color:#6B69D6" class="w-5 h-5"></i></div><div><div class="text-xl font-extrabold text-slate-800">${unreadCount}</div><div class="text-xs text-slate-500">پیام‌های نخوانده</div></div></div></div>
                         <div class="glass rounded-2xl p-4 flex items-center justify-between fade-up"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full flex items-center justify-center" style="background:rgba(107,105,214,.12)"><i data-lucide="target" style="color:#6B69D6" class="w-5 h-5"></i></div><div><div class="text-xl font-extrabold text-slate-800">${okrAvg}%</div><div class="text-xs text-slate-500">میانگین OKR</div></div></div></div>
                     </div>
-                        
+                    
                         <div id="my-tasks-widget" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
                             <h3 class="font-semibold text-slate-800 flex items-center gap-2 mb-4">
                                 <i data-lucide="check-square" class="w-5 h-5 text-indigo-500"></i>
@@ -532,8 +529,7 @@ function renderEmployeePortalPage(pageName, employee) {
                             <div id="my-tasks-list" class="space-y-3">
                                 </div>
                         </div>
-                                            
-                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                                            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
                         <div class="flex items-center gap-4 mb-4"><div class="w-16 h-16 rounded-full overflow-hidden bg-slate-100 ring-2 ring-indigo-100"><img src="${employee.avatar}" alt="${employee.name}" class="w-full h-full object-cover"></div><div><div class="text-lg font-bold text-slate-800">${employee.name}</div><div class="text-sm text-slate-500">${employee.jobTitle || 'بدون عنوان شغلی'}</div></div></div>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm"><div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500 mb-1">ایمیل</div><div class="font-medium text-slate-700">${employee.personalInfo?.email || '-'}</div></div><div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500 mb-1">شماره موبایل</div><div class="font-medium text-slate-700">${employee.personalInfo?.phone || '-'}</div></div><div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500 mb-1">تیم</div><div class="font-medium text-slate-700">${(state.teams.find(t=>t.memberIds?.includes(employee.id))?.name) || '-'}</div></div><div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500 mb-1">مدیر</div><div class="font-medium text-slate-700">${manager?.name || '-'}</div></div><div class="sm:col-span-2 bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500 mb-1">آدرس</div><div class="font-medium text-slate-700">${employee.personalInfo?.address || '-'}</div></div></div>
                     </div>
