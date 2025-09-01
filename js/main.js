@@ -5637,6 +5637,9 @@ const showEvaluationForm = (emp, cycle) => {
 // فایل: js/main.js - این تابع جدید را اضافه کنید
 
 // [!code start]
+// فایل: js/main.js
+// ▼▼▼ این تابع را به طور کامل با نسخه جدید جایگزین کنید ▼▼▼
+
 const showSelfAssessmentForm = (emp, cycle) => {
     modalTitle.innerText = `خودارزیابی عملکرد: ${cycle.title}`;
     modalContent.innerHTML = `
@@ -5659,9 +5662,46 @@ const showSelfAssessmentForm = (emp, cycle) => {
 
     document.getElementById('self-assessment-form').addEventListener('submit', async (e) => {
         e.preventDefault();
-        // TODO: منطق ذخیره‌سازی خودارزیابی در دیتابیس
-        showToast("خودارزیابی شما ثبت شد (منطق ذخیره‌سازی در مرحله بعد کامل می‌شود).");
-        closeModal(mainModal, mainModalContainer);
+        const saveBtn = e.target.querySelector('button[type="submit"]');
+        saveBtn.disabled = true;
+        saveBtn.innerText = "در حال ثبت...";
+
+        const selfAssessmentData = {
+            strengths: document.getElementById('self-strengths').value,
+            improvementAreas: document.getElementById('self-improvement').value,
+            submittedAt: serverTimestamp()
+        };
+
+        try {
+            // ۱. پیدا کردن داکیومنت ارزیابی مربوط به این کارمند و این دوره
+            const evaluationsCol = collection(db, `artifacts/${appId}/public/data/employeeEvaluations`);
+            const q = query(evaluationsCol, where("employeeId", "==", emp.id), where("cycleId", "==", cycle.firestoreId));
+            const querySnapshot = await getDocs(q);
+
+            if (querySnapshot.empty) {
+                // این حالت نباید اتفاق بیفتد اگر فاز ۱ درست کار کرده باشد
+                throw new Error("داکیومنت ارزیابی برای این کاربر یافت نشد.");
+            }
+
+            const evalDoc = querySnapshot.docs[0];
+            const evalRef = doc(db, `artifacts/${appId}/public/data/employeeEvaluations`, evalDoc.id);
+            
+            // ۲. آپدیت داکیومنت با اطلاعات خودارزیابی و تغییر وضعیت
+            await updateDoc(evalRef, {
+                selfAssessment: selfAssessmentData,
+                status: 'pending_manager_review' // وضعیت را برای اقدام مدیر تغییر می‌دهیم
+            });
+
+            showToast("خودارزیابی شما با موفقیت ثبت شد.");
+            closeModal(mainModal, mainModalContainer);
+            renderMyTasks(emp); // تسک را از لیست کارهای کارمند حذف می‌کند
+
+        } catch (error) {
+            console.error("Error saving self-assessment:", error);
+            showToast("خطا در ثبت خودارزیابی.", "error");
+            saveBtn.disabled = false;
+            saveBtn.innerText = "ثبت خودارزیابی";
+        }
     });
 };
 // [!code end]
