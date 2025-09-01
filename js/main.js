@@ -3720,7 +3720,7 @@ const viewEmployeeProfile = (employeeId) => {
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
-                        ${canEdit() ? `<button id="main-edit-employee-btn" class="primary-btn text-xs">ویرایش کارمند</button>` : ''}
+                       ${evaluationButtonHtml} ${canEdit() ? `<button id="main-edit-employee-btn" class="secondary-btn text-xs">ویرایش کارمند</button>` : ''}
                         ${canEdit() ? `<button id="change-avatar-btn" class="secondary-btn text-xs">تغییر عکس</button>` : ''}
                         ${canEdit() ? `<button id="delete-avatar-btn" class="secondary-btn text-xs">حذف عکس</button>` : ''}
                         <span class="px-3 py-1 rounded-full text-xs font-bold bg-white/20 text-white">${emp.status}</span>
