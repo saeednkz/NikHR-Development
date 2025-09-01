@@ -3502,6 +3502,16 @@ function setupProfileModalListeners(emp) {
         const btn = e.target.closest('button');
         if (!btn) return;
         const id = btn.id;
+                // [!code start]
+        if (id === 'start-evaluation-btn') {
+            const cycleId = btn.dataset.cycleId;
+            const cycle = state.evaluationCycles.find(c => c.firestoreId === cycleId);
+            if (emp && cycle) {
+                showEvaluationForm(emp, cycle);
+            }
+            return;
+        }
+        // [!code end]
         try {
             if (id === 'change-avatar-btn') {
                 const input = document.createElement('input');
@@ -3686,7 +3696,15 @@ const viewEmployeeProfile = (employeeId) => {
     const analysis = generateSmartAnalysis(emp);
     const team = state.teams.find(t => t.memberIds?.includes(emp.id));
     const manager = team ? state.employees.find(e => e.id === team.leaderId) : null;
-
+    // پیدا کردن دوره ارزیابی فعال
+    const activeCycle = (state.evaluationCycles || []).find(c => c.status === 'active');
+    let evaluationButtonHtml = '';
+    if (activeCycle && canEdit()) {
+        // چک می‌کنیم آیا برای این کارمند در این دوره، ارزیابی‌ای ثبت شده یا نه
+        // const existingEval = (state.employeeEvaluations || []).find(e => e.employeeId === emp.id && e.cycleId === activeCycle.firestoreId);
+        evaluationButtonHtml = `<button id="start-evaluation-btn" data-cycle-id="${activeCycle.firestoreId}" class="primary-btn text-xs">شروع ارزیابی عملکرد</button>`;
+    }
+    //
     modalTitle.innerText = 'پروفایل ۳۶۰ درجه: ' + emp.name;
     modalContent.innerHTML = `
         <div class="space-y-6">
@@ -5378,6 +5396,81 @@ const setupAnalyticsPage = () => {
     renderTeamHealthChart();
     setupSkillGapFinder();
 };
+// فایل: js/main.js - این تابع جدید را اضافه کنید
+
+// [!code start]
+const showEvaluationForm = (emp, cycle) => {
+    modalTitle.innerText = `ارزیابی عملکرد: ${emp.name} (${cycle.title})`;
+
+    // ۱. پیدا کردن شایستگی‌های مرتبط با سطح شغلی کارمند
+    const position = state.jobPositions.find(p => p.firestoreId === emp.jobPositionId);
+    const relevantCompetencyIds = new Set(position ? position.competencyIds : []);
+    const competenciesForReview = state.competencies.filter(c => relevantCompetencyIds.has(c.firestoreId));
+    
+    const competenciesHtml = competenciesForReview.length > 0 ? competenciesForReview.map(comp => `
+        <div class="mb-3 p-3 bg-slate-50 rounded-lg border">
+            <label class="block text-sm font-medium text-slate-700">${comp.name}</label>
+            <p class="text-xs text-slate-500 mb-2">امتیاز مدیر به این شایستگی (۱ تا ۵):</p>
+            <input type="number" class="competency-score w-full p-2 border rounded-md" data-id="${comp.firestoreId}" min="1" max="5" value="3" required>
+        </div>
+    `).join('') : '<p class="text-sm text-slate-500">شایستگی‌ای برای پوزیشن شغلی این کارمند تعریف نشده است.</p>';
+
+    // ۲. پیدا کردن اهداف تیمی کارمند
+    const team = state.teams.find(t => t.memberIds?.includes(emp.id));
+    const teamOkrsHtml = (team?.okrs || []).map((okr, index) => `
+        <div class="mb-3 p-3 bg-slate-50 rounded-lg border">
+            <label class="block text-sm font-medium text-slate-700">${okr.title} (پیشرفت تیم: ${okr.progress}%)</label>
+            <p class="text-xs text-slate-500 mb-2">امتیاز مدیر به میزان مشارکت کارمند در این هدف (۱ تا ۵):</p>
+            <input type="number" class="okr-score w-full p-2 border rounded-md" data-index="${index}" min="1" max="5" value="3" required>
+        </div>
+    `).join('') || '<p class="text-sm text-slate-500">تیم این کارمند هدفی (OKR) ثبت شده ندارد.</p>';
+
+
+    modalContent.innerHTML = `
+        <form id="evaluation-form" class="space-y-6">
+            <div>
+                <h4 class="font-bold text-lg mb-2 text-slate-600">۱. خودارزیابی کارمند</h4>
+                <div class="p-4 bg-slate-100 rounded-lg border text-sm text-slate-700 min-h-[100px]">
+                    <p>کاربر هنوز خودارزیابی را تکمیل نکرده است.</p> 
+                </div>
+            </div>
+
+            <div>
+                <h4 class="font-bold text-lg mb-2 text-indigo-600">۲. ارزیابی شایستگی‌های شغلی</h4>
+                ${competenciesHtml}
+            </div>
+            <div>
+                <h4 class="font-bold text-lg mb-2 text-indigo-600">۳. ارزیابی مشارکت در اهداف تیمی (OKRs)</h4>
+                ${teamOkrsHtml}
+            </div>
+            <div>
+                <h4 class="font-bold text-lg mb-2 text-indigo-600">۴. بازخورد کیفی مدیر</h4>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">نقاط قوت کلیدی</label>
+                        <textarea id="strengths" class="w-full p-2 border rounded-md" rows="3" required></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">زمینه‌های قابل بهبود</label>
+                        <textarea id="areasForImprovement" class="w-full p-2 border rounded-md" rows="3" required></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end pt-4 border-t">
+                <button type="submit" class="primary-btn">ثبت نهایی ارزیابی</button>
+            </div>
+        </form>
+    `;
+
+    document.getElementById('evaluation-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        // TODO: منطق ذخیره‌سازی ارزیابی در دیتابیس در قدم بعدی پیاده‌سازی خواهد شد.
+        showToast("منطق ذخیره‌سازی در مرحله بعد پیاده‌سازی می‌شود.");
+        closeModal(mainModal, mainModalContainer);
+    });
+};
+// [!code end]
 const showExpenseForm = () => {
         modalTitle.innerText = 'افزودن هزینه جدید';
         const cardOptions = state.pettyCashCards.map(c => `<option value="${c.firestoreId}">${c.name}</option>`).join('');
