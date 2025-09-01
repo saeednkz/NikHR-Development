@@ -213,7 +213,7 @@ function listenToData() {
     
     const collectionsToListen = [
         'employees', 'teams', 'reminders', 'surveyResponses', 'users', 
-        'competencies', 'requests', 'assignmentRules', 'companyDocuments', 'announcements', 'birthdayWishes', 'moments','jobPositions'
+        'competencies', 'requests', 'assignmentRules', 'companyDocuments', 'announcements', 'birthdayWishes', 'moments','jobPositions','evaluationCycles'
     ];
     let initialLoads = collectionsToListen.length;
 
@@ -3347,6 +3347,7 @@ settings: () => {
                 <button data-tab="positions" class="settings-tab secondary-btn text-xs py-2 px-3">پوزیشن‌های شغلی</button>
                 <button data-tab="competencies" class="settings-tab secondary-btn text-xs py-2 px-3">شایستگی‌ها</button>
                 <button data-tab="rules" class="settings-tab secondary-btn text-xs py-2 px-3">قوانین واگذاری</button>
+                <button data-tab="evaluation" class="settings-tab secondary-btn text-xs py-2 px-3">مدیریت ارزیابی</button>
             </nav>
         </div>
 
@@ -3365,6 +3366,53 @@ settings: () => {
 
             <div id="tab-rules" class="settings-tab-pane hidden">
                 <div class="card p-6"><div class="flex justify-between items-center mb-4"><h3 class="font-semibold text-lg flex items-center"><i data-lucide="git-branch-plus" class="ml-2 text-purple-500"></i>قوانین واگذاری هوشمند</h3><button id="add-rule-btn" class="primary-btn text-sm">افزودن قانون جدید</button></div><div id="rules-list" class="space-y-3">${rulesHtml || '<p class="text-center text-sm text-slate-400">قانونی تعریف نشده است.</p>'}</div><div class="mt-6 border-t pt-4"><h4 class="font-semibold text-md mb-2">واگذاری پیش‌فرض</h4><p class="text-sm text-slate-500 mb-2">درخواست‌هایی که با هیچ قانونی مطابقت ندارند به صورت پیش‌فرض به کاربر زیر واگذار می‌شوند:</p><select id="default-assignee-select" class="p-2 border rounded-md bg-white"><option value="">هیچکس</option>${admins.map(admin => `<option value="${admin.firestoreId}" ${defaultRule?.assigneeUid === admin.firestoreId ? 'selected' : ''}>${admin.name || admin.email}</option>`).join('')}</select></div></div>
+            </div>
+        </div>
+    `;
+},
+    evaluation: () => {
+    const cycles = (state.evaluationCycles || []).sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0));
+    const cyclesHtml = cycles.map(cycle => {
+        const statusMap = {
+            'planning': { text: 'در حال برنامه‌ریزی', color: 'bg-yellow-100 text-yellow-800' },
+            'active': { text: 'فعال', color: 'bg-green-100 text-green-800' },
+            'closed': { text: 'بسته شده', color: 'bg-slate-100 text-slate-800' }
+        };
+        const status = statusMap[cycle.status] || { text: cycle.status, color: 'bg-slate-100' };
+        return `
+            <tr class="border-b">
+                <td class="p-3 font-semibold">${cycle.title}</td>
+                <td class="p-3 text-sm">${toPersianDate(cycle.startDate)}</td>
+                <td class="p-3 text-sm">${toPersianDate(cycle.endDate)}</td>
+                <td class="p-3"><span class="px-2 py-1 text-xs font-medium rounded-full ${status.color}">${status.text}</span></td>
+                <td class="p-3 text-left">
+                    ${cycle.status === 'planning' ? `<button class="start-cycle-btn text-green-600 hover:underline text-xs mr-2" data-id="${cycle.firestoreId}">شروع دوره</button>` : ''}
+                    <button class="edit-cycle-btn p-2 text-slate-500 hover:text-blue-600" data-id="${cycle.firestoreId}"><i data-lucide="edit" class="w-4 h-4"></i></button>
+                    <button class="delete-cycle-btn p-2 text-slate-500 hover:text-red-600" data-id="${cycle.firestoreId}"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                </td>
+            </tr>
+        `;
+    }).join('') || '<tr><td colspan="5" class="text-center p-4 text-slate-500">هیچ دوره‌ای تعریف نشده است.</td></tr>';
+
+    return `
+        <div class="card p-0">
+            <div class="flex justify-between items-center p-5 border-b">
+                <h3 class="font-semibold text-lg flex items-center"><i data-lucide="refresh-cw" class="ml-2 text-blue-500"></i>دوره‌های ارزیابی عملکرد</h3>
+                <button id="add-cycle-btn" class="primary-btn text-sm">ایجاد دوره جدید</button>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-slate-50">
+                        <tr>
+                            <th class="p-3 text-right">عنوان دوره</th>
+                            <th class="p-3 text-right">تاریخ شروع</th>
+                            <th class="p-3 text-right">تاریخ پایان</th>
+                            <th class="p-3 text-right">وضعیت</th>
+                            <th class="p-3 text-right"></th>
+                        </tr>
+                    </thead>
+                    <tbody>${cyclesHtml}</tbody>
+                </table>
             </div>
         </div>
     `;
@@ -4051,6 +4099,11 @@ const renderPage = (pageName) => {
                 setupSettingsPageListeners();
             }
         }
+        if (pageName === 'evaluation') {
+    if (isAdmin()) {
+        setupEvaluationPageListeners();
+    }
+}
         lucide.createIcons();
     } catch (error) {
         console.error("Failed to render page:", pageName, error);
@@ -4950,6 +5003,23 @@ const setupSettingsPageListeners = () => {
             });
         });
     });
+    mainContentArea.querySelectorAll('.settings-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        const pageName = tab.dataset.tab;
+        // اگر تب مربوط به صفحه دیگری است، با navigateTo آن را مدیریت کن
+        if (pageName === 'evaluation') {
+            navigateTo('evaluation');
+            return;
+        }
+        // در غیر این صورت، همان منطق قبلی برای تب‌های داخلی تنظیمات
+        mainContentArea.querySelectorAll('.settings-tab').forEach(t => { t.classList.remove('primary-btn'); t.classList.add('secondary-btn'); });
+        tab.classList.add('primary-btn');
+        tab.classList.remove('secondary-btn');
+        mainContentArea.querySelectorAll('.settings-tab-pane').forEach(pane => {
+            pane.classList.toggle('hidden', pane.id !== `tab-${tab.dataset.tab}`);
+        });
+    });
+});
 
     // مدیریت کلیک روی دکمه‌های مختلف در کل صفحه تنظیمات
     mainContentArea.addEventListener('click', (e) => {
@@ -6258,6 +6328,99 @@ const handleNavClick = (e) => {
     // بخش ۵: روتر اصلی برنامه
     window.addEventListener('hashchange', router);
 };
+// فایل: js/main.js - اضافه کردن توابع جدید
+
+// [!code start]
+const showEvaluationCycleForm = (cycleId = null) => {
+    const isEditing = cycleId !== null;
+    const cycle = isEditing ? state.evaluationCycles.find(c => c.firestoreId === cycleId) : {};
+    modalTitle.innerText = isEditing ? 'ویرایش دوره ارزیابی' : 'ایجاد دوره ارزیابی جدید';
+    modalContent.innerHTML = `
+        <form id="cycle-form" class="space-y-4">
+            <div>
+                <label class="block font-medium">عنوان دوره</label>
+                <input id="cycle-title" class="w-full p-2 border rounded-md mt-1" value="${cycle.title || ''}" placeholder="مثال: ارزیابی زمستان ۱۴۰۴" required>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block font-medium">تاریخ شروع</label>
+                    <input id="cycle-start-date" class="w-full p-2 border rounded-md mt-1" required>
+                </div>
+                <div>
+                    <label class="block font-medium">تاریخ پایان</label>
+                    <input id="cycle-end-date" class="w-full p-2 border rounded-md mt-1" required>
+                </div>
+            </div>
+            <div class="flex justify-end mt-4">
+                <button type="submit" class="primary-btn">ذخیره</button>
+            </div>
+        </form>
+    `;
+    openModal(mainModal, mainModalContainer);
+    activatePersianDatePicker('cycle-start-date', cycle.startDate);
+    activatePersianDatePicker('cycle-end-date', cycle.endDate);
+
+    document.getElementById('cycle-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const title = document.getElementById('cycle-title').value.trim();
+        const startDate = persianToEnglishDate(document.getElementById('cycle-start-date').value);
+        const endDate = persianToEnglishDate(document.getElementById('cycle-end-date').value);
+
+        if (!title || !startDate || !endDate) {
+            showToast('لطفاً تمام فیلدها را پر کنید.', 'error');
+            return;
+        }
+
+        const cycleData = { title, startDate, endDate, status: cycle.status || 'planning' };
+
+        try {
+            if (isEditing) {
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/evaluationCycles`, cycleId), cycleData);
+            } else {
+                await addDoc(collection(db, `artifacts/${appId}/public/data/evaluationCycles`), cycleData);
+            }
+            showToast('دوره ارزیابی با موفقیت ذخیره شد.');
+            closeModal(mainModal, mainModalContainer);
+        } catch (error) {
+            showToast('خطا در ذخیره‌سازی دوره.', 'error');
+        }
+    });
+};
+
+const setupEvaluationPageListeners = () => {
+    const mainContentArea = document.getElementById('main-content');
+    mainContentArea.addEventListener('click', (e) => {
+        const addBtn = e.target.closest('#add-cycle-btn');
+        const editBtn = e.target.closest('.edit-cycle-btn');
+        const deleteBtn = e.target.closest('.delete-cycle-btn');
+        const startBtn = e.target.closest('.start-cycle-btn');
+
+        if (addBtn) showEvaluationCycleForm();
+        if (editBtn) showEvaluationCycleForm(editBtn.dataset.id);
+
+        if (deleteBtn) {
+            showConfirmationModal('حذف دوره', 'آیا مطمئن هستید؟ تمام ارزیابی‌های مرتبط با این دوره نیز حذف خواهند شد!', async () => {
+                try {
+                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/evaluationCycles`, deleteBtn.dataset.id));
+                    showToast("دوره با موفقیت حذف شد.");
+                } catch (error) { showToast("خطا در حذف دوره.", "error"); }
+            });
+        }
+
+        if (startBtn) {
+            showConfirmationModal('شروع دوره ارزیابی', 'با شروع دوره، ارزیابی برای تمام کارمندان فعال ایجاد می‌شود. آیا ادامه می‌دهید؟', async () => {
+                const cycleId = startBtn.dataset.id;
+                try {
+                    // TODO: در آینده این بخش باید یک Cloud Function را فراخوانی کند
+                    // تا ارزیابی‌ها را در بک‌اند بسازد.
+                    await updateDoc(doc(db, `artifacts/${appId}/public/data/evaluationCycles`, cycleId), { status: 'active' });
+                    showToast("دوره ارزیابی با موفقیت فعال شد.");
+                } catch (error) { showToast("خطا در فعال‌سازی دوره.", "error"); }
+            });
+        }
+    });
+};
+// [!code end]
 const setupDocumentsPageListeners = () => {
     const main = document.getElementById('main-content');
     if (!main) return;
