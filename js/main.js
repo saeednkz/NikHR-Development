@@ -3792,7 +3792,7 @@ const viewEmployeeProfile = (employeeId) => {
     if (!emp) return;
     const analysis = generateSmartAnalysis(emp);
     const team = state.teams.find(t => t.memberIds?.includes(emp.id));
-    const manager = team ? state.employees.find(e => e.id === team.leaderId) : null;
+  const manager = team ? state.employees.find(e => e.id === team.leadership?.manager) : null;
 
     modalTitle.innerText = 'پروفایل ۳۶۰ درجه: ' + emp.name;
     modalContent.innerHTML = `
