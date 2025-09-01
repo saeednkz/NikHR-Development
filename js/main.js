@@ -6170,6 +6170,9 @@ const isProfileComplete = (employee) => {
 // فایل: js/main.js
 // ▼▼▼ کل این تابع را با نسخه کامل و صحیح زیر جایگزین کنید ▼▼▼
 
+// فایل: js/main.js
+// ▼▼▼ کل این تابع را با نسخه کامل و صحیح زیر جایگزین کنید ▼▼▼
+
 const showEmployeeForm = (employeeId = null) => {
     const isEditing = employeeId !== null;
     const emp = isEditing ? state.employees.find(e => e.firestoreId === employeeId) : {};
@@ -6235,7 +6238,6 @@ const showEmployeeForm = (employeeId = null) => {
                         ${teamOptions}
                     </select>
                 </div>
-                
                 <div id="managed-team-container" class="hidden bg-white border rounded-xl p-4 border-indigo-200">
                     <label for="managed-team-select" class="block text-xs font-semibold text-indigo-700">تیم تحت مدیریت</label>
                     <p class="text-xs text-slate-500 mb-2">این فرد مدیر کدام تیم است؟</p>
@@ -6244,7 +6246,6 @@ const showEmployeeForm = (employeeId = null) => {
                         ${teamOptions}
                     </select>
                 </div>
-                
                 <div class="bg-white border rounded-xl p-4">
                     <label for="status" class="block text-xs font-semibold text-slate-500">وضعیت</label>
                     <select id="status" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg bg-white">
@@ -6265,7 +6266,6 @@ const showEmployeeForm = (employeeId = null) => {
     openModal(mainModal, mainModalContainer);
     activatePersianDatePicker('startDate', emp.startDate);
 
-    // ۲. منطق جاوااسکریپت برای نمایش داینامیک فیلد
     const levelSelect = document.getElementById('level');
     const managedTeamContainer = document.getElementById('managed-team-container');
     const toggleManagedTeamVisibility = () => {
@@ -6279,7 +6279,6 @@ const showEmployeeForm = (employeeId = null) => {
     levelSelect.addEventListener('change', toggleManagedTeamVisibility);
     toggleManagedTeamVisibility();
 
-    // ۳. منطق ذخیره‌سازی آپدیت شده
     document.getElementById('employee-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         const saveBtn = e.target.querySelector('button[type="submit"]');
@@ -6329,10 +6328,16 @@ const showEmployeeForm = (employeeId = null) => {
             const employeeDataForCreation = { ...employeeCoreData, avatar: `https://placehold.co/100x100/E2E8F0/4A5568?text=${name.substring(0, 2)}`, personalInfo: { email: email } };
             try {
                 const createNewEmployee = httpsCallable(functions, 'createNewEmployee');
+                // [!code start]
+                // کد اصلاح شده برای ارسال اطلاعات کامل به Cloud Function
                 const result = await createNewEmployee({ 
+                    name: name,
+                    employeeId: employeeId,
+                    email: email,
                     employeeData: employeeDataForCreation,
                     teamId: selectedTeamId
                 });
+                // [!code end]
                 
                 if (managedTeamId && result.data.success) {
                     const newManagedTeamRef = doc(db, `artifacts/${appId}/public/data/teams`, managedTeamId);
