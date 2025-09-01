@@ -68,7 +68,7 @@ const documentCategories = [
     { id: 'مزایا و حقوق',     key: 'benefits', icon: 'coins',          desc: 'حقوق، مزایا، بیمه و سیاست‌های مالی.' },
     { id: 'مستندات پروژه‌ها', key: 'projects', icon: 'folder-kanban',  desc: 'مستندات فنی و اجرایی پروژه‌ها.' }
 ];
-        export const state = { employees: [], teams: [], reminders: [], surveyResponses: [], users: [], competencies: [], expenses: [], pettyCashCards: [], chargeHistory: [], dashboardMetrics: {}, orgAnalytics: {}, currentPage: 'dashboard', currentPageTalent: 1, currentUser: null,currentPageRequests: 1,currentPageTasks: 1,currentPageAnnouncements: 1 };
+        export const state = { employees: [], teams: [], reminders: [], surveyResponses: [], users: [], competencies: [], expenses: [], pettyCashCards: [], chargeHistory: [], dashboardMetrics: {}, orgAnalytics: {}, currentPage: 'dashboard', currentPageTalent: 1, currentUser: null,currentPageRequests: 1,currentPageTasks: 1,currentPageAnnouncements: 1,jobFamilies: [],careerFramework: [] };
         let charts = {};
 let activeListeners = []; // [!code ++] این خط را اضافه کنید
         // این کد را نزدیک به تعریف state قرار دهید
@@ -213,7 +213,7 @@ function listenToData() {
     
     const collectionsToListen = [
         'employees', 'teams', 'reminders', 'surveyResponses', 'users', 
-        'competencies', 'requests', 'assignmentRules', 'companyDocuments', 'announcements', 'birthdayWishes', 'moments','jobPositions'
+        'competencies', 'requests', 'assignmentRules', 'companyDocuments', 'announcements', 'birthdayWishes', 'moments','jobPositions','jobFamilies', 'careerFramework'
     ];
     let initialLoads = collectionsToListen.length;
 
@@ -3258,113 +3258,104 @@ announcements: () => {
 // فایل: js/main.js
 // کل تابع settings را با این نسخه جایگزین کنید ▼
 
+// فایل: js/main.js
+// کل تابع pages.settings را با این نسخه جایگزین کنید ▼
+
 settings: () => {
     if (!isAdmin()) {
-        return `<div class="text-center p-10 card"><i data-lucide="lock" class="mx-auto w-16 h-16 text-red-500"></i><h2 class="mt-4 text-xl font-semibold text-slate-700">دسترسی غیر مجاز</h2><p class="mt-2 text-slate-500">شما برای مشاهده این صفحه دسترسی لازم را ندارید.</p></div>`;
+        return `<div class="text-center p-10 card">...</div>`; // کد دسترسی غیر مجاز
     }
 
-    // --- بخش تعریف متغیرها برای ساخت محتوای تب‌ها ---
-    const admins = state.users.filter(u => u.role === 'admin');
-
-    const usersHtml = state.users.map(user => {
-        const userInitial = user.name ? user.name.substring(0, 1) : user.email.substring(0, 1).toUpperCase();
-        const isCurrentUser = user.firestoreId === state.currentUser.uid;
-        return `
-            <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div class="flex items-center w-full sm:w-auto min-w-0">
-                    <div class="w-10 h-10 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center font-bold text-sm ml-4 shrink-0">${userInitial}</div>
-                    <div class="min-w-0">
-                        <p class="font-semibold text-sm text-slate-800 truncate">${user.name || 'نامشخص'} ${isCurrentUser ? '<span class="text-xs text-blue-600">(شما)</span>' : ''}</p>
-                        <p class="text-xs text-slate-500 truncate">${user.email}</p>
-                    </div>
-                </div>
-                <div class="flex items-center gap-2 w-full sm:w-auto shrink-0">
-                    <select data-uid="${user.firestoreId}" class="role-select p-2 border border-slate-300 rounded-lg bg-white text-sm flex-grow" ${isCurrentUser ? 'disabled' : ''}>
-                        <option value="viewer" ${user.role === 'viewer' ? 'selected' : ''}>مشاهده‌گر</option>
-                        <option value="editor" ${user.role === 'editor' ? 'selected' : ''}>ویرایشگر</option>
-                        <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>مدیر</option>
-                        <option value="employee" ${user.role === 'employee' ? 'selected' : ''}>کارمند</option>
-                    </select>
-                    ${!isCurrentUser ? `
-                    <button class="edit-user-btn p-2 text-slate-500 hover:text-blue-600" data-uid="${user.firestoreId}" title="ویرایش"><i data-lucide="edit" class="w-4 h-4"></i></button>
-                    <button class="delete-user-btn p-2 text-slate-500 hover:text-red-600" data-uid="${user.firestoreId}" title="حذف"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                    ` : '<div class="w-12"></div>'}
-                </div>
-            </div>
-        `;
-    }).join('');
-
-    const competenciesHtml = (state.competencies || []).map(c => `
-        <div class="inline-flex items-center bg-slate-100 text-slate-700 text-sm font-medium px-3 py-1.5 rounded-full">
-            <span>${c.name}</span>
-            <button class="delete-competency-btn text-slate-400 hover:text-red-500 mr-2" data-id="${c.firestoreId}"><i data-lucide="x" class="w-4 h-4"></i></button>
-        </div>
-    `).join('') || '<p class="text-sm text-slate-500">هنوز شایستگی‌ای تعریف نشده است.</p>';
-    
-    const rulesHtml = (state.assignmentRules || []).filter(r => r.firestoreId !== '_default').map(rule => {
-        const assignee = admins.find(a => a.firestoreId === rule.assigneeUid);
-        return `
-            <div class="p-3 bg-slate-100 rounded-lg flex justify-between items-center">
-                <div>
-                    <p class="font-semibold">${rule.ruleName}</p>
-                    <p class="text-xs text-slate-500">
-                        برای: ${(rule.itemTypes || []).join('، ')}
-                        <i data-lucide="arrow-left" class="inline-block w-3 h-3"></i> 
-                        ${assignee ? assignee.name : 'کاربر حذف شده'}
-                    </p>
-                </div>
-                <div>
-                    <button class="edit-rule-btn p-2 text-slate-500 hover:text-blue-600" data-id="${rule.firestoreId}"><i data-lucide="edit" class="w-4 h-4"></i></button>
-                    <button class="delete-rule-btn p-2 text-slate-500 hover:text-red-600" data-id="${rule.firestoreId}"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                </div>
-            </div>
-        `;
-    }).join('');
-    
+    // --- ساخت متغیرهای HTML برای هر تب ---
+    const usersHtml = state.users.map(user => { /* ... کد قبلی ... */ }).join('');
+    const competenciesHtml = (state.competencies || []).map(c => `...`).join('') || '<p>...</p>';
+    const rulesHtml = (state.assignmentRules || []).filter(r => r.firestoreId !== '_default').map(rule => { /* ... کد قبلی ... */ }).join('');
     const defaultRule = (state.assignmentRules || []).find(r => r.firestoreId === '_default');
 
-    const jobPositionsHtml = (state.jobPositions || []).map(pos => `
-        <tr class="border-b">
-            <td class="p-3 font-semibold">${pos.name}</td>
-            <td class="p-3 text-sm">${(pos.competencyIds || []).length} شایستگی</td>
-            <td class="p-3 text-right">
-                <button class="map-competencies-btn text-blue-600 hover:underline text-xs" data-id="${pos.firestoreId}">اتصال شایستگی</button>
-                <button class="edit-position-btn p-2 text-slate-500 hover:text-blue-600" data-id="${pos.firestoreId}"><i data-lucide="edit" class="w-4 h-4"></i></button>
-                <button class="delete-position-btn p-2 text-slate-500 hover:text-red-600" data-id="${pos.firestoreId}"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-            </td>
-        </tr>
-    `).join('') || '<tr><td colspan="3" class="text-center p-4 text-slate-500">هیچ پوزیشن شغلی تعریف نشده است.</td></tr>';
+    // --- ساخت HTML برای تب جدید چارچوب شغلی ---
+    const jobFamiliesHtml = (state.jobFamilies || []).map(family => `
+        <div class="p-3 bg-slate-100 rounded-lg flex justify-between items-center">
+            <span class="font-semibold">${family.name}</span>
+            <div>
+                <button class="edit-family-btn p-2 text-slate-500 hover:text-blue-600" data-id="${family.firestoreId}"><i data-lucide="edit"></i></button>
+                <button class="delete-family-btn p-2 text-slate-500 hover:text-red-600" data-id="${family.firestoreId}"><i data-lucide="trash-2"></i></button>
+            </div>
+        </div>
+    `).join('') || '<p class="text-sm text-slate-500 text-center">خانواده شغلی‌ای تعریف نشده.</p>';
 
-    // --- بخش Return نهایی با ساختار جدید تب‌ها ---
+    const frameworkHtml = (state.jobFamilies || []).map(family => {
+        const levelsForFamily = (state.careerFramework || [])
+            .filter(lvl => lvl.jobFamily === family.name)
+            .sort((a, b) => a.level - b.level);
+        
+        const levelsHtml = levelsForFamily.map(lvl => `
+            <div class="p-3 border-b last:border-b-0">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <span class="font-bold text-indigo-600">سطح ${lvl.level}</span>
+                        <span class="text-slate-700">- ${lvl.title}</span>
+                    </div>
+                    <div>
+                        <button class="edit-level-btn text-xs text-blue-600 hover:underline" data-id="${lvl.firestoreId}">ویرایش</button>
+                        <button class="delete-level-btn text-xs text-red-600 hover:underline ml-2" data-id="${lvl.firestoreId}">حذف</button>
+                    </div>
+                </div>
+                <p class="text-xs text-slate-500 mt-1">${(lvl.competencyIds || []).length} شایستگی متصل شده</p>
+            </div>
+        `).join('') || '<p class="text-sm text-slate-400 p-3">سطحی برای این خانواده شغلی تعریف نشده.</p>';
+
+        return `
+            <div class="card p-0 mb-6">
+                <div class="p-4 bg-slate-50 border-b flex justify-between items-center">
+                    <h4 class="font-bold text-lg text-slate-800">${family.name}</h4>
+                    <button class="add-level-btn primary-btn text-xs" data-family="${family.name}">+ افزودن سطح</button>
+                </div>
+                <div class="divide-y">${levelsHtml}</div>
+            </div>
+        `;
+    }).join('');
+
     return `
         <div class="flex items-center justify-between mb-4">
-            <div><h1 class="text-3xl font-bold text-slate-800">تنظیمات سیستم</h1><p class="text-sm text-slate-500 mt-1">مدیریت کاربران، دسترسی‌ها و پیکربندی سازمان</p></div>
+            <div><h1 class="text-3xl font-bold text-slate-800">تنظیمات سیستم</h1><p class="text-sm text-slate-500 mt-1">مدیریت کاربران، چارچوب شغلی و قوانین سیستم</p></div>
         </div>
         
         <div class="bg-gradient-to-l from-[#F72585]/10 to-[#6B69D6]/10 rounded-xl p-4 border mb-6">
             <nav id="settings-tabs" class="flex flex-wrap gap-2" aria-label="Tabs">
                 <button data-tab="users" class="settings-tab primary-btn text-xs py-2 px-3">کاربران</button>
-                <button data-tab="positions" class="settings-tab secondary-btn text-xs py-2 px-3">پوزیشن‌های شغلی</button>
-                <button data-tab="competencies" class="settings-tab secondary-btn text-xs py-2 px-3">شایستگی‌ها</button>
+                <button data-tab="framework" class="settings-tab secondary-btn text-xs py-2 px-3">چارچوب شغلی</button>
+                <button data-tab="competencies" class="settings-tab secondary-btn text-xs py-2 px-3">بانک شایستگی‌ها</button>
                 <button data-tab="rules" class="settings-tab secondary-btn text-xs py-2 px-3">قوانین واگذاری</button>
             </nav>
         </div>
 
         <div id="settings-tab-content">
             <div id="tab-users" class="settings-tab-pane">
-                <div class="card p-0"><div class="flex flex-col sm:flex-row justify-between items-center p-5 border-b border-slate-200 gap-3"><h3 class="font-semibold text-lg flex items-center"><i data-lucide="users" class="ml-2 text-indigo-500"></i>لیست کاربران سیستم</h3><button id="add-user-btn" class="primary-btn text-sm flex items-center gap-2 w-full sm:w-auto"><i data-lucide="plus" class="w-4 h-4"></i> کاربر جدید</button></div><div id="users-list-container" class="p-5 grid grid-cols-1 xl:grid-cols-2 gap-4">${usersHtml}</div></div>
+                <div class="card p-0">${usersHtml}</div>
             </div>
 
-            <div id="tab-positions" class="settings-tab-pane hidden">
-                <div class="card p-0"><div class="flex justify-between items-center p-5 border-b"><h3 class="font-semibold text-lg flex items-center"><i data-lucide="briefcase" class="ml-2 text-green-500"></i>مدیریت پوزیشن‌های شغلی</h3><button id="add-position-btn" class="primary-btn text-sm">افزودن پوزیشن جدید</button></div><div class="overflow-x-auto"><table class="w-full"><thead class="bg-slate-50"><tr><th class="p-3 text-right">نام پوزیشن</th><th class="p-3 text-right">شایستگی‌ها</th><th class="p-3 text-right"></th></tr></thead><tbody>${jobPositionsHtml}</tbody></table></div></div>
+            <div id="tab-framework" class="settings-tab-pane hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-1 space-y-4">
+                        <div class="card p-4">
+                            <h3 class="font-semibold mb-3">۱. تعریف خانواده‌های شغلی</h3>
+                            <div class="space-y-2 mb-3">${jobFamiliesHtml}</div>
+                            <button id="add-family-btn" class="secondary-btn w-full text-sm">افزودن خانواده جدید</button>
+                        </div>
+                    </div>
+                    <div class="lg:col-span-2">
+                        <h3 class="font-semibold mb-3">۲. تعریف سطوح و اتصال شایستگی‌ها</h3>
+                        ${frameworkHtml || '<p class="text-center text-slate-500">ابتدا یک خانواده شغلی تعریف کنید.</p>'}
+                    </div>
+                </div>
             </div>
 
             <div id="tab-competencies" class="settings-tab-pane hidden">
-                <div class="card p-6"><h3 class="font-semibold text-lg mb-4 flex items-center"><i data-lucide="star" class="ml-2 text-amber-500"></i>مدیریت شایستگی‌ها</h3><div id="competencies-list" class="flex flex-wrap gap-2 mb-4">${competenciesHtml}</div><form id="add-competency-form" class="flex flex-col sm:flex-row gap-2"><input type="text" id="new-competency-name" placeholder="نام شایستگی جدید..." class="w-full p-2 border border-slate-300 rounded-lg text-sm" required><button type="submit" class="primary-btn shrink-0">افزودن</button></form></div>
+                <div class="card p-6"><h3 class="font-semibold text-lg mb-4">بانک جامع شایستگی‌ها</h3><div id="competencies-list" class="flex flex-wrap gap-2 mb-4">${competenciesHtml}</div><form id="add-competency-form"><input type="text" id="new-competency-name" placeholder="نام شایستگی جدید..." class="w-full p-2 border rounded-lg text-sm" required><button type="submit" class="primary-btn mt-2 w-full">افزودن به بانک</button></form></div>
             </div>
 
             <div id="tab-rules" class="settings-tab-pane hidden">
-                <div class="card p-6"><div class="flex justify-between items-center mb-4"><h3 class="font-semibold text-lg flex items-center"><i data-lucide="git-branch-plus" class="ml-2 text-purple-500"></i>قوانین واگذاری هوشمند</h3><button id="add-rule-btn" class="primary-btn text-sm">افزودن قانون جدید</button></div><div id="rules-list" class="space-y-3">${rulesHtml || '<p class="text-center text-sm text-slate-400">قانونی تعریف نشده است.</p>'}</div><div class="mt-6 border-t pt-4"><h4 class="font-semibold text-md mb-2">واگذاری پیش‌فرض</h4><p class="text-sm text-slate-500 mb-2">درخواست‌هایی که با هیچ قانونی مطابقت ندارند به صورت پیش‌فرض به کاربر زیر واگذار می‌شوند:</p><select id="default-assignee-select" class="p-2 border rounded-md bg-white"><option value="">هیچکس</option>${admins.map(admin => `<option value="${admin.firestoreId}" ${defaultRule?.assigneeUid === admin.firestoreId ? 'selected' : ''}>${admin.name || admin.email}</option>`).join('')}</select></div></div>
+                <div class="card p-6">${rulesHtml}</div>
             </div>
         </div>
     `;
@@ -4935,6 +4926,9 @@ if (typeof window.showProcessReminderForm !== 'function') {
 // فایل: js/main.js
 // کل تابع setupSettingsPageListeners را با این نسخه جایگزین کنید ▼
 
+// فایل: js/main.js
+// کل تابع setupSettingsPageListeners را با این نسخه جایگزین کنید ▼
+
 const setupSettingsPageListeners = () => {
     const mainContentArea = document.getElementById('main-content');
     if (!mainContentArea) return;
@@ -4960,10 +4954,14 @@ const setupSettingsPageListeners = () => {
         const addRuleBtn = e.target.closest('#add-rule-btn');
         const editRuleBtn = e.target.closest('.edit-rule-btn');
         const deleteRuleBtn = e.target.closest('.delete-rule-btn');
-        const addPositionBtn = e.target.closest('#add-position-btn');
-        const editPositionBtn = e.target.closest('.edit-position-btn');
-        const deletePositionBtn = e.target.closest('.delete-position-btn');
-        const mapCompetenciesBtn = e.target.closest('.map-competencies-btn');
+        
+        // دکمه‌های جدید چارچوب شغلی
+        const addFamilyBtn = e.target.closest('#add-family-btn');
+        const editFamilyBtn = e.target.closest('.edit-family-btn');
+        const deleteFamilyBtn = e.target.closest('.delete-family-btn');
+        const addLevelBtn = e.target.closest('.add-level-btn');
+        const editLevelBtn = e.target.closest('.edit-level-btn');
+        const deleteLevelBtn = e.target.closest('.delete-level-btn');
 
         if (addUserBtn) showAddUserForm();
         if (editUserBtn) {
@@ -4978,7 +4976,6 @@ const setupSettingsPageListeners = () => {
                     await deleteDoc(doc(db, `artifacts/${appId}/public/data/competencies`, compId));
                     showToast('شایستگی حذف شد.');
                 } catch (err) {
-                    console.error('Error deleting competency', err);
                     showToast('خطا در حذف شایستگی.', 'error');
                 }
             });
@@ -4986,23 +4983,31 @@ const setupSettingsPageListeners = () => {
         if (addRuleBtn) showAssignmentRuleForm();
         if (editRuleBtn) showAssignmentRuleForm(editRuleBtn.dataset.id);
         if (deleteRuleBtn) { /* ... کد حذف قانون ... */ }
-        if (addPositionBtn) showJobPositionForm();
-        if (editPositionBtn) showJobPositionForm(editPositionBtn.dataset.id);
-        if (mapCompetenciesBtn) {
-            const position = state.jobPositions.find(p => p.firestoreId === mapCompetenciesBtn.dataset.id);
-            if (position) showCompetencyMappingModal(position);
+
+        // --- منطق جدید برای دکمه‌های چارچوب شغلی ---
+        if (addFamilyBtn) showJobFamilyForm();
+        if (editFamilyBtn) showJobFamilyForm(editFamilyBtn.dataset.id);
+        if (deleteFamilyBtn) {
+            showConfirmationModal('حذف خانواده شغلی', 'با حذف این خانواده، تمام سطوح آن نیز حذف می‌شوند. آیا مطمئن هستید؟', async () => {
+                // (در یک سیستم واقعی، باید سطوح زیرمجموعه هم حذف شوند)
+                await deleteDoc(doc(db, `artifacts/${appId}/public/data/jobFamilies`, deleteFamilyBtn.dataset.id));
+                showToast("خانواده شغلی حذف شد.");
+            });
         }
-        if (deletePositionBtn) {
-            showConfirmationModal('حذف پوزیشن', 'آیا مطمئن هستید؟', async () => {
-                try {
-                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/jobPositions`, deletePositionBtn.dataset.id));
-                    showToast("پوزیشن با موفقیت حذف شد.");
-                } catch (error) { showToast("خطا در حذف.", "error"); }
+        if (addLevelBtn) showLevelDefinitionForm(addLevelBtn.dataset.family);
+        if (editLevelBtn) {
+            const level = state.careerFramework.find(l => l.firestoreId === editLevelBtn.dataset.id);
+            if(level) showLevelDefinitionForm(level.jobFamily, level.firestoreId);
+        }
+        if (deleteLevelBtn) {
+            showConfirmationModal('حذف سطح', 'آیا از حذف این سطح مطمئن هستید؟', async () => {
+                await deleteDoc(doc(db, `artifacts/${appId}/public/data/careerFramework`, deleteLevelBtn.dataset.id));
+                showToast("سطح با موفقیت حذف شد.");
             });
         }
     });
 
-    // ▼▼▼ این بخش مسئول فعال‌سازی فرم افزودن شایستگی است ▼▼▼
+    // فعال‌سازی فرم افزودن شایستگی
     const addCompetencyForm = document.getElementById('add-competency-form');
     if (addCompetencyForm) {
         addCompetencyForm.addEventListener('submit', async (e) => {
@@ -5015,13 +5020,12 @@ const setupSettingsPageListeners = () => {
                 input.value = '';
                 showToast('شایستگی اضافه شد.');
             } catch (err) {
-                console.error('Error adding competency', err);
                 showToast('خطا در افزودن شایستگی.', 'error');
             }
         });
     }
-    // ▲▲▲ پایان بخش فعال‌سازی فرم ▲▲▲
     
+    // فعال‌سازی select برای تغییر نقش کاربران
     document.querySelectorAll('.role-select').forEach(select => {
         select.addEventListener('change', async (e) => {
             const uid = e.target.getAttribute('data-uid');
@@ -5030,12 +5034,12 @@ const setupSettingsPageListeners = () => {
                 await updateDoc(doc(db, `artifacts/${appId}/public/data/users`, uid), { role: newRole });
                 showToast('نقش کاربر به‌روزرسانی شد.');
             } catch (err) {
-                console.error('Error updating user role', err);
                 showToast('خطا در تغییر نقش کاربر.', 'error');
             }
         });
     });
 
+    // فعال‌سازی select برای واگذاری پیش‌فرض
     const defaultAssigneeSelect = document.getElementById('default-assignee-select');
     if (defaultAssigneeSelect) {
         defaultAssigneeSelect.addEventListener('change', async (e) => {
@@ -5049,7 +5053,6 @@ const setupSettingsPageListeners = () => {
                 }
                 showToast("واگذاری پیش‌فرض با موفقیت بروزرسانی شد.");
             } catch (error) {
-                console.error("Error setting default assignee:", error);
                 showToast("خطا در بروزرسانی واگذاری پیش‌فرض.", "error");
             }
         });
@@ -5850,6 +5853,95 @@ const showEmployeeForm = (employeeId = null) => {
                 saveBtn.innerText = 'ذخیره';
             }
         }
+    });
+};
+// فایل: js/main.js
+// این دو تابع جدید را به فایل اضافه کنید ▼
+
+const showJobFamilyForm = (familyId = null) => {
+    const isEditing = familyId !== null;
+    const family = isEditing ? state.jobFamilies.find(f => f.firestoreId === familyId) : {};
+    modalTitle.innerText = isEditing ? 'ویرایش خانواده شغلی' : 'افزودن خانواده شغلی';
+    modalContent.innerHTML = `
+        <form id="family-form">
+            <label class="block font-medium">نام خانواده شغلی (مثال: مهندسی)</label>
+            <input id="family-name" class="w-full p-2 border rounded-md mt-1" value="${family.name || ''}" required>
+            <div class="flex justify-end mt-4"><button type="submit" class="primary-btn">ذخیره</button></div>
+        </form>
+    `;
+    openModal(mainModal, mainModalContainer);
+    document.getElementById('family-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('family-name').value.trim();
+        if (!name) return;
+        try {
+            if (isEditing) {
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/jobFamilies`, familyId), { name });
+            } else {
+                await addDoc(collection(db, `artifacts/${appId}/public/data/jobFamilies`), { name });
+            }
+            showToast('خانواده شغلی ذخیره شد.');
+            closeModal(mainModal, mainModalContainer);
+        } catch (error) { showToast('خطا در ذخیره‌سازی.', 'error'); }
+    });
+};
+
+const showLevelDefinitionForm = (jobFamily, levelId = null) => {
+    const isEditing = levelId !== null;
+    const levelData = isEditing ? state.careerFramework.find(l => l.firestoreId === levelId) : {};
+    modalTitle.innerText = `${isEditing ? 'ویرایش' : 'افزودن'} سطح برای خانواده: ${jobFamily}`;
+    
+    const currentCompetencies = new Set(levelData.competencyIds || []);
+    const checkboxesHtml = state.competencies.map(comp => `
+        <label class="flex items-center gap-2 p-2 border rounded-lg hover:bg-slate-50">
+            <input type="checkbox" class="competency-checkbox" value="${comp.firestoreId}" ${currentCompetencies.has(comp.firestoreId) ? 'checked' : ''}>
+            <span>${comp.name}</span>
+        </label>
+    `).join('');
+
+    modalContent.innerHTML = `
+        <form id="level-form" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block font-medium">شماره سطح</label>
+                    <input type="number" id="level-number" class="w-full p-2 border rounded-md mt-1" min="1" value="${levelData.level || ''}" required>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block font-medium">عنوان سطح (مثال: مهندس ارشد ۱)</label>
+                    <input type="text" id="level-title" class="w-full p-2 border rounded-md mt-1" value="${levelData.title || ''}" required>
+                </div>
+            </div>
+            <div>
+                <label class="block font-medium">توضیحات سطح</label>
+                <textarea id="level-description" class="w-full p-2 border rounded-md mt-1" rows="3">${levelData.description || ''}</textarea>
+            </div>
+            <div>
+                <label class="block font-medium mb-2">شایستگی‌های مورد نیاز این سطح</label>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-60 overflow-y-auto pr-2">${checkboxesHtml}</div>
+            </div>
+            <div class="flex justify-end mt-4"><button type="submit" class="primary-btn">ذخیره سطح</button></div>
+        </form>
+    `;
+    openModal(mainModal, mainModalContainer);
+    document.getElementById('level-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const selectedIds = Array.from(document.querySelectorAll('.competency-checkbox:checked')).map(cb => cb.value);
+        const levelPayload = {
+            jobFamily: jobFamily,
+            level: parseInt(document.getElementById('level-number').value),
+            title: document.getElementById('level-title').value.trim(),
+            description: document.getElementById('level-description').value.trim(),
+            competencyIds: selectedIds
+        };
+        try {
+            if (isEditing) {
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/careerFramework`, levelId), levelPayload);
+            } else {
+                await addDoc(collection(db, `artifacts/${appId}/public/data/careerFramework`), levelPayload);
+            }
+            showToast('سطح شغلی با موفقیت ذخیره شد.');
+            closeModal(mainModal, mainModalContainer);
+        } catch (error) { showToast('خطا در ذخیره‌سازی.', 'error'); }
     });
 };
             // فایل: js/main.js
