@@ -899,8 +899,17 @@ window.renderMomentsList = () => {
     // --- بخش پیش‌فرض ---
     else {
         contentContainer.innerHTML = `<div class="text-center p-10"><h1>صفحه مورد نظر یافت نشد</h1></div>`;
-        lucide.createIcons();
+       
     }
+
+        // [!code start]
+    // فراخوانی listener مخصوص هر صفحه
+    if (pageName === 'team-performance') {
+        setupTeamPerformanceListeners();
+    }
+    // [!code end]
+    
+    lucide.createIcons();
 }
 
 // در فایل js/main.js
@@ -5091,7 +5100,30 @@ const setupRequestsPageListeners = () => {
 
 // فایل: js/main.js
 // این تابع را به طور کامل جایگزین نسخه فعلی کنید ▼
+// فایل: js/main.js
+// ▼▼▼ این تابع جدید را به فایل خود اضافه کنید ▼▼▼
 
+const setupTeamPerformanceListeners = () => {
+    const mainContentArea = document.getElementById('employee-main-content');
+    if (!mainContentArea) return;
+
+    mainContentArea.addEventListener('click', e => {
+        const evalBtn = e.target.closest('.view-evaluation-btn');
+        if (evalBtn) {
+            const employeeId = evalBtn.dataset.employeeId;
+            const cycleId = evalBtn.dataset.cycleId;
+            const employee = state.employees.find(e => e.firestoreId === employeeId);
+            const cycle = state.evaluationCycles.find(c => c.firestoreId === cycleId);
+
+            if (employee && cycle) {
+                // حالا فرم ارزیابی با اطلاعات صحیح باز می‌شود
+                showEvaluationForm(employee, cycle);
+            } else {
+                showToast("اطلاعات کارمند یا دوره ارزیابی یافت نشد.", "error");
+            }
+        }
+    });
+};
 const setupTasksPageListeners = () => {
     // ابتدا چک می‌کنیم که کانتینر اصلی در صفحه وجود داشته باشد
     const mainContentArea = document.getElementById('main-content');
