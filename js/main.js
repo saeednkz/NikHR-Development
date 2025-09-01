@@ -419,7 +419,36 @@ function renderMyBirthdayWishesWidget(employee) {
 }
 // در فایل js/main.js
 // کل این تابع را نیز با نسخه کامل و نهایی زیر جایگزین کنید
+// فایل: js/main.js
+// ▼▼▼ این تابع را که جا افتاده بود، به فایل خود اضافه کنید ▼▼▼
 
+const renderMyTasks = (employee) => {
+    const container = document.getElementById('my-tasks-list');
+    if (!container) return;
+
+    let tasksHtml = '';
+
+    // ۱. بررسی برای دوره ارزیابی فعال
+    const activeCycle = (state.evaluationCycles || []).find(c => c.status === 'active');
+    if (activeCycle) {
+        // در آینده این بخش با کالکشن employeeEvaluations چک می‌شود تا تسک تکراری نمایش داده نشود
+        tasksHtml += `
+            <div class="flex items-center justify-between p-3 bg-indigo-50 rounded-lg">
+                <div>
+                    <p class="font-semibold text-sm text-indigo-800">تکمیل فرم خودارزیابی عملکرد</p>
+                    <p class="text-xs text-indigo-600">مربوط به دوره: ${activeCycle.title}</p>
+                </div>
+                <button id="start-self-assessment-btn" data-cycle-id="${activeCycle.firestoreId}" class="primary-btn text-xs py-1.5 px-3">شروع</button>
+            </div>
+        `;
+    }
+
+    if (tasksHtml === '') {
+        tasksHtml = '<p class="text-sm text-slate-500 text-center py-4">در حال حاضر کار فعالی برای شما وجود ندارد.</p>';
+    }
+
+    container.innerHTML = tasksHtml;
+};
 function renderEmployeePortalPage(pageName, employee) {
     const contentContainer = document.getElementById('employee-main-content');
     if (!contentContainer) return;
