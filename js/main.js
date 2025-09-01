@@ -4932,10 +4932,14 @@ if (typeof window.showProcessReminderForm !== 'function') {
 // فایل: js/main.js
 // تابع setupSettingsPageListeners را به طور کامل با این نسخه جایگزین کنید ▼
 
+// فایل: js/main.js
+// کل تابع setupSettingsPageListeners را با این نسخه جایگزین کنید ▼
+
 const setupSettingsPageListeners = () => {
     const mainContentArea = document.getElementById('main-content');
     if (!mainContentArea) return;
 
+    // مدیریت کلیک روی تب‌ها
     mainContentArea.querySelectorAll('.settings-tab').forEach(tab => {
         tab.addEventListener('click', () => {
             mainContentArea.querySelectorAll('.settings-tab').forEach(t => { t.classList.remove('primary-btn'); t.classList.add('secondary-btn'); });
@@ -4947,6 +4951,7 @@ const setupSettingsPageListeners = () => {
         });
     });
 
+    // مدیریت کلیک روی دکمه‌های مختلف در کل صفحه تنظیمات
     mainContentArea.addEventListener('click', (e) => {
         const addUserBtn = e.target.closest('#add-user-btn');
         const editUserBtn = e.target.closest('.edit-user-btn');
@@ -4966,8 +4971,6 @@ const setupSettingsPageListeners = () => {
             if (user) showEditUserForm(user);
         }
         if (deleteUserBtn) { /* ... کد حذف کاربر ... */ }
-        
-        // ▼▼▼ منطق حذف شایستگی که از قلم افتاده بود، اینجا اضافه شده است ▼▼▼
         if (deleteCompetencyBtn) {
             const compId = deleteCompetencyBtn.dataset.id;
             showConfirmationModal('حذف شایستگی', 'این شایستگی از لیست حذف خواهد شد. ادامه می‌دهید؟', async () => {
@@ -4980,8 +4983,6 @@ const setupSettingsPageListeners = () => {
                 }
             });
         }
-        // ▲▲▲ پایان بخش جدید ▲▲▲
-        
         if (addRuleBtn) showAssignmentRuleForm();
         if (editRuleBtn) showAssignmentRuleForm(editRuleBtn.dataset.id);
         if (deleteRuleBtn) { /* ... کد حذف قانون ... */ }
@@ -5001,12 +5002,58 @@ const setupSettingsPageListeners = () => {
         }
     });
 
-    // ... (بقیه کدهای تابع setupSettingsPageListeners بدون تغییر باقی می‌ماند) ...
+    // ▼▼▼ این بخش مسئول فعال‌سازی فرم افزودن شایستگی است ▼▼▼
     const addCompetencyForm = document.getElementById('add-competency-form');
-    if (addCompetencyForm) { /* ... */ }
-    document.querySelectorAll('.role-select').forEach(select => { /* ... */ });
+    if (addCompetencyForm) {
+        addCompetencyForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const input = document.getElementById('new-competency-name');
+            const name = (input?.value || '').trim();
+            if (!name) return;
+            try {
+                await addDoc(collection(db, `artifacts/${appId}/public/data/competencies`), { name, createdAt: serverTimestamp() });
+                input.value = '';
+                showToast('شایستگی اضافه شد.');
+            } catch (err) {
+                console.error('Error adding competency', err);
+                showToast('خطا در افزودن شایستگی.', 'error');
+            }
+        });
+    }
+    // ▲▲▲ پایان بخش فعال‌سازی فرم ▲▲▲
+    
+    document.querySelectorAll('.role-select').forEach(select => {
+        select.addEventListener('change', async (e) => {
+            const uid = e.target.getAttribute('data-uid');
+            const newRole = e.target.value;
+            try {
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/users`, uid), { role: newRole });
+                showToast('نقش کاربر به‌روزرسانی شد.');
+            } catch (err) {
+                console.error('Error updating user role', err);
+                showToast('خطا در تغییر نقش کاربر.', 'error');
+            }
+        });
+    });
+
     const defaultAssigneeSelect = document.getElementById('default-assignee-select');
-    if (defaultAssigneeSelect) { /* ... */ }
+    if (defaultAssigneeSelect) {
+        defaultAssigneeSelect.addEventListener('change', async (e) => {
+            const selectedUid = e.target.value;
+            const defaultRuleRef = doc(db, `artifacts/${appId}/public/data/assignmentRules`, '_default');
+            try {
+                if (selectedUid) {
+                    await setDoc(defaultRuleRef, { assigneeUid: selectedUid, ruleName: 'Default Assignee' });
+                } else {
+                    await deleteDoc(defaultRuleRef);
+                }
+                showToast("واگذاری پیش‌فرض با موفقیت بروزرسانی شد.");
+            } catch (error) {
+                console.error("Error setting default assignee:", error);
+                showToast("خطا در بروزرسانی واگذاری پیش‌فرض.", "error");
+            }
+        });
+    }
 };
 // Assignment Rule form (add/edit)
 // فایل: js/main.js
