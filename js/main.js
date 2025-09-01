@@ -6175,142 +6175,166 @@ const showEmployeeForm = (employeeId = null) => {
 
     // --- بخش جدید: ساخت گزینه‌های پوزیشن شغلی از state ---
     const positionOptions = (state.jobPositions || []).map(pos => 
-        `<option value="${pos.firestoreId}" ${emp.jobPositionId === pos.firestoreId ? 'selected' : ''}>${pos.name}</option>`
-    ).join('');
+    const isEditing = employeeId !== null;
+    const emp = isEditing ? state.employees.find(e => e.firestoreId === employeeId) : {};
+    const currentTeam = isEditing ? state.teams.find(t => t.memberIds?.includes(emp.id)) : null;
+    const teamOptions = state.teams.map(team => `<option value="${team.firestoreId}" ${currentTeam?.firestoreId === team.firestoreId ? 'selected' : ''}>${team.name}</option>`).join('');
 
-    modalTitle.innerText = isEditing ? 'ویرایش اطلاعات کارمند' : 'افزودن کارمند جدید';
-    modalContent.innerHTML = `
-        <div class="bg-gradient-to-l from-[#F72585]/10 to-[#6B69D6]/10 rounded-xl p-4 mb-4">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-white flex items-center justify-center border">
-                    <i data-lucide="user-plus" class="w-5 h-5" style="color:#6B69D6"></i>
-                </div>
-                <div>
-                    <div class="text-sm text-slate-600">${isEditing ? 'ویرایش پروفایل' : 'کارمند جدید'}</div>
-                    <div class="text-lg font-bold text-slate-800">${emp.name || 'ثبت اطلاعات کارمند'}</div>
-                </div>
-            </div>
-        </div>
-        <form id="employee-form" class="space-y-5" data-old-team-id="${currentTeam?.firestoreId || ''}">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="bg-white border rounded-xl p-4">
-                    <label for="name" class="block text-xs font-semibold text-slate-500">نام کامل</label>
-                    <input type="text" id="name" value="${emp.name || ''}" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg" required>
-                </div>
-                <div class="bg-white border rounded-xl p-4">
-                    <label for="id" class="block text-xs font-semibold text-slate-500">کد پرسنلی</label>
-                    <input type="text" id="id" value="${emp.id || ''}" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg" ${isEditing ? 'readonly' : ''} required>
-                </div>
-                <div class="md:col-span-2 bg-white border rounded-xl p-4">
-                    <label for="employee-email" class="block text-xs font-semibold text-slate-500">آدرس ایمیل (برای ورود)</label>
-                    <input type="email" id="employee-email" value="${emp.personalInfo?.email || ''}" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg" ${isEditing ? 'readonly' : ''} required>
-                </div>
-                <div class="bg-white border rounded-xl p-4">
-                    <label for="jobTitle" class="block text-xs font-semibold text-slate-500">عنوان شغلی</label>
-                    <input type="text" id="jobTitle" value="${emp.jobTitle || ''}" placeholder="مثال: کارشناس بازاریابی دیجیتال" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg">
-                </div>
+    const positionOptions = (state.jobPositions || []).map(pos => 
+        `<option value="${pos.firestoreId}" ${emp.jobPositionId === pos.firestoreId ? 'selected' : ''}>${pos.name}</option>`
+    ).join('');
+
+    modalTitle.innerText = isEditing ? 'ویرایش اطلاعات کارمند' : 'افزودن کارمند جدید';
+    modalContent.innerHTML = `
+        <div class="bg-gradient-to-l from-[#F72585]/10 to-[#6B69D6]/10 rounded-xl p-4 mb-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-white flex items-center justify-center border">
+                    <i data-lucide="user-plus" class="w-5 h-5" style="color:#6B69D6"></i>
+                </div>
+                <div>
+                    <div class="text-sm text-slate-600">${isEditing ? 'ویرایش پروفایل' : 'کارمند جدید'}</div>
+                    <div class="text-lg font-bold text-slate-800">${emp.name || 'ثبت اطلاعات کارمند'}</div>
+                </div>
+            </div>
+        </div>
+        <form id="employee-form" class="space-y-5" data-old-team-id="${currentTeam?.firestoreId || ''}">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-white border rounded-xl p-4">
+                    <label for="name" class="block text-xs font-semibold text-slate-500">نام کامل</label>
+                    <input type="text" id="name" value="${emp.name || ''}" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg" required>
+                </div>
+                <div class="bg-white border rounded-xl p-4">
+                    <label for="id" class="block text-xs font-semibold text-slate-500">کد پرسنلی</label>
+                    <input type="text" id="id" value="${emp.id || ''}" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg" ${isEditing ? 'readonly' : ''} required>
+                </div>
+                <div class="md:col-span-2 bg-white border rounded-xl p-4">
+                    <label for="employee-email" class="block text-xs font-semibold text-slate-500">آدرس ایمیل (برای ورود)</label>
+                    <input type="email" id="employee-email" value="${emp.personalInfo?.email || ''}" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg" ${isEditing ? 'readonly' : ''} required>
+                </div>
+                <div class="bg-white border rounded-xl p-4">
+                    <label for="jobTitle" class="block text-xs font-semibold text-slate-500">عنوان شغلی</label>
+                    <input type="text" id="jobTitle" value="${emp.jobTitle || ''}" placeholder="مثال: کارشناس بازاریابی دیجیتال" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg">
+                </div>
+                <div class="bg-white border rounded-xl p-4">
+                    <label for="jobPositionId" class="block text-xs font-semibold text-slate-500">پوزیشن شغلی</label>
+                    <select id="jobPositionId" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg bg-white">
+                        <option value="">انتخاب کنید...</option>
+                        ${positionOptions}
+                    </select>
+                </div>
+                <div class="bg-white border rounded-xl p-4">
+                    <label for="level" class="block text-xs font-semibold text-slate-500">سطح</label>
+                    <select id="level" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg bg-white">
+                        <option value="Junior" ${emp.level === 'Junior' ? 'selected' : ''}>Junior (کارشناس)</option>
+                        <option value="Mid-level" ${emp.level === 'Mid-level' ? 'selected' : ''}>Mid-level (کارشناس ارشد)</option>
+                        <option value="Senior" ${emp.level === 'Senior' ? 'selected' : ''}>Senior (خبره)</option>
+                        <option value="Lead" ${emp.level === 'Lead' ? 'selected' : ''}>Lead (راهبر)</option>
+                        <option value="Manager" ${emp.level === 'Manager' ? 'selected' : ''}>Manager (مدیر)</option>
+                    </select>
+                </div>
+                <div class="bg-white border rounded-xl p-4">
+                    <label for="department-team-select" class="block text-xs font-semibold text-slate-500">دپارتمان / تیم عضویت</label>
+                    <select id="department-team-select" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg bg-white">
+                        <option value="">عضو هیچ تیمی نیست</option>
+                        ${teamOptions}
+                    </select>
+                </div>
                 
-                <div class="bg-white border rounded-xl p-4">
-                    <label for="jobPositionId" class="block text-xs font-semibold text-slate-500">پوزیشن شغلی</label>
-                    <select id="jobPositionId" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg bg-white">
-                        <option value="">انتخاب کنید...</option>
-                        ${positionOptions}
-                    </select>
-                </div>
-                
-                <div class="bg-white border rounded-xl p-4">
-                    <label for="level" class="block text-xs font-semibold text-slate-500">سطح</label>
-                    <select id="level" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg bg-white">
-                        <option value="Junior" ${emp.level === 'Junior' ? 'selected' : ''}>Junior (کارشناس)</option>
-                        <option value="Mid-level" ${emp.level === 'Mid-level' ? 'selected' : ''}>Mid-level (کارشناس ارشد)</option>
-                        <option value="Senior" ${emp.level === 'Senior' ? 'selected' : ''}>Senior (خبره)</option>
-                        <option value="Lead" ${emp.level === 'Lead' ? 'selected' : ''}>Lead (راهبر)</option>
-                        <option value="Manager" ${emp.level === 'Manager' ? 'selected' : ''}>Manager (مدیر)</option>
-                    </select>
-                </div>
-                <div class="bg-white border rounded-xl p-4">
-                    <label for="department-team-select" class="block text-xs font-semibold text-slate-500">دپارتمان / تیم</label>
-                    <select id="department-team-select" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg bg-white">
-                        <option value="">انتخاب کنید...</option>
+                <div id="managed-team-container" class="hidden bg-white border rounded-xl p-4 border-indigo-200">
+                    <label for="managed-team-select" class="block text-xs font-semibold text-indigo-700">تیم تحت مدیریت</label>
+                    <p class="text-xs text-slate-500 mb-2">این فرد مدیر کدام تیم است؟</p>
+                    <select id="managed-team-select" class="block w-full p-2 border border-slate-300 rounded-lg bg-white">
+                        <option value="">هیچکدام</option>
                         ${teamOptions}
                     </select>
                 </div>
-                <div class="bg-white border rounded-xl p-4">
-                    <label for="status" class="block text-xs font-semibold text-slate-500">وضعیت</label>
-                    <select id="status" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg bg-white">
-                        <option value="فعال" ${emp.status === 'فعال' ? 'selected' : ''}>فعال</option>
-                        <option value="غیرفعال" ${emp.status === 'غیرفعال' ? 'selected' : ''}>غیرفعال</option>
-                    </select>
-                </div>
-                <div class="md:col-span-2 bg-white border rounded-xl p-4">
-                     <label for="startDate" class="block text-xs font-semibold text-slate-500">تاریخ استخدام</label>
-                     <input type="text" id="startDate" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg">
-                </div>
-            </div>
-            <div class="pt-2 flex justify-end">
-                <button type="submit" class="primary-btn">ذخیره</button>
-            </div>
-        </form>
-    `;
-    openModal(mainModal, mainModalContainer);
-    activatePersianDatePicker('startDate', emp.startDate);
+                                <div class="bg-white border rounded-xl p-4">
+                    <label for="status" class="block text-xs font-semibold text-slate-500">وضعیت</label>
+                    <select id="status" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg bg-white">
+                        <option value="فعال" ${emp.status === 'فعال' ? 'selected' : ''}>فعال</option>
+                        <option value="غیرفعال" ${emp.status === 'غیرفعال' ? 'selected' : ''}>غیرفعال</option>
+                    </select>
+                </div>
+                <div class="md:col-span-2 bg-white border rounded-xl p-4">
+                     <label for="startDate" class="block text-xs font-semibold text-slate-500">تاریخ استخدام</label>
+                     <input type="text" id="startDate" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg">
+                </div>
+            </div>
+            <div class="pt-2 flex justify-end">
+                <button type="submit" class="primary-btn">ذخیره</button>
+            </div>
+        </form>
+    `;
+    openModal(mainModal, mainModalContainer);
+    activatePersianDatePicker('startDate', emp.startDate);
 
-    document.getElementById('employee-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const saveBtn = e.target.querySelector('button[type="submit"]');
-        saveBtn.disabled = true;
-        saveBtn.innerText = 'در حال پردازش...';
 
-        const name = document.getElementById('name').value;
-        const employeeId = document.getElementById('id').value;
-        const email = document.getElementById('employee-email').value;
-        const selectedTeamId = document.getElementById('department-team-select').value;
-        const selectedTeam = state.teams.find(t => t.firestoreId === selectedTeamId);
+// فایل: js/main.js - event listener فرم را با این نسخه جایگزین کنید
 
-        const employeeCoreData = {
-            name: name,
-            id: employeeId,
-            jobTitle: document.getElementById('jobTitle').value,
-            level: document.getElementById('level').value,
-            department: selectedTeam ? selectedTeam.name : '',
-            status: document.getElementById('status').value,
-            startDate: persianToEnglishDate(document.getElementById('startDate').value),
-            jobPositionId: document.getElementById('jobPositionId').value // <<-- ذخیره شناسه پوزیشن شغلی
-        };
+    document.getElementById('employee-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const saveBtn = e.target.querySelector('button[type="submit"]');
+        saveBtn.disabled = true;
+        saveBtn.innerText = 'در حال پردازش...';
 
-        if (isEditing) {
-            try {
-                const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
-                await updateDoc(docRef, employeeCoreData);
-                showToast("اطلاعات کارمند با موفقیت بروزرسانی شد.");
-                closeModal(mainModal, mainModalContainer);
-            } catch (error) {
-                console.error("Error updating employee:", error);
-                showToast("خطا در بروزرسانی اطلاعات.", "error");
-                saveBtn.disabled = false;
-                saveBtn.innerText = 'ذخیره';
-            }
-        } else {
-            const employeeDataForCreation = { ...employeeCoreData, avatar: `https://placehold.co/100x100/E2E8F0/4A5568?text=${name.substring(0, 2)}`, personalInfo: { email: email } };
-            try {
-                const createNewEmployee = httpsCallable(functions, 'createNewEmployee');
-                await createNewEmployee({ 
-                    name: name, 
-                    employeeId: employeeId, 
-                    email: email, 
-                    employeeData: employeeDataForCreation,
-                    teamId: selectedTeamId
-                });
-                showToast("کارمند و حساب کاربری با موفقیت ایجاد شد!");
-                closeModal(mainModal, mainModalContainer);
-            } catch (error) {
-                console.error("Cloud function error:", error);
-                showToast(`خطا: ${error.message}`, "error");
-                saveBtn.disabled = false;
-                saveBtn.innerText = 'ذخیره';
-            }
-        }
-    });
+        const name = document.getElementById('name').value;
+        const employeeId = document.getElementById('id').value;
+        const email = document.getElementById('employee-email').value;
+        const selectedTeamId = document.getElementById('department-team-select').value;
+        const selectedTeam = state.teams.find(t => t.firestoreId === selectedTeamId);
+        const managedTeamId = document.getElementById('managed-team-select').value; // [!code ++]
+
+        const employeeCoreData = {
+            name: name,
+            id: employeeId,
+            jobTitle: document.getElementById('jobTitle').value,
+            level: document.getElementById('level').value,
+            department: selectedTeam ? selectedTeam.name : '',
+            status: document.getElementById('status').value,
+            startDate: persianToEnglishDate(document.getElementById('startDate').value),
+            jobPositionId: document.getElementById('jobPositionId').value
+        };
+        
+        const batch = writeBatch(db); // [!code ++]
+
+        if (isEditing) {
+            try {
+                const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
+                batch.update(docRef, employeeCoreData); // [!code focus]
+                
+                // [!code start]
+                // بخش جدید: آپدیت کردن مدیر تیم
+                if (managedTeamId) {
+                    const newManagedTeamRef = doc(db, `artifacts/${appId}/public/data/teams`, managedTeamId);
+                    batch.update(newManagedTeamRef, { leaderId: employeeId });
+                }
+                // [!code end]
+                
+                await batch.commit(); // [!code focus]
+                showToast("اطلاعات کارمند با موفقیت بروزرسانی شد.");
+                closeModal(mainModal, mainModalContainer);
+            } catch (error) { /* ... */ }
+        } else {
+            try {
+                const createNewEmployee = httpsCallable(functions, 'createNewEmployee');
+                const result = await createNewEmployee({ 
+                    employeeData: { ...employeeCoreData, avatar: `...`, personalInfo: { email } },
+                    teamId: selectedTeamId
+                });
+                
+                // [!code start]
+                // اگر کاربر همزمان به عنوان مدیر یک تیم هم انتخاب شده بود
+                if (managedTeamId && result.data.success) {
+                    const newManagedTeamRef = doc(db, `artifacts/${appId}/public/data/teams`, managedTeamId);
+                    await updateDoc(newManagedTeamRef, { leaderId: employeeId });
+                }
+                // [!code end]
+
+                showToast("کارمند و حساب کاربری با موفقیت ایجاد شد!");
+                closeModal(mainModal, mainModalContainer);
+            } catch (error) { /* ... */ }
+        }
+    });
 };
             // فایل: js/main.js
 // این دو تابع جدید را به انتهای بخش هلپرها اضافه کنید ▼
