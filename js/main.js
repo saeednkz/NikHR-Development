@@ -3995,6 +3995,8 @@ const viewEmployeeProfile = (employeeId) => {
 const viewTeamProfile = (teamId) => {
     const team = state.teams.find(t => t.firestoreId === teamId);
     if (!team) return;
+    const manager = state.employees.find(e => e.id === team.leadership?.manager);
+    const supervisor = state.employees.find(e => e.id === team.leadership?.supervisor);
     const leader = state.employees.find(e => e.id === team.leaderId);
     const members = state.employees.filter(e => team.memberIds?.includes(e.id));
     const basicAnalysis = generateTeamSmartAnalysis(team);
@@ -4047,6 +4049,11 @@ const viewTeamProfile = (teamId) => {
                 <div class="flex items-center gap-4">
                     <div class="w-16 h-16 rounded-2xl overflow-hidden ring-4 ring-white/30 bg-white/10">
                         <img src="${team.avatar}" alt="${team.name}" class="w-full h-full object-cover">
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-extrabold text-white">${team.name}</h2>
+                        <p class="text-white/90 text-xs">مدیر: ${manager?.name || 'نامشخص'}</p>
+                        ${supervisor ? `<p class="text-white/90 text-xs mt-1">سرپرست: ${supervisor.name}</p>` : ''}
                     </div>
                     <div>
                         <h2 class="text-2xl font-extrabold text-white">${team.name}</h2>
