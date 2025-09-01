@@ -3130,18 +3130,23 @@ analytics: () => {
                 </div>
             </div>
 
-            <div id="tab-health" class="analytics-tab-pane hidden space-y-8">
-                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div class="card p-6">
-                         <h3 class="font-semibold text-lg mb-4 flex items-center"><i data-lucide="pie-chart" class="ml-2 text-blue-500"></i>تحلیل مشارکت سازمانی</h3>
-                         <div class="relative h-80"><canvas id="engagementBreakdownChart"></canvas></div>
-                    </div>
-                    <div class="card p-6">
-                         <h3 class="font-semibold text-lg mb-4 flex items-center"><i data-lucide="activity" class="ml-2 text-green-500"></i>نمره سلامت تیم‌ها</h3>
-                         <div class="relative h-80"><canvas id="teamHealthChart"></canvas></div>
-                    </div>
-                 </div>
-            </div>
+<div id="tab-health" class="analytics-tab-pane hidden space-y-8">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div class="card p-6">
+            <h3 class="font-semibold text-lg mb-4 flex items-center"><i data-lucide="pie-chart" class="ml-2 text-blue-500"></i>تحلیل مشارکت سازمانی</h3>
+            <div class="relative h-80"><canvas id="engagementBreakdownChart"></canvas></div>
+        </div>
+        <div class="card p-6">
+            <h3 class="font-semibold text-lg mb-4 flex items-center"><i data-lucide="activity" class="ml-2 text-green-500"></i>نمره سلامت تیم‌ها</h3>
+            <div class="relative h-80"><canvas id="teamHealthChart"></canvas></div>
+        </div>
+        <div class="card p-6 lg:col-span-2">
+            <h3 class="font-semibold text-lg mb-4 flex items-center"><i data-lucide="align-center" class="ml-2 text-purple-500"></i>توزیع امتیازات عملکرد</h3>
+            <p class="text-xs text-slate-500 mb-4">این نمودار توزیع کارکنان بر اساس آخرین امتیاز ارزیابی عملکرد آن‌ها را نشان می‌دهد.</p>
+            <div class="relative h-80"><canvas id="performanceDistributionChart"></canvas></div>
+        </div>
+        </div>
+</div>
 
             <div id="tab-tools" class="analytics-tab-pane hidden space-y-8">
                 <div class="card p-6 max-w-2xl mx-auto">
@@ -4130,6 +4135,61 @@ const renderPage = (pageName) => {
 };
         // --- CHART RENDERING FUNCTIONS ---
         const destroyCharts = () => { Object.values(charts).forEach(chart => chart?.destroy()); charts = {}; };
+// فایل: js/main.js - این تابع جدید را اضافه کنید
+
+// [!code start]
+const renderPerformanceDistributionChart = () => {
+    const ctx = document.getElementById('performanceDistributionChart')?.getContext('2d');
+    if (!ctx) return;
+
+    // دسته‌بندی کارمندان بر اساس آخرین امتیاز عملکرد
+    const distribution = {
+        'نیازمند بهبود (زیر ۲.۸)': 0,
+        'عملکرد خوب (۲.۸ تا ۴)': 0,
+        'عملکرد عالی (بالای ۴)': 0,
+    };
+
+    state.employees.forEach(emp => {
+        if (emp.performanceHistory && emp.performanceHistory.length > 0) {
+            const lastScore = emp.performanceHistory[emp.performanceHistory.length - 1].overallScore;
+            if (lastScore < 2.8) {
+                distribution['نیازمند بهبود (زیر ۲.۸)']++;
+            } else if (lastScore <= 4.0) {
+                distribution['عملکرد خوب (۲.۸ تا ۴)']++;
+            } else {
+                distribution['عملکرد عالی (بالای ۴)']++;
+            }
+        }
+    });
+
+    charts.performanceDistribution = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: Object.keys(distribution),
+            datasets: [{
+                label: 'تعداد کارمندان',
+                data: Object.values(distribution),
+                backgroundColor: ['#ef4444', '#3b82f6', '#22c55e'],
+                borderRadius: 4,
+                barPercentage: 0.6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1 // نمایش اعداد صحیح روی محور Y
+                    }
+                }
+            }
+        }
+    });
+};
+// [!code end]
 const renderDashboardCharts = () => {
     destroyCharts();
     const metrics = state.dashboardMetrics;
@@ -5394,6 +5454,7 @@ const setupAnalyticsPage = () => {
     renderNineBoxGrid();
     renderEngagementBreakdownChart();
     renderTeamHealthChart();
+    renderPerformanceDistributionChart(); 
     setupSkillGapFinder();
 };
 // فایل: js/main.js - این تابع جدید را اضافه کنید
