@@ -843,6 +843,58 @@ window.renderMomentsList = () => {
         } catch {}
         return;
     }
+        // [!code start]
+    // بخش جدید برای داشبورد مدیر تیم
+    else if (pageName === 'team-performance') {
+        const myTeam = state.teams.find(t => t.leaderId === employee.id);
+        if (!myTeam) {
+            contentContainer.innerHTML = `<p>شما مدیر هیچ تیمی نیستید.</p>`;
+            return;
+        }
+        const teamMembers = state.employees.filter(e => myTeam.memberIds.includes(e.id));
+        const activeCycle = (state.evaluationCycles || []).find(c => c.status === 'active');
+
+        if (!activeCycle) {
+            contentContainer.innerHTML = `<div class="card p-6 text-center"><h3 class="font-bold text-lg">داشبورد ارزیابی تیم: ${myTeam.name}</h3><p class="mt-4 text-slate-500">در حال حاضر هیچ دوره ارزیابی فعالی وجود ندارد.</p></div>`;
+            return;
+        }
+
+        const tableRows = teamMembers.map(member => {
+            const evaluation = (state.employeeEvaluations || []).find(e => e.employeeId === member.id && e.cycleId === activeCycle.firestoreId);
+            let statusText = "شروع نشده";
+            let statusColor = "bg-slate-100 text-slate-800";
+            if (evaluation?.status === 'pending_manager_review') {
+                statusText = "آماده ارزیابی مدیر";
+                statusColor = "bg-blue-100 text-blue-800";
+            } else if (evaluation?.status === 'completed') {
+                statusText = "تکمیل شده";
+                statusColor = "bg-green-100 text-green-800";
+            }
+
+            return `
+                <tr class="border-b">
+                    <td class="p-3"><div class="flex items-center gap-3"><img src="${member.avatar}" class="w-8 h-8 rounded-full object-cover"><span>${member.name}</span></div></td>
+                    <td class="p-3">${member.jobTitle}</td>
+                    <td class="p-3"><span class="px-2 py-1 text-xs font-medium rounded-full ${statusColor}">${statusText}</span></td>
+                    <td class="p-3"><button class="view-evaluation-btn primary-btn text-xs py-1.5 px-3" data-employee-id="${member.firestoreId}" data-cycle-id="${activeCycle.firestoreId}">مشاهده / ارزیابی</button></td>
+                </tr>
+            `;
+        }).join('');
+
+        contentContainer.innerHTML = `
+            <h1 class="text-3xl font-bold text-slate-800 mb-6">داشبورد ارزیابی تیم: ${myTeam.name}</h1>
+            <div class="card p-0">
+                <div class="p-4 border-b"><h3 class="font-semibold">وضعیت ارزیابی اعضا در دوره: ${activeCycle.title}</h3></div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-slate-50"><tr><th class="p-3 text-right">نام عضو</th><th class="p-3 text-right">پوزیشن</th><th class="p-3 text-right">وضعیت</th><th class="p-3 text-right"></th></tr></thead>
+                        <tbody>${tableRows}</tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    }
+    // [!code end]
 
     // --- بخش پیش‌فرض ---
     else {
@@ -1182,7 +1234,11 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
         });
     }
 }
-
+// فایل: js/main.js - این تابع کمکی را اضافه کنید
+const isTeamLeader = (employee) => {
+    if (!employee) return false;
+    return state.teams.some(team => team.leaderId === employee.id);
+};
 function renderEmployeePortal() {
     document.getElementById('login-container').classList.add('hidden');
     document.getElementById('dashboard-container').classList.add('hidden');
@@ -1195,6 +1251,12 @@ function renderEmployeePortal() {
         portalContainer.innerHTML = `<div class="text-center p-10"><h2 class="text-xl font-bold text-red-600">خطا: پروفایل یافت نشد.</h2></div>`;
         return;
     }
+        // [!code start]
+    // بررسی اینکه آیا کاربر مدیر است یا خیر
+    const managerNavlink = isTeamLeader(employee) 
+        ? `<a href="#team-performance" class="nav-item"><i data-lucide="clipboard-check"></i><span>مدیریت تیم من</span></a>` 
+        : '';
+    // [!code end]
 
     const employeeName = employee.name || state.currentUser.email;
 
