@@ -213,7 +213,7 @@ function listenToData() {
     
     const collectionsToListen = [
         'employees', 'teams', 'reminders', 'surveyResponses', 'users', 
-        'competencies', 'requests', 'assignmentRules', 'companyDocuments', 'announcements', 'birthdayWishes', 'moments','jobPositions','evaluationCycles'
+        'competencies', 'requests', 'assignmentRules', 'companyDocuments', 'announcements', 'birthdayWishes', 'moments','jobPositions','evaluationCycles','employeeEvaluations' 
     ];
     let initialLoads = collectionsToListen.length;
 
@@ -422,6 +422,9 @@ function renderMyBirthdayWishesWidget(employee) {
 // فایل: js/main.js
 // ▼▼▼ این تابع را که جا افتاده بود، به فایل خود اضافه کنید ▼▼▼
 
+// فایل: js/main.js
+// ▼▼▼ کل این تابع را با نسخه کامل و صحیح زیر جایگزین کنید ▼▼▼
+
 const renderMyTasks = (employee) => {
     const container = document.getElementById('my-tasks-list');
     if (!container) return;
@@ -431,16 +434,23 @@ const renderMyTasks = (employee) => {
     // ۱. بررسی برای دوره ارزیابی فعال
     const activeCycle = (state.evaluationCycles || []).find(c => c.status === 'active');
     if (activeCycle) {
-        // در آینده این بخش با کالکشن employeeEvaluations چک می‌شود تا تسک تکراری نمایش داده نشود
-        tasksHtml += `
-            <div class="flex items-center justify-between p-3 bg-indigo-50 rounded-lg">
-                <div>
-                    <p class="font-semibold text-sm text-indigo-800">تکمیل فرم خودارزیابی عملکرد</p>
-                    <p class="text-xs text-indigo-600">مربوط به دوره: ${activeCycle.title}</p>
+        // ۲. پیدا کردن ارزیابی مربوط به این کارمند و این دوره
+        const evaluation = (state.employeeEvaluations || []).find(e => 
+            e.employeeId === employee.id && e.cycleId === activeCycle.firestoreId
+        );
+
+        // ۳. فقط در صورتی تسک را نمایش بده که خودارزیابی هنوز ثبت نشده باشد
+        if (evaluation && !evaluation.selfAssessment) {
+            tasksHtml += `
+                <div class="flex items-center justify-between p-3 bg-indigo-50 rounded-lg">
+                    <div>
+                        <p class="font-semibold text-sm text-indigo-800">تکمیل فرم خودارزیابی عملکرد</p>
+                        <p class="text-xs text-indigo-600">مربوط به دوره: ${activeCycle.title}</p>
+                    </div>
+                    <button id="start-self-assessment-btn" data-cycle-id="${activeCycle.firestoreId}" class="primary-btn text-xs py-1.5 px-3">شروع</button>
                 </div>
-                <button id="start-self-assessment-btn" data-cycle-id="${activeCycle.firestoreId}" class="primary-btn text-xs py-1.5 px-3">شروع</button>
-            </div>
-        `;
+            `;
+        }
     }
 
     if (tasksHtml === '') {
