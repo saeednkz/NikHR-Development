@@ -1235,9 +1235,28 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
     }
 }
 // فایل: js/main.js - این تابع کمکی را اضافه کنید
+// فایل: js/main.js
+// ▼▼▼ این تابع را با نسخه اشکال‌زدایی زیر جایگزین کنید ▼▼▼
+
 export const isTeamLeader = (employee) => {
-    if (!employee) return false;
-    return state.teams.some(team => team.leaderId === employee.id);
+    if (!employee) {
+        console.log("isTeamLeader: پروفایل کارمند پیدا نشد.");
+        return false;
+    }
+
+    // برای اینکه ببینیم با چه اطلاعاتی کار می‌کنیم
+    console.log(`[اشکال‌زدایی] در حال بررسی برای کارمند: ${employee.name} با ID: '${employee.id}'`);
+    
+    const isLeader = state.teams.some(team => {
+        // مقادیر و نوع آن‌ها را قبل از مقایسه چاپ می‌کنیم
+        console.log(`-- در حال مقایسه با leaderId تیم '${team.name}': '${team.leaderId}'`);
+        const result = team.leaderId === employee.id;
+        console.log(`---- نتیجه مقایسه: ${result}`);
+        return result;
+    });
+
+    console.log(`[اشکال‌زدایی] نتیجه نهایی isTeamLeader: ${isLeader}`);
+    return isLeader;
 };
 function renderEmployeePortal() {
     document.getElementById('login-container').classList.add('hidden');
