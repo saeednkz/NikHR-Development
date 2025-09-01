@@ -6331,11 +6331,12 @@ const showEmployeeForm = (employeeId = null) => {
                 // [!code start]
                 // کد اصلاح شده برای ارسال اطلاعات کامل به Cloud Function
                 const result = await createNewEmployee({ 
-                    name: name,
-                    employeeId: employeeId,
-                    email: email,
-                    employeeData: employeeDataForCreation,
-                    teamId: selectedTeamId
+    name: name, 
+    employeeId: employeeId, 
+    email: email, 
+    employeeData: employeeDataForCreation,
+    teamId: selectedTeamId,
+    managedTeamId: managedTeamId
                 });
                 // [!code end]
                 
