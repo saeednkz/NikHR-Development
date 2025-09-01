@@ -5796,16 +5796,25 @@ const isProfileComplete = (employee) => {
 // فایل: js/main.js
 // تابع showEmployeeForm را به طور کامل با این نسخه جایگزین کنید ▼
 
+// فایل: js/main.js
+// کل تابع showEmployeeForm را با این نسخه جایگزین کنید ▼
+
 const showEmployeeForm = (employeeId = null) => {
     const isEditing = employeeId !== null;
     const emp = isEditing ? state.employees.find(e => e.firestoreId === employeeId) : {};
     const currentTeam = isEditing ? state.teams.find(t => t.memberIds?.includes(emp.id)) : null;
     const teamOptions = state.teams.map(team => `<option value="${team.firestoreId}" ${currentTeam?.firestoreId === team.firestoreId ? 'selected' : ''}>${team.name}</option>`).join('');
 
-    // --- بخش جدید: ساخت گزینه‌های پوزیشن شغلی از state ---
-    const positionOptions = (state.jobPositions || []).map(pos => 
-        `<option value="${pos.firestoreId}" ${emp.jobPositionId === pos.firestoreId ? 'selected' : ''}>${pos.name}</option>`
+    // --- بخش جدید: ساخت گزینه‌های خانواده شغلی ---
+    const familyOptions = (state.jobFamilies || []).map(family => 
+        `<option value="${family.name}" ${emp.jobFamily === family.name ? 'selected' : ''}>${family.name}</option>`
     ).join('');
+
+    // --- بخش جدید: ساخت گزینه‌های سطح عددی (مثلاً ۱ تا ۱۵) ---
+    const levelOptions = Array.from({ length: 15 }, (_, i) => i + 1).map(levelNum =>
+        `<option value="${levelNum}" ${emp.level === levelNum ? 'selected' : ''}>سطح ${levelNum}</option>`
+    ).join('');
+
 
     modalTitle.innerText = isEditing ? 'ویرایش اطلاعات کارمند' : 'افزودن کارمند جدید';
     modalContent.innerHTML = `
@@ -5836,27 +5845,25 @@ const showEmployeeForm = (employeeId = null) => {
                 </div>
                 <div class="bg-white border rounded-xl p-4">
                     <label for="jobTitle" class="block text-xs font-semibold text-slate-500">عنوان شغلی</label>
-                    <input type="text" id="jobTitle" value="${emp.jobTitle || ''}" placeholder="مثال: کارشناس بازاریابی دیجیتال" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg">
+                    <input type="text" id="jobTitle" value="${emp.jobTitle || ''}" placeholder="مثال: مهندس نرم‌افزار" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg">
                 </div>
                 
                 <div class="bg-white border rounded-xl p-4">
-                    <label for="jobPositionId" class="block text-xs font-semibold text-slate-500">پوزیشن شغلی</label>
-                    <select id="jobPositionId" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg bg-white">
+                    <label for="jobFamily" class="block text-xs font-semibold text-slate-500">خانواده شغلی</label>
+                    <select id="jobFamily" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg bg-white">
                         <option value="">انتخاب کنید...</option>
-                        ${positionOptions}
+                        ${familyOptions}
                     </select>
                 </div>
                 
                 <div class="bg-white border rounded-xl p-4">
-                    <label for="level" class="block text-xs font-semibold text-slate-500">سطح</label>
+                    <label for="level" class="block text-xs font-semibold text-slate-500">سطح (Level)</label>
                     <select id="level" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg bg-white">
-                        <option value="Junior" ${emp.level === 'Junior' ? 'selected' : ''}>Junior (کارشناس)</option>
-                        <option value="Mid-level" ${emp.level === 'Mid-level' ? 'selected' : ''}>Mid-level (کارشناس ارشد)</option>
-                        <option value="Senior" ${emp.level === 'Senior' ? 'selected' : ''}>Senior (خبره)</option>
-                        <option value="Lead" ${emp.level === 'Lead' ? 'selected' : ''}>Lead (راهبر)</option>
-                        <option value="Manager" ${emp.level === 'Manager' ? 'selected' : ''}>Manager (مدیر)</option>
+                        <option value="">انتخاب کنید...</option>
+                        ${levelOptions}
                     </select>
                 </div>
+                
                 <div class="bg-white border rounded-xl p-4">
                     <label for="department-team-select" class="block text-xs font-semibold text-slate-500">دپارتمان / تیم</label>
                     <select id="department-team-select" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg bg-white">
@@ -5896,15 +5903,16 @@ const showEmployeeForm = (employeeId = null) => {
         const selectedTeamId = document.getElementById('department-team-select').value;
         const selectedTeam = state.teams.find(t => t.firestoreId === selectedTeamId);
 
+        // ▼▼▼ employeeCoreData با فیلدهای جدید آپدیت شده است ▼▼▼
         const employeeCoreData = {
             name: name,
             id: employeeId,
             jobTitle: document.getElementById('jobTitle').value,
-            level: document.getElementById('level').value,
+            jobFamily: document.getElementById('jobFamily').value, // ذخیره خانواده شغلی
+            level: parseInt(document.getElementById('level').value) || 1, // ذخیره سطح به صورت عدد
             department: selectedTeam ? selectedTeam.name : '',
             status: document.getElementById('status').value,
             startDate: persianToEnglishDate(document.getElementById('startDate').value),
-            jobPositionId: document.getElementById('jobPositionId').value // <<-- ذخیره شناسه پوزیشن شغلی
         };
 
         if (isEditing) {
@@ -5920,15 +5928,13 @@ const showEmployeeForm = (employeeId = null) => {
                 saveBtn.innerText = 'ذخیره';
             }
         } else {
-            const employeeDataForCreation = { ...employeeCoreData, avatar: `https://placehold.co/100x100/E2E8F0/4A5568?text=${name.substring(0, 2)}`, personalInfo: { email: email } };
+            // منطق ساخت کارمند جدید (بدون تغییر)
+            const employeeDataForCreation = { ...employeeCoreData, avatar: `...`, personalInfo: { email: email } };
             try {
                 const createNewEmployee = httpsCallable(functions, 'createNewEmployee');
                 await createNewEmployee({ 
-                    name: name, 
-                    employeeId: employeeId, 
-                    email: email, 
-                    employeeData: employeeDataForCreation,
-                    teamId: selectedTeamId
+                    name: name, employeeId: employeeId, email: email, 
+                    employeeData: employeeDataForCreation, teamId: selectedTeamId
                 });
                 showToast("کارمند و حساب کاربری با موفقیت ایجاد شد!");
                 closeModal(mainModal, mainModalContainer);
