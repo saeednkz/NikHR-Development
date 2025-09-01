@@ -228,7 +228,7 @@ function listenToData() {
             if (state.currentUser.role === 'employee') {
                 renderEmployeePortal();
             } else {
-                showDashboard();
+                showDashboard(state.currentUser, state); // [!code focus]
                 router();
             }
             document.getElementById('loading-overlay').style.display = 'none';
@@ -1237,6 +1237,7 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
 // فایل: js/main.js - این تابع کمکی را اضافه کنید
 const isTeamLeader = (employee) => {
     if (!employee) return false;
+    // این تابع به درستی کار می‌کند و نیازی به تغییر ندارد
     return state.teams.some(team => team.leaderId === employee.id);
 };
 function renderEmployeePortal() {
