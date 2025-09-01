@@ -1235,10 +1235,9 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
     }
 }
 // فایل: js/main.js - این تابع کمکی را اضافه کنید
-const isTeamLeader = (employee) => {
-    if (!employee) return false;
-    // این تابع به درستی کار می‌کند و نیازی به تغییر ندارد
-    return state.teams.some(team => team.leaderId === employee.id);
+export const isTeamLeader = (employee) => {
+    if (!employee) return false;
+    return state.teams.some(team => team.leaderId === employee.id);
 };
 function renderEmployeePortal() {
     document.getElementById('login-container').classList.add('hidden');
