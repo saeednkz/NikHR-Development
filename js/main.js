@@ -5399,10 +5399,11 @@ const setupAnalyticsPage = () => {
 // فایل: js/main.js - این تابع جدید را اضافه کنید
 
 // [!code start]
+// فایل: js/main.js - این تابع را به طور کامل جایگزین نسخه قبلی کنید
+
 const showEvaluationForm = (emp, cycle) => {
     modalTitle.innerText = `ارزیابی عملکرد: ${emp.name} (${cycle.title})`;
 
-    // ۱. پیدا کردن شایستگی‌های مرتبط با سطح شغلی کارمند
     const position = state.jobPositions.find(p => p.firestoreId === emp.jobPositionId);
     const relevantCompetencyIds = new Set(position ? position.competencyIds : []);
     const competenciesForReview = state.competencies.filter(c => relevantCompetencyIds.has(c.firestoreId));
@@ -5411,20 +5412,18 @@ const showEvaluationForm = (emp, cycle) => {
         <div class="mb-3 p-3 bg-slate-50 rounded-lg border">
             <label class="block text-sm font-medium text-slate-700">${comp.name}</label>
             <p class="text-xs text-slate-500 mb-2">امتیاز مدیر به این شایستگی (۱ تا ۵):</p>
-            <input type="number" class="competency-score w-full p-2 border rounded-md" data-id="${comp.firestoreId}" min="1" max="5" value="3" required>
+            <input type="number" class="competency-score w-full p-2 border rounded-md" data-name="${comp.name}" data-id="${comp.firestoreId}" min="1" max="5" value="3" required>
         </div>
     `).join('') : '<p class="text-sm text-slate-500">شایستگی‌ای برای پوزیشن شغلی این کارمند تعریف نشده است.</p>';
 
-    // ۲. پیدا کردن اهداف تیمی کارمند
     const team = state.teams.find(t => t.memberIds?.includes(emp.id));
     const teamOkrsHtml = (team?.okrs || []).map((okr, index) => `
         <div class="mb-3 p-3 bg-slate-50 rounded-lg border">
             <label class="block text-sm font-medium text-slate-700">${okr.title} (پیشرفت تیم: ${okr.progress}%)</label>
             <p class="text-xs text-slate-500 mb-2">امتیاز مدیر به میزان مشارکت کارمند در این هدف (۱ تا ۵):</p>
-            <input type="number" class="okr-score w-full p-2 border rounded-md" data-index="${index}" min="1" max="5" value="3" required>
+            <input type="number" class="okr-score w-full p-2 border rounded-md" data-index="${index}" data-title="${okr.title}" min="1" max="5" value="3" required>
         </div>
     `).join('') || '<p class="text-sm text-slate-500">تیم این کارمند هدفی (OKR) ثبت شده ندارد.</p>';
-
 
     modalContent.innerHTML = `
         <form id="evaluation-form" class="space-y-6">
@@ -5434,7 +5433,6 @@ const showEvaluationForm = (emp, cycle) => {
                     <p>کاربر هنوز خودارزیابی را تکمیل نکرده است.</p> 
                 </div>
             </div>
-
             <div>
                 <h4 class="font-bold text-lg mb-2 text-indigo-600">۲. ارزیابی شایستگی‌های شغلی</h4>
                 ${competenciesHtml}
@@ -5456,18 +5454,86 @@ const showEvaluationForm = (emp, cycle) => {
                     </div>
                 </div>
             </div>
-
             <div class="flex justify-end pt-4 border-t">
                 <button type="submit" class="primary-btn">ثبت نهایی ارزیابی</button>
             </div>
         </form>
     `;
+    openModal(mainModal, mainModalContainer);
 
     document.getElementById('evaluation-form').addEventListener('submit', async (e) => {
         e.preventDefault();
-        // TODO: منطق ذخیره‌سازی ارزیابی در دیتابیس در قدم بعدی پیاده‌سازی خواهد شد.
-        showToast("منطق ذخیره‌سازی در مرحله بعد پیاده‌سازی می‌شود.");
-        closeModal(mainModal, mainModalContainer);
+        const saveBtn = e.target.querySelector('button[type="submit"]');
+        saveBtn.disabled = true;
+        saveBtn.innerText = "در حال ذخیره...";
+
+        // ۱. جمع‌آوری امتیازات شایستگی‌ها
+        const competencyScores = {};
+        document.querySelectorAll('.competency-score').forEach(input => {
+            competencyScores[input.dataset.name] = parseInt(input.value);
+        });
+        const competencyInputs = Object.values(competencyScores);
+        const avgCompetencyScore = competencyInputs.length > 0 ? competencyInputs.reduce((a, b) => a + b, 0) / competencyInputs.length : 0;
+
+        // ۲. جمع‌آوری امتیازات اهداف
+        const okrScores = {};
+        document.querySelectorAll('.okr-score').forEach(input => {
+            okrScores[input.dataset.title] = parseInt(input.value);
+        });
+        const okrInputs = Object.values(okrScores);
+        const avgOkrScore = okrInputs.length > 0 ? okrInputs.reduce((a, b) => a + b, 0) / okrInputs.length : 0;
+
+        // ۳. محاسبه امتیاز نهایی (با وزن ۵۰-۵۰)
+        const overallScore = parseFloat(((avgCompetencyScore + avgOkrScore) / 2).toFixed(2));
+
+        // ۴. آماده‌سازی داده برای ذخیره
+        const managerAssessment = {
+            competencyScores,
+            okrScores,
+            strengths: document.getElementById('strengths').value,
+            areasForImprovement: document.getElementById('areasForImprovement').value,
+            overallScore: overallScore,
+            reviewDate: new Date().toISOString().split('T')[0], // تاریخ امروز
+            reviewer: state.currentUser.name || state.currentUser.email
+        };
+
+        try {
+            const batch = writeBatch(db);
+
+            // آپدیت کالکشن جدید employeeEvaluations
+            // نکته: در یک سیستم واقعی، ابتدا باید چک کنیم داکیومنت وجود دارد یا خیر
+            const evalRef = doc(collection(db, `artifacts/${appId}/public/data/employeeEvaluations`));
+            batch.set(evalRef, {
+                cycleId: cycle.firestoreId,
+                employeeId: emp.id,
+                managerId: state.currentUser.uid,
+                status: 'completed',
+                managerAssessment: managerAssessment,
+                // selfAssessment: ... (بعدا اضافه می‌شود)
+            });
+
+            // آپدیت آرایه قدیمی performanceHistory در پروفایل کارمند برای سازگاری
+            const empRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
+            const newHistoryItem = {
+                reviewDate: managerAssessment.reviewDate,
+                reviewer: managerAssessment.reviewer,
+                overallScore: managerAssessment.overallScore,
+                strengths: managerAssessment.strengths,
+                areasForImprovement: managerAssessment.areasForImprovement
+            };
+            batch.update(empRef, {
+                performanceHistory: arrayUnion(newHistoryItem)
+            });
+
+            await batch.commit();
+            showToast("ارزیابی عملکرد با موفقیت ثبت شد.");
+            viewEmployeeProfile(emp.firestoreId); // پروفایل را مجددا باز کن تا سابقه جدید دیده شود
+        } catch (error) {
+            console.error("Error saving evaluation:", error);
+            showToast("خطا در ذخیره‌سازی ارزیابی.", "error");
+            saveBtn.disabled = false;
+            saveBtn.innerText = "ثبت نهایی ارزیابی";
+        }
     });
 };
 // [!code end]
