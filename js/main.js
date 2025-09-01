@@ -524,7 +524,7 @@ function renderEmployeePortalPage(pageName, employee) {
                     <div id="my-tasks-widget" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
                         <h3 class="font-semibold text-slate-800 flex items-center gap-2 mb-4">
                             <i data-lucide="check-square" class="w-5 h-5 text-indigo-500"></i>
-                            کارهای من
+                            تسک‌های من
                         </h3>
                         <div id="my-tasks-list" class="space-y-3"></div>
                     </div>
