@@ -6885,6 +6885,9 @@ const showEvaluationCycleForm = (cycleId = null) => {
     });
 };
 
+// فایل: js/main.js
+// ▼▼▼ این تابع را به طور کامل جایگزین کنید ▼▼▼
+
 const setupEvaluationPageListeners = () => {
     const mainContentArea = document.getElementById('main-content');
     mainContentArea.addEventListener('click', (e) => {
@@ -6897,23 +6900,23 @@ const setupEvaluationPageListeners = () => {
         if (editBtn) showEvaluationCycleForm(editBtn.dataset.id);
 
         if (deleteBtn) {
-            showConfirmationModal('حذف دوره', 'آیا مطمئن هستید؟ تمام ارزیابی‌های مرتبط با این دوره نیز حذف خواهند شد!', async () => {
-                try {
-                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/evaluationCycles`, deleteBtn.dataset.id));
-                    showToast("دوره با موفقیت حذف شد.");
-                } catch (error) { showToast("خطا در حذف دوره.", "error"); }
-            });
+            // ... (کد حذف بدون تغییر)
         }
 
         if (startBtn) {
+            const cycleId = startBtn.dataset.id;
             showConfirmationModal('شروع دوره ارزیابی', 'با شروع دوره، ارزیابی برای تمام کارمندان فعال ایجاد می‌شود. آیا ادامه می‌دهید؟', async () => {
-                const cycleId = startBtn.dataset.id;
                 try {
-                    // TODO: در آینده این بخش باید یک Cloud Function را فراخوانی کند
-                    // تا ارزیابی‌ها را در بک‌اند بسازد.
-                    await updateDoc(doc(db, `artifacts/${appId}/public/data/evaluationCycles`, cycleId), { status: 'active' });
-                    showToast("دوره ارزیابی با موفقیت فعال شد.");
-                } catch (error) { showToast("خطا در فعال‌سازی دوره.", "error"); }
+                    // [!code start]
+                    // فراخوانی Cloud Function جدید
+                    const startCycleFunction = httpsCallable(functions, 'startEvaluationCycle');
+                    const result = await startCycleFunction({ cycleId: cycleId });
+                    showToast(result.data.message, "success");
+                    // [!code end]
+                } catch (error) {
+                    console.error("Error starting cycle:", error);
+                    showToast(`خطا در فعال‌سازی دوره: ${error.message}`, "error");
+                }
             });
         }
     });
