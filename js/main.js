@@ -5910,7 +5910,7 @@ const showEvaluationForm = (employee, cycle, evaluation) => {
             });
 
             // آپدیت آرایه قدیمی performanceHistory در پروفایل کارمند برای سازگاری
-            const empRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
+            const empRef = doc(db, `artifacts/${appId}/public/data/employees`, employee.firestoreId);
             const newHistoryItem = {
                 reviewDate: managerAssessment.reviewDate,
                 reviewer: managerAssessment.reviewer,
