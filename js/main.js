@@ -1111,7 +1111,7 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
                 if (evaluation) {
                     showSelfAssessmentForm(evaluation);
                 }
-                return; // مهم: برای جلوگیری از اجرای کدهای دیگر
+                return; 
             }
             // [!code end]
             
@@ -1174,14 +1174,6 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
                 showSelfAssessmentForm(employee, cycle);
             }
         }
-            const selfAssessBtn = e.target.closest('.start-self-assessment-btn');
-            if (selfAssessBtn) {
-                const evaluationId = selfAssessBtn.dataset.id;
-                const evaluation = state.employeeEvaluations.find(ev => ev.firestoreId === evaluationId);
-                if (evaluation) {
-                    showSelfAssessmentForm(evaluation);
-                }
-            }
         // [!code end]
             // مشاهده اعضای تیم و OKR در دایرکتوری
             const viewTeamBtn = e.target.closest('.view-team-employee-btn');
