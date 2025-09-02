@@ -3443,15 +3443,15 @@ analytics: () => {
             </div>
             </div>
 
-        <div class="mb-6 border-b border-slate-200">
-            <nav id="analytics-tabs" class="flex -mb-px space-x-6 space-x-reverse" aria-label="Tabs">
-                <button data-tab="overview" class="analytics-tab shrink-0 border-b-2 font-semibold px-1 py-3 text-sm border-blue-600 text-blue-600">
+        <div class="sticky top-0 bg-white/70 backdrop-blur p-3 border rounded-xl mb-6 z-10">
+            <nav id="analytics-tabs" class="flex flex-wrap gap-2" aria-label="Tabs">
+                <button data-tab="overview" class="analytics-tab primary-btn text-xs font-semibold px-3 py-1.5 rounded-lg">
                     نمای کلی استعدادها
                 </button>
-                <button data-tab="health" class="analytics-tab shrink-0 border-b-2 font-semibold px-1 py-3 text-sm border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300">
+                <button data-tab="health" class="analytics-tab secondary-btn text-xs font-semibold px-3 py-1.5 rounded-lg">
                     سلامت سازمان
                 </button>
-                <button data-tab="tools" class="analytics-tab shrink-0 border-b-2 font-semibold px-1 py-3 text-sm border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300">
+                <button data-tab="tools" class="analytics-tab secondary-btn text-xs font-semibold px-3 py-1.5 rounded-lg">
                     ابزارهای تحلیلی
                 </button>
             </nav>
@@ -6025,17 +6025,11 @@ const setupAnalyticsPage = () => {
     const panes = document.querySelectorAll('.analytics-tab-pane');
     tabs.forEach(tab => {
         tab.addEventListener('click', () => {
-            tabs.forEach(t => {
-                t.classList.remove('border-blue-600', 'text-blue-600');
-                t.classList.add('border-transparent', 'text-slate-500', 'hover:text-slate-700', 'hover:border-slate-300');
-            });
-            tab.classList.add('border-blue-600', 'text-blue-600');
-            tab.classList.remove('border-transparent', 'text-slate-500', 'hover:text-slate-700', 'hover:border-slate-300');
+            tabs.forEach(t => { t.classList.remove('primary-btn'); t.classList.add('secondary-btn'); });
+            tab.classList.add('primary-btn');
+            tab.classList.remove('secondary-btn');
 
-            panes.forEach(pane => {
-                pane.classList.toggle('hidden', pane.id !== `tab-${tab.dataset.tab}`);
-            });
-            // برای اطمینان از رندر شدن صحیح نمودارها هنگام نمایش تب
+            panes.forEach(pane => { pane.classList.toggle('hidden', pane.id !== `tab-${tab.dataset.tab}`); });
             window.dispatchEvent(new Event('resize'));
         });
     });
