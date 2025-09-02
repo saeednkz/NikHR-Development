@@ -5254,7 +5254,6 @@ const renderEmployeeTable = () => {
                 return `
                     <div class=\"card bg-white p-4 flex flex-col text-center items-center rounded-2xl shadow-lg transform hover:-translate-y-1 transition-transform duration-300 relative overflow-hidden\">
                         <div class=\"absolute top-3 right-3 w-3 h-3 rounded-full ${riskColorClass}\" title=\"ریسک خروج: ${riskScore}%\"></div>
-                        <div class=\"absolute -left-10 -bottom-10 w-32 h-32 rounded-full bg-slate-50\"></div>
 
                         <img src=\"${emp.avatar}\" alt=\"${emp.name}\" class=\"w-24 h-24 rounded-full object-cover border-4 border-slate-100 mt-4 shadow-sm\">
                         
