@@ -476,6 +476,9 @@ const manager = team ? state.employees.find(e => e.id === team.leadership?.manag
 // فایل: js/main.js -> داخل تابع viewEmployeeProfile
 // ▼▼▼ این بلوک کد را به طور کامل جایگزین نسخه فعلی performanceHistoryHtml کنید ▼▼▼
 
+// فایل: js/main.js -> داخل تابع viewEmployeeProfile
+// ▼▼▼ کل این متغیر را با نسخه جدید و کامل زیر جایگزین کنید ▼▼▼
+
 const performanceHistoryHtml = (employee.performanceHistory || [])
     .sort((a, b) => new Date(b.reviewDate) - new Date(a.reviewDate))
     .map((review, index) => {
@@ -491,6 +494,8 @@ const performanceHistoryHtml = (employee.performanceHistory || [])
                 </div>
             `).join('');
         };
+        
+        const selfAssessment = review.selfAssessment; // گرفتن داده‌های خودارزیابی
 
         return `
             <div class="bg-white rounded-xl border border-slate-200 p-4 space-y-3">
@@ -509,20 +514,32 @@ const performanceHistoryHtml = (employee.performanceHistory || [])
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 border-t pt-3">
                     <div>
-                        <h5 class="text-sm font-bold text-slate-600 mb-2">امتیاز شایستگی‌ها</h5>
+                        <h5 class="text-sm font-bold text-slate-600 mb-2">امتیاز شایستگی‌ها (دیدگاه مدیر)</h5>
                         <div class="space-y-1 text-xs">${renderScores(review.competencyScores)}</div>
                     </div>
                     <div>
-                        <h5 class="text-sm font-bold text-slate-600 mb-2">امتیاز اهداف (OKR)</h5>
+                        <h5 class="text-sm font-bold text-slate-600 mb-2">امتیاز اهداف (دیدگاه مدیر)</h5>
                         <div class="space-y-1 text-xs">${renderScores(review.okrScores)}</div>
                     </div>
                 </div>
 
                 <div class="border-t pt-3 text-sm text-slate-700">
-                    <p><strong>نقاط قوت:</strong> ${review.strengths || '-'}</p>
-                    <p class="mt-2"><strong>زمینه‌های قابل بهبود:</strong> ${review.areasForImprovement || '-'}</p>
+                    <p><strong>نقاط قوت (دیدگاه مدیر):</strong> ${review.strengths || '-'}</p>
+                    <p class="mt-2"><strong>زمینه‌های بهبود (دیدگاه مدیر):</strong> ${review.areasForImprovement || '-'}</p>
                 </div>
-            </div>
+
+                ${selfAssessment ? `
+                    <div class="border-t pt-3">
+                        <details class="text-sm">
+                            <summary class="cursor-pointer font-semibold text-slate-600 hover:text-slate-800 transition-colors">مشاهده خودارزیابی کارمند</summary>
+                            <div class="mt-3 p-3 bg-slate-50 rounded-lg space-y-2 text-slate-700">
+                                <p><strong>نقاط قوت (از دید کارمند):</strong> ${selfAssessment.strengths || '-'}</p>
+                                <p class="mt-2"><strong>زمینه‌های بهبود (از دید کارمند):</strong> ${selfAssessment.areasForImprovement || '-'}</p>
+                            </div>
+                        </details>
+                    </div>
+                ` : ''}
+                </div>
         `;
     }).join('') || '<div class="text-center py-6"><i data-lucide="inbox" class="w-12 h-12 mx-auto text-slate-300"></i><p class="mt-2 text-sm text-slate-500">سابقه‌ای از ارزیابی عملکرد شما ثبت نشده است.</p></div>';
 
@@ -5962,10 +5979,15 @@ const showEvaluationForm = (employee, cycle, evaluation) => {
             });
 
             // آپدیت پروفایل کارمند برای بایگانی
-            const empRef = doc(db, `artifacts/${appId}/public/data/employees`, employee.firestoreId);
-            batch.update(empRef, {
-                performanceHistory: arrayUnion(managerAssessment)
-            });
+// کد اصلاح شده
+const empRef = doc(db, `artifacts/${appId}/public/data/employees`, employee.firestoreId);
+const newHistoryRecord = {
+    ...managerAssessment, // شامل تمام اطلاعات ارزیابی مدیر
+    selfAssessment: evaluation.selfAssessment || null // اضافه کردن بخش خودارزیابی
+};
+batch.update(empRef, {
+    performanceHistory: arrayUnion(newHistoryRecord)
+});
 
             await batch.commit();
             showToast("ارزیابی عملکرد با موفقیت ثبت شد.");
