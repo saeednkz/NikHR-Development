@@ -2389,7 +2389,7 @@ const updateNotificationBell = () => {
         const generateAndShowSurveyLink = (...args) => window.generateAndShowSurveyLink?.(...args);
         const showSurveyTargetSelector = (...args) => window.showSurveyTargetSelector?.(...args);
         const showEditPersonalInfoForm = (...args) => window.showEditPersonalInfoForm?.(...args);
-        const setupTeamProfileModalListeners = (...args) => window.setupTeamProfileModalListeners?.(...args);
+        
         const showAssignmentRuleForm = (...args) => window.showAssignmentRuleForm?.(...args);
         const showProcessReminderForm = (...args) => window.showProcessReminderForm?.(...args);
         if (typeof renderTeamHealthMetrics !== 'function') { window.renderTeamHealthMetrics = (team) => { const metrics = team.healthMetrics || []; if(!metrics.length) return '<p class=\"text-sm text-slate-500\">معیاری ثبت نشده است.</p>'; return metrics.map(m=>`<div class=\"flex justify-between text-sm\"><span>${m.name}</span><span class=\"font-medium\">${m.value}</span></div>`).join(''); }; }
