@@ -479,22 +479,12 @@ const manager = team ? state.employees.find(e => e.id === team.leadership?.manag
 // فایل: js/main.js -> داخل تابع viewEmployeeProfile
 // ▼▼▼ کل این متغیر را با نسخه جدید و کامل زیر جایگزین کنید ▼▼▼
 
-const performanceHistoryHtml = (employee.performanceHistory || [])
+// فایل: js/main.js -> داخل تابع viewEmployeeProfile
+// ▼▼▼ کل این متغیر را با نسخه جدید و کامل زیر جایگزین کنید ▼▼▼
+
+const performanceHistoryHtml = (emp.performanceHistory || [])
     .sort((a, b) => new Date(b.reviewDate) - new Date(a.reviewDate))
     .map((review, index) => {
-        // تابع کمکی برای نمایش لیست امتیازات
-        const renderScores = (scoresObject) => {
-            if (!scoresObject || Object.keys(scoresObject).length === 0) {
-                return '<p class="text-slate-400 text-xs">موردی ثبت نشده</p>';
-            }
-            return Object.entries(scoresObject).map(([name, score]) => `
-                <div class="flex justify-between items-center">
-                    <span class="text-slate-600">${name}:</span>
-                    <span class="font-semibold text-slate-800">${score}/5</span>
-                </div>
-            `).join('');
-        };
-        
         const selfAssessment = review.selfAssessment; // گرفتن داده‌های خودارزیابی
 
         return `
@@ -512,20 +502,9 @@ const performanceHistoryHtml = (employee.performanceHistory || [])
                     ` : ''}
                 </div>
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 border-t pt-3">
-                    <div>
-                        <h5 class="text-sm font-bold text-slate-600 mb-2">امتیاز شایستگی‌ها (دیدگاه مدیر)</h5>
-                        <div class="space-y-1 text-xs">${renderScores(review.competencyScores)}</div>
-                    </div>
-                    <div>
-                        <h5 class="text-sm font-bold text-slate-600 mb-2">امتیاز اهداف (دیدگاه مدیر)</h5>
-                        <div class="space-y-1 text-xs">${renderScores(review.okrScores)}</div>
-                    </div>
-                </div>
-
                 <div class="border-t pt-3 text-sm text-slate-700">
                     <p><strong>نقاط قوت (دیدگاه مدیر):</strong> ${review.strengths || '-'}</p>
-                    <p class="mt-2"><strong>زمینه‌های بهبود (دیدگاه مدیر):</strong> ${review.areasForImprovement || '-'}</p>
+                    <p class="mt-2"><strong>زمینه‌های قابل بهبود (دیدگاه مدیر):</strong> ${review.areasForImprovement || '-'}</p>
                 </div>
 
                 ${selfAssessment ? `
@@ -3846,7 +3825,31 @@ function setupProfileModalListeners(emp) {
             }
             if (id === 'main-edit-employee-btn') { showEmployeeForm(emp.firestoreId); return; }
             if (id === 'edit-competencies-btn') { showEditCompetenciesForm(emp); return; }
-            if (id === 'add-performance-btn') { showPerformanceForm(emp); return; }
+            // کد جدید و صحیح
+if (id === 'add-performance-btn') {
+    // ۱. دوره ارزیابی فعال را پیدا کن
+    const activeCycle = (state.evaluationCycles || []).find(c => c.status === 'active');
+
+    if (!activeCycle) {
+        // اگر دوره فعالی نبود، به همان فرم قدیمی برو (برای ثبت سوابق دستی)
+        showPerformanceForm(emp);
+        return;
+    }
+
+    // ۲. داکیومنت ارزیابی مربوط به این کارمند و این دوره را پیدا کن
+    const evaluation = (state.employeeEvaluations || []).find(e => 
+        e.employeeId === emp.id && e.cycleId === activeCycle.firestoreId
+    );
+
+    if (!evaluation) {
+        showToast("برای این کارمند در دوره فعال، ارزیابی‌ای شروع نشده است.", "error");
+        return;
+    }
+
+    // ۳. فرم اصلی و کامل ارزیابی را با تمام اطلاعات نمایش بده
+    showEvaluationForm(emp, activeCycle, evaluation);
+    return;
+}
             if (id === 'edit-personal-info-btn') { showEditPersonalInfoForm(emp); return; }
             if (id === 'add-contract-btn') { showContractForm(emp); return; }
             if (id === 'edit-career-path-btn') { showEditCareerPathForm(emp); return; }
