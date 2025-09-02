@@ -857,23 +857,32 @@ window.renderMomentsList = () => {
 // فایل: js/main.js - داخل تابع renderEmployeePortalPage و بلوک 'team-performance'
 
 const tableRows = teamMembers.map(member => {
-    const evaluation = (state.employeeEvaluations || []).find(e => e.employeeId === member.id && e.cycleId === activeCycle.firestoreId);
+    // [کد دیباگ] نمایش اطلاعاتی که برای جستجو استفاده می‌شود
+    console.log(`--- جستجو برای کارمند: ${member.name} (ID: ${member.id}) | در دوره ارزیابی با ID: ${activeCycle.firestoreId}`);
+
+    const evaluation = (state.employeeEvaluations || []).find(e => 
+        e.employeeId === member.id && e.cycleId === activeCycle.firestoreId
+    );
+
+    if (evaluation) {
+        console.log(`✅ برای ${member.name} ارزیابی پیدا شد:`, evaluation);
+    } else {
+        console.log(`❌ برای ${member.name} ارزیابی پیدا نشد. مقادیر در دیتابیس چک شود.`);
+    }
     
     let statusText = "شروع نشده";
     let statusColor = "bg-slate-100 text-slate-800";
 
-    // ▼▼▼ این بخش اصلاح شده است ▼▼▼
     if (evaluation?.status === 'pending_self_assessment') {
         statusText = "در انتظار خودارزیابی";
         statusColor = "bg-orange-100 text-orange-800";
-    } else if (evaluation?.status === 'pending_manager_assessment') { // <-- اصلاح کلیدی
+    } else if (evaluation?.status === 'pending_manager_assessment') {
         statusText = "آماده ارزیابی مدیر";
         statusColor = "bg-blue-100 text-blue-800";
     } else if (evaluation?.status === 'completed') {
         statusText = "تکمیل شده";
         statusColor = "bg-green-100 text-green-800";
     }
-    // ▲▲▲ پایان بخش اصلاح شده ▲▲▲
 
     return `
         <tr class="border-b">
