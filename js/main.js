@@ -5848,7 +5848,7 @@ const showEvaluationForm = (employee, cycle, evaluation) => {
     `;
     openModal(mainModal, mainModalContainer);
 
-    document.getElementById('evaluation-form').addEventListener('submit', async (e) => {
+  document.getElementById('manager-evaluation-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         const saveBtn = e.target.querySelector('button[type="submit"]');
         saveBtn.disabled = true;
