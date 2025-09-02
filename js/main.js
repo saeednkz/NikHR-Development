@@ -2466,12 +2466,12 @@ const showViewPerformanceDetailsModal = (review) => {
 
     modalContent.innerHTML = `
         <div class="space-y-4">
-            <div class="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
+            <div class="flex justify-between items-center p-3 bg-gradient-to-l from-indigo-50 to-white rounded-lg border">
                 <div>
                     <p class="font-bold text-slate-800">امتیاز کلی: <span class="text-xl font-extrabold text-indigo-600">${review.overallScore}/5</span></p>
                     <p class="text-xs text-slate-500 mt-1">ارزیاب: ${review.reviewer}</p>
                 </div>
-                <button id="close-view-modal" class="secondary-btn">بستن</button>
+                <button id="close-view-modal" class="text-xs font-semibold px-3 py-2 rounded-lg bg-slate-800 text-white hover:bg-slate-900 transition">بستن</button>
             </div>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
@@ -2486,17 +2486,17 @@ const showViewPerformanceDetailsModal = (review) => {
             </div>
 
             <div class="text-sm text-slate-700 space-y-2">
-                <div class="p-3 bg-slate-50 rounded-lg">
+                <div class="p-3 bg-white rounded-lg border shadow-sm">
                     <p><strong>نقاط قوت (دیدگاه مدیر):</strong> ${review.strengths || '-'}</p>
                 </div>
-                <div class="p-3 bg-slate-50 rounded-lg">
+                <div class="p-3 bg-white rounded-lg border shadow-sm">
                     <p><strong>زمینه‌های قابل بهبود (دیدگاه مدیر):</strong> ${review.areasForImprovement || '-'}</p>
                 </div>
             </div>
 
             ${selfAssessment ? `
                 <div>
-                    <h5 class=\"text-sm font-bold text-slate-600 mb-2 p-2 bg-indigo-50 rounded-md text-indigo-800\">خودارزیابی کارمند</h5>
+                    <h5 class=\"text-sm font-bold text-slate-700 mb-2 p-2 bg-indigo-50 rounded-md text-indigo-800\">خودارزیابی کارمند</h5>
                     <div class=\"grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 mb-2\">
                         <div>
                             <h6 class=\"text-[12px] font-bold text-slate-600 mb-1\">امتیاز شایستگی‌ها (خودارزیابی)</h6>
@@ -2507,9 +2507,15 @@ const showViewPerformanceDetailsModal = (review) => {
                             <div class=\"space-y-1 text-xs px-2 divide-y\">${renderScores(selfAssessment.okrScores)}</div>
                         </div>
                     </div>
-                    <div class=\"p-3 bg-slate-50 rounded-lg text-sm text-slate-700 space-y-2\">
-                        <p><strong>نقاط قوت (از دید کارمند):</strong> ${selfAssessment.strengths || '-'}</p>
-                        <p class=\"mt-2\"><strong>زمینه‌های بهبود (از دید کارمند):</strong> ${selfAssessment.areasForImprovement || '-'}</p>
+                    <div class=\"p-3 bg-white rounded-lg border shadow-sm text-sm text-slate-700 space-y-2\">
+                        <div>
+                            <p class=\"font-bold mb-1\">نقاط قوت از دید کارمند:</p>
+                            <p class=\"whitespace-pre-wrap\">${selfAssessment.strengths || '-'}</p>
+                        </div>
+                        <div class=\"border-t pt-2\">
+                            <p class=\"font-bold mb-1\">زمینه‌های قابل بهبود از دید کارمند:</p>
+                            <p class=\"whitespace-pre-wrap\">${selfAssessment.areasForImprovement || '-'}</p>
+                        </div>
                     </div>
                 </div>
             ` : ''}
