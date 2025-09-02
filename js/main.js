@@ -4142,25 +4142,37 @@ const viewEmployeeProfile = (employeeId) => {
     modalContent = clearEventListeners(document.getElementById('modalContent'));
     setupProfileModalListeners(emp);
 };
+// فایل: js/main.js
+// ▼▼▼ کل این تابع را با نسخه کامل و صحیح زیر جایگزین کنید ▼▼▼
+
 const viewTeamProfile = (teamId) => {
     const team = state.teams.find(t => t.firestoreId === teamId);
     if (!team) return;
-    const leader = state.employees.find(e => e.id === team.leaderId);
-    const members = state.employees.filter(e => team.memberIds?.includes(e.id));
+
+    // [اصلاح ۱] خواندن مدیر از ساختار داده جدید به جای leaderId
+    const manager = state.employees.find(e => e.id === team.leadership?.manager);
+
+    // [اصلاح ۲] ایجاد لیست کامل و بدون تکرار اعضا (شامل مدیر) برای شمارش صحیح
+    const allPersonnelIds = new Set(team.memberIds || []);
+    if (team.leadership?.manager) {
+        allPersonnelIds.add(team.leadership.manager);
+    }
+    const members = Array.from(allPersonnelIds)
+        .map(id => state.employees.find(e => e.id === id))
+        .filter(Boolean); // حذف اعضای null (اگر کارمندی حذف شده باشد)
+
+    // [اصلاح ۳] استفاده از آواتار پیش‌فرض برای جلوگیری از خطای 404
+    const avatarUrl = team.avatar || 'logo.png';
+
     const basicAnalysis = generateTeamSmartAnalysis(team);
     const advancedAnalysis = analyzeTeamData(team, members);
-
     const highRiskNames = advancedAnalysis.highRiskMembers.map(e => e.name).join('، ');
     if(highRiskNames) {
         basicAnalysis.risk = { text: `اعضای پرریسک: <strong>${highRiskNames}</strong>`, icon: 'shield-alert', color: 'text-red-600' };
     }
 
-    // --- بخش جدید: ساخت HTML برای نمایش OKR های جدید ---
     const okrsHtml = (team.okrs && team.okrs.length > 0) ? team.okrs.map(okr => {
-        // محاسبه پیشرفت هدف بر اساس میانگین نتایج کلیدی (اگر از قبل محاسبه نشده)
         const objectiveProgress = okr.progress;
-
-        // ساخت HTML برای هر نتیجه کلیدی
         const keyResultsHtml = (okr.keyResults && okr.keyResults.length > 0) ? okr.keyResults.map(kr => `
             <div>
                 <div class="flex justify-between items-center text-xs text-slate-600 mb-1">
@@ -4172,7 +4184,6 @@ const viewTeamProfile = (teamId) => {
                 </div>
             </div>
         `).join('') : '<p class="text-xs text-slate-400">نتیجه کلیدی‌ای ثبت نشده است.</p>';
-        
         return `
             <div class="bg-slate-50 p-3 rounded-lg border">
                 <div class="flex justify-between items-center text-sm mb-2">
@@ -4182,13 +4193,10 @@ const viewTeamProfile = (teamId) => {
                 <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden mb-3">
                     <div class="h-2 bg-indigo-500" style="width:${objectiveProgress}%;"></div>
                 </div>
-                <div class="space-y-2 border-t pt-2">
-                    ${keyResultsHtml}
-                </div>
+                <div class="space-y-2 border-t pt-2">${keyResultsHtml}</div>
             </div>
         `;
     }).join('') : '<p class="text-sm text-slate-500">هدفی برای این تیم ثبت نشده است.</p>';
-
 
     modalTitle.innerText = 'پروفایل تیم: ' + team.name;
     modalContent.innerHTML = `
@@ -4196,12 +4204,11 @@ const viewTeamProfile = (teamId) => {
             <div class="p-6 sm:p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div class="flex items-center gap-4">
                     <div class="w-16 h-16 rounded-2xl overflow-hidden ring-4 ring-white/30 bg-white/10">
-                        <img src="${team.avatar}" alt="${team.name}" class="w-full h-full object-cover">
+                        <img src="${avatarUrl}" alt="${team.name}" class="w-full h-full object-cover">
                     </div>
                     <div>
                         <h2 class="text-2xl font-extrabold text-white">${team.name}</h2>
-                        <p class="text-white/90 text-xs">رهبر تیم: ${leader?.name || 'نامشخص'}</p>
-                        ${team.missionLine ? `<p class="text-white/90 text-xs mt-1">${team.missionLine}</p>` : ''}
+                        <p class="text-white/90 text-xs mt-1">${team.missionLine ? team.missionLine : (manager ? `مدیر: ${manager.name}` : 'مدیر ندارد')}</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
@@ -4215,7 +4222,7 @@ const viewTeamProfile = (teamId) => {
             <div class="lg:col-span-1 space-y-6">
                 <div class="bg-white rounded-2xl border border-slate-200 p-6 text-center">
                     <div class="w-24 h-24 rounded-full mx-auto mb-4 overflow-hidden ring-4 ring-indigo-100 bg-gray-200 flex items-center justify-center">
-                        <img src="${team.avatar}" alt="${team.name}" class="w-full h-full object-cover">
+                        <img src="${avatarUrl}" alt="${team.name}" class="w-full h-full object-cover">
                     </div>
                     ${canEdit() ? `<button id="change-team-avatar-btn" class="secondary-btn text-xs">تغییر عکس</button>` : ''}
                 </div>
@@ -4254,61 +4261,9 @@ const viewTeamProfile = (teamId) => {
         </div>
     `;
     openModal(mainModal, mainModalContainer);
-    // Minimal listener to handle avatar change in team profile and future actions
-if (typeof window.setupTeamProfileModalListeners !== 'function') {
-    window.setupTeamProfileModalListeners = (teamArg) => {
-        const content = document.getElementById('modalContent');
-        content?.addEventListener('click', async (e) => {
-            const button = e.target.closest('button');
-            if (!button) return; // اگر روی دکمه کلیک نشده بود، ادامه نده
-
-            const teamId = teamArg.firestoreId;
-
-            // --- رسیدگی به کلیک‌های مختلف ---
-            if (button.id === 'change-team-avatar-btn') {
-                // ... (کد این بخش بدون تغییر باقی می‌ماند)
-                const input = document.getElementById('image-upload-input');
-                if (!input) return;
-                input.onchange = async () => {
-                    const file = input.files[0];
-                    if (!file) return;
-                    try {
-                        const sRef = ref(storage, `teams/${teamId}/avatar_${Date.now()}_${file.name}`);
-                        await uploadBytes(sRef, file);
-                        const url = await getDownloadURL(sRef);
-                        await updateDoc(doc(db, `artifacts/${appId}/public/data/teams`, teamId), { avatar: url });
-                        showToast('عکس تیم به‌روزرسانی شد.');
-                        viewTeamProfile(teamId);
-                    } catch (err) {
-                        console.error('Error uploading team avatar', err);
-                        showToast('خطا در به‌روزرسانی عکس تیم.', 'error');
-                    } finally { input.value = ''; }
-                };
-                input.click();
-                return;
-            }
-            if (button.id === 'edit-team-members-btn') {
-                showEditTeamMembersForm(teamArg);
-                return;
-            }
-            if (button.id === 'edit-team-okrs-btn') {
-                showEditTeamOkrsForm(teamArg);
-                return;
-            }
-            
-            // ▼▼▼ این دو بلاک جدید، مشکلات شما را حل می‌کنند ▼▼▼
-            if (button.id === 'edit-team-mission-btn') {
-                showEditTeamMissionForm(teamArg); // فعال‌سازی دکمه ویرایش هدف
-                return;
-            }
-            if (button.id === 'edit-team-details-btn') {
-                showTeamForm(teamId); // باز کردن فرم اصلی ویرایش تیم برای تغییر نام و مدیر
-                return;
-            }
-        });
-    };
-}
-    setupTeamProfileModalListeners(team);
+    if (typeof window.setupTeamProfileModalListeners === 'function') {
+        setupTeamProfileModalListeners(team);
+    }
 };
 
         // --- NAVIGATION & ROUTING ---
