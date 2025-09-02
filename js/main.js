@@ -4217,6 +4217,22 @@ const viewEmployeeProfile = (employeeId) => {
     const analysis = generateSmartAnalysis(emp);
     const team = state.teams.find(t => t.memberIds?.includes(emp.id));
     const manager = team ? state.employees.find(e => e.id === team.leadership?.manager) : null;
+    const teamName = team ? team.name : 'بدون تیم';
+    const managerName = manager?.name || 'نامشخص';
+    const tenureYears = emp.startDate ? ((new Date() - new Date(emp.startDate)) / (1000*60*60*24*365)).toFixed(1) : '-';
+    const latestReview = (emp.performanceHistory || []).slice().sort((a,b)=> new Date(b.reviewDate) - new Date(a.reviewDate))[0];
+    const latestScore = latestReview ? (latestReview.overallScore || null) : null;
+    const topSkillsArr = Object.entries(emp.skills || {}).sort((a,b)=> b[1]-a[1]).slice(0,5);
+    const chipPalette = [
+        'bg-indigo-50 text-indigo-700 border-indigo-200',
+        'bg-emerald-50 text-emerald-700 border-emerald-200',
+        'bg-amber-50 text-amber-700 border-amber-200',
+        'bg-sky-50 text-sky-700 border-sky-200',
+        'bg-rose-50 text-rose-700 border-rose-200'
+    ];
+    const topSkillChips = topSkillsArr.length
+        ? topSkillsArr.map(([name,level], idx)=> `<span class=\"px-2 py-1 rounded-full text-[11px] border ${chipPalette[idx % chipPalette.length]}\">${name} · ${level}/5</span>`).join(' ')
+        : '<span class="text-xs text-slate-500">مهارتی ثبت نشده است.</span>';
     
   const performanceHistoryHtml = (emp.performanceHistory && emp.performanceHistory.length > 0) 
         ? emp.performanceHistory.sort((a,b) => new Date(b.reviewDate) - new Date(a.reviewDate)).map((review, index) => {
@@ -4259,21 +4275,36 @@ const viewEmployeeProfile = (employeeId) => {
     modalTitle.innerText = 'پروفایل ۳۶۰ درجه: ' + emp.name;
     modalContent.innerHTML = `
         <div class="space-y-6">
-            <section class="rounded-2xl overflow-hidden border" style="background:linear-gradient(90deg,#FF6A3D,#F72585)">
-                <div class="p-6 sm:p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <section class="rounded-2xl overflow-hidden border relative" style="background:linear-gradient(135deg,#FF6A3D 0%, #F72585 100%)">
+                <div class="absolute inset-0 opacity-10 pointer-events-none" style="background-image: radial-gradient(circle at 20% 20%, #fff 2px, transparent 2px), radial-gradient(circle at 80% 30%, #fff 2px, transparent 2px), radial-gradient(circle at 40% 80%, #fff 2px, transparent 2px);"></div>
+                <div class="p-6 sm:p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4 relative">
                     <div class="flex items-center gap-4">
-                        <div class="w-20 h-20 rounded-2xl overflow-hidden ring-4 ring-white/30 bg-white/10">
+                        <div class="w-20 h-20 rounded-2xl overflow-hidden ring-4 ring-white/40 bg-white/10 shadow-lg">
                             <img src="${emp.avatar}" alt="${emp.name}" class="w-full h-full object-cover">
                         </div>
                         <div>
                             <h2 class="text-2xl font-extrabold text-white">${emp.name}</h2>
                             <p class="text-white/90 text-sm">${emp.jobTitle || 'بدون عنوان شغلی'} • ${emp.level || ''}</p>
+                            <div class="mt-3 grid grid-cols-3 gap-3 text-center">
+                                <div class="bg-white/15 backdrop-blur rounded-lg p-2 border border-white/20 shadow-sm">
+                                    <div class="text-white/90 text-xs">مشارکت</div>
+                                    <div class="text-white text-sm font-bold drop-shadow">${emp.engagementScore ?? '-'}${emp.engagementScore!=null?'%':''}</div>
+                                </div>
+                                <div class="bg-white/15 backdrop-blur rounded-lg p-2 border border-white/20 shadow-sm">
+                                    <div class="text-white/90 text-xs">آخرین ارزیابی</div>
+                                    <div class="text-white text-sm font-bold drop-shadow">${latestScore!=null? latestScore+'/5' : '-'}</div>
+                                </div>
+                                <div class="bg-white/15 backdrop-blur rounded-lg p-2 border border-white/20 shadow-sm">
+                                    <div class="text-white/90 text-xs">سابقه</div>
+                                    <div class="text-white text-sm font-bold drop-shadow">${tenureYears} سال</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
-                        ${canEdit() ? `<button id="main-edit-employee-btn" class="secondary-btn text-xs">ویرایش کارمند</button>` : ''}
-                        ${canEdit() ? `<button id="change-avatar-btn" class="secondary-btn text-xs">تغییر عکس</button>` : ''}
-                        ${canEdit() ? `<button id="delete-avatar-btn" class="secondary-btn text-xs">حذف عکس</button>` : ''}
+                        ${canEdit() ? `<button id="main-edit-employee-btn" class="text-xs font-semibold px-3 py-2 rounded-lg bg-white/20 text-white hover:bg-white/30 border border-white/30 transition">ویرایش کارمند</button>` : ''}
+        ${canEdit() ? `<button id="change-avatar-btn" class="text-xs font-semibold px-3 py-2 rounded-lg bg-white/20 text-white hover:bg-white/30 border border-white/30 transition">تغییر عکس</button>` : ''}
+        ${canEdit() ? `<button id="delete-avatar-btn" class="text-xs font-semibold px-3 py-2 rounded-lg bg-white/20 text-white hover:bg-white/30 border border-white/30 transition">حذف عکس</button>` : ''}
                         <span class="px-3 py-1 rounded-full text-xs font-bold bg-white/20 text-white">${emp.status}</span>
                     </div>
                 </div>
@@ -4303,6 +4334,23 @@ const viewEmployeeProfile = (employeeId) => {
                         <div class="p-6">
                             <div id="tab-overview" class="profile-tab-content">
                                 <div class="space-y-4">
+                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                        <div class="bg-slate-50 border rounded-xl p-3 text-center">
+                                            <div class="text-xs text-slate-500">تیم</div>
+                                            <div class="font-bold text-slate-800">${teamName}</div>
+                                        </div>
+                                        <div class="bg-slate-50 border rounded-xl p-3 text-center">
+                                            <div class="text-xs text-slate-500">مدیر</div>
+                                            <div class="font-bold text-slate-800">${managerName}</div>
+                                        </div>
+                                        <div class="bg-slate-50 border rounded-xl p-3 text-center">
+                                            <div class="text-xs text-slate-500">تماس سریع</div>
+                                            <div class="flex items-center justify-center gap-2 mt-1">
+                                                ${emp.personalInfo?.email ? `<a href=\"mailto:${emp.personalInfo.email}\" class=\"text-xs px-2 py-1 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200\">ایمیل</a>` : ''}
+                                                ${emp.personalInfo?.phone ? `<a href=\"tel:${emp.personalInfo.phone}\" class=\"text-xs px-2 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200\">تماس</a>` : ''}
+                                            </div>
+                                        </div>
+                                    </div>
                                     <div class="bg-white rounded-xl border border-slate-200 p-4">
                                         <h4 class="font-semibold mb-3 text-slate-700 flex items-center"><i data-lucide="info" class="ml-2 w-5 h-5 text-slate-500"></i>اطلاعات اصلی</h4>
                                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-slate-600">
@@ -4319,6 +4367,7 @@ const viewEmployeeProfile = (employeeId) => {
                                             ${canEdit() ? `<button id="edit-competencies-btn" class="primary-btn text-xs">ویرایش</button>` : ''}
                                         </div>
                                         <div class="space-y-4">${renderCompetencyBars(emp.competencies)}</div>
+                                        <div class="mt-3 flex flex-wrap gap-2">${topSkillChips}</div>
                                     </div>
                                 </div>
                             </div>
