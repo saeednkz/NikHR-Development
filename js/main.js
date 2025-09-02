@@ -6353,6 +6353,13 @@ const showEmployeeForm = (employeeId = null) => {
     const teamOptions = state.teams.map(team => `<option value="${team.firestoreId}" ${currentTeam?.firestoreId === team.firestoreId ? 'selected' : ''}>${team.name}</option>`).join('');
     const familyOptions = (state.jobFamilies || []).map(family => `<option value="${family.name}" ${emp.jobFamily === family.name ? 'selected' : ''}>${family.name}</option>`).join('');
 
+    // [!code start]
+    // ▼▼▼ ۱. گزینه‌های پوزیشن شغلی از state خوانده می‌شود ▼▼▼
+    const positionOptions = (state.jobPositions || []).map(pos =>
+        `<option value="${pos.firestoreId}" ${emp.jobPositionId === pos.firestoreId ? 'selected' : ''}>${pos.name}</option>`
+    ).join('');
+    // [!code end]
+
     modalTitle.innerText = isEditing ? 'ویرایش اطلاعات کارمند' : 'افزودن کارمند جدید';
     modalContent.innerHTML = `
         <form id="employee-form" class="space-y-5" data-old-team-id="${currentTeam?.firestoreId || ''}">
@@ -6363,7 +6370,14 @@ const showEmployeeForm = (employeeId = null) => {
                 <div class="md:col-span-2 bg-white border rounded-xl p-4"><label for="employee-email" class="block text-xs font-semibold text-slate-500">آدرس ایمیل (برای ورود)</label><input type="email" id="employee-email" value="${emp.personalInfo?.email || ''}" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg" ${isEditing ? 'readonly' : ''} required></div>
                 
                 <div class="bg-white border rounded-xl p-4"><label for="jobTitle" class="block text-xs font-semibold text-slate-500">عنوان شغلی</label><input type="text" id="jobTitle" value="${emp.jobTitle || ''}" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg"></div>
-
+                
+                <div class="bg-white border rounded-xl p-4">
+                    <label for="jobPositionId" class="block text-xs font-semibold text-slate-500">پوزیشن شغلی</label>
+                    <select id="jobPositionId" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg bg-white">
+                        <option value="">انتخاب کنید...</option>
+                        ${positionOptions}
+                    </select>
+                </div>
                 <div class="bg-white border rounded-xl p-4">
                     <label for="jobFamily" class="block text-xs font-semibold text-slate-500">خانواده شغلی</label>
                     <select id="jobFamily" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg bg-white">
@@ -6439,17 +6453,17 @@ const showEmployeeForm = (employeeId = null) => {
         saveBtn.disabled = true;
         saveBtn.innerText = 'در حال پردازش...';
 
-        const name = document.getElementById('name').value;
         const employeeId = document.getElementById('id').value;
-        const email = document.getElementById('employee-email').value;
         const selectedTeamId = document.getElementById('department-team-select').value;
         const selectedTeam = state.teams.find(t => t.firestoreId === selectedTeamId);
-        const managedTeamId = document.getElementById('managed-team-select').value;
-
+        
+        // [!code start]
+        // ▼▼▼ ۳. مقدار پوزیشن شغلی خوانده و ذخیره می‌شود ▼▼▼
         const employeeCoreData = {
-            name: name,
+            name: document.getElementById('name').value,
             id: employeeId,
             jobTitle: document.getElementById('jobTitle').value,
+            jobPositionId: document.getElementById('jobPositionId').value, // <-- این خط اضافه شد
             jobFamily: document.getElementById('jobFamily').value,
             level: document.getElementById('level').value,
             department: selectedTeam ? selectedTeam.name : '',
