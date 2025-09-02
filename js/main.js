@@ -5887,8 +5887,8 @@ const showEvaluationForm = (employee, cycle, evaluation) => {
         const managerAssessment = {
             competencyScores,
             okrScores,
-            strengths: document.getElementById('strengths').value,
-            areasForImprovement: document.getElementById('areasForImprovement').value,
+    strengths: document.getElementById('manager-strengths').value,
+    areasForImprovement: document.getElementById('manager-areasForImprovement').value,
             overallScore: overallScore,
             reviewDate: new Date().toISOString().split('T')[0], // تاریخ امروز
             reviewer: state.currentUser.name || state.currentUser.email
