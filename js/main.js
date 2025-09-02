@@ -9,7 +9,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "http
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
 
 // وارد کردن توابع از ماژول‌های محلی
-import { initAuth, showLoginPage, showDashboard, setupAuthEventListeners, signOut, isAdmin, canEdit } from './auth.js';
+import { initAuth, showLoginPage, showDashboard, setupAuthEventListeners, signOut, isAdmin, canEdit, isTeamManager } from './auth.js';
 import { showToast } from './utils.js';
         
         // --- SURVEY TEMPLATES (COMPREHENSIVE & STANDARD) ---
@@ -1317,26 +1317,6 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
 // فایل: js/main.js
 // ▼▼▼ این تابع را با نسخه اشکال‌زدایی زیر جایگزین کنید ▼▼▼
 
-export const isTeamLeader = (employee) => {
-    if (!employee) {
-        console.log("isTeamLeader: پروفایل کارمند پیدا نشد.");
-        return false;
-    }
-
-    // برای اینکه ببینیم با چه اطلاعاتی کار می‌کنیم
-    console.log(`[اشکال‌زدایی] در حال بررسی برای کارمند: ${employee.name} با ID: '${employee.id}'`);
-    
-    const isLeader = state.teams.some(team => {
-        // مقادیر و نوع آن‌ها را قبل از مقایسه چاپ می‌کنیم
-        console.log(`-- در حال مقایسه با leaderId تیم '${team.name}': '${team.leaderId}'`);
-        const result = team.leaderId === employee.id;
-        console.log(`---- نتیجه مقایسه: ${result}`);
-        return result;
-    });
-
-    console.log(`[اشکال‌زدایی] نتیجه نهایی isTeamLeader: ${isLeader}`);
-    return isLeader;
-};
 function renderEmployeePortal() {
     document.getElementById('login-container').classList.add('hidden');
     document.getElementById('dashboard-container').classList.add('hidden');
@@ -1351,9 +1331,10 @@ function renderEmployeePortal() {
     }
 
     // ۱. بررسی اینکه آیا کاربر مدیر است و ساخت لینک مربوطه
-    const managerNavlink = isTeamLeader(employee) 
-        ? `<a href="#team-performance" class="nav-item"><i data-lucide="clipboard-check"></i><span>مدیریت تیم من</span></a>` 
-        : '';
+     const managerNavlink = isTeamManager(employee) 
+        ? `<a href="#team-performance" class="nav-item"><i data-lucide="users-2"></i><span>مدیریت تیم من</span></a>` 
+        : '';
+
 
     const employeeName = employee.name || state.currentUser.email;
 
@@ -1363,7 +1344,7 @@ function renderEmployeePortal() {
                 <div class="text-center"><img src="${employee.avatar}" alt="Avatar" class="profile-pic object-cover"><h2 class="employee-name">${employeeName}</h2><p class="employee-title">${employee.jobTitle || 'بدون عنوان شغلی'}</p></div><div class="my-6 border-t border-white/20"></div>
 <nav id="employee-portal-nav" class="flex flex-col gap-2">
     <a href="#profile" class="nav-item active"><i data-lucide="layout-dashboard"></i><span>مسیر من</span></a>
-    <a href="#evaluations" class="nav-item"><i data-lucide="clipboard-check"></i><span>ارزیابی‌های من</span></a>
+    ${managerNavlink}  <a href="#evaluations" class="nav-item"><i data-lucide="clipboard-check"></i><span>ارزیابی‌های من</span></a>
     <a href="#requests" class="nav-item"><i data-lucide="send"></i><span>کارهای من</span></a>
     <a href="#directory" class="nav-item"><i data-lucide="users"></i><span>تیم‌ها</span></a>
     <a href="#documents" class="nav-item"><i data-lucide="folder-kanban"></i><span>دانش‌نامه</span></a>
