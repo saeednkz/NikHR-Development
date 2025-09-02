@@ -853,27 +853,36 @@ window.renderMomentsList = () => {
             return;
         }
 
-        const tableRows = teamMembers.map(member => {
-            const evaluation = (state.employeeEvaluations || []).find(e => e.employeeId === member.id && e.cycleId === activeCycle.firestoreId);
-            let statusText = "شروع نشده";
-            let statusColor = "bg-slate-100 text-slate-800";
-if (evaluation?.status === 'pending_manager_assessment') { // <--- این خط تغییر کرد
-    statusText = "آماده ارزیابی مدیر";
-    statusColor = "bg-blue-100 text-blue-800";
-} else if (evaluation?.status === 'completed') {
-                statusText = "تکمیل شده";
-                statusColor = "bg-green-100 text-green-800";
-            }
+// فایل: js/main.js - داخل تابع renderEmployeePortalPage و بلوک 'team-performance'
 
-            return `
-                <tr class="border-b">
-                    <td class="p-3"><div class="flex items-center gap-3"><img src="${member.avatar}" class="w-8 h-8 rounded-full object-cover"><span>${member.name}</span></div></td>
-                    <td class="p-3">${member.jobTitle}</td>
-                    <td class="p-3"><span class="px-2 py-1 text-xs font-medium rounded-full ${statusColor}">${statusText}</span></td>
-                    <td class="p-3"><button class="view-evaluation-btn primary-btn text-xs py-1.5 px-3" data-employee-id="${member.firestoreId}" data-cycle-id="${activeCycle.firestoreId}">مشاهده / ارزیابی</button></td>
-                </tr>
-            `;
-        }).join('');
+const tableRows = teamMembers.map(member => {
+    const evaluation = (state.employeeEvaluations || []).find(e => e.employeeId === member.id && e.cycleId === activeCycle.firestoreId);
+    
+    let statusText = "شروع نشده";
+    let statusColor = "bg-slate-100 text-slate-800";
+
+    // ▼▼▼ این بخش اصلاح شده است ▼▼▼
+    if (evaluation?.status === 'pending_self_assessment') {
+        statusText = "در انتظار خودارزیابی";
+        statusColor = "bg-orange-100 text-orange-800";
+    } else if (evaluation?.status === 'pending_manager_assessment') { // <-- اصلاح کلیدی
+        statusText = "آماده ارزیابی مدیر";
+        statusColor = "bg-blue-100 text-blue-800";
+    } else if (evaluation?.status === 'completed') {
+        statusText = "تکمیل شده";
+        statusColor = "bg-green-100 text-green-800";
+    }
+    // ▲▲▲ پایان بخش اصلاح شده ▲▲▲
+
+    return `
+        <tr class="border-b">
+            <td class="p-3"><div class="flex items-center gap-3"><img src="${member.avatar}" class="w-8 h-8 rounded-full object-cover"><span>${member.name}</span></div></td>
+            <td class="p-3">${member.jobTitle || ''}</td>
+            <td class="p-3"><span class="px-2 py-1 text-xs font-medium rounded-full ${statusColor}">${statusText}</span></td>
+            <td class="p-3 text-left"><button class="view-evaluation-btn primary-btn text-xs py-1.5 px-3" data-employee-id="${member.firestoreId}" data-cycle-id="${activeCycle.firestoreId}">مشاهده / ارزیابی</button></td>
+        </tr>
+    `;
+}).join('');
 
         contentContainer.innerHTML = `
             <h1 class="text-3xl font-bold text-slate-800 mb-6">داشبورد ارزیابی تیم: ${myTeam.name}</h1>
