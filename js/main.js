@@ -3487,16 +3487,16 @@ analytics: () => {
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <div class="card p-6">
                         <h3 class="font-semibold text-lg mb-4 flex items-center"><i data-lucide="pie-chart" class="ml-2 text-blue-500"></i>تحلیل مشارکت سازمانی</h3>
-                        <div class="relative h-80"><canvas id="engagementBreakdownChart"></canvas></div>
+                        <div class="relative h-64 sm:h-72 lg:h-80"><canvas id="engagementBreakdownChart"></canvas></div>
                     </div>
                     <div class="card p-6">
                         <h3 class="font-semibold text-lg mb-4 flex items-center"><i data-lucide="activity" class="ml-2 text-green-500"></i>نمره سلامت تیم‌ها</h3>
-                        <div class="relative h-80"><canvas id="teamHealthChart"></canvas></div>
+                        <div class="relative h-64 sm:h-72 lg:h-80"><canvas id="teamHealthChart"></canvas></div>
                     </div>
                     <div class="card p-6 lg:col-span-2">
                         <h3 class="font-semibold text-lg mb-4 flex items-center"><i data-lucide="align-center" class="ml-2 text-purple-500"></i>توزیع امتیازات عملکرد</h3>
                         <p class="text-xs text-slate-500 mb-4">این نمودار توزیع کارکنان بر اساس آخرین امتیاز ارزیابی عملکرد آن‌ها را نشان می‌دهد.</p>
-                        <div class="relative h-80"><canvas id="performanceDistributionChart"></canvas></div>
+                        <div class="relative h-64 sm:h-72 lg:h-80"><canvas id="performanceDistributionChart"></canvas></div>
                     </div>
                 </div>
             </div>
