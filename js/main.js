@@ -889,6 +889,70 @@ if (evaluation?.status === 'pending_manager_assessment') { // <--- این خط �
         `;
     }
     // [!code end]
+    // [!code start]
+    // ▼▼▼ این بلوک کد جدید را به اینجا اضافه کنید ▼▼▼
+    else if (pageName === 'evaluations') {
+        contentContainer.innerHTML = `
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-3xl font-bold text-slate-800">ارزیابی‌های من</h1>
+            </div>
+            <div class="card p-0">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th class="p-3 text-right">عنوان دوره</th>
+                                <th class="p-3 text-right">تاریخ ایجاد</th>
+                                <th class="p-3 text-right">وضعیت</th>
+                                <th class="p-3 text-right"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="my-evaluations-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+
+        const myEvaluations = (state.employeeEvaluations || [])
+            .filter(ev => ev.employeeId === employee.id)
+            .sort((a, b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0));
+
+        const tbody = contentContainer.querySelector('#my-evaluations-tbody');
+        if (myEvaluations.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" class="text-center p-6 text-slate-500">هیچ ارزیابی برای شما ثبت نشده است.</td></tr>`;
+            return;
+        }
+
+        const statusMap = {
+            'pending_self_assessment': { text: 'در انتظار خودارزیابی', color: 'bg-orange-100 text-orange-800' },
+            'pending_manager_assessment': { text: 'در انتظار ارزیابی مدیر', color: 'bg-blue-100 text-blue-800' },
+            'completed': { text: 'تکمیل شده', color: 'bg-green-100 text-green-800' }
+        };
+
+        const rowsHtml = myEvaluations.map(ev => {
+            const cycle = state.evaluationCycles.find(c => c.firestoreId === ev.cycleId) || { title: ev.cycleId };
+            const status = statusMap[ev.status] || { text: ev.status, color: 'bg-slate-100' };
+
+            let actionButton = '';
+            if (ev.status === 'pending_self_assessment') {
+                actionButton = `<button class="start-self-assessment-btn primary-btn text-xs py-1.5 px-3" data-id="${ev.firestoreId}">شروع خودارزیابی</button>`;
+            } else {
+                actionButton = `<button class="view-completed-assessment-btn secondary-btn text-xs py-1.5 px-3" data-id="${ev.firestoreId}" disabled>مشاهده</button>`;
+            }
+
+            return `
+                <tr class="border-b">
+                    <td class="p-3 font-semibold">${cycle.title}</td>
+                    <td class="p-3">${toPersianDate(ev.createdAt)}</td>
+                    <td class="p-3"><span class="px-2 py-1 text-xs font-medium rounded-full ${status.color}">${status.text}</span></td>
+                    <td class="p-3 text-left">${actionButton}</td>
+                </tr>
+            `;
+        }).join('');
+
+        tbody.innerHTML = rowsHtml;
+    }
+    // [!code end]
 
     // --- بخش پیش‌فرض ---
     else {
@@ -1038,6 +1102,18 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
     const mainContent = document.getElementById('employee-main-content');
     if (mainContent) {
         mainContent.addEventListener('click', (e) => {
+                      // [!code start]
+            // ▼▼▼ این بلوک کد جدید را به اینجا اضافه کنید ▼▼▼
+            const selfAssessBtn = e.target.closest('.start-self-assessment-btn');
+            if (selfAssessBtn) {
+                const evaluationId = selfAssessBtn.dataset.id;
+                const evaluation = state.employeeEvaluations.find(ev => ev.firestoreId === evaluationId);
+                if (evaluation) {
+                    showSelfAssessmentForm(evaluation);
+                }
+                return; // مهم: برای جلوگیری از اجرای کدهای دیگر
+            }
+            // [!code end]
             
             
             // بستن حباب اطلاعیه
