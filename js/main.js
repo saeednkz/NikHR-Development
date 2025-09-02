@@ -7070,17 +7070,27 @@ const showEvaluationCycleForm = (cycleId = null) => {
 // ▼▼▼ این تابع را به طور کامل جایگزین کنید ▼▼▼
 
 // فایل: js/main.js - این تابع جدید را اضافه کنید
+// فایل: js/main.js
+// ▼▼▼ کل این تابع را با نسخه جدید و کامل زیر جایگزین کنید ▼▼▼
+
 const setupEvaluationPageListeners = () => {
     const mainContentArea = document.getElementById('main-content');
+    if (!mainContentArea) return;
+
     mainContentArea.addEventListener('click', (e) => {
         const addBtn = e.target.closest('#add-cycle-btn');
         const editBtn = e.target.closest('.edit-cycle-btn');
         const deleteBtn = e.target.closest('.delete-cycle-btn');
         const startBtn = e.target.closest('.start-cycle-btn');
 
-        if (addBtn) showEvaluationCycleForm();
-        if (editBtn) showEvaluationCycleForm(editBtn.dataset.id);
-        if (deleteBtn) { /* ... منطق حذف ... */ }
+        if (addBtn) {
+            showEvaluationCycleForm();
+            return;
+        }
+        if (editBtn) {
+            showEvaluationCycleForm(editBtn.dataset.id);
+            return;
+        }
         if (startBtn) {
             const cycleId = startBtn.dataset.id;
             showConfirmationModal('شروع دوره ارزیابی', 'با شروع دوره، ارزیابی برای تمام کارمندان فعال ایجاد می‌شود. آیا ادامه می‌دهید؟', async () => {
@@ -7092,7 +7102,30 @@ const setupEvaluationPageListeners = () => {
                     showToast(`خطا در فعال‌سازی دوره: ${error.message}`, "error");
                 }
             });
+            return;
         }
+
+        // [!code start]
+        // ▼▼▼ منطق حذف که خالی بود، اینجا اضافه شد ▼▼▼
+        if (deleteBtn) {
+            const cycleId = deleteBtn.dataset.id;
+            showConfirmationModal(
+                'حذف دوره ارزیابی',
+                'آیا از حذف این دوره مطمئن هستید؟ این عمل غیرقابل بازگشت است.',
+                async () => {
+                    try {
+                        await deleteDoc(doc(db, `artifacts/${appId}/public/data/evaluationCycles`, cycleId));
+                        showToast('دوره ارزیابی با موفقیت حذف شد.');
+                        // صفحه به صورت خودکار توسط onSnapshot آپدیت می‌شود
+                    } catch (error) {
+                        console.error("Error deleting evaluation cycle:", error);
+                        showToast('خطا در حذف دوره ارزیابی.', 'error');
+                    }
+                }
+            );
+            return;
+        }
+        // [!code end]
     });
 };
 // [!code end]
