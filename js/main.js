@@ -2439,13 +2439,16 @@ const updateNotificationBell = () => {
 // تابع showPerformanceForm را به طور کامل با این نسخه نهایی جایگزین کنید ▼
 
 if (typeof window.showPerformanceForm !== 'function') { window.showPerformanceForm = () => {}; }
+// فایل: js/main.js
+// ▼▼▼ کل این تابع را با نسخه کامل و نهایی زیر جایگزین کنید ▼▼▼
+
 const showPerformanceForm = (emp, reviewIndex = null) => {
     const isEditing = reviewIndex !== null;
     const reviewData = isEditing ? emp.performanceHistory[reviewIndex] : {};
 
     modalTitle.innerText = `${isEditing ? 'ویرایش' : 'ثبت'} ارزیابی عملکرد برای: ${emp.name}`;
 
-    // --- بخش ۱: پیدا کردن OKR های تیمی کارمند ---
+    // --- بخش ۱: پیدا کردن OKR های تیمی کارمند (بدون تغییر) ---
     const team = state.teams.find(t => t.memberIds?.includes(emp.id));
     const teamOkrs = team ? team.okrs : [];
     const okrsHtml = (teamOkrs && teamOkrs.length > 0) ? teamOkrs.map((okr, index) => `
@@ -2456,15 +2459,14 @@ const showPerformanceForm = (emp, reviewIndex = null) => {
         </div>
     `).join('') : '<p class="text-sm text-slate-500">هیچ OKR فعالی برای تیم این کارمند ثبت نشده یا کارمند عضو تیمی نیست.</p>';
 
-    // --- بخش ۲: پیدا کردن شایستگی‌های مخصوص پوزیشن شغلی کارمند ---
-// --- منطق هوشمند برای فیلتر کردن شایستگی‌ها بر اساس خانواده شغلی و سطح ---
-const employeeJobFamily = emp.jobFamily;
-const employeeLevel = emp.level;
-const competenciesForReview = (state.careerFramework || [])
-    .filter(lvl => lvl.jobFamily === employeeJobFamily && lvl.level === employeeLevel)
-    .flatMap(lvl => lvl.competencyIds || [])
-    .map(compId => state.competencies.find(c => c.firestoreId === compId))
-    .filter(Boolean); // حذف موارد null یا undefined
+    // [!code start]
+    // ▼▼▼ بخش ۲: منطق پیدا کردن شایستگی‌ها به طور کامل اصلاح شد ▼▼▼
+    const position = state.jobPositions.find(p => p.firestoreId === emp.jobPositionId);
+    const relevantCompetencyIds = position ? (position.competencyIds || []) : [];
+    const competenciesForReview = relevantCompetencyIds
+        .map(compId => state.competencies.find(c => c.firestoreId === compId))
+        .filter(Boolean); // حذف موارد null یا undefined
+    
     const competenciesHtml = (competenciesForReview.length > 0) ? competenciesForReview.map(comp => `
         <div class="mb-3 p-3 bg-slate-50 rounded-lg">
             <label class="block text-sm font-medium text-slate-700">${comp.name}</label>
@@ -2472,8 +2474,9 @@ const competenciesForReview = (state.careerFramework || [])
             <input type="number" class="competency-score w-full p-2 border rounded-md" data-name="${comp.name}" min="1" max="5" value="${reviewData.competencyScores?.[comp.name] || 3}" required>
         </div>
     `).join('') : '<p class="text-sm text-slate-500">هیچ شایستگی‌ای برای پوزیشن شغلی این کارمند تعریف نشده است.</p>';
+    // [!code end]
     
-    // --- بخش ۳: ساختار نهایی فرم ---
+    // --- بخش ۳: ساختار نهایی فرم (بدون تغییر) ---
     modalContent.innerHTML = `
         <form id="performance-review-form" class="space-y-6">
             <div>
