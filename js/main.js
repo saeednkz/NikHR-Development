@@ -840,7 +840,7 @@ window.renderMomentsList = () => {
         // [!code start]
     // بخش جدید برای داشبورد مدیر تیم
     else if (pageName === 'team-performance') {
-        const myTeam = state.teams.find(t => t.leaderId === employee.id);
+      const myTeam = state.teams.find(t => t.leadership?.manager === employee.id);
         if (!myTeam) {
             contentContainer.innerHTML = `<p>شما مدیر هیچ تیمی نیستید.</p>`;
             return;
