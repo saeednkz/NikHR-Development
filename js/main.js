@@ -640,7 +640,7 @@ const performanceHistoryHtml = (employee.performanceHistory || [])
         ${renderMyBirthdayWishesWidget(employee)}
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 ${renderMyBirthdayWishesWidget(employee) ? 'mt-8' : ''}">
             <div class="lg:col-span-2 space-y-6">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div class="glass rounded-2xl p-4 flex items-center justify-between fade-up"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full flex items-center justify-center" style="background:rgba(107,105,214,.12)"><i data-lucide="send" style="color:#6B69D6" class="w-5 h-5"></i></div><div><div class="text-xl font-extrabold text-slate-800">${requestsOpen}</div><div class="text-xs text-slate-500">درخواست‌های باز</div></div></div></div>
                     <div class="glass rounded-2xl p-4 flex items-center justify-between fade-up"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full flex items-center justify-center" style="background:rgba(107,105,214,.12)"><i data-lucide="mail" style="color:#6B69D6" class="w-5 h-5"></i></div><div><div class="text-xl font-extrabold text-slate-800">${unreadCount}</div><div class="text-xs text-slate-500">پیام‌های نخوانده</div></div></div></div>
                     <div class="glass rounded-2xl p-4 flex items-center justify-between fade-up"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full flex items-center justify-center" style="background:rgba(107,105,214,.12)"><i data-lucide="target" style="color:#6B69D6" class="w-5 h-5"></i></div><div><div class="text-xl font-extrabold text-slate-800">${okrAvg}%</div><div class="text-xs text-slate-500">میانگین OKR تیم</div></div></div></div>
@@ -671,8 +671,12 @@ const performanceHistoryHtml = (employee.performanceHistory || [])
                     </div>
                 </div>
             </div>
-            <aside class="space-y-6 min-w-[260px]">
-                ${renderBirthdaysWidget(employee)}
+            <aside class="space-y-6 min-w-[260px] w-full lg:w-auto">
+                ${renderBirthdaysWidget(employee) || `
+                <div class=\"card p-0\">
+                    <div class=\"card-header flex items-center gap-2\"><i data-lucide=\"cake\" class=\"w-5 h-5 text-pink-500\"></i><h3 class=\"font-semibold text-slate-800\">تولدهای نزدیک</h3></div>
+                    <div class=\"card-content p-4 text-xs text-slate-500\">موردی در ۳۰ روز آینده نیست.</div>
+                </div>`}
                 <div class="card p-0">
                     <div class="card-header flex items-center gap-2"><i data-lucide="send" class="w-5 h-5 text-indigo-500"></i><h3 class="font-semibold text-slate-800">درخواست‌های اخیر</h3></div>
                     <div class="card-content divide-y divide-slate-100">
@@ -1518,8 +1522,8 @@ function renderEmployeePortal() {
     const employeeName = employee.name || state.currentUser.email;
 
     portalContainer.innerHTML = `
-        <div class="flex h-screen" style="background:#F5F6FA; overflow:hidden;">
-            <aside class="w-72 employee-sidebar hidden sm:flex z-30">
+        <div class="flex h-screen" style="background:#F5F6FA; overflow-x:hidden; overflow-y:hidden;">
+            <aside class="w-72 employee-sidebar hidden md:flex z-30">
                 <div class="text-center"><img src="${employee.avatar}" alt="Avatar" class="profile-pic object-cover"><h2 class="employee-name">${employeeName}</h2><p class="employee-title">${employee.jobTitle || 'بدون عنوان شغلی'}</p></div><div class="my-6 border-t border-white/20"></div>
 <nav id="employee-portal-nav" class="flex flex-col gap-2">
     <a href="#profile" class="nav-item active"><i data-lucide="layout-dashboard"></i><span>مسیر من</span></a>
@@ -1533,13 +1537,13 @@ function renderEmployeePortal() {
                 <div class="mt-auto space-y-4"><button id="portal-logout-btn" class="w-full flex items-center justify-center gap-3 px-4 py-2 rounded-lg logout-btn"><i data-lucide="log-out"></i><span>خروج از حساب</span></button></div>
             </aside>
 
-            <div class="flex-1 flex flex-col h-screen overflow-y-hidden relative">
+            <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
                 <div id="portal-sidebar-overlay" class="hidden fixed inset-0 bg-black/40 z-20 sm:hidden"></div>
                 <div class="blob" style="top:-40px; right:-60px; width:220px; height:220px; background:#FF6A3D"></div>
                 <div class="blob" style="bottom:-60px; left:-40px; width:180px; height:180px; background:#F72585"></div>
                 
-                <header style="background:linear-gradient(90deg,#FF6A3D,#F72585)" class="shadow-sm relative z-20">
-                    <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center" style="padding-top: env(safe-area-inset-top);">
+                <header style="background:linear-gradient(90deg,#FF6A3D,#F72585)" class="shadow-sm relative z-20">
+                    <div class="w-full py-4 px-3 sm:px-6 lg:px-8 flex justify-between items-center" style="padding-top: env(safe-area-inset-top);">
                         <div class="flex items-center gap-3">
                             <button id="portal-menu-btn" class="inline-flex sm:hidden items-center justify-center p-2 rounded-md bg-white/20 hover:bg-white/30 text-white" title="منو"><i data-lucide="menu" class="w-5 h-5"></i></button>
                             <img src="logo.png" alt="Logo" class="w-8 h-8 rounded-md ring-2 ring-white/30">
