@@ -4124,21 +4124,21 @@ const setupTeamProfileModalListeners = (team) => {
 // فایل: js/main.js
 // ▼▼▼ کل این تابع را با نسخه کامل و نهایی زیر جایگزین کنید ▼▼▼
 
+// فایل: js/main.js
+// ▼▼▼ کل این تابع را با نسخه کامل و نهایی زیر جایگزین کنید ▼▼▼
+
 const viewEmployeeProfile = (employeeId) => {
     const emp = state.employees.find(e => e.firestoreId === employeeId);
     if (!emp) return;
     const analysis = generateSmartAnalysis(emp);
     const team = state.teams.find(t => t.memberIds?.includes(emp.id));
     const manager = team ? state.employees.find(e => e.id === team.leadership?.manager) : null;
-
+    
     const performanceHistoryHtml = (emp.performanceHistory && emp.performanceHistory.length > 0) 
         ? emp.performanceHistory.sort((a,b) => new Date(b.reviewDate) - new Date(a.reviewDate)).map((review, index) => `
             <div class="bg-white rounded-xl border border-slate-200 p-4">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <p class="font-bold text-slate-800">امتیاز کلی: <span style="color:#6B69D6" class="text-lg">${review.overallScore}/5</span></p>
-                        <p class="text-xs text-slate-500 mt-1">تاریخ: ${toPersianDate(review.reviewDate)} | ارزیاب: ${review.reviewer}</p>
-                    </div>
+                <div class="flex justify-between items-center mb-2">
+                    <p class="font-bold text-slate-800">امتیاز کلی: <span style="color:#6B69D6" class="text-lg">${review.overallScore}/5</span></p>
                     ${canEdit() ? `
                         <div class="flex gap-1">
                             <button class="view-performance-btn p-2 text-slate-400 hover:text-green-600" data-index="${index}" title="مشاهده"><i data-lucide="eye" class="w-4 h-4"></i></button>
@@ -4147,6 +4147,7 @@ const viewEmployeeProfile = (employeeId) => {
                         </div>
                     ` : ''}
                 </div>
+                <p class="text-sm text-slate-500">تاریخ: ${toPersianDate(review.reviewDate)} | ارزیاب: ${review.reviewer}</p>
             </div>
         `).join('') 
         : '<div class="text-center py-6"><i data-lucide="inbox" class="w-12 h-12 mx-auto text-slate-300"></i><p class="mt-2 text-sm text-slate-500">سابقه‌ای از ارزیابی عملکرد ثبت نشده است.</p></div>';
@@ -4167,6 +4168,8 @@ const viewEmployeeProfile = (employeeId) => {
                     </div>
                     <div class="flex items-center gap-2">
                         ${canEdit() ? `<button id="main-edit-employee-btn" class="secondary-btn text-xs">ویرایش کارمند</button>` : ''}
+                        ${canEdit() ? `<button id="change-avatar-btn" class="secondary-btn text-xs">تغییر عکس</button>` : ''}
+                        ${canEdit() ? `<button id="delete-avatar-btn" class="secondary-btn text-xs">حذف عکس</button>` : ''}
                         <span class="px-3 py-1 rounded-full text-xs font-bold bg-white/20 text-white">${emp.status}</span>
                     </div>
                 </div>
@@ -4231,7 +4234,7 @@ const viewEmployeeProfile = (employeeId) => {
                                          ${canEdit() ? `<button id="edit-career-path-btn" class="primary-btn text-xs">مدیریت مسیر</button>` : ''}
                                      </div>
                                      <div class="bg-white rounded-xl border border-slate-200 p-4">
-                                         ${(() => { const steps = (emp.careerPath && emp.careerPath.length) ? emp.careerPath : [{ title: emp.jobTitle || 'قدم اول', date: emp.startDate, team: emp.department || (manager ? manager.name : '') }]; const items = steps.map((s, i) => `<div class="relative pl-6 py-3"><div class="absolute right-[-2px] top-3 w-3 h-3 rounded-full" style="background:#6B69D6"></div> ${i < steps.length - 1 ? '<div class=\\"absolute right-0 top-3 bottom-0 w-px\\" style=\\"background:#E2E8F0\\"></div>' : ''}<div class="grid grid-cols-1 sm:grid-cols-3 gap-2"><div class="font-bold text-slate-800">${s.title || '-'}</div><div class="text-sm text-slate-600">${s.team || '-'}</div><div class="text-sm text-slate-500">${s.date ? toPersianDate(s.date) : '-'}</div></div></div>`).join(''); return `<div class="relative">${items}</div>`; })()}
+                                         ${(() => { const steps = (emp.careerPath && emp.careerPath.length) ? emp.careerPath : [{ title: emp.jobTitle || 'قدم اول', date: emp.startDate, team: emp.department || '' }]; const items = steps.map((s, i) => `<div class="relative pl-6 py-3"><div class="absolute right-[-2px] top-3 w-3 h-3 rounded-full" style="background:#6B69D6"></div> ${i < steps.length - 1 ? '<div class="absolute right-0 top-3 bottom-0 w-px" style="background:#E2E8F0"></div>' : ''}<div class="grid grid-cols-1 sm:grid-cols-3 gap-2"><div class="font-bold text-slate-800">${s.title || '-'}</div><div class="text-sm text-slate-600">${s.team || '-'}</div><div class="text-sm text-slate-500">${s.date ? toPersianDate(s.date) : '-'}</div></div></div>`).join(''); return `<div class="relative">${items}</div>`; })()}
                                      </div>
                                  </div>
                             </div>
@@ -4253,19 +4256,26 @@ const viewEmployeeProfile = (employeeId) => {
                                         ${canEdit() ? `<button id="edit-personal-info-btn" class="primary-btn text-xs">ویرایش</button>` : ''}
                                     </div>
                                     <div class="bg-white rounded-xl border border-slate-200 p-4">
+                                        <h5 class="font-bold text-slate-800 mb-3">اطلاعات هویتی و شناسایی</h5>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-700">
+                                            <p><strong>نام:</strong> ${emp.name || '-'}</p>
+                                            <p><strong>تاریخ تولد:</strong> ${emp.personalInfo?.birthDate ? toPersianDate(emp.personalInfo.birthDate) : '-'}</p>
+                                            <p><strong>کد ملی:</strong> ${emp.personalInfo?.nationalId || '-'}</p>
                                         </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-    `;
+        </div>`;
 
     openModal(mainModal, mainModalContainer);
     modalContent = clearEventListeners(document.getElementById('modalContent'));
     setupProfileModalListeners(emp);
+    renderEngagementGauge('engagementGaugeProfile', emp.engagementScore);
+    lucide.createIcons();
 };
 // فایل: js/main.js
 // ▼▼▼ کل این تابع را با نسخه کامل و صحیح زیر جایگزین کنید ▼▼▼
