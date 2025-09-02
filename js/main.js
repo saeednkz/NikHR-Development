@@ -3093,17 +3093,26 @@ dashboard: () => {
         const content = employee ? renderEmployeePortalPage('inbox', employee) : `<div class="card p-6 text-sm text-slate-600">صندوق پیام در پورتال کارمند قابل دسترس است.</div>`;
         return content || `<div class="p-6"></div>`;
     },
+// فایل: js/main.js
+// ▼▼▼ کل تابع pages.organization را با این کد کامل و صحیح جایگزین کنید ▼▼▼
+
 organization: () => {
     if (state.teams.length === 0) return `<div class="text-center p-10 card"><i data-lucide="users-2" class="mx-auto w-16 h-16 text-slate-400"></i><h2 class="mt-4 text-xl font-semibold text-slate-700">هنوز تیمی ثبت نشده است</h2><p class="mt-2 text-slate-500">برای شروع، اولین تیم سازمان را از طریق دکمه زیر اضافه کنید.</p>${canEdit() ? `<button id="add-team-btn-empty" class="mt-6 bg-blue-600 text-white py-2 px-5 rounded-lg hover:bg-blue-700 shadow-md transition">افزودن تیم جدید</button>` : ''}</div>`;
 
     const teamCardsHtml = state.teams.map((team, index) => {
-        const leader = state.employees.find(e => e.id === team.leaderId);
+        // [اصلاح ۱] خواندن مدیر از ساختار داده جدید
+        const manager = state.employees.find(e => e.id === team.leadership?.manager);
         
-        const personnelIds = new Set(team.memberIds || []);
-        if (team.leaderId) {
-            personnelIds.add(team.leaderId);
+        // [اصلاح ۲] شمارش صحیح اعضا بدون شمارش تکراری مدیر
+        const allPersonnelIds = new Set(team.memberIds || []);
+        if (team.leadership?.manager) {
+            allPersonnelIds.add(team.leadership.manager);
         }
-        const memberCount = personnelIds.size;
+        const memberCount = allPersonnelIds.size;
+        
+        // [اصلاح ۳] استفاده از آواتار پیش‌فرض در صورت نبودن آواتار تیم
+        const avatarUrl = team.avatar || 'logo.png'; // یا هر آدرس پیش‌فرض دیگر
+
         const engagementScore = team.engagementScore || 0;
         const okrProgress = (team.okrs && team.okrs.length > 0)
             ? Math.round(team.okrs.reduce((sum, okr) => sum + okr.progress, 0) / team.okrs.length)
@@ -3113,16 +3122,13 @@ organization: () => {
 
         return `
             <div class="card bg-white rounded-xl flex flex-col text-center shadow-lg transform hover:-translate-y-1.5 transition-transform duration-300">
-                
                 <div class="py-6">
-                    <img src="${team.avatar}" alt="${team.name}" class="w-24 h-24 rounded-full mx-auto object-cover border-4 ${borderColor} shadow-md">
+                    <img src="${avatarUrl}" alt="${team.name}" class="w-24 h-24 rounded-full mx-auto object-cover border-4 ${borderColor} shadow-md">
                 </div>
-
                 <div class="px-6 pb-2">
                     <h3 class="text-xl font-bold text-slate-800">${team.name}</h3>
-                    <p class="text-xs text-slate-500 mt-1">${team.missionLine ? team.missionLine : (leader ? `رهبر: ${leader.name}` : '')}</p>
+                    <p class="text-xs text-slate-500 mt-1">${team.missionLine ? team.missionLine : (manager ? `مدیر: ${manager.name}` : 'مدیر ندارد')}</p>
                 </div>
-
                 <div class="px-6 py-4 grid grid-cols-3 gap-4 border-y border-slate-100">
                     <div>
                         <p class="text-2xl font-bold text-slate-700">${memberCount}</p>
@@ -3137,10 +3143,9 @@ organization: () => {
                         <p class="text-xs text-slate-500 font-medium">اهداف</p>
                     </div>
                 </div>
-
                 <div class="px-6 py-4 mt-auto flex justify-between items-center">
                     <div class="flex -space-x-2 overflow-hidden">
-                        ${(Array.from(personnelIds).slice(0, 4)).map(memberId => {
+                        ${(Array.from(allPersonnelIds).slice(0, 4)).map(memberId => {
                             const member = state.employees.find(e => e.id === memberId);
                             return member ? `<img class="inline-block h-8 w-8 rounded-full ring-2 ring-white object-cover" src="${member.avatar}" alt="${member.name}" title="${member.name}">` : '';
                         }).join('')}
