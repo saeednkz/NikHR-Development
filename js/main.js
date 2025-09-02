@@ -6502,9 +6502,12 @@ const showEmployeeForm = (employeeId = null) => {
                     managedTeamId: managedTeamId
                 });
                 
-                showToast("کارمند و حساب کاربری با موفقیت ایجاد شد!");
-                closeModal(mainModal, mainModalContainer);
-            } catch (error) { 
+    try {
+        // ...
+        showToast("کارمند و حساب کاربری با موفقیت ایجاد شد!");
+        closeModal(mainModal, mainModalContainer);
+        renderPage('talent'); // <-- این خط را اضافه کنید
+    } catch (error) { 
                 console.error("Cloud function error:", error);
                 showToast(`خطا: ${error.message}`, "error");
             } finally {
