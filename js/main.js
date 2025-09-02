@@ -857,10 +857,10 @@ window.renderMomentsList = () => {
             const evaluation = (state.employeeEvaluations || []).find(e => e.employeeId === member.id && e.cycleId === activeCycle.firestoreId);
             let statusText = "شروع نشده";
             let statusColor = "bg-slate-100 text-slate-800";
-            if (evaluation?.status === 'pending_manager_review') {
-                statusText = "آماده ارزیابی مدیر";
-                statusColor = "bg-blue-100 text-blue-800";
-            } else if (evaluation?.status === 'completed') {
+if (evaluation?.status === 'pending_manager_assessment') { // <--- این خط تغییر کرد
+    statusText = "آماده ارزیابی مدیر";
+    statusColor = "bg-blue-100 text-blue-800";
+} else if (evaluation?.status === 'completed') {
                 statusText = "تکمیل شده";
                 statusColor = "bg-green-100 text-green-800";
             }
@@ -5120,26 +5120,32 @@ const setupRequestsPageListeners = () => {
 // فایل: js/main.js
 // ▼▼▼ این تابع جدید را به فایل خود اضافه کنید ▼▼▼
 
+// فایل: js/main.js
+// ▼▼▼ این تابع را به طور کامل با نسخه جدید جایگزین کنید ▼▼▼
+
 const setupTeamPerformanceListeners = () => {
-    const mainContentArea = document.getElementById('employee-main-content');
-    if (!mainContentArea) return;
+    const mainContentArea = document.getElementById('employee-main-content');
+    if (!mainContentArea) return;
 
-    mainContentArea.addEventListener('click', e => {
-        const evalBtn = e.target.closest('.view-evaluation-btn');
-        if (evalBtn) {
-            const employeeId = evalBtn.dataset.employeeId;
-            const cycleId = evalBtn.dataset.cycleId;
-            const employee = state.employees.find(e => e.firestoreId === employeeId);
-            const cycle = state.evaluationCycles.find(c => c.firestoreId === cycleId);
+    mainContentArea.addEventListener('click', e => {
+        const evalBtn = e.target.closest('.view-evaluation-btn');
+        if (evalBtn) {
+            const employeeId = evalBtn.dataset.employeeId;
+            const cycleId = evalBtn.dataset.cycleId;
+            
+            // پیدا کردن اطلاعات لازم از state
+            const employee = state.employees.find(e => e.firestoreId === employeeId);
+            const cycle = state.evaluationCycles.find(c => c.firestoreId === cycleId);
+            const evaluation = state.employeeEvaluations.find(ev => ev.employeeId === employee.id && ev.cycleId === cycleId);
 
-            if (employee && cycle) {
-                // حالا فرم ارزیابی با اطلاعات صحیح باز می‌شود
-                showEvaluationForm(employee, cycle);
-            } else {
-                showToast("اطلاعات کارمند یا دوره ارزیابی یافت نشد.", "error");
-            }
-        }
-    });
+            if (employee && cycle) {
+                // ارسال هر سه آبجکت به تابع نمایش فرم
+                showEvaluationForm(employee, cycle, evaluation);
+            } else {
+                showToast("اطلاعات کارمند یا دوره ارزیابی یافت نشد.", "error");
+            }
+        }
+    });
 };
 const setupTasksPageListeners = () => {
     // ابتدا چک می‌کنیم که کانتینر اصلی در صفحه وجود داشته باشد
@@ -5650,64 +5656,87 @@ const setupAnalyticsPage = () => {
 // [!code start]
 // فایل: js/main.js - این تابع را به طور کامل جایگزین نسخه قبلی کنید
 
-const showEvaluationForm = (emp, cycle) => {
-    modalTitle.innerText = `ارزیابی عملکرد: ${emp.name} (${cycle.title})`;
+const showEvaluationForm = (employee, cycle, evaluation) => {
+    modalTitle.innerText = `ارزیابی عملکرد: ${employee.name} (${cycle.title})`;
 
-    const position = state.jobPositions.find(p => p.firestoreId === emp.jobPositionId);
-    const relevantCompetencyIds = new Set(position ? position.competencyIds : []);
-    const competenciesForReview = state.competencies.filter(c => relevantCompetencyIds.has(c.firestoreId));
-    
-    const competenciesHtml = competenciesForReview.length > 0 ? competenciesForReview.map(comp => `
-        <div class="mb-3 p-3 bg-slate-50 rounded-lg border">
-            <label class="block text-sm font-medium text-slate-700">${comp.name}</label>
-            <p class="text-xs text-slate-500 mb-2">امتیاز مدیر به این شایستگی (۱ تا ۵):</p>
-            <input type="number" class="competency-score w-full p-2 border rounded-md" data-name="${comp.name}" data-id="${comp.firestoreId}" min="1" max="5" value="3" required>
-        </div>
-    `).join('') : '<p class="text-sm text-slate-500">شایستگی‌ای برای پوزیشن شغلی این کارمند تعریف نشده است.</p>';
+    // بخش ۱: نمایش خودارزیابی کارمند
+    let selfAssessmentHtml = `
+        <div class="p-4 bg-yellow-50 border-yellow-200 rounded-lg text-sm text-yellow-800">
+            <p class="font-semibold">کارمند هنوز خودارزیابی را تکمیل نکرده است.</p>
+        </div>`;
 
-    const team = state.teams.find(t => t.memberIds?.includes(emp.id));
-    const teamOkrsHtml = (team?.okrs || []).map((okr, index) => `
-        <div class="mb-3 p-3 bg-slate-50 rounded-lg border">
-            <label class="block text-sm font-medium text-slate-700">${okr.title} (پیشرفت تیم: ${okr.progress}%)</label>
-            <p class="text-xs text-slate-500 mb-2">امتیاز مدیر به میزان مشارکت کارمند در این هدف (۱ تا ۵):</p>
-            <input type="number" class="okr-score w-full p-2 border rounded-md" data-index="${index}" data-title="${okr.title}" min="1" max="5" value="3" required>
-        </div>
-    `).join('') || '<p class="text-sm text-slate-500">تیم این کارمند هدفی (OKR) ثبت شده ندارد.</p>';
+    if (evaluation && evaluation.selfAssessment) {
+        const selfData = evaluation.selfAssessment;
+        selfAssessmentHtml = `
+            <div class="p-4 bg-slate-100 rounded-lg border text-sm text-slate-700 space-y-3">
+                <div>
+                    <p class="font-bold mb-1">نقاط قوت از دید کارمند:</p>
+                    <p class="whitespace-pre-wrap">${selfData.strengths || '-'}</p>
+                </div>
+                <div class="border-t pt-3">
+                    <p class="font-bold mb-1">زمینه‌های قابل بهبود از دید کارمند:</p>
+                    <p class="whitespace-pre-wrap">${selfData.improvementAreas || '-'}</p>
+                </div>
+            </div>`;
+    }
 
-    modalContent.innerHTML = `
-        <form id="evaluation-form" class="space-y-6">
-            <div>
-                <h4 class="font-bold text-lg mb-2 text-slate-600">۱. خودارزیابی کارمند</h4>
-                <div class="p-4 bg-slate-100 rounded-lg border text-sm text-slate-700 min-h-[100px]">
-                    <p>کاربر هنوز خودارزیابی را تکمیل نکرده است.</p> 
-                </div>
-            </div>
-            <div>
-                <h4 class="font-bold text-lg mb-2 text-indigo-600">۲. ارزیابی شایستگی‌های شغلی</h4>
-                ${competenciesHtml}
-            </div>
-            <div>
-                <h4 class="font-bold text-lg mb-2 text-indigo-600">۳. ارزیابی مشارکت در اهداف تیمی (OKRs)</h4>
-                ${teamOkrsHtml}
-            </div>
-            <div>
-                <h4 class="font-bold text-lg mb-2 text-indigo-600">۴. بازخورد کیفی مدیر</h4>
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">نقاط قوت کلیدی</label>
-                        <textarea id="strengths" class="w-full p-2 border rounded-md" rows="3" required></textarea>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">زمینه‌های قابل بهبود</label>
-                        <textarea id="areasForImprovement" class="w-full p-2 border rounded-md" rows="3" required></textarea>
-                    </div>
-                </div>
-            </div>
-            <div class="flex justify-end pt-4 border-t">
-                <button type="submit" class="primary-btn">ثبت نهایی ارزیابی</button>
-            </div>
-        </form>
-    `;
+    // بخش ۲: آماده‌سازی فرم ارزیابی مدیر (شایستگی‌ها و اهداف)
+    const position = state.jobPositions.find(p => p.firestoreId === employee.jobPositionId);
+    const relevantCompetencyIds = new Set(position?.competencyIds || []);
+    const competenciesForReview = state.competencies.filter(c => relevantCompetencyIds.has(c.firestoreId));
+    
+    const competenciesHtml = competenciesForReview.length > 0 ? competenciesForReview.map(comp => `
+        <div class="mb-3 p-3 bg-slate-50 rounded-lg border">
+            <label class="block text-sm font-medium text-slate-700">${comp.name}</label>
+            <p class="text-xs text-slate-500 mb-2">امتیاز مدیر به این شایستگی (۱ تا ۵):</p>
+            <input type="number" class="competency-score w-full p-2 border rounded-md" data-name="${comp.name}" min="1" max="5" value="3" required>
+        </div>
+    `).join('') : '<p class="text-sm text-slate-500">شایستگی‌ای برای این پوزیشن شغلی تعریف نشده است.</p>';
+
+    const team = state.teams.find(t => t.memberIds?.includes(employee.id));
+    const teamOkrsHtml = (team?.okrs || []).map(okr => `
+        <div class="mb-3 p-3 bg-slate-50 rounded-lg border">
+            <label class="block text-sm font-medium text-slate-700">${okr.title} (پیشرفت تیم: ${okr.progress}%)</label>
+            <p class="text-xs text-slate-500 mb-2">امتیاز مدیر به مشارکت کارمند در این هدف (۱ تا ۵):</p>
+            <input type="number" class="okr-score w-full p-2 border rounded-md" data-title="${okr.title}" min="1" max="5" value="3" required>
+        </div>
+    `).join('') || '<p class="text-sm text-slate-500">تیم این کارمند هدفی (OKR) ثبت شده ندارد.</p>';
+
+    // بخش ۳: ساختار نهایی فرم
+    modalContent.innerHTML = `
+        <form id="manager-evaluation-form" class="space-y-6">
+            <div>
+                <h4 class="font-bold text-lg mb-2 text-slate-600">۱. خلاصه خودارزیابی کارمند</h4>
+                ${selfAssessmentHtml}
+            </div>
+            <div>
+                <h4 class="font-bold text-lg mb-2 text-indigo-600">۲. ارزیابی شایستگی‌ها توسط مدیر</h4>
+                ${competenciesHtml}
+            </div>
+            <div>
+                <h4 class="font-bold text-lg mb-2 text-indigo-600">۳. ارزیابی اهداف توسط مدیر</h4>
+                ${teamOkrsHtml}
+            </div>
+            <div>
+                <h4 class="font-bold text-lg mb-2 text-indigo-600">۴. بازخورد نهایی مدیر</h4>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium">نقاط قوت کلیدی</label>
+                        <textarea id="manager-strengths" class="w-full p-2 border rounded-md" rows="3" required></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium">زمینه‌های قابل بهبود</label>
+                        <textarea id="manager-areasForImprovement" class="w-full p-2 border rounded-md" rows="3" required></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="flex justify-end pt-4 border-t">
+                <button type="submit" class="primary-btn" ${!evaluation?.selfAssessment ? 'disabled' : ''}>
+                    ${!evaluation?.selfAssessment ? 'در انتظار خودارزیابی کارمند' : 'ثبت نهایی ارزیابی'}
+                </button>
+            </div>
+        </form>
+    `;
     openModal(mainModal, mainModalContainer);
 
     document.getElementById('evaluation-form').addEventListener('submit', async (e) => {
