@@ -561,7 +561,7 @@ const manager = team ? state.employees.find(e => e.id === team.leadership?.manag
 // فایل: js/main.js -> داخل تابع viewEmployeeProfile
 // ▼▼▼ کل این متغیر را با نسخه جدید و کامل زیر جایگزین کنید ▼▼▼
 
-const performanceHistoryHtml = (emp.performanceHistory || [])
+const performanceHistoryHtml = (employee.performanceHistory || [])
     .sort((a, b) => new Date(b.reviewDate) - new Date(a.reviewDate))
     .map((review, index) => {
         const selfAssessment = review.selfAssessment; // گرفتن داده‌های خودارزیابی
