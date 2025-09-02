@@ -6301,15 +6301,6 @@ const showEmployeeForm = (employeeId = null) => {
     const emp = isEditing ? state.employees.find(e => e.firestoreId === employeeId) : {};
     const currentTeam = isEditing ? state.teams.find(t => t.memberIds?.includes(emp.id)) : null;
     const teamOptions = state.teams.map(team => `<option value="${team.firestoreId}" ${currentTeam?.firestoreId === team.firestoreId ? 'selected' : ''}>${team.name}</option>`).join('');
-    // --- بخش جدید: ساخت گزینه‌های خانواده شغلی از state ---
-const familyOptions = (state.jobFamilies || []).map(family => 
-    `<option value="${family.name}" ${emp.jobFamily === family.name ? 'selected' : ''}>${family.name}</option>`
-).join('');
-
-// --- بخش جدید: ساخت گزینه‌های سطح عددی (مثلاً ۱ تا ۱۵) ---
-const levelOptions = Array.from({ length: 15 }, (_, i) => i + 1).map(levelNum =>
-    `<option value="${levelNum}" ${emp.level === levelNum ? 'selected' : ''}>سطح ${levelNum}</option>`
-).join('');
 
     const positionOptions = (state.jobPositions || []).map(pos =>
         `<option value="${pos.firestoreId}" ${emp.jobPositionId === pos.firestoreId ? 'selected' : ''}>${pos.name}</option>`
@@ -6346,20 +6337,24 @@ const levelOptions = Array.from({ length: 15 }, (_, i) => i + 1).map(levelNum =>
                     <label for="jobTitle" class="block text-xs font-semibold text-slate-500">عنوان شغلی</label>
                     <input type="text" id="jobTitle" value="${emp.jobTitle || ''}" placeholder="مثال: کارشناس بازاریابی دیجیتال" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg">
                 </div>
-               <div class="bg-white border rounded-xl p-4">
-    <label for="jobFamily" class="block text-xs font-semibold text-slate-500">خانواده شغلی</label>
-    <select id="jobFamily" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg bg-white">
-        <option value="">انتخاب کنید...</option>
-        ${familyOptions}
-    </select>
-</div>
-<div class="bg-white border rounded-xl p-4">
-    <label for="level" class="block text-xs font-semibold text-slate-500">سطح (Level)</label>
-    <select id="level" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg bg-white">
-        <option value="">انتخاب کنید...</option>
-        ${levelOptions}
-    </select>
-</div>
+                <div class="bg-white border rounded-xl p-4">
+                    <label for="jobPositionId" class="block text-xs font-semibold text-slate-500">پوزیشن شغلی</label>
+                    <select id="jobPositionId" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg bg-white">
+                        <option value="">انتخاب کنید...</option>
+                        ${positionOptions}
+                    </select>
+                </div>
+                
+                <div class="bg-white border rounded-xl p-4">
+                    <label for="level" class="block text-xs font-semibold text-slate-500">سطح</label>
+                    <select id="level" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg bg-white">
+                        <option value="Junior" ${emp.level === 'Junior' ? 'selected' : ''}>Junior (کارشناس)</option>
+                        <option value="Mid-level" ${emp.level === 'Mid-level' ? 'selected' : ''}>Mid-level (کارشناس ارشد)</option>
+                        <option value="Senior" ${emp.level === 'Senior' ? 'selected' : ''}>Senior (خبره)</option>
+                        <option value="Lead" ${emp.level === 'Lead' ? 'selected' : ''}>Lead (راهبر)</option>
+                        <option value="Manager" ${emp.level === 'Manager' ? 'selected' : ''}>Manager (مدیر)</option>
+                    </select>
+                </div>
                 <div class="bg-white border rounded-xl p-4">
                     <label for="department-team-select" class="block text-xs font-semibold text-slate-500">دپارتمان / تیم عضویت</label>
                     <select id="department-team-select" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg bg-white">
@@ -6437,11 +6432,12 @@ const employeeCoreData = {
             try {
                 const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
                 batch.update(docRef, employeeCoreData);
-                
-                if (managedTeamId) {
-                    const newManagedTeamRef = doc(db, `artifacts/${appId}/public/data/teams`, managedTeamId);
-                    batch.update(newManagedTeamRef, { leaderId: employeeId });
-                }
+                // کد جدید و صحیح
+if (managedTeamId) {
+    const newManagedTeamRef = doc(db, `artifacts/${appId}/public/data/teams`, managedTeamId);
+    // از merge: true استفاده می‌کنیم تا فیلدهای دیگر leadership مانند supervisor حذف نشوند
+    batch.set(newManagedTeamRef, { leadership: { manager: employeeId } }, { merge: true });
+}
                 
                 await batch.commit();
                 showToast("اطلاعات کارمند با موفقیت بروزرسانی شد.");
