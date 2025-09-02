@@ -4118,6 +4118,9 @@ const setupTeamProfileModalListeners = (team) => {
 // فایل: js/main.js
 // ▼▼▼ کل این تابع را با نسخه کامل و نهایی زیر جایگزین کنید ▼▼▼
 
+// فایل: js/main.js
+// ▼▼▼ کل این تابع را با نسخه کامل و نهایی زیر جایگزین کنید ▼▼▼
+
 const viewEmployeeProfile = (employeeId) => {
     const emp = state.employees.find(e => e.firestoreId === employeeId);
     if (!emp) return;
@@ -4149,9 +4152,11 @@ const viewEmployeeProfile = (employeeId) => {
     modalContent.innerHTML = `
         <div class="space-y-6">
             <section class="rounded-2xl overflow-hidden border" style="background:linear-gradient(90deg,#FF6A3D,#F72585)">
-                <div class="p-6 sm:p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                 <div class="p-6 sm:p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div class="flex items-center gap-4">
-                        <div class="w-20 h-20 rounded-2xl overflow-hidden ring-4 ring-white/30 bg-white/10"><img src="${emp.avatar}" alt="${emp.name}" class="w-full h-full object-cover"></div>
+                        <div class="w-20 h-20 rounded-2xl overflow-hidden ring-4 ring-white/30 bg-white/10">
+                            <img src="${emp.avatar}" alt="${emp.name}" class="w-full h-full object-cover">
+                        </div>
                         <div>
                             <h2 class="text-2xl font-extrabold text-white">${emp.name}</h2>
                             <p class="text-white/90 text-sm">${emp.jobTitle || 'بدون عنوان شغلی'} • ${emp.level || ''}</p>
@@ -4163,43 +4168,76 @@ const viewEmployeeProfile = (employeeId) => {
                     </div>
                 </div>
             </section>
-            <div class="lg:col-span-2">
-                <div class="bg-white rounded-2xl border border-slate-200">
-                    <div class="p-4 border-b border-slate-200">
-                        <nav id="profile-tabs" class="flex flex-wrap gap-2">
-                            <button data-tab="overview" class="profile-tab active primary-btn text-xs">نمای کلی</button>
-                            <button data-tab="performance" class="profile-tab secondary-btn text-xs">عملکرد</button>
-                            <button data-tab="career" class="profile-tab secondary-btn text-xs">مسیر شغلی</button>
-                            <button data-tab="contracts" class="profile-tab secondary-btn text-xs">قراردادها</button>
-                            <button data-tab="personal" class="profile-tab secondary-btn text-xs">اطلاعات پرسنلی</button>
-                        </nav>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-1 space-y-6">
+                    <div class="bg-white rounded-2xl border border-slate-200 p-6">
+                        <h4 class="font-bold text-slate-800 mb-4 flex items-center"><i data-lucide="heart-pulse" class="ml-2 w-5 h-5" style="color:#6B69D6"></i>امتیاز مشارکت</h4>
+                        ${emp.engagementScore != null ? `
+                        <div class="relative w-40 h-20 mx-auto mt-2">
+                            <canvas id="engagementGaugeProfile"></canvas>
+                            <div class="absolute inset-0 flex items-center justify-center -bottom-4"><span class="text-3xl font-extrabold" style="color:#6B69D6">${emp.engagementScore}%</span></div>
+                        </div>` : '<p class="text-sm text-slate-500 text-center">هنوز امتیازی ثبت نشده است.</p>'}
                     </div>
-                    <div class="p-6">
-                        <div id="tab-overview" class="profile-tab-content">
-                            ${pages.talent.renderOverviewTab(emp, manager, analysis)}
+                    <div class="bg-white rounded-2xl border border-slate-200 p-6">
+                        <h4 class="font-bold text-slate-800 mb-4 flex items-center"><i data-lucide="brain-circuit" class="ml-2 w-5 h-5" style="color:#6B69D6"></i>تحلیل هوشمند</h4>
+                        <div class="text-sm space-y-3">${Object.values(analysis).map(item => `<div class="flex items-start"><i data-lucide="${item.icon}" class="w-4 h-4 mt-1 ml-2 flex-shrink-0 ${item.color}"></i><div class="${item.color}">${item.text}</div></div>`).join('')}</div>
+                    </div>
+                </div>
+                <div class="lg:col-span-2">
+                    <div class="bg-white rounded-2xl border border-slate-200">
+                        <div class="p-4 border-b border-slate-200">
+                            <nav id="profile-tabs" class="flex flex-wrap gap-2">
+                                <button data-tab="overview" class="profile-tab active primary-btn text-xs">نمای کلی</button>
+                                <button data-tab="performance" class="profile-tab secondary-btn text-xs">عملکرد</button>
+                                <button data-tab="career" class="profile-tab secondary-btn text-xs">مسیر شغلی</button>
+                                <button data-tab="contracts" class="profile-tab secondary-btn text-xs">قراردادها</button>
+                                <button data-tab="personal" class="profile-tab secondary-btn text-xs">اطلاعات پرسنلی</button>
+                            </nav>
                         </div>
-                        <div id="tab-performance" class="profile-tab-content hidden">
-                            <div class="space-y-4">
-                                <div class="flex justify-between items-center mb-3">
-                                    <h4 class="font-semibold text-slate-700"><i data-lucide="clipboard-check" class="ml-2 w-5 h-5" style="color:#6B69D6"></i>سابقه ارزیابی عملکرد</h4>
-                                    ${canEdit() ? `<button id="add-performance-btn" class="primary-btn text-xs">افزودن سابقه دستی</button>` : ''}
+                        <div class="p-6">
+                            <div id="tab-overview" class="profile-tab-content">
+                                <div class="space-y-4">
+                                    <div class="bg-white rounded-xl border border-slate-200 p-4">
+                                        <h4 class="font-semibold mb-3 text-slate-700 flex items-center"><i data-lucide="info" class="ml-2 w-5 h-5 text-slate-500"></i>اطلاعات اصلی</h4>
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-slate-600">
+                                            <p><strong>کد پرسنلی:</strong> ${emp.id}</p>
+                                            <p><strong>دپارتمان:</strong> ${emp.department || 'نامشخص'}</p>
+                                            <p><strong>مدیر:</strong> ${manager ? manager.name : 'نامشخص'}</p>
+                                            <p><strong>تاریخ استخدام:</strong> ${toPersianDate(emp.startDate)}</p>
+                                            <p><strong>وضعیت:</strong> <span class="px-2 py-1 text-xs font-medium rounded-full ${emp.status === 'فعال' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${emp.status}</span></p>
+                                        </div>
+                                    </div>
+                                    <div class="bg-white rounded-xl border border-slate-200 p-4">
+                                        <div class="flex justify-between items-center mb-3">
+                                            <h4 class="font-semibold text-slate-700"><i data-lucide="star" class="ml-2 w-5 h-5 text-amber-500"></i>شایستگی‌های کلیدی</h4>
+                                            ${canEdit() ? `<button id="edit-competencies-btn" class="primary-btn text-xs">ویرایش</button>` : ''}
+                                        </div>
+                                        <div class="space-y-4">${renderCompetencyBars(emp.competencies)}</div>
+                                    </div>
                                 </div>
-                                <div class="space-y-4">${performanceHistoryHtml}</div>
                             </div>
-                        </div>
-                        <div id="tab-career" class="profile-tab-content hidden">
-                           ${pages.talent.renderCareerTab(emp, manager)}
-                        </div>
-                        <div id="tab-contracts" class="profile-tab-content hidden">
-                            ${pages.talent.renderContractsTab(emp)}
-                        </div>
-                        <div id="tab-personal" class="profile-tab-content hidden">
-                            ${pages.talent.renderPersonalInfoTab(emp)}
+                            <div id="tab-performance" class="profile-tab-content hidden">
+                                <div class="space-y-4">
+                                    <div class="flex justify-between items-center mb-3">
+                                        <h4 class="font-semibold text-slate-700"><i data-lucide="clipboard-check" class="ml-2 w-5 h-5" style="color:#6B69D6"></i>سابقه ارزیابی عملکرد</h4>
+                                        ${canEdit() ? `<button id="add-performance-btn" class="primary-btn text-xs">افزودن سابقه دستی</button>` : ''}
+                                    </div>
+                                    <div class="space-y-4">${performanceHistoryHtml}</div>
+                                </div>
+                            </div>
+                            <div id="tab-career" class="profile-tab-content hidden">
+                                </div>
+                            <div id="tab-contracts" class="profile-tab-content hidden">
+                                </div>
+                            <div id="tab-personal" class="profile-tab-content hidden">
+                                </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>`;
+        </div>
+    `;
+
     openModal(mainModal, mainModalContainer);
     modalContent = clearEventListeners(document.getElementById('modalContent'));
     setupProfileModalListeners(emp);
