@@ -69,6 +69,7 @@ const documentCategories = [
     { id: 'مستندات پروژه‌ها', key: 'projects', icon: 'folder-kanban',  desc: 'مستندات فنی و اجرایی پروژه‌ها.' }
 ];
         export const state = { employees: [], teams: [], reminders: [], surveyResponses: [], users: [], competencies: [], expenses: [], pettyCashCards: [], chargeHistory: [], dashboardMetrics: {}, orgAnalytics: {}, currentPage: 'dashboard', currentPageTalent: 1, currentUser: null,currentPageRequests: 1,currentPageTasks: 1,currentPageAnnouncements: 1 };
+window.state = state; // این خط را برای دیباگ اضافه کنید
         let charts = {};
 let activeListeners = []; // [!code ++] این خط را اضافه کنید
         // این کد را نزدیک به تعریف state قرار دهید
