@@ -73,6 +73,85 @@ window.state = state; // این خط را برای دیباگ اضافه کنی�
         let charts = {};
 let activeListeners = []; // [!code ++] این خط را اضافه کنید
         // این کد را نزدیک به تعریف state قرار دهید
+// --- Chart.js Theme & Helpers ---
+let _chartThemeApplied = false;
+const brandPalette = ['#6B69D6', '#22c55e', '#0ea5e9', '#f59e0b', '#f43f5e', '#a78bfa', '#10b981', '#6366f1', '#14b8a6', '#ef4444'];
+const getBrandColor = (index) => brandPalette[index % brandPalette.length];
+const hexToRgba = (hex, alpha = 1) => {
+    try {
+        const normalized = hex.replace('#', '');
+        const full = normalized.length === 3 ? normalized.split('').map(c => c + c).join('') : normalized;
+        const bigint = parseInt(full, 16);
+        const r = (bigint >> 16) & 255;
+        const g = (bigint >> 8) & 255;
+        const b = bigint & 255;
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    } catch { return hex; }
+};
+const setupChartTheme = () => {
+    if (typeof Chart === 'undefined' || _chartThemeApplied) return;
+    _chartThemeApplied = true;
+    Chart.defaults.font.family = 'Vazirmatn, system-ui, sans-serif';
+    Chart.defaults.color = '#475569';
+    Chart.defaults.responsive = true;
+    Chart.defaults.maintainAspectRatio = false;
+    Chart.defaults.elements = Chart.defaults.elements || {};
+    Chart.defaults.elements.bar = Chart.defaults.elements.bar || {};
+    Chart.defaults.elements.bar.borderRadius = 10;
+    Chart.defaults.elements.bar.borderSkipped = false;
+    Chart.defaults.elements.line = Chart.defaults.elements.line || {};
+    Chart.defaults.elements.line.tension = 0.35;
+    Chart.defaults.elements.line.borderWidth = 2;
+    Chart.defaults.elements.point = Chart.defaults.elements.point || {};
+    Chart.defaults.elements.point.radius = 3;
+    Chart.defaults.elements.point.hoverRadius = 4;
+    Chart.defaults.elements.arc = Chart.defaults.elements.arc || {};
+    Chart.defaults.elements.arc.borderWidth = 0;
+    Chart.defaults.plugins = Chart.defaults.plugins || {};
+    Chart.defaults.plugins.legend = Chart.defaults.plugins.legend || {};
+    Chart.defaults.plugins.legend.position = 'bottom';
+    Chart.defaults.plugins.legend.labels = Chart.defaults.plugins.legend.labels || {};
+    Chart.defaults.plugins.legend.labels.usePointStyle = true;
+    Chart.defaults.plugins.tooltip = Chart.defaults.plugins.tooltip || {};
+    Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(15,23,42,0.92)';
+    Chart.defaults.plugins.tooltip.titleColor = '#E5E7EB';
+    Chart.defaults.plugins.tooltip.bodyColor = '#E5E7EB';
+    Chart.defaults.plugins.tooltip.borderColor = 'rgba(226,232,240,0.7)';
+    Chart.defaults.plugins.tooltip.borderWidth = 1;
+    Chart.defaults.layout = Chart.defaults.layout || {};
+    Chart.defaults.layout.padding = { top: 8, right: 8, bottom: 8, left: 8 };
+    Chart.defaults.scale = Chart.defaults.scale || {};
+    Chart.defaults.scale.grid = Chart.defaults.scale.grid || {};
+    Chart.defaults.scale.grid.color = 'rgba(226,232,240,0.6)';
+    Chart.defaults.scale.ticks = Chart.defaults.scale.ticks || {};
+    Chart.defaults.scale.ticks.color = '#64748b';
+};
+const barGradientBg = (orientation = 'vertical') => (context) => {
+    const { chart, dataIndex } = context;
+    const base = getBrandColor(dataIndex);
+    const { ctx, chartArea } = chart;
+    if (!chartArea) return hexToRgba(base, 0.7);
+    const gradient = orientation === 'horizontal'
+        ? ctx.createLinearGradient(chartArea.left, 0, chartArea.right, 0)
+        : ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+    gradient.addColorStop(0, hexToRgba(base, 0.18));
+    gradient.addColorStop(1, hexToRgba(base, 0.7));
+    return gradient;
+};
+const areaGradientBg = (base) => (context) => {
+    const { chart } = context;
+    const { ctx, chartArea } = chart;
+    if (!chartArea) return hexToRgba(base, 0.15);
+    const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+    gradient.addColorStop(0, hexToRgba(base, 0.08));
+    gradient.addColorStop(1, hexToRgba(base, 0.28));
+    return gradient;
+};
+const valueToColor = (percent) => {
+    const clamped = Math.max(0, Math.min(100, Number(percent) || 0));
+    const hue = Math.round((clamped / 100) * 140); // 0=red -> 140=green
+    return `hsl(${hue}, 80%, 45%)`;
+};
 // پالت رنگی قبلی را با این پالت جدید جایگزین کنید
 // این پالت رنگی را جایگزین پالت قبلی کنید
 const teamColorPalette = [
@@ -598,12 +677,32 @@ const performanceHistoryHtml = (emp.performanceHistory || [])
         </div>`;
 
     try {
+        setupChartTheme();
         const ctx = document.getElementById('empPerformanceChart')?.getContext('2d');
         if (ctx) {
             const history = (employee.performanceHistory || []).slice().sort((a,b)=> new Date(a.reviewDate) - new Date(b.reviewDate));
             const labels = history.map(h => toPersianDate(h.reviewDate));
             const data = history.map(h => Number(h.overallScore) || 0);
-            new Chart(ctx, { type: 'line', data: { labels, datasets: [{ label: 'امتیاز', data, borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.1)', tension: 0.35, pointRadius: 3 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { suggestedMin: 0, suggestedMax: 5, ticks: { stepSize: 1 } } }, plugins: { legend: { display: false } } } });
+            setupChartTheme();
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: 'امتیاز',
+                        data,
+                        borderColor: getBrandColor(0),
+                        backgroundColor: areaGradientBg(getBrandColor(0)),
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { suggestedMin: 0, suggestedMax: 5, ticks: { stepSize: 1 } } }
+                }
+            });
         }
     } catch (err) { console.error('Performance chart error', err); }
     
@@ -4131,6 +4230,7 @@ const setupTeamProfileModalListeners = (team) => {
                     const data = window._teamModalData || {};
                     const ctx = document.getElementById('teamEngagementBreakdownChart')?.getContext('2d');
                     if (ctx && !charts.teamEngagementBreakdown) {
+                        setupChartTheme();
                         const labels = (data.engagementBreakdown || []).map(it => it.name);
                         const values = (data.engagementBreakdown || []).map(it => it.score);
                         charts.teamEngagementBreakdown = new Chart(ctx, {
@@ -4140,9 +4240,10 @@ const setupTeamProfileModalListeners = (team) => {
                                 datasets: [{
                                     label: 'امتیاز (%)',
                                     data: values,
-                                    backgroundColor: '#6366f1',
-                                    borderRadius: 4,
-                                    barPercentage: 0.6
+                                    backgroundColor: values.map((_,i)=> hexToRgba(getBrandColor(i),0.85)),
+                                    borderRadius: 10,
+                                    barPercentage: 0.55,
+                                    categoryPercentage: 0.6
                                 }]
                             },
                             options: {
@@ -4450,7 +4551,8 @@ const viewEmployeeProfile = (employeeId) => {
             const hist = (emp.performanceHistory||[]).slice().sort((a,b)=> new Date(a.reviewDate)-new Date(b.reviewDate));
             const labels = hist.map(h=> toPersianDate(h.reviewDate));
             const data = hist.map(h=> Number(h.overallScore)||0);
-            charts.perfTrend = new Chart(trendCtx, { type:'line', data:{ labels, datasets:[{ label:'امتیاز کلی', data, borderColor:'#6366f1', backgroundColor:'rgba(99,102,241,0.1)', tension:0.35, pointRadius:3 }] }, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ y:{ suggestedMin:0, suggestedMax:5, ticks:{ stepSize:1 } } } } });
+            setupChartTheme();
+            charts.perfTrend = new Chart(trendCtx, { type:'line', data:{ labels, datasets:[{ label:'امتیاز کلی', data, borderColor:getBrandColor(0), backgroundColor:areaGradientBg(getBrandColor(0)), fill:true }] }, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ y:{ suggestedMin:0, suggestedMax:5, ticks:{ stepSize:1 } } } } });
         }
 
         // Competency radar based on latest review or current competencies
@@ -4466,7 +4568,8 @@ const viewEmployeeProfile = (employeeId) => {
             const labels = Object.keys(compScores).slice(0,8);
             const data = labels.map(k=> Number(compScores[k])||0);
             if (labels.length) {
-                charts.compRadar = new Chart(radarCtx, { type:'radar', data:{ labels, datasets:[{ label:'شایستگی', data, borderColor:'#10b981', backgroundColor:'rgba(16,185,129,0.15)', pointBackgroundColor:'#10b981' }] }, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ r:{ suggestedMin:0, suggestedMax:5, ticks:{ stepSize:1 } } } } });
+                setupChartTheme();
+                charts.compRadar = new Chart(radarCtx, { type:'radar', data:{ labels, datasets:[{ label:'شایستگی', data, borderColor:getBrandColor(2), backgroundColor:hexToRgba(getBrandColor(2),0.15), pointBackgroundColor:getBrandColor(2) }] }, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ r:{ suggestedMin:0, suggestedMax:5, ticks:{ stepSize:1 } } } } });
             }
         }
     } catch(err) { console.error('profile charts error', err); }
@@ -4841,6 +4944,7 @@ const renderPerformanceDistributionChart = () => {
         }
     });
 
+    setupChartTheme();
     charts.performanceDistribution = new Chart(ctx, {
         type: 'bar',
         data: {
@@ -4848,9 +4952,10 @@ const renderPerformanceDistributionChart = () => {
             datasets: [{
                 label: 'تعداد کارمندان',
                 data: Object.values(distribution),
-                backgroundColor: ['#ef4444', '#3b82f6', '#22c55e'],
-                borderRadius: 4,
-                barPercentage: 0.6
+                backgroundColor: [getBrandColor(5), getBrandColor(0), getBrandColor(1)].map(c=> hexToRgba(c,0.85)),
+                borderRadius: 10,
+                barPercentage: 0.55,
+                categoryPercentage: 0.6
             }]
         },
         options: {
@@ -4878,14 +4983,15 @@ const renderDashboardCharts = () => {
     // Gender Composition (Doughnut Chart)
     const genderCtx = document.getElementById('genderCompositionChart')?.getContext('2d');
     if (genderCtx && metrics.genderComposition) { 
+        setupChartTheme();
         charts.gender = new Chart(genderCtx, { 
             type: 'doughnut', 
             data: { 
                 labels: Object.keys(metrics.genderComposition), 
                 datasets: [{ 
                     data: Object.values(metrics.genderComposition), 
-                    backgroundColor: ['#6B69D6', '#F72585', '#A1A1AA'],
-                    hoverOffset: 4
+                    backgroundColor: [getBrandColor(0), getBrandColor(5), '#A1A1AA'].map(c=> hexToRgba(c,0.9)),
+                    hoverOffset: 6
                 }] 
             }, 
             options: { 
@@ -4901,6 +5007,7 @@ const renderDashboardCharts = () => {
     // Department Distribution (Bar Chart)
     const departmentCtx = document.getElementById('departmentDistributionChart')?.getContext('2d');
     if (departmentCtx) { 
+        setupChartTheme();
         charts.department = new Chart(departmentCtx, { 
             type: 'bar', 
             data: { 
@@ -4908,8 +5015,8 @@ const renderDashboardCharts = () => {
                 datasets: [{ 
                     label: 'تعداد', 
                     data: Object.values(metrics.departmentDistribution), 
-                    backgroundColor: '#6B69D6',
-                    borderRadius: 5
+                    backgroundColor: Object.keys(metrics.departmentDistribution).map((_,i)=> hexToRgba(getBrandColor(i),0.85)),
+                    borderRadius: 10
                 }] 
             }, 
             options: { 
@@ -4928,6 +5035,7 @@ const renderDashboardCharts = () => {
     // Nine Box Distribution (Bar Chart)
     const nineBoxCtx = document.getElementById('nineBoxChart')?.getContext('2d');
     if (nineBoxCtx && metrics.nineBoxDistribution) { 
+        setupChartTheme();
         charts.nineBox = new Chart(nineBoxCtx, { 
             type: 'bar', 
             data: { 
@@ -4935,8 +5043,8 @@ const renderDashboardCharts = () => {
                 datasets: [{ 
                     label: 'تعداد', 
                     data: Object.values(metrics.nineBoxDistribution), 
-                    backgroundColor: '#F72585',
-                    borderRadius: 5
+                    backgroundColor: Object.values(metrics.nineBoxDistribution).map((_,i)=> hexToRgba(getBrandColor(i+2),0.85)),
+                    borderRadius: 10
                 }] 
             }, 
             options: { 
@@ -4964,14 +5072,15 @@ const renderDashboardCharts = () => {
         return acc;
     }, {});
     if (tenureCtx) {
+        setupChartTheme();
         charts.tenure = new Chart(tenureCtx, {
             type: 'pie',
             data: {
                 labels: Object.keys(tenureData),
                 datasets: [{
                     data: Object.values(tenureData),
-                    backgroundColor: ['#6B69D6', '#A78BFA', '#F72585'],
-                    hoverOffset: 4
+                    backgroundColor: [getBrandColor(0), getBrandColor(5), getBrandColor(4)].map(c=> hexToRgba(c,0.9)),
+                    hoverOffset: 6
                 }]
             },
             options: {
@@ -4995,6 +5104,7 @@ const renderDashboardCharts = () => {
         return acc;
     }, {});
     if (ageCtx) {
+        setupChartTheme();
         charts.age = new Chart(ageCtx, {
             type: 'bar',
             data: {
@@ -5002,8 +5112,8 @@ const renderDashboardCharts = () => {
                 datasets: [{
                     label: 'تعداد',
                     data: Object.values(ageData),
-                    backgroundColor: '#6B69D6',
-                    borderRadius: 5
+                    backgroundColor: Object.values(ageData).map((_,i)=> hexToRgba(getBrandColor(i),0.85)),
+                    borderRadius: 10
                 }]
             },
             options: {
@@ -5040,6 +5150,7 @@ const renderDashboardCharts = () => {
         return acc;
     }, {});
     if (teamCompetencyCtx && Object.keys(avgCompetencies).length > 0) {
+        setupChartTheme();
         charts.teamCompetency = new Chart(teamCompetencyCtx, {
             type: 'radar',
             data: {
@@ -5048,12 +5159,12 @@ const renderDashboardCharts = () => {
                     label: 'میانگین امتیاز',
                     data: Object.values(avgCompetencies),
                     fill: true,
-                    backgroundColor: 'rgba(107, 105, 214, 0.2)',
-                    borderColor: '#6B69D6',
-                    pointBackgroundColor: '#6B69D6',
+                    backgroundColor: hexToRgba(getBrandColor(0), 0.2),
+                    borderColor: getBrandColor(0),
+                    pointBackgroundColor: getBrandColor(0),
                     pointBorderColor: '#fff',
                     pointHoverBackgroundColor: '#fff',
-                    pointHoverBorderColor: '#6B69D6'
+                    pointHoverBorderColor: getBrandColor(0)
                 }]
             },
             options: {
@@ -5078,12 +5189,13 @@ const renderEngagementGauge = (canvasId, score) => {
     const gaugeCtx = document.getElementById(canvasId)?.getContext('2d');
     if(gaugeCtx) { 
         if(charts[canvasId]) charts[canvasId].destroy();
+        setupChartTheme();
         charts[canvasId] = new Chart(gaugeCtx, { 
             type: 'doughnut', 
             data: { 
                 datasets: [{ 
                     data: [score, 100 - score], 
-                    backgroundColor: ['#6B69D6', '#e5e7eb'], 
+                    backgroundColor: [valueToColor(score), '#e5e7eb'], 
                     borderWidth: 0, 
                     circumference: 180, 
                     rotation: 270, 
@@ -5106,6 +5218,7 @@ const renderEngagementGauge = (canvasId, score) => {
             const skillCtx = document.getElementById(canvasId)?.getContext('2d');
             if (!skillCtx) { return; }
             if (charts[canvasId]) { charts[canvasId].destroy(); }
+            setupChartTheme();
             charts[canvasId] = new Chart(skillCtx, {
                 type: 'radar',
                 data: {
@@ -5114,8 +5227,8 @@ const renderEngagementGauge = (canvasId, score) => {
                         label: 'سطح مهارت',
                         data: Object.values(skills),
                         fill: true,
-                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                        borderColor: 'rgb(59, 130, 246)'
+                        backgroundColor: hexToRgba(getBrandColor(2), 0.2),
+                        borderColor: getBrandColor(2)
                     }]
                 },
                 options: {
@@ -6089,6 +6202,7 @@ const setupAnalyticsPage = () => {
         if (!ctx || !state.orgAnalytics?.engagementBreakdown) return;
 
         const data = state.orgAnalytics.engagementBreakdown;
+        setupChartTheme();
         charts.engagementBreakdown = new Chart(ctx, {
             type: 'doughnut',
             data: {
@@ -6096,8 +6210,8 @@ const setupAnalyticsPage = () => {
                 datasets: [{
                     label: 'امتیاز مشارکت',
                     data: data.map(d => d.score),
-                    backgroundColor: ['#3b82f6', '#8b5cf6', '#10b981', '#f97316', '#ef4444', '#64748b'],
-                    hoverOffset: 4
+                    backgroundColor: data.map((_,i)=> hexToRgba(getBrandColor(i), 0.9)),
+                    hoverOffset: 6
                 }]
             },
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
@@ -6113,6 +6227,7 @@ const setupAnalyticsPage = () => {
             return { name: team.name, health: avgHealth };
         }).sort((a,b) => b.health - a.health);
 
+        setupChartTheme();
         charts.teamHealth = new Chart(ctx, {
             type: 'bar',
             data: {
@@ -6120,8 +6235,8 @@ const setupAnalyticsPage = () => {
                 datasets: [{
                     label: 'نمره سلامت',
                     data: teamData.map(t => t.health),
-                    backgroundColor: '#22c55e',
-                    borderRadius: 4
+                    backgroundColor: teamData.map(t => valueToColor(t.health)),
+                    borderRadius: 10
                 }]
             },
             options: {
