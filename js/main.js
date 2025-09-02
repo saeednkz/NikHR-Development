@@ -4499,34 +4499,35 @@ const viewTeamProfile = (teamId) => {
 
     modalTitle.innerText = 'پروفایل تیم: ' + team.name;
     modalContent.innerHTML = `
-        <section class="rounded-2xl overflow-hidden border" style="background:linear-gradient(90deg,#FF6A3D,#F72585)">
+        <section class="rounded-2xl overflow-hidden border relative" style="background:linear-gradient(135deg,#FF6A3D 0%, #F72585 100%)">
+            <div class="absolute inset-0 opacity-10 pointer-events-none" style="background-image: radial-gradient(circle at 20% 20%, #fff 2px, transparent 2px), radial-gradient(circle at 80% 30%, #fff 2px, transparent 2px), radial-gradient(circle at 40% 80%, #fff 2px, transparent 2px);"></div>
             <div class="p-6 sm:p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div class="flex items-center gap-4">
-                    <div class="w-16 h-16 rounded-2xl overflow-hidden ring-4 ring-white/30 bg-white/10">
+                    <div class="w-16 h-16 rounded-2xl overflow-hidden ring-4 ring-white/40 bg-white/10 shadow-lg">
                         <img src="${avatarUrl}" alt="${team.name}" class="w-full h-full object-cover">
                     </div>
                     <div>
                         <h2 class="text-2xl font-extrabold text-white">${team.name}</h2>
                         <p class="text-white/90 text-xs mt-1">${team.missionLine ? team.missionLine : (manager ? `مدیر: ${manager.name}` : 'مدیر ندارد')}</p>
                         <div class="mt-3 grid grid-cols-3 gap-3 text-center">
-                            <div class="bg-white/10 rounded-lg p-2">
+                            <div class="bg-white/15 backdrop-blur rounded-lg p-2 border border-white/20 shadow-sm">
                                 <div class="text-white/90 text-xs">میانگین OKR</div>
-                                <div class="text-white text-lg font-bold">${avgOkr}%</div>
+                                <div class="text-white text-lg font-bold drop-shadow">${avgOkr}%</div>
                             </div>
-                            <div class="bg-white/10 rounded-lg p-2">
+                            <div class="bg-white/15 backdrop-blur rounded-lg p-2 border border-white/20 shadow-sm">
                                 <div class="text-white/90 text-xs">اعضای پرریسک</div>
-                                <div class="${highRisk ? 'text-rose-200' : 'text-white'} text-lg font-bold">${highRisk}</div>
+                                <div class="${highRisk ? 'text-rose-200' : 'text-white'} text-lg font-bold drop-shadow">${highRisk}</div>
                             </div>
-                            <div class="bg-white/10 rounded-lg p-2">
+                            <div class="bg-white/15 backdrop-blur rounded-lg p-2 border border-white/20 shadow-sm">
                                 <div class="text-white/90 text-xs">تعداد OKR</div>
-                                <div class="text-white text-lg font-bold">${totalOkrs}</div>
+                                <div class="text-white text-lg font-bold drop-shadow">${totalOkrs}</div>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
-                    ${canEdit() ? `<button id="edit-team-details-btn" class="secondary-btn text-xs">ویرایش مشخصات</button>` : ''}
-                    ${canEdit() ? `<button id="edit-team-mission-btn" class="primary-btn text-xs">ویرایش هدف تیم</button>` : ''}
+                    ${canEdit() ? `<button id="edit-team-details-btn" class="text-xs font-semibold px-3 py-2 rounded-lg bg-white/20 text-white hover:bg-white/30 border border-white/30 transition">ویرایش مشخصات</button>` : ''}
+                    ${canEdit() ? `<button id="edit-team-mission-btn" class="text-xs font-semibold px-3 py-2 rounded-lg bg-white text-slate-800 hover:bg-slate-50 transition">ویرایش هدف تیم</button>` : ''}
                 </div>
             </div>
         </section>
@@ -4556,20 +4557,20 @@ const viewTeamProfile = (teamId) => {
                     <div class="p-4">
                         <div id="tab-team-overview" class="profile-tab-content">
                             <div class="space-y-4">
-                                <div class="card p-4 bg-white rounded-xl border border-slate-200">
+                                <div class="card p-4 bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
                                     <div class="flex justify-between items-center mb-3">
                                         <h4 class="font-semibold text-gray-700">اعضای تیم (${members.length} نفر)</h4>
                                         ${canEdit() ? `<button id="edit-team-members-btn" class="text-sm bg-blue-600 text-white py-1 px-3 rounded-md hover:bg-blue-700">ویرایش</button>`: ''}
                                     </div>
                                     <div class="flex flex-wrap gap-4">${members.map(m => `<div class="text-center" title="${m.name}"><img src="${m.avatar}" class="w-12 h-12 rounded-full mx-auto object-cover"><p class="text-xs mt-1 truncate w-16">${m.name}</p></div>`).join('')}</div>
                                 </div>
-                                <div class="card p-4 bg-white rounded-xl border border-slate-200">
+                                <div class="card p-4 bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
                                     <div class="flex items-center justify-between mb-3">
                                         <h4 class="font-semibold text-gray-700">توزیع نقش‌ها/پوزیشن‌ها</h4>
                                     </div>
                                     <div class="flex flex-wrap gap-2">${roleChipsHtml}</div>
                                 </div>
-                                <div class="card p-4 bg-white rounded-xl border border-slate-200">
+                                <div class="card p-4 bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
                                     <div class="flex justify-between items-center mb-3">
                                         <h4 class="font-semibold text-gray-700">اهداف تیم (OKRs)</h4>
                                         ${canEdit() ? `<button id="edit-team-okrs-btn" class="text-sm bg-blue-600 text-white py-1 px-3 rounded-md hover:bg-blue-700">افزودن/ویرایش</button>`:''}
@@ -4581,7 +4582,7 @@ const viewTeamProfile = (teamId) => {
                         <div id="tab-team-health" class="profile-tab-content hidden">
                             <div class="space-y-4">
                                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                                    <div class="card p-4 bg-white rounded-xl border border-slate-200">
+                                    <div class="card p-4 bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
                                         <h4 class="font-semibold text-gray-700 mb-3 flex items-center"><i data-lucide="activity" class="ml-2 w-4 h-4 text-indigo-500"></i>شاخص‌های سلامت تیم</h4>
                                         <div class="space-y-2 text-sm">
                                             <div class="flex items-center justify-between"><span>میانگین OKR</span><span class="font-bold text-indigo-600">${avgOkr}%</span></div>
@@ -4591,7 +4592,7 @@ const viewTeamProfile = (teamId) => {
                                             <div class="mt-3">${renderTeamHealthMetrics(team)}</div>
                                         </div>
                                     </div>
-                                    <div class="card p-4 bg-white rounded-xl border border-slate-200 lg:col-span-2">
+                                    <div class="card p-4 bg-white rounded-xl border border-slate-200 lg:col-span-2 shadow-sm hover:shadow-md transition-shadow">
                                         <h4 class="font-semibold text-gray-700 mb-3">مشارکت به تفکیک دسته</h4>
                                         <div class="grid grid-cols-1 md:grid-cols-2 gap-2">${engagementBreakdownHtml}</div>
                                         <div class="mt-4">
@@ -4600,18 +4601,18 @@ const viewTeamProfile = (teamId) => {
                                     </div>
                                 </div>
                                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                                    <div class="card p-4 bg-white rounded-xl border border-slate-200">
+                                    <div class="card p-4 bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
                                         <h4 class="font-semibold text-gray-700 mb-3 flex items-center"><i data-lucide="shield-alert" class="ml-2 w-4 h-4 text-rose-500"></i>اعضای پرریسک</h4>
                                         ${ (advancedAnalysis.highRiskMembers || []).length ? (advancedAnalysis.highRiskMembers || []).sort((a,b)=> (b.attritionRisk?.score||0)-(a.attritionRisk?.score||0)).map(m => `
                                             <div class=\"flex items-center justify-between p-2 border rounded-md mb-2\"><div class=\"flex items-center gap-2\"><img src=\"${m.avatar}\" class=\"w-8 h-8 rounded-full object-cover\"><span class=\"text-sm\">${m.name}</span></div><span class=\"text-xs font-bold text-rose-600\">${m.attritionRisk?.score || 0}%</span></div>
                                         `).join('') : '<p class="text-xs text-slate-500">موردی یافت نشد.</p>'}
                                     </div>
-                                    <div class="card p-4 bg-white rounded-xl border border-slate-200">
+                                    <div class="card p-4 bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
                                         <h4 class="font-semibold text-gray-700 mb-3">اعلانات اخیر تیم</h4>
                                         <div class="space-y-2">${announcementsHtml}</div>
                                     </div>
                                 </div>
-                                <div class="card p-4 bg-white rounded-xl border border-slate-200">
+                                <div class="card p-4 bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
                                     <h4 class="font-semibold text-gray-700 mb-3 flex items-center"><i data-lucide="calendar-clock" class="ml-2 w-4 h-4 text-amber-500"></i>قراردادهای رو به اتمام (۶۰ روز آینده)</h4>
                                     <div class="space-y-2">${contractRisksHtml}</div>
                                 </div>
