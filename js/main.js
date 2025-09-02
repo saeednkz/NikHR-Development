@@ -4391,6 +4391,55 @@ const viewTeamProfile = (teamId) => {
     }).join('') : '<p class="text-sm text-slate-500">هدفی برای این تیم ثبت نشده است.</p>';
 
     modalTitle.innerText = 'پروفایل تیم: ' + team.name;
+    // محاسبات تکمیلی برای نمایش جزئیات بیشتر
+    const totalOkrs = team.okrs?.length || 0;
+    const avgOkr = totalOkrs ? Math.round(team.okrs.reduce((s,o)=> s + (o.progress||0), 0) / totalOkrs) : 0;
+    const highRisk = (advancedAnalysis.highRiskMembers || []).length;
+    const topSkills = (advancedAnalysis.topSkills || []).slice(0, 5);
+
+    // توزیع نقش‌ها/پوزیشن‌ها در تیم
+    const roleDistribution = members.reduce((acc, m) => {
+        const positionName = (() => {
+            if (m.jobTitle) return m.jobTitle;
+            try {
+                const pos = (state.jobPositions || []).find(p => p.firestoreId === m.jobPositionId);
+                return pos?.name || 'نامشخص';
+            } catch { return 'نامشخص'; }
+        })();
+        acc[positionName] = (acc[positionName] || 0) + 1;
+        return acc;
+    }, {});
+    const roleChipsHtml = Object.entries(roleDistribution)
+        .sort((a,b)=> b[1]-a[1])
+        .slice(0,6)
+        .map(([name,count]) => `<span class="px-2 py-1 rounded-full text-[11px] bg-slate-100 text-slate-700">${name} ×${count}</span>`)
+        .join('') || '<span class="text-xs text-slate-500">داده‌ای برای نمایش وجود ندارد.</span>';
+
+    // شکست مشارکت به تفکیک دسته‌ها (از analyzeTeamData)
+    const engBreakdown = advancedAnalysis.engagementBreakdown || [];
+    const engagementBreakdownHtml = engBreakdown.length
+        ? engBreakdown
+            .sort((a,b)=> b.score-a.score)
+            .map(it => `<div class="flex items-center justify-between text-xs p-2 bg-slate-50 rounded-md"><span>${it.name}</span><span class="font-bold ${it.score<50?'text-rose-600':(it.score<70?'text-amber-600':'text-green-600')}">${it.score}%</span></div>`)
+            .join('')
+        : '<p class="text-xs text-slate-500">هنوز نظرسنجی کافی برای این تیم ثبت نشده است.</p>';
+
+    // ۵ اعلان اخیر مرتبط با این تیم یا عمومی
+    const teamAnnouncements = (state.announcements || [])
+        .filter(msg => {
+            const t = msg.targets || { type:'public' };
+            if (!msg.createdAt?.toDate) return false;
+            if (t.type === 'public') return true;
+            if (t.type === 'teams') return (t.teamIds||[]).includes(team.firestoreId);
+            return false;
+        })
+        .sort((a,b)=> new Date(b.createdAt?.toDate()) - new Date(a.createdAt?.toDate()))
+        .slice(0,5);
+    const announcementsHtml = teamAnnouncements.length
+        ? teamAnnouncements.map(a => `<div class="flex items-center justify-between text-xs p-2 rounded-md border"><span class="truncate max-w-[70%]">${a.title || a.content || 'بدون عنوان'}</span><span class="text-slate-500">${toPersianDate(a.createdAt)}</span></div>`).join('')
+        : '<p class="text-xs text-slate-500">اعلانی برای این تیم ثبت نشده است.</p>';
+
+    modalTitle.innerText = 'پروفایل تیم: ' + team.name;
     modalContent.innerHTML = `
         <section class="rounded-2xl overflow-hidden border" style="background:linear-gradient(90deg,#FF6A3D,#F72585)">
             <div class="p-6 sm:p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -4401,6 +4450,20 @@ const viewTeamProfile = (teamId) => {
                     <div>
                         <h2 class="text-2xl font-extrabold text-white">${team.name}</h2>
                         <p class="text-white/90 text-xs mt-1">${team.missionLine ? team.missionLine : (manager ? `مدیر: ${manager.name}` : 'مدیر ندارد')}</p>
+                        <div class="mt-3 grid grid-cols-3 gap-3 text-center">
+                            <div class="bg-white/10 rounded-lg p-2">
+                                <div class="text-white/90 text-xs">میانگین OKR</div>
+                                <div class="text-white text-lg font-bold">${avgOkr}%</div>
+                            </div>
+                            <div class="bg-white/10 rounded-lg p-2">
+                                <div class="text-white/90 text-xs">اعضای پرریسک</div>
+                                <div class="${highRisk ? 'text-rose-200' : 'text-white'} text-lg font-bold">${highRisk}</div>
+                            </div>
+                            <div class="bg-white/10 rounded-lg p-2">
+                                <div class="text-white/90 text-xs">تعداد OKR</div>
+                                <div class="text-white text-lg font-bold">${totalOkrs}</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
@@ -4409,7 +4472,7 @@ const viewTeamProfile = (teamId) => {
                 </div>
             </div>
         </section>
-        
+
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
             <div class="lg:col-span-1 space-y-6">
                 <div class="bg-white rounded-2xl border border-slate-200 p-6 text-center">
@@ -4421,6 +4484,7 @@ const viewTeamProfile = (teamId) => {
                 <div class="card p-6 bg-gray-50 rounded-xl">
                     <h4 class="font-semibold mb-4 text-gray-700 flex items-center"><i data-lucide="brain-circuit" class="ml-2 w-5 h-5 text-purple-500"></i>تحلیل هوشمند</h4>
                     <div class="text-sm space-y-3">${Object.keys(basicAnalysis).length > 0 ? Object.values(basicAnalysis).map(item => `<div class="flex items-start"><i data-lucide="${item.icon}" class="w-4 h-4 mt-1 ml-2 flex-shrink-0 ${item.color}"></i><div class="${item.color}">${item.text}</div></div>`).join('') : '<p class="text-sm text-gray-500">داده کافی برای تحلیل وجود ندارد.</p>'}</div>
+                    ${topSkills.length ? `<div class="mt-4"><h5 class="text-xs font-bold text-slate-600 mb-2">مهارت‌های برتر تیم</h5><div class="flex flex-wrap gap-2">${topSkills.map(([name,count]) => `<span class=\"px-2 py-1 rounded-full text-[11px] bg-slate-100 text-slate-700\">${name} ×${count}</span>`).join('')}</div></div>` : ''}
                 </div>
             </div>
             <div class="lg:col-span-2 space-y-6">
@@ -4442,11 +4506,27 @@ const viewTeamProfile = (teamId) => {
                                     <div class="flex flex-wrap gap-4">${members.map(m => `<div class="text-center" title="${m.name}"><img src="${m.avatar}" class="w-12 h-12 rounded-full mx-auto object-cover"><p class="text-xs mt-1 truncate w-16">${m.name}</p></div>`).join('')}</div>
                                 </div>
                                 <div class="card p-4 bg-white rounded-xl border border-slate-200">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <h4 class="font-semibold text-gray-700">توزیع نقش‌ها/پوزیشن‌ها</h4>
+                                    </div>
+                                    <div class="flex flex-wrap gap-2">${roleChipsHtml}</div>
+                                </div>
+                                <div class="card p-4 bg-white rounded-xl border border-slate-200">
                                     <div class="flex justify-between items-center mb-3">
                                         <h4 class="font-semibold text-gray-700">اهداف تیم (OKRs)</h4>
                                         ${canEdit() ? `<button id="edit-team-okrs-btn" class="text-sm bg-blue-600 text-white py-1 px-3 rounded-md hover:bg-blue-700">افزودن/ویرایش</button>`:''}
                                     </div>
                                     <div class="space-y-4">${okrsHtml}</div>
+                                </div>
+                                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                    <div class="card p-4 bg-white rounded-xl border border-slate-200">
+                                        <h4 class="font-semibold text-gray-700 mb-3">مشارکت به تفکیک دسته</h4>
+                                        <div class="space-y-2">${engagementBreakdownHtml}</div>
+                                    </div>
+                                    <div class="card p-4 bg-white rounded-xl border border-slate-200">
+                                        <h4 class="font-semibold text-gray-700 mb-3">اعلانات اخیر تیم</h4>
+                                        <div class="space-y-2">${announcementsHtml}</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
