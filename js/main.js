@@ -6347,14 +6347,15 @@ const isProfileComplete = (employee) => {
 // فایل: js/main.js
 // ▼▼▼ کل این تابع را با نسخه کامل و صحیح زیر جایگزین کنید ▼▼▼
 
+// فایل: js/main.js
+// ▼▼▼ این کد را به طور کامل جایگزین تابع showEmployeeForm قبلی خود کنید ▼▼▼
+
 const showEmployeeForm = (employeeId = null) => {
     const isEditing = employeeId !== null;
     const emp = isEditing ? state.employees.find(e => e.firestoreId === employeeId) : {};
     const currentTeam = isEditing ? state.teams.find(t => t.memberIds?.includes(emp.id)) : null;
     
     const teamOptions = state.teams.map(team => `<option value="${team.firestoreId}" ${currentTeam?.firestoreId === team.firestoreId ? 'selected' : ''}>${team.name}</option>`).join('');
-    
-    // این بخش‌ها از state خوانده می‌شوند
     const familyOptions = (state.jobFamilies || []).map(family => `<option value="${family.name}" ${emp.jobFamily === family.name ? 'selected' : ''}>${family.name}</option>`).join('');
 
     modalTitle.innerText = isEditing ? 'ویرایش اطلاعات کارمند' : 'افزودن کارمند جدید';
@@ -6443,18 +6444,19 @@ const showEmployeeForm = (employeeId = null) => {
         saveBtn.disabled = true;
         saveBtn.innerText = 'در حال پردازش...';
 
+        const name = document.getElementById('name').value;
         const employeeId = document.getElementById('id').value;
+        const email = document.getElementById('employee-email').value;
         const selectedTeamId = document.getElementById('department-team-select').value;
         const selectedTeam = state.teams.find(t => t.firestoreId === selectedTeamId);
         const managedTeamId = document.getElementById('managed-team-select').value;
 
-        // ▼▼▼ `jobFamily` و `level` به این آبجکت اضافه شدند ▼▼▼
         const employeeCoreData = {
-            name: document.getElementById('name').value,
+            name: name,
             id: employeeId,
             jobTitle: document.getElementById('jobTitle').value,
-            jobFamily: document.getElementById('jobFamily').value, // خواندن مقدار خانواده شغلی
-            level: document.getElementById('level').value,       // خواندن مقدار متنی سطح
+            jobFamily: document.getElementById('jobFamily').value, // <-- این خط مقدار را می‌خواند
+            level: document.getElementById('level').value,
             department: selectedTeam ? selectedTeam.name : '',
             status: document.getElementById('status').value,
             startDate: persianToEnglishDate(document.getElementById('startDate').value),
@@ -6466,6 +6468,12 @@ const showEmployeeForm = (employeeId = null) => {
                 const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
                 batch.update(docRef, employeeCoreData);
                 
+                const oldManagedTeam = state.teams.find(t => t.leadership?.manager === emp.id);
+                if (oldManagedTeam && oldManagedTeam.firestoreId !== managedTeamId) {
+                    const oldTeamRef = doc(db, `artifacts/${appId}/public/data/teams`, oldManagedTeam.firestoreId);
+                    batch.update(oldTeamRef, { 'leadership.manager': null });
+                }
+
                 if (managedTeamId) {
                     const newManagedTeamRef = doc(db, `artifacts/${appId}/public/data/teams`, managedTeamId);
                     batch.set(newManagedTeamRef, { leadership: { manager: employeeId } }, { merge: true });
@@ -6485,28 +6493,21 @@ const showEmployeeForm = (employeeId = null) => {
             const employeeDataForCreation = { ...employeeCoreData, avatar: `https://placehold.co/100x100/E2E8F0/4A5568?text=${name.substring(0, 2)}`, personalInfo: { email: email } };
             try {
                 const createNewEmployee = httpsCallable(functions, 'createNewEmployee');
-                // [!code start]
-                // کد اصلاح شده برای ارسال اطلاعات کامل به Cloud Function
                 const result = await createNewEmployee({ 
-    name: name, 
-    employeeId: employeeId, 
-    email: email, 
-    employeeData: employeeDataForCreation,
-    teamId: selectedTeamId,
-    managedTeamId: managedTeamId
+                    name: name, 
+                    employeeId: employeeId, 
+                    email: email, 
+                    employeeData: employeeDataForCreation,
+                    teamId: selectedTeamId,
+                    managedTeamId: managedTeamId
                 });
-                // [!code end]
                 
-                if (managedTeamId && result.data.success) {
-                    const newManagedTeamRef = doc(db, `artifacts/${appId}/public/data/teams`, managedTeamId);
-                    await updateDoc(newManagedTeamRef, { leaderId: employeeId });
-                }
-
                 showToast("کارمند و حساب کاربری با موفقیت ایجاد شد!");
                 closeModal(mainModal, mainModalContainer);
             } catch (error) { 
                 console.error("Cloud function error:", error);
                 showToast(`خطا: ${error.message}`, "error");
+            } finally {
                 saveBtn.disabled = false;
                 saveBtn.innerText = 'ذخیره';
             }
