@@ -509,14 +509,12 @@ const performanceHistoryHtml = (emp.performanceHistory || [])
                 </div>
 
                 ${selfAssessment ? `
-                    <div class="border-t pt-3">
-                        <details class="text-sm">
-                            <summary class="cursor-pointer font-semibold text-slate-600 hover:text-slate-800 transition-colors">مشاهده خودارزیابی کارمند</summary>
-                            <div class="mt-3 p-3 bg-slate-50 rounded-lg space-y-2 text-slate-700">
-                                <p><strong>نقاط قوت (از دید کارمند):</strong> ${selfAssessment.strengths || '-'}</p>
-                                <p class="mt-2"><strong>زمینه‌های بهبود (از دید کارمند):</strong> ${selfAssessment.areasForImprovement || '-'}</p>
-                            </div>
-                        </details>
+                    <div class="border-t pt-3 text-sm">
+                        <div class="p-3 bg-indigo-50 rounded-lg space-y-2 text-slate-700">
+                            <p class="font-semibold text-indigo-800">خودارزیابی کارمند</p>
+                            <p class="whitespace-pre-wrap"><strong>نقاط قوت (دیدگاه کارمند):</strong> ${selfAssessment.strengths || selfAssessment.employeeStrengths || '-'}</p>
+                            <p class="mt-1 whitespace-pre-wrap"><strong>زمینه‌های قابل بهبود (دیدگاه کارمند):</strong> ${selfAssessment.areasForImprovement || selfAssessment.employeeAreasForImprovement || '-'}</p>
+                        </div>
                     </div>
                 ` : ''}
                 </div>
