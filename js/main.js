@@ -1114,6 +1114,14 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
                 showSelfAssessmentForm(employee, cycle);
             }
         }
+            const selfAssessBtn = e.target.closest('.start-self-assessment-btn');
+            if (selfAssessBtn) {
+                const evaluationId = selfAssessBtn.dataset.id;
+                const evaluation = state.employeeEvaluations.find(ev => ev.firestoreId === evaluationId);
+                if (evaluation) {
+                    showSelfAssessmentForm(evaluation);
+                }
+            }
         // [!code end]
             // مشاهده اعضای تیم و OKR در دایرکتوری
             const viewTeamBtn = e.target.closest('.view-team-employee-btn');
@@ -6417,6 +6425,84 @@ const showEmployeeForm = (employeeId = null) => {
                 saveBtn.disabled = false;
                 saveBtn.innerText = 'ذخیره';
             }
+        }
+    });
+};
+// فایل: js/main.js
+// این تابع جدید را به فایل اضافه کنید ▼
+
+const showSelfAssessmentForm = (evaluation) => {
+    const employee = state.employees.find(e => e.id === evaluation.employeeId);
+    if (!employee) {
+        showToast('اطلاعات کارمند یافت نشد.', 'error');
+        return;
+    }
+
+    modalTitle.innerText = `خودارزیابی دوره: ${evaluation.cycleId}`;
+    
+    // پیدا کردن شایستگی‌های مرتبط با پوزیشن و سطح کارمند
+    const position = state.jobPositions.find(p => p.firestoreId === employee.jobPositionId);
+    const employeeLevel = employee.level || 1; 
+    const relevantCompetencyIds = new Set(position?.levels?.[`Level ${employeeLevel}`]?.competencyIds || position?.competencyIds || []);
+    const competenciesForReview = state.competencies.filter(c => relevantCompetencyIds.has(c.firestoreId));
+
+    const competenciesHtml = competenciesForReview.length > 0 ? competenciesForReview.map(comp => `
+        <div class="mb-3 p-3 bg-slate-50 rounded-lg">
+            <label class="block text-sm font-medium text-slate-700">${comp.name}</label>
+            <p class="text-xs text-slate-500 mb-2">امتیاز شما به عملکرد خودتان در این شایستگی (۱ تا ۵):</p>
+            <input type="number" class="competency-score w-full p-2 border rounded-md" data-name="${comp.name}" min="1" max="5" value="3" required>
+        </div>
+    `).join('') : '<p class="text-sm text-slate-500">شایستگی‌ای برای پوزیشن شما تعریف نشده است.</p>';
+
+    modalContent.innerHTML = `
+        <form id="self-assessment-form" class="space-y-4">
+            <div>
+                <h4 class="font-semibold text-lg mb-2">ارزیابی شایستگی‌ها</h4>
+                <div class="max-h-60 overflow-y-auto pr-2">${competenciesHtml}</div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium">نقاط قوتی که از خود نشان دادید:</label>
+                <textarea id="self-strengths" class="w-full p-2 border rounded-md mt-1" rows="3" required></textarea>
+            </div>
+            <div>
+                <label class="block text-sm font-medium">مواردی که فکر می‌کنید نیاز به بهبود دارند:</label>
+                <textarea id="self-areasForImprovement" class="w-full p-2 border rounded-md mt-1" rows="3" required></textarea>
+            </div>
+            <div class="flex justify-end pt-4 border-t">
+                <button type="submit" class="primary-btn">ارسال نهایی خودارزیابی</button>
+            </div>
+        </form>
+    `;
+    openModal(mainModal, mainModalContainer);
+
+    document.getElementById('self-assessment-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const saveBtn = e.target.querySelector('button[type="submit"]');
+        saveBtn.disabled = true;
+        saveBtn.innerText = 'در حال ارسال...';
+        
+        const competencyScores = {};
+        document.querySelectorAll('.competency-score').forEach(input => {
+            competencyScores[input.dataset.name] = parseInt(input.value);
+        });
+
+        const selfAssessmentData = {
+            competencyScores,
+            strengths: document.getElementById('self-strengths').value,
+            areasForImprovement: document.getElementById('self-areasForImprovement').value
+        };
+
+        try {
+            const submitFunction = httpsCallable(functions, 'submitSelfAssessment');
+            await submitFunction({ evaluationId: evaluation.firestoreId, selfAssessmentData });
+            showToast('خودارزیابی شما با موفقیت ثبت و برای مدیر ارسال شد.');
+            closeModal(mainModal, mainModalContainer);
+            // صفحه وظایف کارمند به طور خودکار توسط onSnapshot آپدیت خواهد شد
+        } catch (error) {
+            console.error("Error submitting self assessment:", error);
+            showToast(`خطا: ${error.message}`, 'error');
+            saveBtn.disabled = false;
+            saveBtn.innerText = 'ارسال نهایی خودارزیابی';
         }
     });
 };
