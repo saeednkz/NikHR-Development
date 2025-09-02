@@ -3750,9 +3750,7 @@ function setupProfileModalListeners(emp) {
         if (id === 'start-evaluation-btn') {
             const cycleId = btn.dataset.cycleId;
             const cycle = state.evaluationCycles.find(c => c.firestoreId === cycleId);
-            if (emp && cycle) {
-                showEvaluationForm(emp, cycle);
-            }
+
             return;
         }
         // [!code end]
@@ -3940,14 +3938,6 @@ const viewEmployeeProfile = (employeeId) => {
     const analysis = generateSmartAnalysis(emp);
     const team = state.teams.find(t => t.memberIds?.includes(emp.id));
     const manager = team ? state.employees.find(e => e.id === team.leadership?.manager) : null;
-    // پیدا کردن دوره ارزیابی فعال
-    const activeCycle = (state.evaluationCycles || []).find(c => c.status === 'active');
-    let evaluationButtonHtml = '';
-    if (activeCycle && canEdit()) {
-        // چک می‌کنیم آیا برای این کارمند در این دوره، ارزیابی‌ای ثبت شده یا نه
-        // const existingEval = (state.employeeEvaluations || []).find(e => e.employeeId === emp.id && e.cycleId === activeCycle.firestoreId);
-        evaluationButtonHtml = `<button id="start-evaluation-btn" data-cycle-id="${activeCycle.firestoreId}" class="primary-btn text-xs">شروع ارزیابی عملکرد</button>`;
-    }
     //
     modalTitle.innerText = 'پروفایل ۳۶۰ درجه: ' + emp.name;
     modalContent.innerHTML = `
@@ -3963,12 +3953,12 @@ const viewEmployeeProfile = (employeeId) => {
                             <p class="text-white/90 text-sm">${emp.jobTitle || 'بدون عنوان شغلی'} • ${emp.level || ''}</p>
                         </div>
                     </div>
-                    <div class="flex items-center gap-2">
-                       ${evaluationButtonHtml} ${canEdit() ? `<button id="main-edit-employee-btn" class="secondary-btn text-xs">ویرایش کارمند</button>` : ''}
-                        ${canEdit() ? `<button id="change-avatar-btn" class="secondary-btn text-xs">تغییر عکس</button>` : ''}
-                        ${canEdit() ? `<button id="delete-avatar-btn" class="secondary-btn text-xs">حذف عکس</button>` : ''}
-                        <span class="px-3 py-1 rounded-full text-xs font-bold bg-white/20 text-white">${emp.status}</span>
-                    </div>
+<div class="flex items-center gap-2">
+    ${canEdit() ? `<button id="main-edit-employee-btn" class="secondary-btn text-xs">ویرایش کارمند</button>` : ''}
+    ${canEdit() ? `<button id="change-avatar-btn" class="secondary-btn text-xs">تغییر عکس</button>` : ''}
+    ${canEdit() ? `<button id="delete-avatar-btn" class="secondary-btn text-xs">حذف عکس</button>` : ''}
+    <span class="px-3 py-1 rounded-full text-xs font-bold bg-white/20 text-white">${emp.status}</span>
+</div>
                 </div>
             </section>
 
