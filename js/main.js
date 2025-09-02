@@ -5784,7 +5784,8 @@ const showEvaluationForm = (employee, cycle, evaluation) => {
     const isCompleted = evaluation?.status === 'completed';
     const managerData = evaluation?.managerAssessment || {};
 
-    let selfAssessmentHtml = `...`; // این بخش طولانی است و تغییری نکرده
+    // بخش ۱: نمایش خودارزیابی کارمند (بدون تغییر)
+    let selfAssessmentHtml = `<div class="p-4 bg-yellow-50 border-yellow-200 rounded-lg text-sm text-yellow-800"><p class="font-semibold">کارمند هنوز خودارزیابی را تکمیل نکرده است.</p></div>`;
     if (evaluation && evaluation.selfAssessment) {
         const selfData = evaluation.selfAssessment;
         selfAssessmentHtml = `
@@ -5800,6 +5801,7 @@ const showEvaluationForm = (employee, cycle, evaluation) => {
             </div>`;
     }
 
+    // [اصلاح] بخش ۲: ساخت HTML برای شایستگی‌ها
     const position = state.jobPositions.find(p => p.firestoreId === employee.jobPositionId);
     const relevantCompetencyIds = new Set(position?.competencyIds || []);
     const competenciesForReview = state.competencies.filter(c => relevantCompetencyIds.has(c.firestoreId));
@@ -5815,8 +5817,9 @@ const showEvaluationForm = (employee, cycle, evaluation) => {
         </div>
     `).join('') : '<p class="text-sm text-slate-500">شایستگی‌ای برای این پوزیشن شغلی تعریف نشده است.</p>';
 
+    // [اصلاح] بخش ۳: ساخت HTML برای اهداف تیمی (OKRs)
     const team = state.teams.find(t => t.memberIds?.includes(employee.id));
-    const teamOkrsHtml = (team?.okrs || []).map(okr => `
+    const teamOkrsHtml = (team?.okrs || []).length > 0 ? (team.okrs).map(okr => `
         <div class="mb-3 p-3 bg-slate-50 rounded-lg border">
             <label class="block text-sm font-medium text-slate-700">${okr.title} (پیشرفت تیم: ${okr.progress}%)</label>
             <p class="text-xs text-slate-500 mb-2">امتیاز مدیر به مشارکت کارمند در این هدف (۱ تا ۵):</p>
@@ -5825,8 +5828,9 @@ const showEvaluationForm = (employee, cycle, evaluation) => {
                    value="${managerData.okrScores?.[okr.title] || 3}" 
                    ${isCompleted ? 'disabled' : ''} required>
         </div>
-    `).join('') || '<p class="text-sm text-slate-500">تیم این کارمند هدفی (OKR) ثبت شده ندارد.</p>';
+    `).join('') : '<p class="text-sm text-slate-500">تیم این کارمند هدفی (OKR) ثبت شده ندارد.</p>';
 
+    // بخش ۴: ساختار نهایی فرم
     modalContent.innerHTML = `
         <form id="manager-evaluation-form" class="space-y-6">
             <div>
@@ -5864,11 +5868,11 @@ const showEvaluationForm = (employee, cycle, evaluation) => {
             </div>
         </form>
     `;
-   openModal(mainModal, mainModalContainer);
+    openModal(mainModal, mainModalContainer);
 
     document.getElementById('close-eval-modal')?.addEventListener('click', () => closeModal(mainModal, mainModalContainer));
     
-    document.getElementById('manager-evaluation-form').addEventListener('submit', async (e) => {
+    document.getElementById('manager-evaluation-form')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const saveBtn = e.target.querySelector('button[type="submit"]');
         saveBtn.disabled = true;
