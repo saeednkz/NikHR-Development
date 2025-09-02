@@ -5341,6 +5341,11 @@ const setupSettingsPageListeners = () => {
     // مدیریت کلیک روی تب‌ها
     mainContentArea.querySelectorAll('.settings-tab').forEach(tab => {
         tab.addEventListener('click', () => {
+            const pageName = tab.dataset.tab;
+            if (pageName === 'evaluation') {
+                navigateTo('evaluation');
+                return;
+            }
             mainContentArea.querySelectorAll('.settings-tab').forEach(t => { t.classList.remove('primary-btn'); t.classList.add('secondary-btn'); });
             tab.classList.add('primary-btn');
             tab.classList.remove('secondary-btn');
@@ -5349,23 +5354,6 @@ const setupSettingsPageListeners = () => {
             });
         });
     });
-    mainContentArea.querySelectorAll('.settings-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-        const pageName = tab.dataset.tab;
-        // اگر تب مربوط به صفحه دیگری است، با navigateTo آن را مدیریت کن
-        if (pageName === 'evaluation') {
-            navigateTo('evaluation');
-            return;
-        }
-        // در غیر این صورت، همان منطق قبلی برای تب‌های داخلی تنظیمات
-        mainContentArea.querySelectorAll('.settings-tab').forEach(t => { t.classList.remove('primary-btn'); t.classList.add('secondary-btn'); });
-        tab.classList.add('primary-btn');
-        tab.classList.remove('secondary-btn');
-        mainContentArea.querySelectorAll('.settings-tab-pane').forEach(pane => {
-            pane.classList.toggle('hidden', pane.id !== `tab-${tab.dataset.tab}`);
-        });
-    });
-});
 
     // مدیریت کلیک روی دکمه‌های مختلف در کل صفحه تنظیمات
     mainContentArea.addEventListener('click', (e) => {
@@ -5380,7 +5368,11 @@ const setupSettingsPageListeners = () => {
         const editPositionBtn = e.target.closest('.edit-position-btn');
         const deletePositionBtn = e.target.closest('.delete-position-btn');
         const mapCompetenciesBtn = e.target.closest('.map-competencies-btn');
-           const deleteFamilyBtn = e.target.closest('.delete-family-btn');
+        
+        // [!code start]
+        // ▼▼▼ منطق دکمه حذف خانواده شغلی اضافه شد ▼▼▼
+        const deleteFamilyBtn = e.target.closest('.delete-family-btn');
+        // [!code end]
 
         if (addUserBtn) showAddUserForm();
         if (editUserBtn) {
@@ -5395,11 +5387,26 @@ const setupSettingsPageListeners = () => {
                     await deleteDoc(doc(db, `artifacts/${appId}/public/data/competencies`, compId));
                     showToast('شایستگی حذف شد.');
                 } catch (err) {
-                    console.error('Error deleting competency', err);
                     showToast('خطا در حذف شایستگی.', 'error');
                 }
             });
         }
+        
+        // [!code start]
+        // ▼▼▼ عملکرد دکمه حذف خانواده شغلی ▼▼▼
+        if (deleteFamilyBtn) {
+            const familyId = deleteFamilyBtn.dataset.id;
+            showConfirmationModal('حذف خانواده شغلی', 'آیا مطمئن هستید؟', async () => {
+                try {
+                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/jobFamilies`, familyId));
+                    showToast('خانواده شغلی حذف شد.');
+                } catch (err) {
+                    showToast('خطا در حذف.', 'error');
+                }
+            });
+        }
+        // [!code end]
+
         if (addRuleBtn) showAssignmentRuleForm();
         if (editRuleBtn) showAssignmentRuleForm(editRuleBtn.dataset.id);
         if (deleteRuleBtn) { /* ... کد حذف قانون ... */ }
@@ -5417,20 +5424,9 @@ const setupSettingsPageListeners = () => {
                 } catch (error) { showToast("خطا در حذف.", "error"); }
             });
         }
-         if (deleteFamilyBtn) { // <-- این بلوک if را اضافه کنید
-            const familyId = deleteFamilyBtn.dataset.id;
-            showConfirmationModal('حذف خانواده شغلی', 'آیا مطمئن هستید؟', async () => {
-                try {
-                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/jobFamilies`, familyId));
-                    showToast('خانواده شغلی حذف شد.');
-                } catch (err) {
-                    showToast('خطا در حذف.', 'error');
-                }
-            });
-        }
     });
 
-    // ▼▼▼ این بخش مسئول فعال‌سازی فرم افزودن شایستگی است ▼▼▼
+    // فعال‌سازی فرم افزودن شایستگی
     const addCompetencyForm = document.getElementById('add-competency-form');
     if (addCompetencyForm) {
         addCompetencyForm.addEventListener('submit', async (e) => {
@@ -5443,11 +5439,30 @@ const setupSettingsPageListeners = () => {
                 input.value = '';
                 showToast('شایستگی اضافه شد.');
             } catch (err) {
-                console.error('Error adding competency', err);
                 showToast('خطا در افزودن شایستگی.', 'error');
             }
         });
     }
+
+    // [!code start]
+    // ▼▼▼ منطق فرم افزودن خانواده شغلی اضافه شد ▼▼▼
+    const addFamilyForm = document.getElementById('add-family-form');
+    if (addFamilyForm) {
+        addFamilyForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const input = document.getElementById('new-family-name');
+            const name = (input?.value || '').trim();
+            if (!name) return;
+            try {
+                await addDoc(collection(db, `artifacts/${appId}/public/data/jobFamilies`), { name, createdAt: serverTimestamp() });
+                input.value = '';
+                showToast('خانواده شغلی جدید اضافه شد.');
+            } catch (err) {
+                showToast('خطا در افزودن.', 'error');
+            }
+        });
+    }
+    // [!code end]
     // ▲▲▲ پایان بخش فعال‌سازی فرم ▲▲▲
     
     document.querySelectorAll('.role-select').forEach(select => {
