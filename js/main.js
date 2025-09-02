@@ -4094,9 +4094,15 @@ const setupTeamProfileModalListeners = (team) => {
     tabs.forEach(tab => {
         tab.addEventListener('click', (e) => {
             e.preventDefault();
-            tabs.forEach(t => t.classList.remove('active'));
+            tabs.forEach(t => {
+                t.classList.remove('active');
+                t.classList.remove('border-indigo-500', 'text-indigo-600');
+                t.classList.add('border-transparent', 'text-slate-500');
+            });
             panes.forEach(p => p.classList.add('hidden'));
             tab.classList.add('active');
+            tab.classList.remove('border-transparent', 'text-slate-500');
+            tab.classList.add('border-indigo-500', 'text-indigo-600');
             const targetPane = content.querySelector(`#${tab.dataset.tab}`);
             if (targetPane) targetPane.classList.remove('hidden');
         });
@@ -4518,10 +4524,32 @@ const viewTeamProfile = (teamId) => {
                                     </div>
                                     <div class="space-y-4">${okrsHtml}</div>
                                 </div>
+                            </div>
+                        </div>
+                        <div id="tab-team-health" class="profile-tab-content hidden">
+                            <div class="space-y-4">
+                                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                                    <div class="card p-4 bg-white rounded-xl border border-slate-200">
+                                        <h4 class="font-semibold text-gray-700 mb-3 flex items-center"><i data-lucide="activity" class="ml-2 w-4 h-4 text-indigo-500"></i>شاخص‌های سلامت تیم</h4>
+                                        <div class="space-y-2 text-sm">
+                                            <div class="flex items-center justify-between"><span>میانگین OKR</span><span class="font-bold text-indigo-600">${avgOkr}%</span></div>
+                                            <div class="flex items-center justify-between"><span>تعداد اعضای پرریسک</span><span class="font-bold ${highRisk ? 'text-rose-600' : 'text-slate-700'}">${highRisk}</span></div>
+                                            <div class="flex items-center justify-between"><span>تعداد OKR</span><span class="font-bold text-slate-700">${totalOkrs}</span></div>
+                                            <div class="flex items-center justify-between"><span>اعضا</span><span class="font-bold text-slate-700">${members.length}</span></div>
+                                            <div class="mt-3">${renderTeamHealthMetrics(team)}</div>
+                                        </div>
+                                    </div>
+                                    <div class="card p-4 bg-white rounded-xl border border-slate-200 lg:col-span-2">
+                                        <h4 class="font-semibold text-gray-700 mb-3">مشارکت به تفکیک دسته</h4>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2">${engagementBreakdownHtml}</div>
+                                    </div>
+                                </div>
                                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                     <div class="card p-4 bg-white rounded-xl border border-slate-200">
-                                        <h4 class="font-semibold text-gray-700 mb-3">مشارکت به تفکیک دسته</h4>
-                                        <div class="space-y-2">${engagementBreakdownHtml}</div>
+                                        <h4 class="font-semibold text-gray-700 mb-3 flex items-center"><i data-lucide="shield-alert" class="ml-2 w-4 h-4 text-rose-500"></i>اعضای پرریسک</h4>
+                                        ${ (advancedAnalysis.highRiskMembers || []).length ? (advancedAnalysis.highRiskMembers || []).sort((a,b)=> (b.attritionRisk?.score||0)-(a.attritionRisk?.score||0)).map(m => `
+                                            <div class=\"flex items-center justify-between p-2 border rounded-md mb-2\"><div class=\"flex items-center gap-2\"><img src=\"${m.avatar}\" class=\"w-8 h-8 rounded-full object-cover\"><span class=\"text-sm\">${m.name}</span></div><span class=\"text-xs font-bold text-rose-600\">${m.attritionRisk?.score || 0}%</span></div>
+                                        `).join('') : '<p class="text-xs text-slate-500">موردی یافت نشد.</p>'}
                                     </div>
                                     <div class="card p-4 bg-white rounded-xl border border-slate-200">
                                         <h4 class="font-semibold text-gray-700 mb-3">اعلانات اخیر تیم</h4>
@@ -4530,7 +4558,6 @@ const viewTeamProfile = (teamId) => {
                                 </div>
                             </div>
                         </div>
-                        <div id="tab-team-health" class="profile-tab-content hidden">${renderTeamHealthMetrics(team)}</div>
                     </div>
                 </div>
             </div>
