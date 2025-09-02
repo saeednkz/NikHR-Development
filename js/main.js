@@ -6456,6 +6456,7 @@ const showEmployeeForm = (employeeId = null) => {
         const employeeId = document.getElementById('id').value;
         const selectedTeamId = document.getElementById('department-team-select').value;
         const selectedTeam = state.teams.find(t => t.firestoreId === selectedTeamId);
+        const managedTeamId = document.getElementById('managed-team-select').value; // <-- این خط را اضافه کنید
         
         // [!code start]
         // ▼▼▼ ۳. مقدار پوزیشن شغلی خوانده و ذخیره می‌شود ▼▼▼
