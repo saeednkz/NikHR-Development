@@ -7,6 +7,9 @@
     <link rel="icon" href="logo.png?v=2" type="image/png">
     <link rel="manifest" href="manifest.json?v=2">
     <meta name="theme-color" content="#4f46e5"/>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="logo.png">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -20,6 +23,11 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css">
     
 <style>
+    html, body { height: 100%; }
+    body { margin: 0; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
+    @supports (padding: max(0px)) {
+        body { padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
+    }
     body {
         font-family: 'Vazirmatn', sans-serif;
         background-color: #f8fafc; /* Slate 50 */
@@ -372,5 +380,12 @@
 
     <script type="module" src="js/auth.js"></script>
     <script type="module" src="js/main.js"></script>
+    <script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+            navigator.serviceWorker.register('/sw.js').catch(function(e){ console.debug('SW register failed', e); });
+        });
+    }
+    </script>
 </body>
 </html>
