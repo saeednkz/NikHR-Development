@@ -3916,6 +3916,19 @@ function setupProfileModalListeners(emp) {
         if (btn.id === 'edit-personal-info-btn') { showEditPersonalInfoForm(emp); return; }
         if (btn.id === 'add-contract-btn') { showContractForm(emp); return; }
         if (btn.id === 'edit-career-path-btn') { showEditCareerPathForm(emp); return; }
+                if (btn.id === 'change-avatar-btn') {
+            handleAvatarChange(emp);
+            return;
+        }
+        if (btn.id === 'delete-avatar-btn') {
+            showConfirmationModal('حذف عکس پروفایل', 'آیا مطمئن هستید؟', async () => {
+                const defaultAvatar = `https://placehold.co/100x100/E2E8F0/4A5568?text=${(emp.name||'NA').substring(0,2)}`;
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId), { avatar: defaultAvatar });
+                showToast('عکس پروفایل حذف شد.');
+                viewEmployeeProfile(emp.firestoreId);
+            });
+            return;
+        }
     });
 }
 // Contract editor (add/extend)
@@ -4134,11 +4147,16 @@ const viewEmployeeProfile = (employeeId) => {
     const team = state.teams.find(t => t.memberIds?.includes(emp.id));
     const manager = team ? state.employees.find(e => e.id === team.leadership?.manager) : null;
     
-    const performanceHistoryHtml = (emp.performanceHistory && emp.performanceHistory.length > 0) 
-        ? emp.performanceHistory.sort((a,b) => new Date(b.reviewDate) - new Date(a.reviewDate)).map((review, index) => `
+  const performanceHistoryHtml = (emp.performanceHistory && emp.performanceHistory.length > 0) 
+        ? emp.performanceHistory.sort((a,b) => new Date(b.reviewDate) - new Date(a.reviewDate)).map((review, index) => {
+            const selfAssessment = review.selfAssessment;
+            return `
             <div class="bg-white rounded-xl border border-slate-200 p-4">
-                <div class="flex justify-between items-center mb-2">
-                    <p class="font-bold text-slate-800">امتیاز کلی: <span style="color:#6B69D6" class="text-lg">${review.overallScore}/5</span></p>
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="font-bold text-slate-800">امتیاز کلی: <span style="color:#6B69D6" class="text-lg">${review.overallScore}/5</span></p>
+                        <p class="text-xs text-slate-500 mt-1">تاریخ: ${toPersianDate(review.reviewDate)} | ارزیاب: ${review.reviewer}</p>
+                    </div>
                     ${canEdit() ? `
                         <div class="flex gap-1">
                             <button class="view-performance-btn p-2 text-slate-400 hover:text-green-600" data-index="${index}" title="مشاهده"><i data-lucide="eye" class="w-4 h-4"></i></button>
@@ -4147,10 +4165,25 @@ const viewEmployeeProfile = (employeeId) => {
                         </div>
                     ` : ''}
                 </div>
-                <p class="text-sm text-slate-500">تاریخ: ${toPersianDate(review.reviewDate)} | ارزیاب: ${review.reviewer}</p>
+                <div class="mt-4 border-t pt-3 text-sm text-slate-700">
+                    <p><strong>نقاط قوت (دیدگاه مدیر):</strong> ${review.strengths || '-'}</p>
+                    <p class="mt-2"><strong>زمینه‌های قابل بهبود (دیدگاه مدیر):</strong> ${review.areasForImprovement || '-'}</p>
+                </div>
+                ${selfAssessment ? `
+                    <div class="border-t pt-3">
+                        <details class="text-sm">
+                            <summary class="cursor-pointer font-semibold text-slate-600 hover:text-slate-800 transition-colors">مشاهده خودارزیابی کارمند</summary>
+                            <div class="mt-3 p-3 bg-slate-50 rounded-lg space-y-2 text-slate-700">
+                                <p><strong>نقاط قوت (از دید کارمند):</strong> ${selfAssessment.strengths || '-'}</p>
+                                <p class="mt-2"><strong>زمینه‌های بهبود (از دید کارمند):</strong> ${selfAssessment.areasForImprovement || '-'}</p>
+                            </div>
+                        </details>
+                    </div>
+                ` : ''}
             </div>
-        `).join('') 
+        `}).join('') 
         : '<div class="text-center py-6"><i data-lucide="inbox" class="w-12 h-12 mx-auto text-slate-300"></i><p class="mt-2 text-sm text-slate-500">سابقه‌ای از ارزیابی عملکرد ثبت نشده است.</p></div>';
+
 
     modalTitle.innerText = 'پروفایل ۳۶۰ درجه: ' + emp.name;
     modalContent.innerHTML = `
@@ -4258,9 +4291,16 @@ const viewEmployeeProfile = (employeeId) => {
                                     <div class="bg-white rounded-xl border border-slate-200 p-4">
                                         <h5 class="font-bold text-slate-800 mb-3">اطلاعات هویتی و شناسایی</h5>
                                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-700">
-                                            <p><strong>نام:</strong> ${emp.name || '-'}</p>
-                                            <p><strong>تاریخ تولد:</strong> ${emp.personalInfo?.birthDate ? toPersianDate(emp.personalInfo.birthDate) : '-'}</p>
-                                            <p><strong>کد ملی:</strong> ${emp.personalInfo?.nationalId || '-'}</p>
+                                           <p><strong>نام و نام خانوادگی:</strong> ${emp.name || '-'}</p>
+        <p><strong>ایمیل:</strong> ${emp.personalInfo?.email || '-'}</p>
+        <p><strong>شماره موبایل:</strong> ${emp.personalInfo?.phone || '-'}</p>
+        <p><strong>کد ملی:</strong> ${emp.personalInfo?.nationalId || '-'}</p>
+        <p><strong>تاریخ تولد:</strong> ${emp.personalInfo?.birthDate ? toPersianDate(emp.personalInfo.birthDate) : '-'}</p>
+        <p><strong>محل تولد:</strong> ${emp.personalInfo?.birthPlace || '-'}</p>
+        <p><strong>جنسیت:</strong> ${emp.gender || emp.personalInfo?.gender || '-'}</p>
+        <p><strong>وضعیت تأهل:</strong> ${emp.personalInfo?.maritalStatus || '-'}</p>
+        <p><strong>تعداد فرزندان:</strong> ${emp.personalInfo?.numChildren ?? '-'}</p>
+        <p><strong>وضعیت خدمت سربازی:</strong> ${emp.personalInfo?.militaryStatus || '-'}</p>
                                         </div>
                                     </div>
                                 </div>
