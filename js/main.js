@@ -12,7 +12,7 @@ import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/
 import { initAuth, showLoginPage, showDashboard, setupAuthEventListeners, signOut, isAdmin, canEdit, isTeamManager } from './auth.js';
 import { showToast } from './utils.js';
         
-        // --- SURVEY TEMPLATES (COMPREHENSIVE & STANDARD) ---
+        // --SURVEY TEMPLATES (COMPREHENSIVE & STANDARD) ---
         const surveyTemplates = {
             'engagement': {
                 id: 'engagement',
