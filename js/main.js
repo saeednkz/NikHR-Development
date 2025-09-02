@@ -3711,14 +3711,14 @@ settings: () => {
             <div><h1 class="text-3xl font-bold text-slate-800">تنظیمات سیستم</h1><p class="text-sm text-slate-500 mt-1">مدیریت کاربران، دسترسی‌ها و پیکربندی سازمان</p></div>
         </div>
         
-        <div class="bg-gradient-to-l from-[#F72585]/10 to-[#6B69D6]/10 rounded-xl p-4 border mb-6">
+        <div class="sticky top-0 bg-white/70 backdrop-blur p-3 border rounded-xl mb-6 z-10">
             <nav id="settings-tabs" class="flex flex-wrap gap-2" aria-label="Tabs">
-                <button data-tab="users" class="settings-tab primary-btn text-xs py-2 px-3">کاربران</button>
-                <button data-tab="families" class="settings-tab secondary-btn text-xs py-2 px-3">خانواده‌های شغلی</button>
-                <button data-tab="positions" class="settings-tab secondary-btn text-xs py-2 px-3">پوزیشن‌های شغلی</button>
-                <button data-tab="competencies" class="settings-tab secondary-btn text-xs py-2 px-3">شایستگی‌ها</button>
-                <button data-tab="rules" class="settings-tab secondary-btn text-xs py-2 px-3">قوانین واگذاری</button>
-                <button data-tab="evaluation" class="settings-tab secondary-btn text-xs py-2 px-3">مدیریت ارزیابی</button>
+                <button data-tab="users" class="settings-tab primary-btn text-xs font-semibold px-3 py-1.5 rounded-lg">کاربران</button>
+                <button data-tab="families" class="settings-tab secondary-btn text-xs font-semibold px-3 py-1.5 rounded-lg">خانواده‌های شغلی</button>
+                <button data-tab="positions" class="settings-tab secondary-btn text-xs font-semibold px-3 py-1.5 rounded-lg">پوزیشن‌های شغلی</button>
+                <button data-tab="competencies" class="settings-tab secondary-btn text-xs font-semibold px-3 py-1.5 rounded-lg">شایستگی‌ها</button>
+                <button data-tab="rules" class="settings-tab secondary-btn text-xs font-semibold px-3 py-1.5 rounded-lg">قوانین واگذاری</button>
+                <button data-tab="evaluation" class="settings-tab secondary-btn text-xs font-semibold px-3 py-1.5 rounded-lg">مدیریت ارزیابی</button>
             </nav>
         </div>
 
