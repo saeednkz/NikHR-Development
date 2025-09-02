@@ -8,7 +8,7 @@ import {
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
 
-// وارد کردن توابع از ماژول‌های محلی
+// وارد کردن توابع از ماژول‌های محلی 
 import { initAuth, showLoginPage, showDashboard, setupAuthEventListeners, signOut, isAdmin, canEdit, isTeamManager } from './auth.js';
 import { showToast } from './utils.js';
         
