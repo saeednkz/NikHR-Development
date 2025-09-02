@@ -3204,23 +3204,36 @@ organization: () => {
     if (state.teams.length === 0) return `<div class="text-center p-10 card"><i data-lucide="users-2" class="mx-auto w-16 h-16 text-slate-400"></i><h2 class="mt-4 text-xl font-semibold text-slate-700">هنوز تیمی ثبت نشده است</h2><p class="mt-2 text-slate-500">برای شروع، اولین تیم سازمان را از طریق دکمه زیر اضافه کنید.</p>${canEdit() ? `<button id="add-team-btn-empty" class="mt-6 bg-blue-600 text-white py-2 px-5 rounded-lg hover:bg-blue-700 shadow-md transition">افزودن تیم جدید</button>` : ''}</div>`;
 
     const teamCardsHtml = state.teams.map((team, index) => {
-        // [اصلاح ۱] خواندن مدیر از ساختار داده جدید
         const manager = state.employees.find(e => e.id === team.leadership?.manager);
-        
-        // [اصلاح ۲] شمارش صحیح اعضا بدون شمارش تکراری مدیر
-        const allPersonnelIds = new Set(team.memberIds || []);
-        if (team.leadership?.manager) {
-            allPersonnelIds.add(team.leadership.manager);
-        }
-        const memberCount = allPersonnelIds.size;
-        
-        // [اصلاح ۳] استفاده از آواتار پیش‌فرض در صورت نبودن آواتار تیم
-        const avatarUrl = team.avatar || 'logo.png'; // یا هر آدرس پیش‌فرض دیگر
 
+        const allPersonnelIds = new Set(team.memberIds || []);
+        if (team.leadership?.manager) allPersonnelIds.add(team.leadership.manager);
+        const members = Array.from(allPersonnelIds)
+            .map(id => state.employees.find(e => e.id === id))
+            .filter(Boolean);
+        const memberCount = members.length;
+
+        const avatarUrl = team.avatar || 'logo.png';
         const engagementScore = team.engagementScore || 0;
         const okrProgress = (team.okrs && team.okrs.length > 0)
-            ? Math.round(team.okrs.reduce((sum, okr) => sum + okr.progress, 0) / team.okrs.length)
+            ? Math.round(team.okrs.reduce((sum, okr) => sum + (okr.progress || 0), 0) / team.okrs.length)
             : 0;
+        const okrCount = team.okrs?.length || 0;
+
+        // تحلیل تکمیلی تیم
+        const analysis = analyzeTeamData(team, members) || {};
+        const highRiskCount = (analysis.highRiskMembers || []).length;
+        const topSkills = (analysis.topSkills || []).slice(0, 3);
+
+        // سابقه متوسط حضور اعضا (سال)
+        const now = new Date();
+        const tenureDays = members.reduce((sum, m) => {
+            if (!m?.startDate) return sum;
+            const start = new Date(m.startDate);
+            if (isNaN(start.getTime())) return sum;
+            return sum + Math.ceil(Math.abs(now - start) / (1000 * 60 * 60 * 24));
+        }, 0);
+        const avgTenureYears = memberCount > 0 ? Math.round((tenureDays / memberCount) / 365) : 0;
 
         const borderColor = teamColorPalette[index % teamColorPalette.length];
 
@@ -3233,7 +3246,7 @@ organization: () => {
                     <h3 class="text-xl font-bold text-slate-800">${team.name}</h3>
                     <p class="text-xs text-slate-500 mt-1">${team.missionLine ? team.missionLine : (manager ? `مدیر: ${manager.name}` : 'مدیر ندارد')}</p>
                 </div>
-                <div class="px-6 py-4 grid grid-cols-3 gap-4 border-y border-slate-100">
+                <div class="px-6 py-4 grid grid-cols-4 gap-4 border-y border-slate-100">
                     <div>
                         <p class="text-2xl font-bold text-slate-700">${memberCount}</p>
                         <p class="text-xs text-slate-500 font-medium">اعضا</p>
@@ -3244,22 +3257,22 @@ organization: () => {
                     </div>
                     <div>
                         <p class="text-2xl font-bold text-blue-600">${okrProgress}%</p>
-                        <p class="text-xs text-slate-500 font-medium">اهداف</p>
+                        <p class="text-xs text-slate-500 font-medium">اهداف (${okrCount})</p>
+                    </div>
+                    <div>
+                        <p class="text-2xl font-bold ${highRiskCount ? 'text-rose-600' : 'text-slate-700'}">${highRiskCount}</p>
+                        <p class="text-xs text-slate-500 font-medium">پرریسک</p>
                     </div>
                 </div>
+                ${topSkills.length ? `<div class="px-6 pt-3 pb-1 flex flex-wrap gap-2 justify-center">${topSkills.map(([name,count]) => `<span class=\"px-2 py-1 rounded-full text-[11px] bg-slate-100 text-slate-700\">${name} ×${count}</span>`).join('')}</div>` : ''}
                 <div class="px-6 py-4 mt-auto flex justify-between items-center">
                     <div class="flex -space-x-2 overflow-hidden">
-                        ${(Array.from(allPersonnelIds).slice(0, 4)).map(memberId => {
-                            const member = state.employees.find(e => e.id === memberId);
-                            return member ? `<img class="inline-block h-8 w-8 rounded-full ring-2 ring-white object-cover" src="${member.avatar}" alt="${member.name}" title="${member.name}">` : '';
-                        }).join('')}
+                        ${members.slice(0, 4).map(m => `<img class=\"inline-block h-8 w-8 rounded-full ring-2 ring-white object-cover\" src=\"${m.avatar}\" alt=\"${m.name}\" title=\"${m.name}\">`).join('')}
                         ${memberCount > 4 ? `<div class="flex items-center justify-center h-8 w-8 rounded-full bg-slate-200 text-slate-600 text-xs font-medium ring-2 ring-white">+${memberCount - 4}</div>` : ''}
                     </div>
                     <div class="flex items-center gap-2">
                         ${isAdmin() ? `<button class="delete-team-btn p-2 text-slate-400 hover:text-rose-500 transition-colors" data-team-id="${team.firestoreId}" title="حذف تیم"><i data-lucide="trash-2" class="w-5 h-5"></i></button>` : ''}
-                        <button class="view-team-profile-btn text-sm bg-slate-800 text-white py-2 px-4 rounded-lg hover:bg-slate-900 shadow-sm transition" data-team-id="${team.firestoreId}">
-                            مشاهده
-                        </button>
+                        <button class="view-team-profile-btn text-sm bg-slate-800 text-white py-2 px-4 rounded-lg hover:bg-slate-900 shadow-sm transition" data-team-id="${team.firestoreId}">مشاهده</button>
                     </div>
                 </div>
             </div>
@@ -4378,6 +4391,13 @@ const viewTeamProfile = (teamId) => {
     }).join('') : '<p class="text-sm text-slate-500">هدفی برای این تیم ثبت نشده است.</p>';
 
     modalTitle.innerText = 'پروفایل تیم: ' + team.name;
+    // محاسبات تکمیلی برای نمایش جزئیات بیشتر
+    const totalOkrs = team.okrs?.length || 0;
+    const avgOkr = totalOkrs ? Math.round(team.okrs.reduce((s,o)=> s + (o.progress||0), 0) / totalOkrs) : 0;
+    const highRisk = (advancedAnalysis.highRiskMembers || []).length;
+    const topSkills = (advancedAnalysis.topSkills || []).slice(0, 5);
+
+    modalTitle.innerText = 'پروفایل تیم: ' + team.name;
     modalContent.innerHTML = `
         <section class="rounded-2xl overflow-hidden border" style="background:linear-gradient(90deg,#FF6A3D,#F72585)">
             <div class="p-6 sm:p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -4388,6 +4408,20 @@ const viewTeamProfile = (teamId) => {
                     <div>
                         <h2 class="text-2xl font-extrabold text-white">${team.name}</h2>
                         <p class="text-white/90 text-xs mt-1">${team.missionLine ? team.missionLine : (manager ? `مدیر: ${manager.name}` : 'مدیر ندارد')}</p>
+                        <div class="mt-3 grid grid-cols-3 gap-3 text-center">
+                            <div class="bg-white/10 rounded-lg p-2">
+                                <div class="text-white/90 text-xs">میانگین OKR</div>
+                                <div class="text-white text-lg font-bold">${avgOkr}%</div>
+                            </div>
+                            <div class="bg-white/10 rounded-lg p-2">
+                                <div class="text-white/90 text-xs">اعضای پرریسک</div>
+                                <div class="${highRisk ? 'text-rose-200' : 'text-white'} text-lg font-bold">${highRisk}</div>
+                            </div>
+                            <div class="bg-white/10 rounded-lg p-2">
+                                <div class="text-white/90 text-xs">تعداد OKR</div>
+                                <div class="text-white text-lg font-bold">${totalOkrs}</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
@@ -4396,7 +4430,7 @@ const viewTeamProfile = (teamId) => {
                 </div>
             </div>
         </section>
-        
+
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
             <div class="lg:col-span-1 space-y-6">
                 <div class="bg-white rounded-2xl border border-slate-200 p-6 text-center">
@@ -4408,6 +4442,7 @@ const viewTeamProfile = (teamId) => {
                 <div class="card p-6 bg-gray-50 rounded-xl">
                     <h4 class="font-semibold mb-4 text-gray-700 flex items-center"><i data-lucide="brain-circuit" class="ml-2 w-5 h-5 text-purple-500"></i>تحلیل هوشمند</h4>
                     <div class="text-sm space-y-3">${Object.keys(basicAnalysis).length > 0 ? Object.values(basicAnalysis).map(item => `<div class="flex items-start"><i data-lucide="${item.icon}" class="w-4 h-4 mt-1 ml-2 flex-shrink-0 ${item.color}"></i><div class="${item.color}">${item.text}</div></div>`).join('') : '<p class="text-sm text-gray-500">داده کافی برای تحلیل وجود ندارد.</p>'}</div>
+                    ${topSkills.length ? `<div class="mt-4"><h5 class="text-xs font-bold text-slate-600 mb-2">مهارت‌های برتر تیم</h5><div class="flex flex-wrap gap-2">${topSkills.map(([name,count]) => `<span class=\"px-2 py-1 rounded-full text-[11px] bg-slate-100 text-slate-700\">${name} ×${count}</span>`).join('')}</div></div>` : ''}
                 </div>
             </div>
             <div class="lg:col-span-2 space-y-6">
