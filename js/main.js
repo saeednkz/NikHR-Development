@@ -3475,6 +3475,9 @@ announcements: () => {
 // فایل: js/main.js
 // کل تابع settings را با این نسخه جایگزین کنید ▼
 
+// فایل: js/main.js
+// ▼▼▼ کل تابع pages.settings را با این کد جایگزین کنید ▼▼▼
+
 settings: () => {
     if (!isAdmin()) {
         return `<div class="text-center p-10 card"><i data-lucide="lock" class="mx-auto w-16 h-16 text-red-500"></i><h2 class="mt-4 text-xl font-semibold text-slate-700">دسترسی غیر مجاز</h2><p class="mt-2 text-slate-500">شما برای مشاهده این صفحه دسترسی لازم را ندارید.</p></div>`;
@@ -3552,7 +3555,16 @@ settings: () => {
         </tr>
     `).join('') || '<tr><td colspan="3" class="text-center p-4 text-slate-500">هیچ پوزیشن شغلی تعریف نشده است.</td></tr>';
 
-    // --- بخش Return نهایی با ساختار جدید تب‌ها ---
+    // [!code start]
+    // ▼▼▼ این متغیر جدید برای نمایش لیست خانواده‌های شغلی است ▼▼▼
+    const jobFamiliesHtml = (state.jobFamilies || []).map(f => `
+        <div class="inline-flex items-center bg-slate-100 text-slate-700 text-sm font-medium px-3 py-1.5 rounded-full">
+            <span>${f.name}</span>
+            <button class="delete-family-btn text-slate-400 hover:text-red-500 mr-2" data-id="${f.firestoreId}"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+    `).join('') || '<p class="text-sm text-slate-500">هنوز خانواده شغلی‌ای تعریف نشده است.</p>';
+    // [!code end]
+
     return `
         <div class="flex items-center justify-between mb-4">
             <div><h1 class="text-3xl font-bold text-slate-800">تنظیمات سیستم</h1><p class="text-sm text-slate-500 mt-1">مدیریت کاربران، دسترسی‌ها و پیکربندی سازمان</p></div>
@@ -3561,6 +3573,7 @@ settings: () => {
         <div class="bg-gradient-to-l from-[#F72585]/10 to-[#6B69D6]/10 rounded-xl p-4 border mb-6">
             <nav id="settings-tabs" class="flex flex-wrap gap-2" aria-label="Tabs">
                 <button data-tab="users" class="settings-tab primary-btn text-xs py-2 px-3">کاربران</button>
+                <button data-tab="families" class="settings-tab secondary-btn text-xs py-2 px-3">خانواده‌های شغلی</button>
                 <button data-tab="positions" class="settings-tab secondary-btn text-xs py-2 px-3">پوزیشن‌های شغلی</button>
                 <button data-tab="competencies" class="settings-tab secondary-btn text-xs py-2 px-3">شایستگی‌ها</button>
                 <button data-tab="rules" class="settings-tab secondary-btn text-xs py-2 px-3">قوانین واگذاری</button>
@@ -3571,6 +3584,17 @@ settings: () => {
         <div id="settings-tab-content">
             <div id="tab-users" class="settings-tab-pane">
                 <div class="card p-0"><div class="flex flex-col sm:flex-row justify-between items-center p-5 border-b border-slate-200 gap-3"><h3 class="font-semibold text-lg flex items-center"><i data-lucide="users" class="ml-2 text-indigo-500"></i>لیست کاربران سیستم</h3><button id="add-user-btn" class="primary-btn text-sm flex items-center gap-2 w-full sm:w-auto"><i data-lucide="plus" class="w-4 h-4"></i> کاربر جدید</button></div><div id="users-list-container" class="p-5 grid grid-cols-1 xl:grid-cols-2 gap-4">${usersHtml}</div></div>
+            </div>
+
+            <div id="tab-families" class="settings-tab-pane hidden">
+                <div class="card p-6">
+                    <h3 class="font-semibold text-lg mb-4 flex items-center"><i data-lucide="users-2" class="ml-2 text-sky-500"></i>مدیریت خانواده‌های شغلی</h3>
+                    <div id="families-list" class="flex flex-wrap gap-2 mb-4">${jobFamiliesHtml}</div>
+                    <form id="add-family-form" class="flex flex-col sm:flex-row gap-2">
+                        <input type="text" id="new-family-name" placeholder="نام خانواده شغلی جدید (مثال: فنی و مهندسی)" class="w-full p-2 border border-slate-300 rounded-lg text-sm" required>
+                        <button type="submit" class="primary-btn shrink-0">افزودن</button>
+                    </form>
+                </div>
             </div>
 
             <div id="tab-positions" class="settings-tab-pane hidden">
@@ -5356,6 +5380,7 @@ const setupSettingsPageListeners = () => {
         const editPositionBtn = e.target.closest('.edit-position-btn');
         const deletePositionBtn = e.target.closest('.delete-position-btn');
         const mapCompetenciesBtn = e.target.closest('.map-competencies-btn');
+           const deleteFamilyBtn = e.target.closest('.delete-family-btn');
 
         if (addUserBtn) showAddUserForm();
         if (editUserBtn) {
@@ -5390,6 +5415,17 @@ const setupSettingsPageListeners = () => {
                     await deleteDoc(doc(db, `artifacts/${appId}/public/data/jobPositions`, deletePositionBtn.dataset.id));
                     showToast("پوزیشن با موفقیت حذف شد.");
                 } catch (error) { showToast("خطا در حذف.", "error"); }
+            });
+        }
+         if (deleteFamilyBtn) { // <-- این بلوک if را اضافه کنید
+            const familyId = deleteFamilyBtn.dataset.id;
+            showConfirmationModal('حذف خانواده شغلی', 'آیا مطمئن هستید؟', async () => {
+                try {
+                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/jobFamilies`, familyId));
+                    showToast('خانواده شغلی حذف شد.');
+                } catch (err) {
+                    showToast('خطا در حذف.', 'error');
+                }
             });
         }
     });
@@ -6301,31 +6337,22 @@ const showEmployeeForm = (employeeId = null) => {
     const emp = isEditing ? state.employees.find(e => e.firestoreId === employeeId) : {};
     const currentTeam = isEditing ? state.teams.find(t => t.memberIds?.includes(emp.id)) : null;
     
-    // گزینه‌های تیم‌ها
     const teamOptions = state.teams.map(team => `<option value="${team.firestoreId}" ${currentTeam?.firestoreId === team.firestoreId ? 'selected' : ''}>${team.name}</option>`).join('');
-
-    // گزینه‌های پوزیشن‌های شغلی
-    const positionOptions = (state.jobPositions || []).map(pos =>
-        `<option value="${pos.firestoreId}" ${emp.jobPositionId === pos.firestoreId ? 'selected' : ''}>${pos.name}</option>`
-    ).join('');
     
-    // گزینه‌های خانواده شغلی (از state خوانده می‌شود)
-    const familyOptions = (state.jobFamilies || []).map(family => 
-        `<option value="${family.name}" ${emp.jobFamily === family.name ? 'selected' : ''}>${family.name}</option>`
-    ).join('');
+    // این بخش‌ها از state خوانده می‌شوند
+    const familyOptions = (state.jobFamilies || []).map(family => `<option value="${family.name}" ${emp.jobFamily === family.name ? 'selected' : ''}>${family.name}</option>`).join('');
 
     modalTitle.innerText = isEditing ? 'ویرایش اطلاعات کارمند' : 'افزودن کارمند جدید';
     modalContent.innerHTML = `
-        <div class="bg-gradient-to-l from-[#F72585]/10 to-[#6B69D6]/10 rounded-xl p-4 mb-4">
-             </div>
         <form id="employee-form" class="space-y-5" data-old-team-id="${currentTeam?.firestoreId || ''}">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                
                 <div class="bg-white border rounded-xl p-4"><label for="name" class="block text-xs font-semibold text-slate-500">نام کامل</label><input type="text" id="name" value="${emp.name || ''}" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg" required></div>
                 <div class="bg-white border rounded-xl p-4"><label for="id" class="block text-xs font-semibold text-slate-500">کد پرسنلی</label><input type="text" id="id" value="${emp.id || ''}" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg" ${isEditing ? 'readonly' : ''} required></div>
                 <div class="md:col-span-2 bg-white border rounded-xl p-4"><label for="employee-email" class="block text-xs font-semibold text-slate-500">آدرس ایمیل (برای ورود)</label><input type="email" id="employee-email" value="${emp.personalInfo?.email || ''}" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg" ${isEditing ? 'readonly' : ''} required></div>
                 
                 <div class="bg-white border rounded-xl p-4"><label for="jobTitle" class="block text-xs font-semibold text-slate-500">عنوان شغلی</label><input type="text" id="jobTitle" value="${emp.jobTitle || ''}" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg"></div>
-                
+
                 <div class="bg-white border rounded-xl p-4">
                     <label for="jobFamily" class="block text-xs font-semibold text-slate-500">خانواده شغلی</label>
                     <select id="jobFamily" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg bg-white">
@@ -6401,29 +6428,26 @@ const showEmployeeForm = (employeeId = null) => {
         saveBtn.disabled = true;
         saveBtn.innerText = 'در حال پردازش...';
 
-        const name = document.getElementById('name').value;
         const employeeId = document.getElementById('id').value;
-        const email = document.getElementById('employee-email').value;
         const selectedTeamId = document.getElementById('department-team-select').value;
         const selectedTeam = state.teams.find(t => t.firestoreId === selectedTeamId);
         const managedTeamId = document.getElementById('managed-team-select').value;
 
-        // ▼▼▼ `jobFamily` و `level` متنی به اینجا اضافه شد ▼▼▼
+        // ▼▼▼ `jobFamily` و `level` به این آبجکت اضافه شدند ▼▼▼
         const employeeCoreData = {
-            name: name,
+            name: document.getElementById('name').value,
             id: employeeId,
             jobTitle: document.getElementById('jobTitle').value,
             jobFamily: document.getElementById('jobFamily').value, // خواندن مقدار خانواده شغلی
-            level: document.getElementById('level').value, // خواندن مقدار متنی سطح
+            level: document.getElementById('level').value,       // خواندن مقدار متنی سطح
             department: selectedTeam ? selectedTeam.name : '',
             status: document.getElementById('status').value,
             startDate: persianToEnglishDate(document.getElementById('startDate').value),
         };
-
-        const batch = writeBatch(db);
-
+        
         if (isEditing) {
             try {
+                const batch = writeBatch(db);
                 const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
                 batch.update(docRef, employeeCoreData);
                 
@@ -6438,6 +6462,7 @@ const showEmployeeForm = (employeeId = null) => {
             } catch (error) { 
                 console.error("Error updating employee:", error);
                 showToast("خطا در بروزرسانی اطلاعات.", "error");
+            } finally {
                 saveBtn.disabled = false;
                 saveBtn.innerText = 'ذخیره';
             }
