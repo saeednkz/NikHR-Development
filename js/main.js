@@ -5249,27 +5249,25 @@ const renderEmployeeTable = () => {
                 else if (riskScore > 40) riskColorClass = 'bg-yellow-500';
 
                 return `
-                    <div class="card bg-white p-4 flex flex-col text-center items-center rounded-xl shadow-lg transform hover:-translate-y-1 transition-transform duration-300">
-                        <div class="absolute top-3 right-3 w-3 h-3 rounded-full ${riskColorClass}" title="ریسک خروج: ${riskScore}%"></div>
+                    <div class=\"card bg-white p-4 flex flex-col text-center items-center rounded-2xl shadow-lg transform hover:-translate-y-1 transition-transform duration-300 relative overflow-hidden\">
+                        <div class=\"absolute top-3 right-3 w-3 h-3 rounded-full ${riskColorClass}\" title=\"ریسک خروج: ${riskScore}%\"></div>
+                        <div class=\"absolute -left-10 -bottom-10 w-32 h-32 rounded-full bg-slate-50\"></div>
 
-                        <img src="${emp.avatar}" alt="${emp.name}" class="w-24 h-24 rounded-full object-cover border-4 border-slate-100 mt-4">
+                        <img src=\"${emp.avatar}\" alt=\"${emp.name}\" class=\"w-24 h-24 rounded-full object-cover border-4 border-slate-100 mt-4 shadow-sm\">
                         
-                        <h3 class="font-bold text-lg mt-3 text-slate-800">${emp.name}</h3>
-                        <p class="text-sm text-slate-500">${emp.jobTitle || 'بدون عنوان شغلی'}</p>
+                        <h3 class=\"font-bold text-base mt-3 text-slate-800\">${emp.name}</h3>
+                        <p class=\"text-xs text-slate-500\">${emp.jobTitle || 'بدون عنوان شغلی'}</p>
                         
-                        <div class="mt-4 flex items-center gap-2 text-xs">
-                            <span class="px-2 py-1 font-medium rounded-full ${emp.status === 'فعال' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${emp.status}</span>
-                            <span class="px-2 py-1 font-medium rounded-full ${isComplete ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'}">
-                                ${isComplete ? 'پروفایل کامل' : 'پروفایل ناقص'}
-                            </span>
+                        <div class=\"mt-3 grid grid-cols-3 gap-2 text-[11px] w-full\">
+                            <div class=\"rounded-lg p-2 bg-slate-50 border\"><div class=\"text-slate-500\">وضعیت</div><div class=\"font-bold ${emp.status==='فعال'?'text-emerald-600':'text-rose-600'}\">${emp.status}</div></div>
+                            <div class=\"rounded-lg p-2 bg-slate-50 border\"><div class=\"text-slate-500\">ریسک</div><div class=\"font-bold\">${riskScore}%</div></div>
+                            <div class=\"rounded-lg p-2 bg-slate-50 border\"><div class=\"text-slate-500\">پروفایل</div><div class=\"font-bold ${isComplete?'text-indigo-600':'text-amber-600'}\">${isComplete?'کامل':'ناقص'}</div></div>
                         </div>
 
-                        <div class="mt-auto pt-4 w-full flex items-center justify-end gap-2 border-t border-slate-100">
-                            <button class="view-employee-profile-btn flex-grow text-sm bg-slate-800 text-white py-2 px-4 rounded-lg hover:bg-slate-900 transition" data-employee-id="${emp.firestoreId}">
-                                مشاهده
-                            </button>
-                            ${canEdit() ? `<button class="edit-employee-btn p-2 text-slate-400 hover:text-blue-500 transition-colors" data-employee-id="${emp.firestoreId}" title="ویرایش"><i data-lucide="edit" class="w-5 h-5"></i></button>` : ''}
-                            ${isAdmin() ? `<button class="delete-employee-btn p-2 text-slate-400 hover:text-rose-500 transition-colors" data-employee-id="${emp.firestoreId}" title="حذف"><i data-lucide="trash-2" class="w-5 h-5"></i></button>` : ''}
+                        <div class=\"mt-auto pt-4 w-full flex items-center justify-end gap-2 border-t border-slate-100\">
+                            <button class=\"view-employee-profile-btn flex-grow text-sm bg-slate-800 text-white py-2 px-4 rounded-lg hover:bg-slate-900 transition\" data-employee-id=\"${emp.firestoreId}\">مشاهده</button>
+                            ${canEdit() ? `<button class=\"edit-employee-btn p-2 text-slate-400 hover:text-blue-500 transition-colors\" data-employee-id=\"${emp.firestoreId}\" title=\"ویرایش\"><i data-lucide=\"edit\" class=\"w-5 h-5\"></i></button>` : ''}
+                            ${isAdmin() ? `<button class=\"delete-employee-btn p-2 text-slate-400 hover:text-rose-500 transition-colors\" data-employee-id=\"${emp.firestoreId}\" title=\"حذف\"><i data-lucide=\"trash-2\" class=\"w-5 h-5\"></i></button>` : ''}
                         </div>
                     </div>
                 `;
@@ -6441,14 +6439,15 @@ const showExpenseForm = () => {
             if (!competencies || Object.keys(competencies).length === 0) {
                 return '<p class="text-sm text-gray-500">شایستگی‌ای ثبت نشده است.</p>';
             }
+            const color = (s) => s >= 4 ? '#22c55e' : (s >= 3 ? '#6366f1' : '#f59e0b');
             return Object.entries(competencies).map(([name, score]) => `
-                <div>
-                    <div class="flex justify-between items-center mb-1 text-sm">
-                        <span class="text-gray-600">${name}</span>
-                        <span class="font-medium text-blue-600">${score}/5</span>
+                <div class=\"bg-slate-50 rounded-xl p-3 border\">
+                    <div class=\"flex justify-between items-center mb-2 text-sm\">
+                        <span class=\"text-gray-700 font-medium\">${name}</span>
+                        <span class=\"px-2 py-0.5 rounded-full text-[11px] font-bold\" style=\"background:${color(score)}1a;color:${color(score)}\">${score}/5</span>
                     </div>
-                    <div class="progress-bar w-full">
-                        <div class="progress-bar-fill" style="width: ${score * 20}%;"></div>
+                    <div class=\"w-full h-2 rounded-full overflow-hidden\" style=\"background:#E2E8F0\">
+                        <div class=\"h-2 rounded-full\" style=\"width:${score*20}%;background:${color(score)}\"></div>
                     </div>
                 </div>
             `).join('');
