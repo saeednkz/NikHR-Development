@@ -3212,19 +3212,19 @@ dashboard: () => {
         </section>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div class="glass p-5 rounded-2xl shadow-sm flex items-center gap-4">
+            <div class="glass p-5 rounded-2xl shadow-sm flex items-center gap-4 hover:shadow-md transition">
                 <div class="p-3 rounded-xl" style="background:rgba(107,105,214,.12)"><i data-lucide="users" class="w-5 h-5" style="color:#6B69D6"></i></div>
                 <div><p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">پرسنل</p><p class="text-3xl font-extrabold text-slate-800 mt-1">${metrics.totalEmployees}</p></div>
             </div>
-            <div class="glass p-5 rounded-2xl shadow-sm flex items-center gap-4">
+            <div class="glass p-5 rounded-2xl shadow-sm flex items-center gap-4 hover:shadow-md transition">
                 <div class="p-3 rounded-xl" style="background:rgba(107,105,214,.12)"><i data-lucide="trending-up" class="w-5 h-5" style="color:#6B69D6"></i></div>
                 <div><p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">ماندگاری</p><p class="text-3xl font-extrabold text-slate-800 mt-1">${metrics.retentionRate}%</p></div>
             </div>
-            <div class="glass p-5 rounded-2xl shadow-sm flex items-center gap-4">
+            <div class="glass p-5 rounded-2xl shadow-sm flex items-center gap-4 hover:shadow-md transition">
                 <div class="p-3 rounded-xl" style="background:rgba(107,105,214,.12)"><i data-lucide="clock" class="w-5 h-5" style="color:#6B69D6"></i></div>
                 <div><p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">میانگین سابقه</p><p class="text-3xl font-extrabold text-slate-800 mt-1">${metrics.averageTenure} <span class="text-xl font-medium">سال</span></p></div>
             </div>
-            <div class="glass p-5 rounded-2xl shadow-sm flex items-center gap-4">
+            <div class="glass p-5 rounded-2xl shadow-sm flex items-center gap-4 hover:shadow-md transition">
                 <div class="p-3 rounded-xl" style="background:rgba(107,105,214,.12)"><i data-lucide="recycle" class="w-5 h-5" style="color:#6B69D6"></i></div>
                 <div><p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">جابجایی داخلی</p><p class="text-3xl font-extrabold text-slate-800 mt-1">${metrics.internalMobilityRate}%</p></div>
             </div>
@@ -3236,7 +3236,15 @@ dashboard: () => {
                 <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pt-4">
                     <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
                         <h4 class="text-center text-xs font-medium text-slate-600 mb-2">نرخ مشارکت</h4>
-                        <div class="relative w-full h-40"><canvas id="engagementGaugeDashboard"></canvas></div>
+                        <div class="relative w-full h-40">
+                            <canvas id="engagementGaugeDashboard"></canvas>
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <div id="engagementGaugeLabel" class="text-center">
+                                    <div class="text-2xl font-extrabold text-slate-800">${metrics.engagementScore}%</div>
+                                    <div class="text-[10px] text-slate-500">کل سازمان</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm"><h4 class="text-center text-xs font-medium text-slate-600 mb-2">توزیع استعدادها</h4><div class="relative w-full h-56"><canvas id="nineBoxChart"></canvas></div></div>
                     <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm"><h4 class="text-center text-xs font-medium text-slate-600 mb-2">ترکیب جنسیتی</h4><div class="relative w-full h-56"><canvas id="genderCompositionChart"></canvas></div></div>
@@ -3267,7 +3275,25 @@ dashboard: () => {
                 </div>
                 <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
                     <h3 class="font-bold text-slate-800 text-lg mb-4">استعدادهای در معرض ریسک</h3>
-                    <div class="space-y-1">${highRiskHtml}</div>
+                    <div class="space-y-2">${highRiskEmployees.length > 0 
+                        ? highRiskEmployees.map(emp => `
+                            <div class=\"p-3 rounded-xl border hover:shadow-sm transition\">
+                                <div class=\"flex items-center justify-between\">
+                                    <div class=\"flex items-center\">
+                                        <img src=\"${emp.avatar}\" class=\"w-9 h-9 rounded-full object-cover mr-3\">
+                                        <div>
+                                            <p class=\"text-sm font-semibold text-slate-800\">${emp.name}</p>
+                                            <p class=\"text-xs text-slate-500\">${emp.jobTitle || ''}</p>
+                                        </div>
+                                    </div>
+                                    <span class=\"text-sm font-bold text-rose-600\">${emp.attritionRisk.score}%</span>
+                                </div>
+                                <div class=\"mt-2 h-2 rounded-full bg-slate-100 overflow-hidden\">
+                                    <div class=\"h-2 rounded-full\" style=\"width:${emp.attritionRisk.score}%;background:${valueToColor(emp.attritionRisk.score)}\"></div>
+                                </div>
+                            </div>`).join('')
+                        : '<div class=\"p-4 text-center text-sm text-slate-400\">موردی با ریسک بالا یافت نشد.</div>'}
+                    </div>
                 </div>
             </div>
         </div>
@@ -4979,6 +5005,7 @@ const renderDashboardCharts = () => {
     const metrics = state.dashboardMetrics;
     if (Object.keys(metrics).length === 0) return;
     renderEngagementGauge('engagementGaugeDashboard', metrics.engagementScore);
+    try { const label = document.getElementById('engagementGaugeLabel'); if (label) { label.querySelector('div').innerText = `${metrics.engagementScore}%`; } } catch {}
 
     // Gender Composition (Doughnut Chart)
     const genderCtx = document.getElementById('genderCompositionChart')?.getContext('2d');
@@ -5016,7 +5043,9 @@ const renderDashboardCharts = () => {
                     label: 'تعداد', 
                     data: Object.values(metrics.departmentDistribution), 
                     backgroundColor: Object.keys(metrics.departmentDistribution).map((_,i)=> hexToRgba(getBrandColor(i),0.85)),
-                    borderRadius: 10
+                    borderRadius: 10,
+                    barPercentage: 0.55,
+                    categoryPercentage: 0.6
                 }] 
             }, 
             options: { 
@@ -5044,7 +5073,9 @@ const renderDashboardCharts = () => {
                     label: 'تعداد', 
                     data: Object.values(metrics.nineBoxDistribution), 
                     backgroundColor: Object.values(metrics.nineBoxDistribution).map((_,i)=> hexToRgba(getBrandColor(i+2),0.85)),
-                    borderRadius: 10
+                    borderRadius: 10,
+                    barPercentage: 0.55,
+                    categoryPercentage: 0.6
                 }] 
             }, 
             options: { 
@@ -5113,7 +5144,9 @@ const renderDashboardCharts = () => {
                     label: 'تعداد',
                     data: Object.values(ageData),
                     backgroundColor: Object.values(ageData).map((_,i)=> hexToRgba(getBrandColor(i),0.85)),
-                    borderRadius: 10
+                    borderRadius: 10,
+                    barPercentage: 0.55,
+                    categoryPercentage: 0.6
                 }]
             },
             options: {
