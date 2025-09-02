@@ -4105,6 +4105,37 @@ const setupTeamProfileModalListeners = (team) => {
             tab.classList.add('border-indigo-500', 'text-indigo-600');
             const targetPane = content.querySelector(`#${tab.dataset.tab}`);
             if (targetPane) targetPane.classList.remove('hidden');
+
+            // اگر تب سلامت تیم فعال شد، چارت‌ها را رندر کن
+            if (tab.dataset.tab === 'tab-team-health') {
+                try {
+                    const data = window._teamModalData || {};
+                    const ctx = document.getElementById('teamEngagementBreakdownChart')?.getContext('2d');
+                    if (ctx && !charts.teamEngagementBreakdown) {
+                        const labels = (data.engagementBreakdown || []).map(it => it.name);
+                        const values = (data.engagementBreakdown || []).map(it => it.score);
+                        charts.teamEngagementBreakdown = new Chart(ctx, {
+                            type: 'bar',
+                            data: {
+                                labels,
+                                datasets: [{
+                                    label: 'امتیاز (%)',
+                                    data: values,
+                                    backgroundColor: '#6366f1',
+                                    borderRadius: 4,
+                                    barPercentage: 0.6
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: { legend: { display: false } },
+                                scales: { y: { beginAtZero: true, suggestedMax: 100 } }
+                            }
+                        });
+                    }
+                } catch (err) { console.error('Health tab chart error', err); }
+            }
         });
     });
 
@@ -4445,6 +4476,27 @@ const viewTeamProfile = (teamId) => {
         ? teamAnnouncements.map(a => `<div class="flex items-center justify-between text-xs p-2 rounded-md border"><span class="truncate max-w-[70%]">${a.title || a.content || 'بدون عنوان'}</span><span class="text-slate-500">${toPersianDate(a.createdAt)}</span></div>`).join('')
         : '<p class="text-xs text-slate-500">اعلانی برای این تیم ثبت نشده است.</p>';
 
+    // قراردادهای رو به اتمام اعضای تیم (۶۰ روز آینده)
+    const upcomingContracts = (() => {
+        const now = new Date();
+        const inDays = (d) => Math.ceil((d - now) / 86400000);
+        const items = [];
+        members.forEach(emp => {
+            const last = (emp.contracts || []).slice().sort((a,b)=> new Date(b.endDate||0) - new Date(a.endDate||0))[0];
+            if (!last?.endDate) return;
+            const end = new Date(last.endDate);
+            const days = inDays(end);
+            if (days >= 0 && days <= 60) items.push({ name: emp.name, avatar: emp.avatar, endDate: end, days });
+        });
+        return items.sort((a,b)=> a.days - b.days);
+    })();
+    const contractRisksHtml = upcomingContracts.length
+        ? upcomingContracts.map(it => `<div class=\"flex items-center justify-between p-2 rounded-md border\"><div class=\"flex items-center gap-2\"><img src=\"${it.avatar}\" class=\"w-8 h-8 rounded-full object-cover\"><div class=\"text-xs\">${it.name}<div class=\"text-[11px] text-slate-500\">پایان: ${toPersianDate(it.endDate)}</div></div></div><span class=\"text-xs font-bold ${it.days<=14?'text-rose-600':(it.days<=30?'text-amber-600':'text-slate-700')}\">${it.days} روز</span></div>`).join('')
+        : '<p class=\"text-xs text-slate-500\">قرارداد رو به اتمامی در ۶۰ روز آینده یافت نشد.</p>';
+
+    // قرار دادن داده‌ها برای رندر چارت‌ها هنگام فعال شدن تب
+    try { window._teamModalData = { engagementBreakdown: engBreakdown, roleDistribution, upcomingContracts }; } catch {}
+
     modalTitle.innerText = 'پروفایل تیم: ' + team.name;
     modalContent.innerHTML = `
         <section class="rounded-2xl overflow-hidden border" style="background:linear-gradient(90deg,#FF6A3D,#F72585)">
@@ -4542,6 +4594,9 @@ const viewTeamProfile = (teamId) => {
                                     <div class="card p-4 bg-white rounded-xl border border-slate-200 lg:col-span-2">
                                         <h4 class="font-semibold text-gray-700 mb-3">مشارکت به تفکیک دسته</h4>
                                         <div class="grid grid-cols-1 md:grid-cols-2 gap-2">${engagementBreakdownHtml}</div>
+                                        <div class="mt-4">
+                                            <canvas id="teamEngagementBreakdownChart" height="160"></canvas>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -4555,6 +4610,10 @@ const viewTeamProfile = (teamId) => {
                                         <h4 class="font-semibold text-gray-700 mb-3">اعلانات اخیر تیم</h4>
                                         <div class="space-y-2">${announcementsHtml}</div>
                                     </div>
+                                </div>
+                                <div class="card p-4 bg-white rounded-xl border border-slate-200">
+                                    <h4 class="font-semibold text-gray-700 mb-3 flex items-center"><i data-lucide="calendar-clock" class="ml-2 w-4 h-4 text-amber-500"></i>قراردادهای رو به اتمام (۶۰ روز آینده)</h4>
+                                    <div class="space-y-2">${contractRisksHtml}</div>
                                 </div>
                             </div>
                         </div>
