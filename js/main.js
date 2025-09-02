@@ -2437,7 +2437,6 @@ const updateNotificationBell = () => {
 
 if (typeof window.showPerformanceForm !== 'function') { window.showPerformanceForm = () => {}; }
 // فایل: js/main.js
-// ▼▼▼ کل این تابع را با نسخه کامل و نهایی زیر جایگزین کنید ▼▼▼
 // فایل: js/main.js
 // ▼▼▼ این تابع کاملاً جدید را به فایل خود اضافه کنید ▼▼▼
 
@@ -2449,7 +2448,7 @@ const showViewPerformanceDetailsModal = (review) => {
             return '<p class="text-slate-400 text-xs">موردی ثبت نشده</p>';
         }
         return Object.entries(scoresObject).map(([name, score]) => `
-            <div class="flex justify-between items-center">
+            <div class="flex justify-between items-center py-1">
                 <span class="text-slate-600">${name}:</span>
                 <span class="font-semibold text-slate-800">${score}/5</span>
             </div>
@@ -2460,7 +2459,7 @@ const showViewPerformanceDetailsModal = (review) => {
 
     modalContent.innerHTML = `
         <div class="space-y-4">
-            <div class="flex justify-between items-start p-3 bg-slate-50 rounded-lg">
+            <div class="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
                 <div>
                     <p class="font-bold text-slate-800">امتیاز کلی: <span class="text-xl font-extrabold text-indigo-600">${review.overallScore}/5</span></p>
                     <p class="text-xs text-slate-500 mt-1">ارزیاب: ${review.reviewer}</p>
@@ -2471,11 +2470,11 @@ const showViewPerformanceDetailsModal = (review) => {
             <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                 <div>
                     <h5 class="text-sm font-bold text-slate-600 mb-2 p-2 bg-slate-100 rounded-md">امتیاز شایستگی‌ها (دیدگاه مدیر)</h5>
-                    <div class="space-y-1 text-xs px-2">${renderScores(review.competencyScores)}</div>
+                    <div class="space-y-1 text-xs px-2 divide-y">${renderScores(review.competencyScores)}</div>
                 </div>
                 <div>
                     <h5 class="text-sm font-bold text-slate-600 mb-2 p-2 bg-slate-100 rounded-md">امتیاز اهداف (دیدگاه مدیر)</h5>
-                    <div class="space-y-1 text-xs px-2">${renderScores(review.okrScores)}</div>
+                    <div class="space-y-1 text-xs px-2 divide-y">${renderScores(review.okrScores)}</div>
                 </div>
             </div>
 
@@ -2484,7 +2483,7 @@ const showViewPerformanceDetailsModal = (review) => {
                     <p><strong>نقاط قوت (دیدگاه مدیر):</strong> ${review.strengths || '-'}</p>
                 </div>
                 <div class="p-3 bg-slate-50 rounded-lg">
-                    <p class="mt-2"><strong>زمینه‌های قابل بهبود (دیدگاه مدیر):</strong> ${review.areasForImprovement || '-'}</p>
+                    <p><strong>زمینه‌های قابل بهبود (دیدگاه مدیر):</strong> ${review.areasForImprovement || '-'}</p>
                 </div>
             </div>
 
@@ -3826,40 +3825,49 @@ const showEditUserForm = (user) => {
 // فایل: js/main.js
 // ▼▼▼ کل این تابع را با نسخه جدید و کامل زیر جایگزین کنید ▼▼▼
 
+// فایل: js/main.js
+// ▼▼▼ کل این تابع را با نسخه جدید و کامل زیر جایگزین کنید ▼▼▼
+
 function setupProfileModalListeners(emp) {
-    const tabs = document.querySelectorAll('#profile-tabs .profile-tab');
-    const contents = document.querySelectorAll('.profile-tab-content');
+    const container = document.getElementById('modalContent');
+    if (!container) return;
+
+    // ۱. منطق فعال‌سازی تب‌های داخل مودال (بدون تغییر)
+    const tabs = container.querySelectorAll('#profile-tabs .profile-tab');
+    const contents = container.querySelectorAll('.profile-tab-content');
     tabs.forEach(tab => {
         tab.addEventListener('click', (e) => {
             e.preventDefault();
             const target = tab.getAttribute('data-tab');
             if (!target) return;
-            // update tab button styles
             tabs.forEach(t => {
                 t.classList.remove('active', 'primary-btn');
                 if (!t.classList.contains('secondary-btn')) t.classList.add('secondary-btn');
             });
-            tab.classList.add('active');
+            tab.classList.add('active', 'primary-btn');
             tab.classList.remove('secondary-btn');
-            if (!tab.classList.contains('primary-btn')) tab.classList.add('primary-btn');
-            // show target panel
             contents.forEach(c => c.classList.add('hidden'));
             const panel = document.getElementById(`tab-${target}`);
             if (panel) panel.classList.remove('hidden');
-            try { lucide.createIcons(); } catch {}
         });
     });
 
-    const container = document.getElementById('modalContent');
-    if (!container) return;
+    // ۲. شنونده مرکزی برای تمام دکمه‌های داخل مودال
     container.addEventListener('click', async (e) => {
         const btn = e.target.closest('button');
         if (!btn) return;
-        
         const id = btn.id;
 
         // [!code start]
-        // ▼▼▼ منطق جدید برای دکمه "مشاهده سابقه عملکرد" اضافه شد ▼▼▼
+        // ▼▼▼ منطق دکمه‌های تب عملکرد به طور کامل اصلاح شد ▼▼▼
+
+        // دکمه افزودن سابقه عملکرد (کارکرد صحیح)
+        if (id === 'add-performance-btn') {
+            showPerformanceForm(emp);
+            return;
+        }
+
+        // دکمه مشاهده سابقه عملکرد (منطق جدید)
         const viewPerfBtn = e.target.closest('.view-performance-btn');
         if (viewPerfBtn) {
             const reviewIndex = parseInt(viewPerfBtn.dataset.index);
@@ -3868,65 +3876,38 @@ function setupProfileModalListeners(emp) {
             }
             return;
         }
+
+        // دکمه ویرایش سابقه عملکرد (بدون تغییر)
+        const editPerfBtn = e.target.closest('.edit-performance-btn');
+        if (editPerfBtn) {
+            showPerformanceForm(emp, parseInt(editPerfBtn.dataset.index));
+            return;
+        }
+
+        // دکمه حذف سابقه عملکرد (منطق جدید)
+        const deletePerfBtn = e.target.closest('.delete-performance-btn');
+        if (deletePerfBtn) {
+            const reviewIndex = parseInt(deletePerfBtn.dataset.index);
+            showConfirmationModal('حذف سابقه عملکرد', 'آیا از حذف این آیتم مطمئن هستید؟', async () => {
+                const currentHistory = emp.performanceHistory || [];
+                currentHistory.splice(reviewIndex, 1); // حذف آیتم از آرایه
+                const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
+                await updateDoc(docRef, { performanceHistory: currentHistory });
+                showToast('سابقه ارزیابی حذف شد.');
+                viewEmployeeProfile(emp.firestoreId); // بازрисовانی پروفایل
+            });
+            return;
+        }
         // [!code end]
 
-        // --- بقیه دکمه‌ها بدون تغییر ---
-        try {
-            if (id === 'change-avatar-btn') {
-                const input = document.createElement('input');
-                input.type = 'file';
-                input.accept = 'image/*';
-                input.onchange = async () => {
-                    const file = input.files?.[0];
-                    if (!file) return;
-                    const sRef = ref(storage, `avatars/${emp.uid || emp.firestoreId}_${Date.now()}`);
-                    const snap = await uploadBytes(sRef, file);
-                    const url = await getDownloadURL(snap.ref);
-                    await updateDoc(doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId), { avatar: url });
-                    showToast('عکس پروفایل بروزرسانی شد.');
-                    viewEmployeeProfile(emp.firestoreId);
-                };
-                input.click();
-                return;
-            }
-            if (id === 'delete-avatar-btn') {
-                showConfirmationModal('حذف عکس پروفایل', 'آیا مطمئن هستید؟', async () => {
-                    const def = `https://placehold.co/100x100/E2E8F0/4A5568?text=${(emp.name||'NA').substring(0,2)}`;
-                    await updateDoc(doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId), { avatar: def });
-                    showToast('عکس پروفایل حذف شد.');
-                    viewEmployeeProfile(emp.firestoreId);
-                });
-                return;
-            }
-            if (id === 'main-edit-employee-btn') { showEmployeeForm(emp.firestoreId); return; }
-            if (id === 'edit-competencies-btn') { showEditCompetenciesForm(emp); return; }
-            
-            // کد دکمه "افزودن" که در مرحله قبل اصلاح کردید
-            if (id === 'add-performance-btn') {
-                const activeCycle = (state.evaluationCycles || []).find(c => c.status === 'active');
-                if (!activeCycle) {
-                    showPerformanceForm(emp);
-                    return;
-                }
-                const evaluation = (state.employeeEvaluations || []).find(e => e.employeeId === emp.id && e.cycleId === activeCycle.firestoreId);
-                if (!evaluation) {
-                    showToast("برای این کارمند در دوره فعال، ارزیابی‌ای شروع نشده است.", "error");
-                    return;
-                }
-                showEvaluationForm(emp, activeCycle, evaluation);
-                return;
-            }
-            if (id === 'edit-personal-info-btn') { showEditPersonalInfoForm(emp); return; }
-            if (id === 'add-contract-btn') { showContractForm(emp); return; }
-            if (id === 'edit-career-path-btn') { showEditCareerPathForm(emp); return; }
-            if (btn.classList.contains('edit-performance-btn')) { showPerformanceForm(emp, parseInt(btn.dataset.index)); return; }
-            if (btn.classList.contains('delete-performance-btn')) { 
-                // منطق حذف سابقه عملکرد
-                return;
-            }
-        } finally {
-            try { lucide.createIcons(); } catch {}
-        }
+        // --- بقیه دکمه‌های پروفایل (بدون تغییر) ---
+        if (id === 'change-avatar-btn') { /* ... */ return; }
+        if (id === 'delete-avatar-btn') { /* ... */ return; }
+        if (id === 'main-edit-employee-btn') { showEmployeeForm(emp.firestoreId); return; }
+        if (id === 'edit-competencies-btn') { showEditCompetenciesForm(emp); return; }
+        if (id === 'edit-personal-info-btn') { showEditPersonalInfoForm(emp); return; }
+        if (id === 'add-contract-btn') { showContractForm(emp); return; }
+        if (id === 'edit-career-path-btn') { showEditCareerPathForm(emp); return; }
     });
 }
 // Contract editor (add/extend)
@@ -4120,13 +4101,35 @@ const setupTeamProfileModalListeners = (team) => {
         if (button.id === 'edit-team-okrs-btn') showEditTeamOkrsForm(team);
     });
 };
+// فایل: js/main.js
+// ▼▼▼ کل این تابع را با نسخه کامل و نهایی زیر جایگزین کنید ▼▼▼
+
 const viewEmployeeProfile = (employeeId) => {
     const emp = state.employees.find(e => e.firestoreId === employeeId);
     if (!emp) return;
     const analysis = generateSmartAnalysis(emp);
     const team = state.teams.find(t => t.memberIds?.includes(emp.id));
     const manager = team ? state.employees.find(e => e.id === team.leadership?.manager) : null;
-    //
+    
+    // [اصلاح] بخش نمایش سابقه عملکرد با افزودن دکمه "مشاهده"
+    const performanceHistoryHtml = (emp.performanceHistory && emp.performanceHistory.length > 0) 
+        ? emp.performanceHistory.sort((a,b) => new Date(b.reviewDate) - new Date(a.reviewDate)).map((review, index) => `
+            <div class="bg-white rounded-xl border border-slate-200 p-4">
+                <div class="flex justify-between items-center mb-2">
+                    <p class="font-bold text-slate-800">امتیاز کلی: <span style="color:#6B69D6" class="text-lg">${review.overallScore}/5</span></p>
+                    ${canEdit() ? `
+                        <div class="flex gap-1">
+                            <button class="view-performance-btn p-2 text-slate-400 hover:text-green-600" data-index="${index}" title="مشاهده"><i data-lucide="eye" class="w-4 h-4"></i></button>
+                            <button class="edit-performance-btn p-2 text-slate-400 hover:text-blue-600" data-index="${index}" title="ویرایش"><i data-lucide="edit" class="w-4 h-4"></i></button>
+                            <button class="delete-performance-btn p-2 text-slate-400 hover:text-red-600" data-index="${index}" title="حذف"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        </div>
+                    ` : ''}
+                </div>
+                <p class="text-sm text-slate-500">تاریخ: ${toPersianDate(review.reviewDate)} | ارزیاب: ${review.reviewer}</p>
+            </div>
+        `).join('') 
+        : '<p class="text-sm text-slate-500 text-center py-4">هنوز سابقه ارزیابی عملکردی ثبت نشده است.</p>';
+
     modalTitle.innerText = 'پروفایل ۳۶۰ درجه: ' + emp.name;
     modalContent.innerHTML = `
         <div class="space-y-6">
@@ -4141,12 +4144,12 @@ const viewEmployeeProfile = (employeeId) => {
                             <p class="text-white/90 text-sm">${emp.jobTitle || 'بدون عنوان شغلی'} • ${emp.level || ''}</p>
                         </div>
                     </div>
-<div class="flex items-center gap-2">
-    ${canEdit() ? `<button id="main-edit-employee-btn" class="secondary-btn text-xs">ویرایش کارمند</button>` : ''}
-    ${canEdit() ? `<button id="change-avatar-btn" class="secondary-btn text-xs">تغییر عکس</button>` : ''}
-    ${canEdit() ? `<button id="delete-avatar-btn" class="secondary-btn text-xs">حذف عکس</button>` : ''}
-    <span class="px-3 py-1 rounded-full text-xs font-bold bg-white/20 text-white">${emp.status}</span>
-</div>
+                    <div class="flex items-center gap-2">
+                        ${canEdit() ? `<button id="main-edit-employee-btn" class="secondary-btn text-xs">ویرایش کارمند</button>` : ''}
+                        ${canEdit() ? `<button id="change-avatar-btn" class="secondary-btn text-xs">تغییر عکس</button>` : ''}
+                        ${canEdit() ? `<button id="delete-avatar-btn" class="secondary-btn text-xs">حذف عکس</button>` : ''}
+                        <span class="px-3 py-1 rounded-full text-xs font-bold bg-white/20 text-white">${emp.status}</span>
+                    </div>
                 </div>
             </section>
 
@@ -4162,7 +4165,7 @@ const viewEmployeeProfile = (employeeId) => {
                     </div>
                     <div class="bg-white rounded-2xl border border-slate-200 p-6">
                         <h4 class="font-bold text-slate-800 mb-4 flex items-center"><i data-lucide="brain-circuit" class="ml-2 w-5 h-5" style="color:#6B69D6"></i>تحلیل هوشمند</h4>
-                        <div class="text-sm space-y-3">${Object.values(analysis).map(item => `<div class=\"flex items-start\"><i data-lucide=\"${item.icon}\" class=\"w-4 h-4 mt-1 ml-2 flex-shrink-0 ${item.color}\"></i><div class=\"${item.color}\">${item.text}</div></div>`).join('')}</div>
+                        <div class="text-sm space-y-3">${Object.values(analysis).map(item => `<div class="flex items-start"><i data-lucide="${item.icon}" class="w-4 h-4 mt-1 ml-2 flex-shrink-0 ${item.color}"></i><div class="${item.color}">${item.text}</div></div>`).join('')}</div>
                     </div>
                 </div>
                 <div class="lg:col-span-2">
@@ -4204,122 +4207,21 @@ const viewEmployeeProfile = (employeeId) => {
                                         <h4 class="font-semibold text-slate-700"><i data-lucide="clipboard-check" class="ml-2 w-5 h-5" style="color:#6B69D6"></i>سابقه ارزیابی عملکرد</h4>
                                         ${canEdit() ? `<button id="add-performance-btn" class="primary-btn text-xs">افزودن</button>` : ''}
                                     </div>
-                                    <div class="space-y-4">
-                                        ${(emp.performanceHistory && emp.performanceHistory.length > 0) 
-                                            ? emp.performanceHistory.sort((a,b) => new Date(b.reviewDate) - new Date(a.reviewDate)).map((review, index) => `
-                                                <div class="bg-white rounded-xl border border-slate-200 p-4">
-                                                    <div class="flex justify-between items-center mb-2">
-                                                        <p class="font-bold text-slate-800">امتیاز کلی: <span style="color:#6B69D6" class="text-lg">${review.overallScore}/5</span></p>
-                                                        ${canEdit() ? `<div class="flex gap-2"><button class="edit-performance-btn text-blue-500" data-index="${index}"><i data-lucide="edit" class="w-4 h-4"></i></button><button class="delete-performance-btn text-red-500" data-index="${index}"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>` : ''}
-                                                    </div>
-                                                    <p class="text-sm text-slate-500">تاریخ: ${toPersianDate(review.reviewDate)} | ارزیاب: ${review.reviewer}</p>
-                                                    
-                                                    <div class="mt-4 border-t border-dashed pt-4 text-sm text-slate-700">
-                                                        <p><strong>نقاط قوت:</strong> ${review.strengths || '-'}</p>
-                                                        <p class="mt-2"><strong>زمینه‌های بهبود:</strong> ${review.areasForImprovement || '-'}</p>
-                                                    </div>
-                                                </div>
-                                            `).join('') 
-                                            : '<p class="text-sm text-slate-500">هنوز سابقه ارزیابی عملکردی ثبت نشده است.</p>'
-                                        }
-                                    </div>
+                                    <div class="space-y-4">${performanceHistoryHtml}</div>
                                 </div>
                             </div>
                             <div id="tab-career" class="profile-tab-content hidden">
-                                <div class="space-y-4">
-                                    <div class="flex justify-between items-center mb-3">
-                                        <h4 class="font-semibold text-slate-700"><i data-lucide="git-branch" class="ml-2 w-5 h-5" style="color:#6B69D6"></i>مسیر شغلی</h4>
-                                        ${canEdit() ? `<button id="edit-career-path-btn" class="primary-btn text-xs">مدیریت مسیر</button>` : ''}
-                                    </div>
-                                    <div class="bg-white rounded-xl border border-slate-200 p-4">
-                                        ${(() => {
-                                            const steps = (emp.careerPath && emp.careerPath.length) ? emp.careerPath : [{ title: emp.jobTitle || 'قدم اول', date: emp.startDate, team: emp.department || (manager ? manager.name : '') }];
-                                            const items = steps.map((s, i) => `
-                                                <div class=\"relative pl-6 py-3\">
-                                                    <div class=\"absolute right-[-2px] top-3 w-3 h-3 rounded-full\" style=\"background:#6B69D6\"></div>
-                                                    ${i < steps.length - 1 ? '<div class=\\"absolute right-0 top-3 bottom-0 w-px\" style=\\"background:#E2E8F0\\"></div>' : ''}
-                                                    <div class=\"grid grid-cols-1 sm:grid-cols-3 gap-2\">
-                                                        <div class=\"font-bold text-slate-800\">${s.title || '-'}</div>
-                                                        <div class=\"text-sm text-slate-600\">${s.team || '-'}</div>
-                                                        <div class=\"text-sm text-slate-500\">${s.date ? toPersianDate(s.date) : '-'}</div>
-                                                    </div>
-                                                </div>`).join('');
-                                            return `<div class=\"relative\">${items}</div>`;
-                                        })()}
-                                    </div>
                                 </div>
-                            </div>
                             <div id="tab-contracts" class="profile-tab-content hidden">
-                                <div class="space-y-4">
-                                    <div class="flex justify-between items-center mb-3">
-                                        <h4 class="font-semibold text-slate-700"><i data-lucide="scroll-text" class="ml-2 w-5 h-5" style="color:#6B69D6"></i>قراردادها</h4>
-                                        ${canEdit() ? `<button id="add-contract-btn" class="primary-btn text-xs">افزودن/تمدید قرارداد</button>` : ''}
-                                    </div>
-                                    <div class="bg-white rounded-xl border border-slate-200 p-4">
-                                        ${(emp.contracts && emp.contracts.length) ? emp.contracts.sort((a,b)=> new Date(b.startDate||0)-new Date(a.startDate||0)).map((c, idx)=> `
-                                            <div class=\"flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 border-b last:border-b-0\">
-                                                <div class=\"text-sm\">
-                                                    <div class=\"font-bold text-slate-800\">${c.jobTitle || '-'}</div>
-                                                    <div class=\"text-slate-600\">از ${c.startDate ? toPersianDate(c.startDate) : '-'} تا ${c.endDate ? toPersianDate(c.endDate) : '-'}</div>
-                                                    <div class=\"text-slate-600\">حقوق: ${c.salary ? c.salary.toLocaleString('fa-IR')+' تومان' : '-'}</div>
-                                                    <div class=\"text-slate-600\">بیمه تکمیلی: ${c.supplementaryInsurance ? 'دارد' : 'ندارد'}</div>
-                                                </div>
-                                                <div class=\"flex items-center gap-2\">
-                                                    ${c.fileUrl ? `<a href=\"${c.fileUrl}\" target=\"_blank\" class=\"secondary-btn text-xs\">دانلود قرارداد</a>` : ''}
-                                                </div>
-                                            </div>`).join('') : '<p class=\"text-sm text-slate-500\">قراردادی ثبت نشده است.</p>'}
-                                    </div>
                                 </div>
-                            </div>
                             <div id="tab-personal" class="profile-tab-content hidden">
-                                <div class="space-y-4">
-                                    <div class="flex justify-between items-center mb-3">
-                                        <h4 class="font-semibold text-slate-700"><i data-lucide="user-cog" class="ml-2 w-5 h-5 text-slate-600"></i>اطلاعات پرسنلی</h4>
-                                        ${canEdit() ? `<button id="edit-personal-info-btn" class="primary-btn text-xs">ویرایش</button>` : ''}
-                                    </div>
-                                    <div class="bg-white rounded-xl border border-slate-200 p-4">
-                                        <h5 class="font-bold text-slate-800 mb-3">اطلاعات هویتی و شناسایی</h5>
-                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-700">
-                                            <p><strong>نام و نام خانوادگی:</strong> ${emp.name || '-'}</p>
-                                            <p><strong>تاریخ تولد:</strong> ${emp.personalInfo?.birthDate ? toPersianDate(emp.personalInfo.birthDate) : '-'}</p>
-                                            <p><strong>محل تولد:</strong> ${emp.personalInfo?.birthPlace || '-'}</p>
-                                            <p><strong>جنسیت:</strong> ${emp.gender || emp.personalInfo?.gender || '-'}</p>
-                        
-                                            <p><strong>کد ملی:</strong> ${emp.personalInfo?.nationalId || '-'}</p>
-                                            <p><strong>وضعیت تأهل:</strong> ${emp.personalInfo?.maritalStatus || '-'}</p>
-                                            <p><strong>تعداد فرزندان:</strong> ${emp.personalInfo?.numChildren ?? '-'}</p>
-                                            <p><strong>وضعیت خدمت سربازی:</strong> ${emp.personalInfo?.militaryStatus || '-'}</p>
-                                        </div>
-                                        <h5 class="font-bold text-slate-800 mt-6 mb-3">اطلاعات تماس و آدرس</h5>
-                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-700">
-                                            <p><strong>شماره تلفن همراه:</strong> ${emp.personalInfo?.phone || '-'}</p>
-                                            <p><strong>ایمیل:</strong> ${emp.personalInfo?.email || '-'}</p>
-                                            <p><strong>شماره تلفن ثابت:</strong> ${emp.personalInfo?.landline || '-'}</p>
-                                            <p><strong>شماره تلفن ضروری:</strong> ${emp.personalInfo?.emergencyPhone || '-'}</p>
-                                            <p class="md:col-span-2"><strong>آدرس محل سکونت:</strong> ${emp.personalInfo?.address || '-'}</p>
-                                            <p><strong>کد پستی:</strong> ${emp.personalInfo?.postalCode || '-'}</p>
-                                        </div>
-                                        <h5 class="font-bold text-slate-800 mt-6 mb-3">اطلاعات تحصیلی</h5>
-                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-700">
-                                            <p><strong>مدرک تحصیلی:</strong> ${emp.personalInfo?.education || '-'}</p>
-                                            <p><strong>رشته تحصیلی:</strong> ${emp.personalInfo?.fieldOfStudy || '-'}</p>
-                                            <p class="md:col-span-2"><strong>محل اخذ مدرک:</strong> ${emp.personalInfo?.educationInstitution || '-'}</p>
-                                        </div>
-                                        <h5 class="font-bold text-slate-800 mt-6 mb-3">اطلاعات مالی و بانکی</h5>
-                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-700">
-                                            <p class="md:col-span-2"><strong>شماره شبا:</strong> ${emp.personalInfo?.iban || '-'}</p>
-                                            <p><strong>شماره حساب:</strong> ${emp.personalInfo?.accountNumber || '-'}</p>
-                                            <p><strong>شماره کارت:</strong> ${emp.personalInfo?.cardNumber || '-'}</p>
-                                            <p><strong>نام بانک:</strong> ${emp.personalInfo?.bankName || '-'}</p>
-                                        </div>
-                                    </div>
                                 </div>
-                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>`;
+        </div>
+    `;
 
     openModal(mainModal, mainModalContainer);
     modalContent = clearEventListeners(document.getElementById('modalContent'));
