@@ -4121,6 +4121,9 @@ const setupTeamProfileModalListeners = (team) => {
 // فایل: js/main.js
 // ▼▼▼ کل این تابع را با نسخه کامل و نهایی زیر جایگزین کنید ▼▼▼
 
+// فایل: js/main.js
+// ▼▼▼ کل این تابع را با نسخه کامل و نهایی زیر جایگزین کنید ▼▼▼
+
 const viewEmployeeProfile = (employeeId) => {
     const emp = state.employees.find(e => e.firestoreId === employeeId);
     if (!emp) return;
@@ -4152,7 +4155,7 @@ const viewEmployeeProfile = (employeeId) => {
     modalContent.innerHTML = `
         <div class="space-y-6">
             <section class="rounded-2xl overflow-hidden border" style="background:linear-gradient(90deg,#FF6A3D,#F72585)">
-                 <div class="p-6 sm:p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div class="p-6 sm:p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div class="flex items-center gap-4">
                         <div class="w-20 h-20 rounded-2xl overflow-hidden ring-4 ring-white/30 bg-white/10">
                             <img src="${emp.avatar}" alt="${emp.name}" class="w-full h-full object-cover">
@@ -4172,11 +4175,7 @@ const viewEmployeeProfile = (employeeId) => {
                 <div class="lg:col-span-1 space-y-6">
                     <div class="bg-white rounded-2xl border border-slate-200 p-6">
                         <h4 class="font-bold text-slate-800 mb-4 flex items-center"><i data-lucide="heart-pulse" class="ml-2 w-5 h-5" style="color:#6B69D6"></i>امتیاز مشارکت</h4>
-                        ${emp.engagementScore != null ? `
-                        <div class="relative w-40 h-20 mx-auto mt-2">
-                            <canvas id="engagementGaugeProfile"></canvas>
-                            <div class="absolute inset-0 flex items-center justify-center -bottom-4"><span class="text-3xl font-extrabold" style="color:#6B69D6">${emp.engagementScore}%</span></div>
-                        </div>` : '<p class="text-sm text-slate-500 text-center">هنوز امتیازی ثبت نشده است.</p>'}
+                        ${emp.engagementScore != null ? `<div class="relative w-40 h-20 mx-auto mt-2"><canvas id="engagementGaugeProfile"></canvas><div class="absolute inset-0 flex items-center justify-center -bottom-4"><span class="text-3xl font-extrabold" style="color:#6B69D6">${emp.engagementScore}%</span></div></div>` : '<p class="text-sm text-slate-500 text-center">هنوز امتیازی ثبت نشده است.</p>'}
                     </div>
                     <div class="bg-white rounded-2xl border border-slate-200 p-6">
                         <h4 class="font-bold text-slate-800 mb-4 flex items-center"><i data-lucide="brain-circuit" class="ml-2 w-5 h-5" style="color:#6B69D6"></i>تحلیل هوشمند</h4>
@@ -4226,11 +4225,37 @@ const viewEmployeeProfile = (employeeId) => {
                                 </div>
                             </div>
                             <div id="tab-career" class="profile-tab-content hidden">
-                                </div>
+                                 <div class="space-y-4">
+                                     <div class="flex justify-between items-center mb-3">
+                                         <h4 class="font-semibold text-slate-700"><i data-lucide="git-branch" class="ml-2 w-5 h-5" style="color:#6B69D6"></i>مسیر شغلی</h4>
+                                         ${canEdit() ? `<button id="edit-career-path-btn" class="primary-btn text-xs">مدیریت مسیر</button>` : ''}
+                                     </div>
+                                     <div class="bg-white rounded-xl border border-slate-200 p-4">
+                                         ${(() => { const steps = (emp.careerPath && emp.careerPath.length) ? emp.careerPath : [{ title: emp.jobTitle || 'قدم اول', date: emp.startDate, team: emp.department || (manager ? manager.name : '') }]; const items = steps.map((s, i) => `<div class="relative pl-6 py-3"><div class="absolute right-[-2px] top-3 w-3 h-3 rounded-full" style="background:#6B69D6"></div> ${i < steps.length - 1 ? '<div class=\\"absolute right-0 top-3 bottom-0 w-px\\" style=\\"background:#E2E8F0\\"></div>' : ''}<div class="grid grid-cols-1 sm:grid-cols-3 gap-2"><div class="font-bold text-slate-800">${s.title || '-'}</div><div class="text-sm text-slate-600">${s.team || '-'}</div><div class="text-sm text-slate-500">${s.date ? toPersianDate(s.date) : '-'}</div></div></div>`).join(''); return `<div class="relative">${items}</div>`; })()}
+                                     </div>
+                                 </div>
+                            </div>
                             <div id="tab-contracts" class="profile-tab-content hidden">
-                                </div>
+                                 <div class="space-y-4">
+                                     <div class="flex justify-between items-center mb-3">
+                                         <h4 class="font-semibold text-slate-700"><i data-lucide="scroll-text" class="ml-2 w-5 h-5" style="color:#6B69D6"></i>قراردادها</h4>
+                                         ${canEdit() ? `<button id="add-contract-btn" class="primary-btn text-xs">افزودن/تمدید قرارداد</button>` : ''}
+                                     </div>
+                                     <div class="bg-white rounded-xl border border-slate-200 p-4">
+                                         ${(emp.contracts && emp.contracts.length) ? emp.contracts.sort((a,b)=> new Date(b.startDate||0)-new Date(a.startDate||0)).map((c, idx)=> `<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 border-b last:border-b-0"><div class="text-sm"><div class="font-bold text-slate-800">${c.jobTitle || '-'}</div><div class="text-slate-600">از ${c.startDate ? toPersianDate(c.startDate) : '-'} تا ${c.endDate ? toPersianDate(c.endDate) : '-'}</div><div class="text-slate-600">حقوق: ${c.salary ? c.salary.toLocaleString('fa-IR')+' تومان' : '-'}</div><div class="text-slate-600">بیمه تکمیلی: ${c.supplementaryInsurance ? 'دارد' : 'ندارد'}</div></div><div class="flex items-center gap-2">${c.fileUrl ? `<a href="${c.fileUrl}" target="_blank" class="secondary-btn text-xs">دانلود قرارداد</a>` : ''}</div></div>`).join('') : '<p class="text-sm text-slate-500">قراردادی ثبت نشده است.</p>'}
+                                     </div>
+                                 </div>
+                            </div>
                             <div id="tab-personal" class="profile-tab-content hidden">
+                                <div class="space-y-4">
+                                    <div class="flex justify-between items-center mb-3">
+                                        <h4 class="font-semibold text-slate-700"><i data-lucide="user-cog" class="ml-2 w-5 h-5 text-slate-600"></i>اطلاعات پرسنلی</h4>
+                                        ${canEdit() ? `<button id="edit-personal-info-btn" class="primary-btn text-xs">ویرایش</button>` : ''}
+                                    </div>
+                                    <div class="bg-white rounded-xl border border-slate-200 p-4">
+                                        </div>
                                 </div>
+                            </div>
                         </div>
                     </div>
                 </div>
