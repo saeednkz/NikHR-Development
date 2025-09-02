@@ -4290,7 +4290,7 @@ const viewEmployeeProfile = (employeeId) => {
                     </div>
                 </div>
                 <div class="lg:col-span-2">
-                    <div class="bg-white rounded-صl border border-slate-200">
+                    <div class="bg-white rounded-2xl border border-slate-200">
                         <div class="sticky top-0 bg-white/70 backdrop-blur p-3 border-b border-slate-200 z-10">
                             <nav id="profile-tabs" class="flex flex-wrap gap-2">
                                 <button data-tab="overview" class="profile-tab active primary-btn text-xs font-semibold px-3 py-1.5 rounded-lg">نمای کلی</button>
@@ -4330,13 +4330,13 @@ const viewEmployeeProfile = (employeeId) => {
                                     </div>
                                     <div class="space-y-4">${performanceHistoryHtml}</div>
                                     <div class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
-                                        <div class="p-4 bg-white rounded-xl border">
+                                        <div class="p-4 bg-white rounded-xl border overflow-hidden">
                                             <h5 class="text-sm font-semibold text-slate-700 mb-2">روند امتیاز کلی</h5>
-                                            <canvas id="perfTrendChart" height="160"></canvas>
+                                            <div class="relative h-48"><canvas id="perfTrendChart"></canvas></div>
                                         </div>
-                                        <div class="p-4 bg-white rounded-xl border">
+                                        <div class="p-4 bg-white rounded-xl border overflow-hidden">
                                             <h5 class="text-sm font-semibold text-slate-700 mb-2">رادار شایستگی‌ها</h5>
-                                            <canvas id="competencyRadarChart" height="160"></canvas>
+                                            <div class="relative h-48"><canvas id="competencyRadarChart"></canvas></div>
                                         </div>
                                     </div>
                                 </div>
