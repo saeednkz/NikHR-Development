@@ -2446,16 +2446,20 @@ if (typeof window.showPerformanceForm !== 'function') { window.showPerformanceFo
 const showViewPerformanceDetailsModal = (review) => {
     modalTitle.innerText = `مشاهده ارزیابی - ${toPersianDate(review.reviewDate)}`;
 
-    const renderScores = (scoresObject) => {
-        if (!scoresObject || Object.keys(scoresObject).length === 0) {
-            return '<p class="text-slate-400 text-xs">موردی ثبت نشده</p>';
+    const renderScores = (scores) => {
+        if (!scores) return '<p class="text-slate-400 text-xs">موردی ثبت نشده</p>';
+        if (Array.isArray(scores)) {
+            if (scores.length === 0) return '<p class="text-slate-400 text-xs">موردی ثبت نشده</p>';
+            return scores.map((s, i) => `
+                <div class=\"flex justify-between items-center py-1\"><span class=\"text-slate-600\">آیتم ${i+1}:</span><span class=\"font-semibold text-slate-800\">${s}/5</span></div>
+            `).join('');
         }
-        return Object.entries(scoresObject).map(([name, score]) => `
-            <div class="flex justify-between items-center py-1">
-                <span class="text-slate-600">${name}:</span>
-                <span class="font-semibold text-slate-800">${score}/5</span>
-            </div>
-        `).join('');
+        if (typeof scores === 'object' && Object.keys(scores).length > 0) {
+            return Object.entries(scores).map(([name, score]) => `
+                <div class=\"flex justify-between items-center py-1\"><span class=\"text-slate-600\">${name}:</span><span class=\"font-semibold text-slate-800\">${score}/5</span></div>
+            `).join('');
+        }
+        return '<p class="text-slate-400 text-xs">موردی ثبت نشده</p>';
     };
 
     const selfAssessment = review.selfAssessment;
@@ -2492,10 +2496,20 @@ const showViewPerformanceDetailsModal = (review) => {
 
             ${selfAssessment ? `
                 <div>
-                    <h5 class="text-sm font-bold text-slate-600 mb-2 p-2 bg-indigo-50 rounded-md text-indigo-800">خودارزیابی کارمند</h5>
-                    <div class="p-3 bg-slate-50 rounded-lg text-sm text-slate-700 space-y-2">
+                    <h5 class=\"text-sm font-bold text-slate-600 mb-2 p-2 bg-indigo-50 rounded-md text-indigo-800\">خودارزیابی کارمند</h5>
+                    <div class=\"grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 mb-2\">
+                        <div>
+                            <h6 class=\"text-[12px] font-bold text-slate-600 mb-1\">امتیاز شایستگی‌ها (خودارزیابی)</h6>
+                            <div class=\"space-y-1 text-xs px-2 divide-y\">${renderScores(selfAssessment.competencyScores)}</div>
+                        </div>
+                        <div>
+                            <h6 class=\"text-[12px] font-bold text-slate-600 mb-1\">امتیاز اهداف (خودارزیابی)</h6>
+                            <div class=\"space-y-1 text-xs px-2 divide-y\">${renderScores(selfAssessment.okrScores)}</div>
+                        </div>
+                    </div>
+                    <div class=\"p-3 bg-slate-50 rounded-lg text-sm text-slate-700 space-y-2\">
                         <p><strong>نقاط قوت (از دید کارمند):</strong> ${selfAssessment.strengths || '-'}</p>
-                        <p class="mt-2"><strong>زمینه‌های بهبود (از دید کارمند):</strong> ${selfAssessment.areasForImprovement || '-'}</p>
+                        <p class=\"mt-2\"><strong>زمینه‌های بهبود (از دید کارمند):</strong> ${selfAssessment.areasForImprovement || '-'}</p>
                     </div>
                 </div>
             ` : ''}
