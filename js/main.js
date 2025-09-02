@@ -4326,9 +4326,19 @@ const viewEmployeeProfile = (employeeId) => {
                                 <div class="space-y-4">
                                     <div class="flex justify-between items-center mb-3">
                                         <h4 class="font-semibold text-slate-700"><i data-lucide="clipboard-check" class="ml-2 w-5 h-5" style="color:#6B69D6"></i>سابقه ارزیابی عملکرد</h4>
-                                        ${canEdit() ? `<button id="add-performance-btn" class="primary-btn text-xs">افزودن سابقه دستی</button>` : ''}
+                                        ${canEdit() ? `<button id=\"add-performance-btn\" class=\"primary-btn text-xs\">افزودن سابقه دستی</button>` : ''}
                                     </div>
                                     <div class="space-y-4">${performanceHistoryHtml}</div>
+                                    <div class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                        <div class="p-4 bg-white rounded-xl border">
+                                            <h5 class="text-sm font-semibold text-slate-700 mb-2">روند امتیاز کلی</h5>
+                                            <canvas id="perfTrendChart" height="160"></canvas>
+                                        </div>
+                                        <div class="p-4 bg-white rounded-xl border">
+                                            <h5 class="text-sm font-semibold text-slate-700 mb-2">رادار شایستگی‌ها</h5>
+                                            <canvas id="competencyRadarChart" height="160"></canvas>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             <div id="tab-career" class="profile-tab-content hidden">
@@ -4386,6 +4396,33 @@ const viewEmployeeProfile = (employeeId) => {
     modalContent = clearEventListeners(document.getElementById('modalContent'));
     setupProfileModalListeners(emp);
     renderEngagementGauge('engagementGaugeProfile', emp.engagementScore);
+    try {
+        // Trend chart
+        const trendCtx = document.getElementById('perfTrendChart')?.getContext('2d');
+        if (trendCtx && (emp.performanceHistory||[]).length) {
+            const hist = (emp.performanceHistory||[]).slice().sort((a,b)=> new Date(a.reviewDate)-new Date(b.reviewDate));
+            const labels = hist.map(h=> toPersianDate(h.reviewDate));
+            const data = hist.map(h=> Number(h.overallScore)||0);
+            charts.perfTrend = new Chart(trendCtx, { type:'line', data:{ labels, datasets:[{ label:'امتیاز کلی', data, borderColor:'#6366f1', backgroundColor:'rgba(99,102,241,0.1)', tension:0.35, pointRadius:3 }] }, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ y:{ suggestedMin:0, suggestedMax:5, ticks:{ stepSize:1 } } } } });
+        }
+
+        // Competency radar based on latest review or current competencies
+        const radarCtx = document.getElementById('competencyRadarChart')?.getContext('2d');
+        if (radarCtx) {
+            let compScores = {};
+            const latest = (emp.performanceHistory||[]).slice().sort((a,b)=> new Date(b.reviewDate)-new Date(a.reviewDate))[0];
+            if (latest && latest.competencyScores && Object.keys(latest.competencyScores).length) {
+                compScores = latest.competencyScores;
+            } else if (emp.competencies && Object.keys(emp.competencies).length) {
+                compScores = emp.competencies;
+            }
+            const labels = Object.keys(compScores).slice(0,8);
+            const data = labels.map(k=> Number(compScores[k])||0);
+            if (labels.length) {
+                charts.compRadar = new Chart(radarCtx, { type:'radar', data:{ labels, datasets:[{ label:'شایستگی', data, borderColor:'#10b981', backgroundColor:'rgba(16,185,129,0.15)', pointBackgroundColor:'#10b981' }] }, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ r:{ suggestedMin:0, suggestedMax:5, ticks:{ stepSize:1 } } } } });
+            }
+        }
+    } catch(err) { console.error('profile charts error', err); }
     lucide.createIcons();
 };
 // فایل: js/main.js
