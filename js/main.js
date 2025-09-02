@@ -647,7 +647,7 @@ const performanceHistoryHtml = (employee.performanceHistory || [])
                 </div>
                 
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                    <div class="flex items-center gap-4 mb-4"><div class="w-16 h-16 rounded-full overflow-hidden bg-slate-100 ring-2 ring-indigo-100"><img src="${employee.avatar}" alt="${employee.name}" class="w-full h-full object-cover"></div><div><div class="text-lg font-bold text-slate-800">${employee.name}</div><div class="text-sm text-slate-500">${employee.jobTitle || 'بدون عنوان شغلی'}</div></div></div>
+                    <div class="flex items-center gap-4 mb-4"><div class="w-16 h-16 rounded-full overflow-hidden bg-slate-100 ring-2 ring-indigo-100"><img src="${employee.avatar}" alt="${employee.name}" class="w-full h-full object-cover"></div><div><div class="text-lg font-bold text-slate-800">${employee.name}</div><div class="text-sm text-slate-500">${employee.jobTitle || 'بدون عنوان شغلی'}</div></div><div class="ml-auto hidden md:flex items-center gap-3"><span class="text-xs text-slate-500">تیم:</span><span class="text-xs font-semibold text-slate-700">${(state.teams.find(t=>t.memberIds?.includes(employee.id))?.name) || '-'}</span><span class="text-xs text-slate-500">مدیر:</span><span class="text-xs font-semibold text-slate-700">${manager?.name || '-'}</span></div></div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm"><div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500 mb-1">ایمیل</div><div class="font-medium text-slate-700">${employee.personalInfo?.email || '-'}</div></div><div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500 mb-1">شماره موبایل</div><div class="font-medium text-slate-700">${employee.personalInfo?.phone || '-'}</div></div><div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500 mb-1">تیم</div><div class="font-medium text-slate-700">${(state.teams.find(t=>t.memberIds?.includes(employee.id))?.name) || '-'}</div></div><div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500 mb-1">مدیر</div><div class="font-medium text-slate-700">${manager?.name || '-'}</div></div></div>
                 </div>
 
@@ -671,9 +671,37 @@ const performanceHistoryHtml = (employee.performanceHistory || [])
                     </div>
                 </div>
             </div>
-            <aside class="space-y-6">
+            <aside class="space-y-6 min-w-[260px]">
                 ${renderBirthdaysWidget(employee)}
-                </aside>
+                <div class="card p-0">
+                    <div class="card-header flex items-center gap-2"><i data-lucide="send" class="w-5 h-5 text-indigo-500"></i><h3 class="font-semibold text-slate-800">درخواست‌های اخیر</h3></div>
+                    <div class="card-content divide-y divide-slate-100">
+                        ${(() => {
+                            const myRequests = (state.requests||[]).filter(r => r.uid === employee.uid).sort((a,b)=> (b.lastUpdatedAt?.toDate?.()||b.createdAt?.toDate?.()||0) - (a.lastUpdatedAt?.toDate?.()||a.createdAt?.toDate?.()||0)).slice(0,5);
+                            if (myRequests.length===0) return '<div class="p-3 text-xs text-slate-500">درخواستی ثبت نشده است.</div>';
+                            return myRequests.map(r=> `<a href="#requests" class=\"flex items-center justify-between p-3 hover:bg-slate-50 transition\" data-link="#requests"><div class=\"text-xs\"><div class=\"font-semibold text-slate-800\">${r.title||'بدون عنوان'}</div><div class=\"text-slate-500 mt-0.5\">${toPersianDate(r.createdAt?.toDate?.()||new Date())}</div></div><span class=\"text-[10px] px-2 py-1 rounded-full ${r.status==='تایید شده'?'bg-green-100 text-green-700':r.status==='رد شده'?'bg-rose-100 text-rose-700':'bg-slate-100 text-slate-700'}\">${r.status}</span></a>`).join('');
+                        })()}
+                    </div>
+                </div>
+                <div class="card p-0">
+                    <div class="card-header flex items-center gap-2"><i data-lucide="inbox" class="w-5 h-5 text-teal-500"></i><h3 class="font-semibold text-slate-800">پیام‌های اخیر</h3></div>
+                    <div class="card-content divide-y divide-slate-100">
+                        ${(() => {
+                            const myTeam = state.teams.find(t=> t.memberIds?.includes(employee.id));
+                            const myTeamId = myTeam?.firestoreId;
+                            const unread = (state.announcements||[])
+                                .filter(msg => {
+                                    const targets = msg.targets || {type:'public'};
+                                    return (targets.type==='public') || (targets.type==='roles' && (targets.roles||[]).includes('employee')) || (targets.type==='users' && (targets.userIds||[]).includes(employee.firestoreId)) || (targets.type==='teams' && (targets.teamIds||[]).includes(myTeamId));
+                                })
+                                .sort((a,b)=> new Date(b.createdAt?.toDate?.()||0) - new Date(a.createdAt?.toDate?.()||0))
+                                .slice(0,5);
+                            if (unread.length===0) return '<div class="p-3 text-xs text-slate-500">پیامی وجود ندارد.</div>';
+                            return unread.map(m=> `<a href=\"#inbox\" class=\"block p-3 hover:bg-slate-50 transition\" data-link=\"#inbox\"><div class=\"text-xs font-semibold text-slate-800\">${m.title||'پیام جدید'}</div><div class=\"text-[11px] text-slate-500 mt-0.5\">${toPersianDate(m.createdAt?.toDate?.()||new Date())}</div></a>`).join('');
+                        })()}
+                    </div>
+                </div>
+            </aside>
         </div>`;
 
     try {
