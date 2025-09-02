@@ -469,9 +469,8 @@ function renderEmployeePortalPage(pageName, employee) {
 // این بلوک کد را به جای بلوک if (pageName === 'profile') فعلی قرار دهید ▼
 
 if (pageName === 'profile') {
-    const manager = state.teams.find(t => t.memberIds?.includes(employee.id))
-        ? state.employees.find(e => e.id === (state.teams.find(t => t.memberIds.includes(employee.id))?.leadership?.manager))
-        : null;
+const team = state.teams.find(t => t.memberIds?.includes(employee.id));
+const manager = team ? state.employees.find(e => e.id === team.leadership?.manager) : null;
         
     const performanceHistoryHtml = (employee.performanceHistory || []).sort((a,b) => new Date(b.reviewDate) - new Date(a.reviewDate))
         .map(review => `
@@ -2352,9 +2351,14 @@ const showPerformanceForm = (emp, reviewIndex = null) => {
     `).join('') : '<p class="text-sm text-slate-500">هیچ OKR فعالی برای تیم این کارمند ثبت نشده یا کارمند عضو تیمی نیست.</p>';
 
     // --- بخش ۲: پیدا کردن شایستگی‌های مخصوص پوزیشن شغلی کارمند ---
-    const position = state.jobPositions.find(p => p.firestoreId === emp.jobPositionId);
-    const relevantCompetencyIds = new Set(position ? position.competencyIds : []);
-    const competenciesForReview = state.competencies.filter(c => relevantCompetencyIds.has(c.firestoreId));
+// --- منطق هوشمند برای فیلتر کردن شایستگی‌ها بر اساس خانواده شغلی و سطح ---
+const employeeJobFamily = emp.jobFamily;
+const employeeLevel = emp.level;
+const competenciesForReview = (state.careerFramework || [])
+    .filter(lvl => lvl.jobFamily === employeeJobFamily && lvl.level === employeeLevel)
+    .flatMap(lvl => lvl.competencyIds || [])
+    .map(compId => state.competencies.find(c => c.firestoreId === compId))
+    .filter(Boolean); // حذف موارد null یا undefined
     const competenciesHtml = (competenciesForReview.length > 0) ? competenciesForReview.map(comp => `
         <div class="mb-3 p-3 bg-slate-50 rounded-lg">
             <label class="block text-sm font-medium text-slate-700">${comp.name}</label>
@@ -3218,22 +3222,17 @@ tasks: () => {
 // فایل: js/main.js
 // کل تابع pages.analytics را با این نسخه جایگزین کنید ▼
 
+// فایل: js/main.js
+// کل تابع pages.analytics را با این نسخه جایگزین کنید ▼
+
 analytics: () => {
     return `
-        <!-- ▼▼▼ این بخش برای قرارگیری صحیح عنوان و دکمه اصلاح شده است ▼▼▼ -->
         <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
             <div>
                 <h1 class="text-3xl font-bold text-slate-800">تحلیل هوشمند</h1>
                 <p class="text-sm text-slate-500 mt-1">مرکز فرماندهی داده‌های استعدادهای سازمان</p>
             </div>
-            <div>
-                <button id="start-evaluation-cycle-btn" class="primary-btn flex items-center gap-2">
-                    <i data-lucide="play-circle" class="w-5 h-5"></i>
-                    <span>شروع دوره ارزیابی جدید</span>
-                </button>
             </div>
-        </div>
-        <!-- ▲▲▲ پایان بخش اصلاح شده ▲▲▲ -->
 
         <div class="mb-6 border-b border-slate-200">
             <nav id="analytics-tabs" class="flex -mb-px space-x-6 space-x-reverse" aria-label="Tabs">
@@ -3520,7 +3519,10 @@ settings: () => {
         </div>
     `;
 },
-    evaluation: () => {
+// فایل: js/main.js
+// این تابع را به آبجکت pages اضافه کنید ▼
+
+evaluation: () => {
     const cycles = (state.evaluationCycles || []).sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0));
     const cyclesHtml = cycles.map(cycle => {
         const statusMap = {
@@ -3545,11 +3547,11 @@ settings: () => {
     }).join('') || '<tr><td colspan="5" class="text-center p-4 text-slate-500">هیچ دوره‌ای تعریف نشده است.</td></tr>';
 
     return `
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold text-slate-800">مدیریت دوره‌های ارزیابی</h1>
+            <button id="add-cycle-btn" class="primary-btn text-sm">ایجاد دوره جدید</button>
+        </div>
         <div class="card p-0">
-            <div class="flex justify-between items-center p-5 border-b">
-                <h3 class="font-semibold text-lg flex items-center"><i data-lucide="refresh-cw" class="ml-2 text-blue-500"></i>دوره‌های ارزیابی عملکرد</h3>
-                <button id="add-cycle-btn" class="primary-btn text-sm">ایجاد دوره جدید</button>
-            </div>
             <div class="overflow-x-auto">
                 <table class="w-full">
                     <thead class="bg-slate-50">
@@ -3845,7 +3847,7 @@ const viewEmployeeProfile = (employeeId) => {
     if (!emp) return;
     const analysis = generateSmartAnalysis(emp);
     const team = state.teams.find(t => t.memberIds?.includes(emp.id));
-    const manager = team ? state.employees.find(e => e.id === team.leaderId) : null;
+    const manager = team ? state.employees.find(e => e.id === team.leadership?.manager) : null;
     // پیدا کردن دوره ارزیابی فعال
     const activeCycle = (state.evaluationCycles || []).find(c => c.status === 'active');
     let evaluationButtonHtml = '';
@@ -4267,7 +4269,7 @@ const renderPage = (pageName) => {
                 setupSettingsPageListeners();
             }
         }
-        if (pageName === 'evaluation') {
+ if (pageName === 'evaluation') { // [!] این if را اضافه کنید
     if (isAdmin()) {
         setupEvaluationPageListeners();
     }
@@ -6202,6 +6204,15 @@ const showEmployeeForm = (employeeId = null) => {
     const emp = isEditing ? state.employees.find(e => e.firestoreId === employeeId) : {};
     const currentTeam = isEditing ? state.teams.find(t => t.memberIds?.includes(emp.id)) : null;
     const teamOptions = state.teams.map(team => `<option value="${team.firestoreId}" ${currentTeam?.firestoreId === team.firestoreId ? 'selected' : ''}>${team.name}</option>`).join('');
+    // --- بخش جدید: ساخت گزینه‌های خانواده شغلی از state ---
+const familyOptions = (state.jobFamilies || []).map(family => 
+    `<option value="${family.name}" ${emp.jobFamily === family.name ? 'selected' : ''}>${family.name}</option>`
+).join('');
+
+// --- بخش جدید: ساخت گزینه‌های سطح عددی (مثلاً ۱ تا ۱۵) ---
+const levelOptions = Array.from({ length: 15 }, (_, i) => i + 1).map(levelNum =>
+    `<option value="${levelNum}" ${emp.level === levelNum ? 'selected' : ''}>سطح ${levelNum}</option>`
+).join('');
 
     const positionOptions = (state.jobPositions || []).map(pos =>
         `<option value="${pos.firestoreId}" ${emp.jobPositionId === pos.firestoreId ? 'selected' : ''}>${pos.name}</option>`
@@ -6238,23 +6249,20 @@ const showEmployeeForm = (employeeId = null) => {
                     <label for="jobTitle" class="block text-xs font-semibold text-slate-500">عنوان شغلی</label>
                     <input type="text" id="jobTitle" value="${emp.jobTitle || ''}" placeholder="مثال: کارشناس بازاریابی دیجیتال" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg">
                 </div>
-                <div class="bg-white border rounded-xl p-4">
-                    <label for="jobPositionId" class="block text-xs font-semibold text-slate-500">پوزیشن شغلی</label>
-                    <select id="jobPositionId" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg bg-white">
-                        <option value="">انتخاب کنید...</option>
-                        ${positionOptions}
-                    </select>
-                </div>
-                <div class="bg-white border rounded-xl p-4">
-                    <label for="level" class="block text-xs font-semibold text-slate-500">سطح</label>
-                    <select id="level" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg bg-white">
-                        <option value="Junior" ${emp.level === 'Junior' ? 'selected' : ''}>Junior (کارشناس)</option>
-                        <option value="Mid-level" ${emp.level === 'Mid-level' ? 'selected' : ''}>Mid-level (کارشناس ارشد)</option>
-                        <option value="Senior" ${emp.level === 'Senior' ? 'selected' : ''}>Senior (خبره)</option>
-                        <option value="Lead" ${emp.level === 'Lead' ? 'selected' : ''}>Lead (راهبر)</option>
-                        <option value="Manager" ${emp.level === 'Manager' ? 'selected' : ''}>Manager (مدیر)</option>
-                    </select>
-                </div>
+               <div class="bg-white border rounded-xl p-4">
+    <label for="jobFamily" class="block text-xs font-semibold text-slate-500">خانواده شغلی</label>
+    <select id="jobFamily" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg bg-white">
+        <option value="">انتخاب کنید...</option>
+        ${familyOptions}
+    </select>
+</div>
+<div class="bg-white border rounded-xl p-4">
+    <label for="level" class="block text-xs font-semibold text-slate-500">سطح (Level)</label>
+    <select id="level" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg bg-white">
+        <option value="">انتخاب کنید...</option>
+        ${levelOptions}
+    </select>
+</div>
                 <div class="bg-white border rounded-xl p-4">
                     <label for="department-team-select" class="block text-xs font-semibold text-slate-500">دپارتمان / تیم عضویت</label>
                     <select id="department-team-select" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg bg-white">
@@ -6316,17 +6324,16 @@ const showEmployeeForm = (employeeId = null) => {
         const selectedTeam = state.teams.find(t => t.firestoreId === selectedTeamId);
         const managedTeamId = document.getElementById('managed-team-select').value;
 
-        const employeeCoreData = {
-            name: name,
-            id: employeeId,
-            jobTitle: document.getElementById('jobTitle').value,
-            level: document.getElementById('level').value,
-            department: selectedTeam ? selectedTeam.name : '',
-            status: document.getElementById('status').value,
-            startDate: persianToEnglishDate(document.getElementById('startDate').value),
-            jobPositionId: document.getElementById('jobPositionId').value
-        };
-        
+const employeeCoreData = {
+    name: name,
+    id: employeeId,
+    jobTitle: document.getElementById('jobTitle').value,
+    jobFamily: document.getElementById('jobFamily').value,
+    level: parseInt(document.getElementById('level').value) || 1, // ذخیره سطح به صورت عدد
+    department: selectedTeam ? selectedTeam.name : '',
+    status: document.getElementById('status').value,
+    startDate: persianToEnglishDate(document.getElementById('startDate').value),
+};
         const batch = writeBatch(db);
 
         if (isEditing) {
@@ -6867,6 +6874,7 @@ const handleNavClick = (e) => {
 // فایل: js/main.js - اضافه کردن توابع جدید
 
 // [!code start]
+// فایل: js/main.js - این تابع جدید را اضافه کنید
 const showEvaluationCycleForm = (cycleId = null) => {
     const isEditing = cycleId !== null;
     const cycle = isEditing ? state.evaluationCycles.find(c => c.firestoreId === cycleId) : {};
@@ -6901,14 +6909,11 @@ const showEvaluationCycleForm = (cycleId = null) => {
         const title = document.getElementById('cycle-title').value.trim();
         const startDate = persianToEnglishDate(document.getElementById('cycle-start-date').value);
         const endDate = persianToEnglishDate(document.getElementById('cycle-end-date').value);
-
         if (!title || !startDate || !endDate) {
             showToast('لطفاً تمام فیلدها را پر کنید.', 'error');
             return;
         }
-
         const cycleData = { title, startDate, endDate, status: cycle.status || 'planning' };
-
         try {
             if (isEditing) {
                 await updateDoc(doc(db, `artifacts/${appId}/public/data/evaluationCycles`, cycleId), cycleData);
@@ -6926,6 +6931,7 @@ const showEvaluationCycleForm = (cycleId = null) => {
 // فایل: js/main.js
 // ▼▼▼ این تابع را به طور کامل جایگزین کنید ▼▼▼
 
+// فایل: js/main.js - این تابع جدید را اضافه کنید
 const setupEvaluationPageListeners = () => {
     const mainContentArea = document.getElementById('main-content');
     mainContentArea.addEventListener('click', (e) => {
@@ -6936,23 +6942,15 @@ const setupEvaluationPageListeners = () => {
 
         if (addBtn) showEvaluationCycleForm();
         if (editBtn) showEvaluationCycleForm(editBtn.dataset.id);
-
-        if (deleteBtn) {
-            // ... (کد حذف بدون تغییر)
-        }
-
+        if (deleteBtn) { /* ... منطق حذف ... */ }
         if (startBtn) {
             const cycleId = startBtn.dataset.id;
             showConfirmationModal('شروع دوره ارزیابی', 'با شروع دوره، ارزیابی برای تمام کارمندان فعال ایجاد می‌شود. آیا ادامه می‌دهید؟', async () => {
                 try {
-                    // [!code start]
-                    // فراخوانی Cloud Function جدید
                     const startCycleFunction = httpsCallable(functions, 'startEvaluationCycle');
                     const result = await startCycleFunction({ cycleId: cycleId });
                     showToast(result.data.message, "success");
-                    // [!code end]
                 } catch (error) {
-                    console.error("Error starting cycle:", error);
                     showToast(`خطا در فعال‌سازی دوره: ${error.message}`, "error");
                 }
             });
