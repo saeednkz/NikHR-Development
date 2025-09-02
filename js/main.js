@@ -473,20 +473,58 @@ if (pageName === 'profile') {
 const team = state.teams.find(t => t.memberIds?.includes(employee.id));
 const manager = team ? state.employees.find(e => e.id === team.leadership?.manager) : null;
         
-    const performanceHistoryHtml = (employee.performanceHistory || []).sort((a,b) => new Date(b.reviewDate) - new Date(a.reviewDate))
-        .map(review => `
-            <div class="bg-slate-50 rounded-xl p-4 border hover:border-indigo-200 transition-colors">
-                <div class="flex justify-between items-center mb-2">
-                    <p class="font-bold text-slate-800">امتیاز کلی: <span class="text-lg font-semibold text-indigo-600">${review.overallScore}/5</span></p>
-                    <p class="text-xs text-slate-500">${toPersianDate(review.reviewDate)}</p>
+// فایل: js/main.js -> داخل تابع viewEmployeeProfile
+// ▼▼▼ این بلوک کد را به طور کامل جایگزین نسخه فعلی performanceHistoryHtml کنید ▼▼▼
+
+const performanceHistoryHtml = (employee.performanceHistory || [])
+    .sort((a, b) => new Date(b.reviewDate) - new Date(a.reviewDate))
+    .map((review, index) => {
+        // تابع کمکی برای نمایش لیست امتیازات
+        const renderScores = (scoresObject) => {
+            if (!scoresObject || Object.keys(scoresObject).length === 0) {
+                return '<p class="text-slate-400 text-xs">موردی ثبت نشده</p>';
+            }
+            return Object.entries(scoresObject).map(([name, score]) => `
+                <div class="flex justify-between items-center">
+                    <span class="text-slate-600">${name}:</span>
+                    <span class="font-semibold text-slate-800">${score}/5</span>
                 </div>
-                <div class="mt-3 border-t pt-3 text-sm">
+            `).join('');
+        };
+
+        return `
+            <div class="bg-white rounded-xl border border-slate-200 p-4 space-y-3">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="font-bold text-slate-800">امتیاز کلی: <span style="color:#6B69D6" class="text-lg">${review.overallScore}/5</span></p>
+                        <p class="text-xs text-slate-500 mt-1">تاریخ: ${toPersianDate(review.reviewDate)} | ارزیاب: ${review.reviewer}</p>
+                    </div>
+                    ${canEdit() ? `
+                        <div class="flex gap-2">
+                            <button class="edit-performance-btn p-2 text-slate-400 hover:text-blue-600" data-index="${index}" title="ویرایش"><i data-lucide="edit" class="w-4 h-4"></i></button>
+                            <button class="delete-performance-btn p-2 text-slate-400 hover:text-red-600" data-index="${index}" title="حذف"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        </div>
+                    ` : ''}
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 border-t pt-3">
+                    <div>
+                        <h5 class="text-sm font-bold text-slate-600 mb-2">امتیاز شایستگی‌ها</h5>
+                        <div class="space-y-1 text-xs">${renderScores(review.competencyScores)}</div>
+                    </div>
+                    <div>
+                        <h5 class="text-sm font-bold text-slate-600 mb-2">امتیاز اهداف (OKR)</h5>
+                        <div class="space-y-1 text-xs">${renderScores(review.okrScores)}</div>
+                    </div>
+                </div>
+
+                <div class="border-t pt-3 text-sm text-slate-700">
                     <p><strong>نقاط قوت:</strong> ${review.strengths || '-'}</p>
                     <p class="mt-2"><strong>زمینه‌های قابل بهبود:</strong> ${review.areasForImprovement || '-'}</p>
                 </div>
             </div>
-        `).join('')
-        || '<div class="text-center py-6"><i data-lucide="inbox" class="w-12 h-12 mx-auto text-slate-300"></i><p class="mt-2 text-sm text-slate-500">سابقه‌ای از ارزیابی عملکرد شما ثبت نشده است.</p></div>';
+        `;
+    }).join('') || '<div class="text-center py-6"><i data-lucide="inbox" class="w-12 h-12 mx-auto text-slate-300"></i><p class="mt-2 text-sm text-slate-500">سابقه‌ای از ارزیابی عملکرد شما ثبت نشده است.</p></div>';
 
     const myTeam = state.teams.find(t => t.memberIds?.includes(employee.id));
     const okrAvg = (myTeam?.okrs && myTeam.okrs.length > 0)
