@@ -4663,10 +4663,10 @@ const viewTeamProfile = (teamId) => {
             </div>
             <div class="lg:col-span-2 space-y-6">
                 <div class="bg-white rounded-xl shadow-md">
-                    <div class="border-b border-gray-200">
-                        <nav id="profile-tabs" class="flex -mb-px overflow-x-auto">
-                            <button data-tab="tab-team-overview" class="profile-tab active shrink-0 px-4 py-2 text-sm font-medium border-b-2 border-indigo-500 text-indigo-600">نمای کلی</button>
-                            <button data-tab="tab-team-health" class="profile-tab shrink-0 px-4 py-2 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700">سلامت تیم</button>
+                    <div class="sticky top-0 bg-white/70 backdrop-blur p-3 border-b border-slate-200 z-10">
+                        <nav id="profile-tabs" class="flex flex-wrap gap-2">
+                            <button data-tab="tab-team-overview" class="profile-tab active primary-btn text-xs font-semibold px-3 py-1.5 rounded-lg">نمای کلی</button>
+                            <button data-tab="tab-team-health" class="profile-tab secondary-btn text-xs font-semibold px-3 py-1.5 rounded-lg">سلامت تیم</button>
                         </nav>
                     </div>
                     <div class="p-4">
