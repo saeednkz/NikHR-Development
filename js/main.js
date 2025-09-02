@@ -2440,6 +2440,9 @@ if (typeof window.showPerformanceForm !== 'function') { window.showPerformanceFo
 // فایل: js/main.js
 // ▼▼▼ این تابع کاملاً جدید را به فایل خود اضافه کنید ▼▼▼
 
+// فایل: js/main.js
+// ▼▼▼ این تابع کاملاً جدید را به فایل خود اضافه کنید ▼▼▼
+
 const showViewPerformanceDetailsModal = (review) => {
     modalTitle.innerText = `مشاهده ارزیابی - ${toPersianDate(review.reviewDate)}`;
 
@@ -3828,11 +3831,14 @@ const showEditUserForm = (user) => {
 // فایل: js/main.js
 // ▼▼▼ کل این تابع را با نسخه جدید و کامل زیر جایگزین کنید ▼▼▼
 
+// فایل: js/main.js
+// ▼▼▼ کل این تابع را با نسخه جدید و کامل زیر جایگزین کنید ▼▼▼
+
 function setupProfileModalListeners(emp) {
     const container = document.getElementById('modalContent');
     if (!container) return;
 
-    // ۱. منطق فعال‌سازی تب‌های داخل مودال (بدون تغییر)
+    // منطق فعال‌سازی تب‌های داخل مودال
     const tabs = container.querySelectorAll('#profile-tabs .profile-tab');
     const contents = container.querySelectorAll('.profile-tab-content');
     tabs.forEach(tab => {
@@ -3847,27 +3853,24 @@ function setupProfileModalListeners(emp) {
             tab.classList.add('active', 'primary-btn');
             tab.classList.remove('secondary-btn');
             contents.forEach(c => c.classList.add('hidden'));
-            const panel = document.getElementById(`tab-${target}`);
+            const panel = document.getElementById(target); // اصلاح شد
             if (panel) panel.classList.remove('hidden');
         });
     });
 
-    // ۲. شنونده مرکزی برای تمام دکمه‌های داخل مودال
+    // شنونده مرکزی برای تمام دکمه‌های داخل مودال
     container.addEventListener('click', async (e) => {
         const btn = e.target.closest('button');
         if (!btn) return;
         const id = btn.id;
 
-        // [!code start]
-        // ▼▼▼ منطق دکمه‌های تب عملکرد به طور کامل اصلاح شد ▼▼▼
-
-        // دکمه افزودن سابقه عملکرد (کارکرد صحیح)
+        // دکمه افزودن سابقه عملکرد (برای ثبت ارزیابی دستی)
         if (id === 'add-performance-btn') {
             showPerformanceForm(emp);
             return;
         }
 
-        // دکمه مشاهده سابقه عملکرد (منطق جدید)
+        // دکمه مشاهده سابقه عملکرد
         const viewPerfBtn = e.target.closest('.view-performance-btn');
         if (viewPerfBtn) {
             const reviewIndex = parseInt(viewPerfBtn.dataset.index);
@@ -3877,30 +3880,27 @@ function setupProfileModalListeners(emp) {
             return;
         }
 
-        // دکمه ویرایش سابقه عملکرد (بدون تغییر)
-        const editPerfBtn = e.target.closest('.edit-performance-btn');
-        if (editPerfBtn) {
-            showPerformanceForm(emp, parseInt(editPerfBtn.dataset.index));
+        // دکمه ویرایش سابقه عملکرد
+        if (btn.classList.contains('edit-performance-btn')) {
+            showPerformanceForm(emp, parseInt(btn.dataset.index));
             return;
         }
 
-        // دکمه حذف سابقه عملکرد (منطق جدید)
-        const deletePerfBtn = e.target.closest('.delete-performance-btn');
-        if (deletePerfBtn) {
-            const reviewIndex = parseInt(deletePerfBtn.dataset.index);
+        // دکمه حذف سابقه عملکرد
+        if (btn.classList.contains('delete-performance-btn')) {
+            const reviewIndex = parseInt(btn.dataset.index);
             showConfirmationModal('حذف سابقه عملکرد', 'آیا از حذف این آیتم مطمئن هستید؟', async () => {
                 const currentHistory = emp.performanceHistory || [];
-                currentHistory.splice(reviewIndex, 1); // حذف آیتم از آرایه
+                currentHistory.splice(reviewIndex, 1);
                 const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
                 await updateDoc(docRef, { performanceHistory: currentHistory });
                 showToast('سابقه ارزیابی حذف شد.');
-                viewEmployeeProfile(emp.firestoreId); // بازрисовانی پروفایل
+                viewEmployeeProfile(emp.firestoreId);
             });
             return;
         }
-        // [!code end]
-
-        // --- بقیه دکمه‌های پروفایل (بدون تغییر) ---
+        
+        // بقیه دکمه‌های پروفایل
         if (id === 'change-avatar-btn') { /* ... */ return; }
         if (id === 'delete-avatar-btn') { /* ... */ return; }
         if (id === 'main-edit-employee-btn') { showEmployeeForm(emp.firestoreId); return; }
@@ -4104,19 +4104,24 @@ const setupTeamProfileModalListeners = (team) => {
 // فایل: js/main.js
 // ▼▼▼ کل این تابع را با نسخه کامل و نهایی زیر جایگزین کنید ▼▼▼
 
+// فایل: js/main.js
+// ▼▼▼ کل این تابع را با نسخه جدید و کامل زیر جایگزین کنید ▼▼▼
+
 const viewEmployeeProfile = (employeeId) => {
     const emp = state.employees.find(e => e.firestoreId === employeeId);
     if (!emp) return;
     const analysis = generateSmartAnalysis(emp);
     const team = state.teams.find(t => t.memberIds?.includes(emp.id));
     const manager = team ? state.employees.find(e => e.id === team.leadership?.manager) : null;
-    
-    // [اصلاح] بخش نمایش سابقه عملکرد با افزودن دکمه "مشاهده"
+
     const performanceHistoryHtml = (emp.performanceHistory && emp.performanceHistory.length > 0) 
         ? emp.performanceHistory.sort((a,b) => new Date(b.reviewDate) - new Date(a.reviewDate)).map((review, index) => `
             <div class="bg-white rounded-xl border border-slate-200 p-4">
-                <div class="flex justify-between items-center mb-2">
-                    <p class="font-bold text-slate-800">امتیاز کلی: <span style="color:#6B69D6" class="text-lg">${review.overallScore}/5</span></p>
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="font-bold text-slate-800">امتیاز کلی: <span style="color:#6B69D6" class="text-lg">${review.overallScore}/5</span></p>
+                        <p class="text-xs text-slate-500 mt-1">تاریخ: ${toPersianDate(review.reviewDate)} | ارزیاب: ${review.reviewer}</p>
+                    </div>
                     ${canEdit() ? `
                         <div class="flex gap-1">
                             <button class="view-performance-btn p-2 text-slate-400 hover:text-green-600" data-index="${index}" title="مشاهده"><i data-lucide="eye" class="w-4 h-4"></i></button>
@@ -4125,10 +4130,9 @@ const viewEmployeeProfile = (employeeId) => {
                         </div>
                     ` : ''}
                 </div>
-                <p class="text-sm text-slate-500">تاریخ: ${toPersianDate(review.reviewDate)} | ارزیاب: ${review.reviewer}</p>
             </div>
         `).join('') 
-        : '<p class="text-sm text-slate-500 text-center py-4">هنوز سابقه ارزیابی عملکردی ثبت نشده است.</p>';
+        : '<div class="text-center py-6"><i data-lucide="inbox" class="w-12 h-12 mx-auto text-slate-300"></i><p class="mt-2 text-sm text-slate-500">سابقه‌ای از ارزیابی عملکرد ثبت نشده است.</p></div>';
 
     modalTitle.innerText = 'پروفایل ۳۶۰ درجه: ' + emp.name;
     modalContent.innerHTML = `
@@ -4146,13 +4150,10 @@ const viewEmployeeProfile = (employeeId) => {
                     </div>
                     <div class="flex items-center gap-2">
                         ${canEdit() ? `<button id="main-edit-employee-btn" class="secondary-btn text-xs">ویرایش کارمند</button>` : ''}
-                        ${canEdit() ? `<button id="change-avatar-btn" class="secondary-btn text-xs">تغییر عکس</button>` : ''}
-                        ${canEdit() ? `<button id="delete-avatar-btn" class="secondary-btn text-xs">حذف عکس</button>` : ''}
                         <span class="px-3 py-1 rounded-full text-xs font-bold bg-white/20 text-white">${emp.status}</span>
                     </div>
                 </div>
             </section>
-
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="lg:col-span-1 space-y-6">
                     <div class="bg-white rounded-2xl border border-slate-200 p-6">
@@ -4181,26 +4182,7 @@ const viewEmployeeProfile = (employeeId) => {
                         </div>
                         <div class="p-6">
                             <div id="tab-overview" class="profile-tab-content">
-                                <div class="space-y-4">
-                                    <div class="bg-white rounded-xl border border-slate-200 p-4">
-                                        <h4 class="font-semibold mb-3 text-slate-700 flex items-center"><i data-lucide="info" class="ml-2 w-5 h-5 text-slate-500"></i>اطلاعات اصلی</h4>
-                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-slate-600">
-                                            <p><strong>کد پرسنلی:</strong> ${emp.id}</p>
-                                            <p><strong>دپارتمان:</strong> ${emp.department || 'نامشخص'}</p>
-                                            <p><strong>مدیر:</strong> ${manager ? manager.name : 'نامشخص'}</p>
-                                            <p><strong>تاریخ استخدام:</strong> ${toPersianDate(emp.startDate)}</p>
-                                            <p><strong>وضعیت:</strong> <span class="px-2 py-1 text-xs font-medium rounded-full ${emp.status === 'فعال' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${emp.status}</span></p>
-                                        </div>
-                                    </div>
-                                    <div class="bg-white rounded-xl border border-slate-200 p-4">
-                                        <div class="flex justify-between items-center mb-3">
-                                            <h4 class="font-semibold text-slate-700"><i data-lucide="star" class="ml-2 w-5 h-5 text-amber-500"></i>شایستگی‌های کلیدی</h4>
-                                            ${canEdit() ? `<button id="edit-competencies-btn" class="primary-btn text-xs">ویرایش</button>` : ''}
-                                        </div>
-                                        <div class="space-y-4">${renderCompetencyBars(emp.competencies)}</div>
-                                    </div>
                                 </div>
-                            </div>
                             <div id="tab-performance" class="profile-tab-content hidden">
                                 <div class="space-y-4">
                                     <div class="flex justify-between items-center mb-3">
@@ -4220,8 +4202,7 @@ const viewEmployeeProfile = (employeeId) => {
                     </div>
                 </div>
             </div>
-        </div>
-    `;
+        </div>`;
 
     openModal(mainModal, mainModalContainer);
     modalContent = clearEventListeners(document.getElementById('modalContent'));
