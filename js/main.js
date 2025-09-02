@@ -4290,14 +4290,14 @@ const viewEmployeeProfile = (employeeId) => {
                     </div>
                 </div>
                 <div class="lg:col-span-2">
-                    <div class="bg-white rounded-2xl border border-slate-200">
-                        <div class="p-4 border-b border-slate-200">
+                    <div class="bg-white rounded-صl border border-slate-200">
+                        <div class="sticky top-0 bg-white/70 backdrop-blur p-3 border-b border-slate-200 z-10">
                             <nav id="profile-tabs" class="flex flex-wrap gap-2">
-                                <button data-tab="overview" class="profile-tab active primary-btn text-xs">نمای کلی</button>
-                                <button data-tab="performance" class="profile-tab secondary-btn text-xs">عملکرد</button>
-                                <button data-tab="career" class="profile-tab secondary-btn text-xs">مسیر شغلی</button>
-                                <button data-tab="contracts" class="profile-tab secondary-btn text-xs">قراردادها</button>
-                                <button data-tab="personal" class="profile-tab secondary-btn text-xs">اطلاعات پرسنلی</button>
+                                <button data-tab="overview" class="profile-tab active primary-btn text-xs font-semibold px-3 py-1.5 rounded-lg">نمای کلی</button>
+                                <button data-tab="performance" class="profile-tab secondary-btn text-xs font-semibold px-3 py-1.5 rounded-lg">عملکرد</button>
+                                <button data-tab="career" class="profile-tab secondary-btn text-xs font-semibold px-3 py-1.5 rounded-lg">مسیر شغلی</button>
+                                <button data-tab="contracts" class="profile-tab secondary-btn text-xs font-semibold px-3 py-1.5 rounded-lg">قراردادها</button>
+                                <button data-tab="personal" class="profile-tab secondary-btn text-xs font-semibold px-3 py-1.5 rounded-lg">اطلاعات پرسنلی</button>
                             </nav>
                         </div>
                         <div class="p-6">
