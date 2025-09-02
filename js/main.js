@@ -3176,6 +3176,7 @@ dashboard: () => {
                     </div>
                     <div class="w-full md:w-auto flex flex-wrap gap-2 justify-end">
                         <select id="departmentFilter" class="p-2 border border-slate-300 rounded-lg bg-white"><option value="">همه دپارتمان‌ها</option>${[...new Set(state.employees.map(e => e.department))].filter(Boolean).map(d => `<option value="${d}">${d}</option>`).join('')}</select>
+                        <select id="skillFilter" class="p-2 border border-slate-300 rounded-lg bg-white"><option value="">همه مهارت‌ها</option>${[...new Set([].concat(...(state.employees||[]).map(e => Object.keys(e.skills||{}))))].map(s => `<option value="${s}">${s}</option>`).join('')}</select>
                         <select id="statusFilter" class="p-2 border border-slate-300 rounded-lg bg-white"><option value="">همه وضعیت‌ها</option><option value="فعال">فعال</option><option value="غیرفعال">غیرفعال</option></select>
                     </div>
                 </div>
@@ -5224,12 +5225,14 @@ const renderEmployeeTable = () => {
     const TALENT_PAGE_SIZE = 12;
     const searchInput = document.getElementById('searchInput')?.value.toLowerCase() || '';
     const departmentFilter = document.getElementById('departmentFilter')?.value || '';
+    const skillFilter = document.getElementById('skillFilter')?.value || '';
     const statusFilter = document.getElementById('statusFilter')?.value || '';
     
     const filteredEmployees = state.employees.filter(emp =>
         (emp.name.toLowerCase().includes(searchInput) || emp.id.toLowerCase().includes(searchInput)) &&
         (!departmentFilter || emp.department === departmentFilter) &&
-        (!statusFilter || emp.status === statusFilter)
+        (!statusFilter || emp.status === statusFilter) &&
+        (!skillFilter || Object.keys(emp.skills || {}).includes(skillFilter))
     );
     const startIndex = (state.currentPageTalent - 1) * TALENT_PAGE_SIZE;
     const endIndex = startIndex + TALENT_PAGE_SIZE;
@@ -5257,6 +5260,7 @@ const renderEmployeeTable = () => {
                         
                         <h3 class=\"font-bold text-base mt-3 text-slate-800\">${emp.name}</h3>
                         <p class=\"text-xs text-slate-500\">${emp.jobTitle || 'بدون عنوان شغلی'}</p>
+                        <div class=\"mt-1 text-[11px] text-slate-500\">${(state.teams.find(t=>t.memberIds?.includes(emp.id))?.name) || 'بدون تیم'} ${(() => { const team = state.teams.find(t=>t.memberIds?.includes(emp.id)); const m = team ? state.employees.find(e => e.id === team.leadership?.manager) : null; return m ? `• مدیر: ${m.name}` : ''; })()}</div>
                         
                         <div class=\"mt-3 grid grid-cols-3 gap-2 text-[11px] w-full\">
                             <div class=\"rounded-lg p-2 bg-slate-50 border\"><div class=\"text-slate-500\">وضعیت</div><div class=\"font-bold ${emp.status==='فعال'?'text-emerald-600':'text-rose-600'}\">${emp.status}</div></div>
@@ -5404,6 +5408,7 @@ const setupTalentPageListeners = () => {
 
     document.getElementById('searchInput')?.addEventListener('input', resetToFirstPage);
     document.getElementById('departmentFilter')?.addEventListener('change', resetToFirstPage);
+    document.getElementById('skillFilter')?.addEventListener('change', resetToFirstPage);
     document.getElementById('statusFilter')?.addEventListener('change', resetToFirstPage);
     
     // اتصال دکمه افزودن کارمند به تابع مربوطه
