@@ -4446,11 +4446,21 @@ const viewTeamProfile = (teamId) => {
         acc[positionName] = (acc[positionName] || 0) + 1;
         return acc;
     }, {});
-    const roleChipsHtml = Object.entries(roleDistribution)
-        .sort((a,b)=> b[1]-a[1])
-        .slice(0,6)
-        .map(([name,count]) => `<span class="px-2 py-1 rounded-full text-[11px] bg-slate-100 text-slate-700">${name} ×${count}</span>`)
-        .join('') || '<span class="text-xs text-slate-500">داده‌ای برای نمایش وجود ندارد.</span>';
+    const roleEntries = Object.entries(roleDistribution).sort((a,b)=> b[1]-a[1]).slice(0,6);
+    const chipClasses = [
+        'bg-indigo-50 text-indigo-700 border-indigo-200',
+        'bg-emerald-50 text-emerald-700 border-emerald-200',
+        'bg-amber-50 text-amber-700 border-amber-200',
+        'bg-sky-50 text-sky-700 border-sky-200',
+        'bg-rose-50 text-rose-700 border-rose-200',
+        'bg-violet-50 text-violet-700 border-violet-200'
+    ];
+    const roleChipsHtml = roleEntries.length
+        ? roleEntries.map(([name,count], idx) => {
+            const cls = chipClasses[idx % chipClasses.length];
+            return `<span class=\"px-2 py-1 rounded-full text-[11px] border ${cls}\">${name} ×${count}</span>`;
+        }).join(' ')
+        : '<span class="text-xs text-slate-500">داده‌ای برای نمایش وجود ندارد.</span>';
 
     // شکست مشارکت به تفکیک دسته‌ها (از analyzeTeamData)
     const engBreakdown = advancedAnalysis.engagementBreakdown || [];
@@ -4604,7 +4614,18 @@ const viewTeamProfile = (teamId) => {
                                     <div class="card p-4 bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
                                         <h4 class="font-semibold text-gray-700 mb-3 flex items-center"><i data-lucide="shield-alert" class="ml-2 w-4 h-4 text-rose-500"></i>اعضای پرریسک</h4>
                                         ${ (advancedAnalysis.highRiskMembers || []).length ? (advancedAnalysis.highRiskMembers || []).sort((a,b)=> (b.attritionRisk?.score||0)-(a.attritionRisk?.score||0)).map(m => `
-                                            <div class=\"flex items-center justify-between p-2 border rounded-md mb-2\"><div class=\"flex items-center gap-2\"><img src=\"${m.avatar}\" class=\"w-8 h-8 rounded-full object-cover\"><span class=\"text-sm\">${m.name}</span></div><span class=\"text-xs font-bold text-rose-600\">${m.attritionRisk?.score || 0}%</span></div>
+                                            <div class=\"p-3 border rounded-lg mb-2 bg-rose-50/40\">
+                                                <div class=\"flex items-center justify-between\">
+                                                    <div class=\"flex items-center gap-2\">
+                                                        <img src=\"${m.avatar}\" class=\"w-8 h-8 rounded-full object-cover\">
+                                                        <div>
+                                                            <div class=\"text-sm font-medium\">${m.name}</div>
+                                                            <div class=\"mt-1 w-40 h-1.5 bg-rose-100 rounded-full overflow-hidden\"><div class=\"h-1.5 bg-rose-500\" style=\"width:${Math.min(100, m.attritionRisk?.score || 0)}%\"></div></div>
+                                                        </div>
+                                                    </div>
+                                                    <span class=\"text-xs font-bold text-rose-600\">${m.attritionRisk?.score || 0}%</span>
+                                                </div>
+                                            </div>
                                         `).join('') : '<p class="text-xs text-slate-500">موردی یافت نشد.</p>'}
                                     </div>
                                     <div class="card p-4 bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
