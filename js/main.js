@@ -3834,11 +3834,14 @@ const showEditUserForm = (user) => {
 // فایل: js/main.js
 // ▼▼▼ کل این تابع را با نسخه جدید و کامل زیر جایگزین کنید ▼▼▼
 
+// فایل: js/main.js
+// ▼▼▼ کل این تابع را با نسخه نهایی زیر جایگزین کنید ▼▼▼
+
 function setupProfileModalListeners(emp) {
     const container = document.getElementById('modalContent');
     if (!container) return;
 
-    // منطق فعال‌سازی تب‌های داخل مودال
+    // ۱. منطق فعال‌سازی تب‌های داخل مودال
     const tabs = container.querySelectorAll('#profile-tabs .profile-tab');
     const contents = container.querySelectorAll('.profile-tab-content');
     tabs.forEach(tab => {
@@ -3846,25 +3849,29 @@ function setupProfileModalListeners(emp) {
             e.preventDefault();
             const target = tab.getAttribute('data-tab');
             if (!target) return;
+            
             tabs.forEach(t => {
                 t.classList.remove('active', 'primary-btn');
                 if (!t.classList.contains('secondary-btn')) t.classList.add('secondary-btn');
             });
             tab.classList.add('active', 'primary-btn');
             tab.classList.remove('secondary-btn');
+
             contents.forEach(c => c.classList.add('hidden'));
-            const panel = document.getElementById(target); // اصلاح شد
+            
+            // [اصلاح کلیدی] اضافه شدن 'tab-' به ابتدای شناسه
+            const panel = document.getElementById(`tab-${target}`);
             if (panel) panel.classList.remove('hidden');
         });
     });
 
-    // شنونده مرکزی برای تمام دکمه‌های داخل مودال
+    // ۲. شنونده مرکزی برای تمام دکمه‌های داخل مودال
     container.addEventListener('click', async (e) => {
         const btn = e.target.closest('button');
         if (!btn) return;
         const id = btn.id;
 
-        // دکمه افزودن سابقه عملکرد (برای ثبت ارزیابی دستی)
+        // دکمه افزودن سابقه عملکرد
         if (id === 'add-performance-btn') {
             showPerformanceForm(emp);
             return;
@@ -3901,13 +3908,13 @@ function setupProfileModalListeners(emp) {
         }
         
         // بقیه دکمه‌های پروفایل
-        if (id === 'change-avatar-btn') { /* ... */ return; }
-        if (id === 'delete-avatar-btn') { /* ... */ return; }
         if (id === 'main-edit-employee-btn') { showEmployeeForm(emp.firestoreId); return; }
         if (id === 'edit-competencies-btn') { showEditCompetenciesForm(emp); return; }
         if (id === 'edit-personal-info-btn') { showEditPersonalInfoForm(emp); return; }
         if (id === 'add-contract-btn') { showContractForm(emp); return; }
         if (id === 'edit-career-path-btn') { showEditCareerPathForm(emp); return; }
+        if (id === 'change-avatar-btn') { handleAvatarChange(emp); return; }
+        if (id === 'delete-avatar-btn') { /* ... */ return; }
     });
 }
 // Contract editor (add/extend)
