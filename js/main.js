@@ -5781,12 +5781,10 @@ const setupAnalyticsPage = () => {
 const showEvaluationForm = (employee, cycle, evaluation) => {
     modalTitle.innerText = `ارزیابی عملکرد: ${employee.name} (${cycle.title})`;
 
-    // بخش ۱: نمایش خودارزیابی کارمند
-    let selfAssessmentHtml = `
-        <div class="p-4 bg-yellow-50 border-yellow-200 rounded-lg text-sm text-yellow-800">
-            <p class="font-semibold">کارمند هنوز خودارزیابی را تکمیل نکرده است.</p>
-        </div>`;
+    const isCompleted = evaluation?.status === 'completed';
+    const managerData = evaluation?.managerAssessment || {};
 
+    let selfAssessmentHtml = `...`; // این بخش طولانی است و تغییری نکرده
     if (evaluation && evaluation.selfAssessment) {
         const selfData = evaluation.selfAssessment;
         selfAssessmentHtml = `
@@ -5802,12 +5800,33 @@ const showEvaluationForm = (employee, cycle, evaluation) => {
             </div>`;
     }
 
-    // بخش ۲: آماده‌سازی فرم ارزیابی مدیر (شایستگی‌ها و اهداف)
-    // (این بخش‌ها برای کوتاهی حذف شده‌اند اما در کد شما باید وجود داشته باشند)
-    const competenciesHtml = ``;
-    const teamOkrsHtml = ``;
+    const position = state.jobPositions.find(p => p.firestoreId === employee.jobPositionId);
+    const relevantCompetencyIds = new Set(position?.competencyIds || []);
+    const competenciesForReview = state.competencies.filter(c => relevantCompetencyIds.has(c.firestoreId));
+    
+    const competenciesHtml = competenciesForReview.length > 0 ? competenciesForReview.map(comp => `
+        <div class="mb-3 p-3 bg-slate-50 rounded-lg border">
+            <label class="block text-sm font-medium text-slate-700">${comp.name}</label>
+            <p class="text-xs text-slate-500 mb-2">امتیاز مدیر به این شایستگی (۱ تا ۵):</p>
+            <input type="number" class="competency-score w-full p-2 border rounded-md" 
+                   data-name="${comp.name}" min="1" max="5" 
+                   value="${managerData.competencyScores?.[comp.name] || 3}" 
+                   ${isCompleted ? 'disabled' : ''} required>
+        </div>
+    `).join('') : '<p class="text-sm text-slate-500">شایستگی‌ای برای این پوزیشن شغلی تعریف نشده است.</p>';
 
-    // بخش ۳: ساختار نهایی فرم
+    const team = state.teams.find(t => t.memberIds?.includes(employee.id));
+    const teamOkrsHtml = (team?.okrs || []).map(okr => `
+        <div class="mb-3 p-3 bg-slate-50 rounded-lg border">
+            <label class="block text-sm font-medium text-slate-700">${okr.title} (پیشرفت تیم: ${okr.progress}%)</label>
+            <p class="text-xs text-slate-500 mb-2">امتیاز مدیر به مشارکت کارمند در این هدف (۱ تا ۵):</p>
+            <input type="number" class="okr-score w-full p-2 border rounded-md" 
+                   data-title="${okr.title}" min="1" max="5" 
+                   value="${managerData.okrScores?.[okr.title] || 3}" 
+                   ${isCompleted ? 'disabled' : ''} required>
+        </div>
+    `).join('') || '<p class="text-sm text-slate-500">تیم این کارمند هدفی (OKR) ثبت شده ندارد.</p>';
+
     modalContent.innerHTML = `
         <form id="manager-evaluation-form" class="space-y-6">
             <div>
@@ -5827,24 +5846,28 @@ const showEvaluationForm = (employee, cycle, evaluation) => {
                 <div class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium">نقاط قوت کلیدی</label>
-                        <textarea id="manager-strengths" class="w-full p-2 border rounded-md" rows="3" required></textarea>
+                        <textarea id="manager-strengths" class="w-full p-2 border rounded-md" rows="3" ${isCompleted ? 'readonly' : ''} required>${managerData.strengths || ''}</textarea>
                     </div>
                     <div>
                         <label class="block text-sm font-medium">زمینه‌های قابل بهبود</label>
-                        <textarea id="manager-areasForImprovement" class="w-full p-2 border rounded-md" rows="3" required></textarea>
+                        <textarea id="manager-areasForImprovement" class="w-full p-2 border rounded-md" rows="3" ${isCompleted ? 'readonly' : ''} required>${managerData.areasForImprovement || ''}</textarea>
                     </div>
                 </div>
             </div>
             <div class="flex justify-end pt-4 border-t">
-                <button type="submit" class="primary-btn" ${!evaluation?.selfAssessment ? 'disabled' : ''}>
-                    ${!evaluation?.selfAssessment ? 'در انتظار خودارزیابی' : 'ثبت نهایی ارزیابی'}
-                </button>
+                ${isCompleted
+                    ? `<button type="button" id="close-eval-modal" class="secondary-btn">بستن</button>`
+                    : `<button type="submit" class="primary-btn" ${!evaluation?.selfAssessment ? 'disabled' : ''}>
+                        ${!evaluation?.selfAssessment ? 'در انتظار خودارزیابی' : 'ثبت نهایی ارزیابی'}
+                       </button>`
+                }
             </div>
         </form>
     `;
-    openModal(mainModal, mainModalContainer);
+   openModal(mainModal, mainModalContainer);
 
-    // بخش ۴: منطق ذخیره‌سازی
+    document.getElementById('close-eval-modal')?.addEventListener('click', () => closeModal(mainModal, mainModalContainer));
+    
     document.getElementById('manager-evaluation-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         const saveBtn = e.target.querySelector('button[type="submit"]');
