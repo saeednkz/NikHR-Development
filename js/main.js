@@ -7063,9 +7063,13 @@ const showEvaluationCycleForm = (cycleId = null) => {
 // فایل: js/main.js
 // ▼▼▼ کل این تابع را با نسخه جدید و کامل زیر جایگزین کنید ▼▼▼
 
+// فایل: js/main.js
+// ▼▼▼ کل این تابع را با نسخه جدید و کامل زیر جایگزین کنید ▼▼▼
+
 const setupEvaluationPageListeners = () => {
-    const mainContentArea = document.getElementById('main-content');
-    if (!mainContentArea) return;
+    let mainContentArea = document.getElementById('main-content');
+    // [اصلاح کلیدی] قبل از افزودن شنونده جدید، تمام شنونده‌های قدیمی را پاک می‌کنیم
+    mainContentArea = clearEventListeners(mainContentArea);
 
     mainContentArea.addEventListener('click', (e) => {
         const addBtn = e.target.closest('#add-cycle-btn');
@@ -7094,9 +7098,6 @@ const setupEvaluationPageListeners = () => {
             });
             return;
         }
-
-        // [!code start]
-        // ▼▼▼ منطق حذف که خالی بود، اینجا اضافه شد ▼▼▼
         if (deleteBtn) {
             const cycleId = deleteBtn.dataset.id;
             showConfirmationModal(
@@ -7106,7 +7107,6 @@ const setupEvaluationPageListeners = () => {
                     try {
                         await deleteDoc(doc(db, `artifacts/${appId}/public/data/evaluationCycles`, cycleId));
                         showToast('دوره ارزیابی با موفقیت حذف شد.');
-                        // صفحه به صورت خودکار توسط onSnapshot آپدیت می‌شود
                     } catch (error) {
                         console.error("Error deleting evaluation cycle:", error);
                         showToast('خطا در حذف دوره ارزیابی.', 'error');
@@ -7115,7 +7115,6 @@ const setupEvaluationPageListeners = () => {
             );
             return;
         }
-        // [!code end]
     });
 };
 // [!code end]
