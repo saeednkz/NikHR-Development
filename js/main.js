@@ -6350,6 +6350,9 @@ const isProfileComplete = (employee) => {
 // فایل: js/main.js
 // ▼▼▼ این کد را به طور کامل جایگزین تابع showEmployeeForm قبلی خود کنید ▼▼▼
 
+// فایل: js/main.js
+// ▼▼▼ کل این تابع را با نسخه جدید و کامل زیر جایگزین کنید ▼▼▼
+
 const showEmployeeForm = (employeeId = null) => {
     const isEditing = employeeId !== null;
     const emp = isEditing ? state.employees.find(e => e.firestoreId === employeeId) : {};
@@ -6455,7 +6458,7 @@ const showEmployeeForm = (employeeId = null) => {
             name: name,
             id: employeeId,
             jobTitle: document.getElementById('jobTitle').value,
-            jobFamily: document.getElementById('jobFamily').value, // <-- این خط مقدار را می‌خواند
+            jobFamily: document.getElementById('jobFamily').value,
             level: document.getElementById('level').value,
             department: selectedTeam ? selectedTeam.name : '',
             status: document.getElementById('status').value,
@@ -6502,12 +6505,10 @@ const showEmployeeForm = (employeeId = null) => {
                     managedTeamId: managedTeamId
                 });
                 
-    try {
-        // ...
-        showToast("کارمند و حساب کاربری با موفقیت ایجاد شد!");
-        closeModal(mainModal, mainModalContainer);
-        renderPage('talent'); // <-- این خط را اضافه کنید
-    } catch (error) { 
+                showToast("کارمند و حساب کاربری با موفقیت ایجاد شد!");
+                closeModal(mainModal, mainModalContainer);
+                renderPage('talent');
+            } catch (error) { 
                 console.error("Cloud function error:", error);
                 showToast(`خطا: ${error.message}`, "error");
             } finally {
