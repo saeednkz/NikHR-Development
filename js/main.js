@@ -3837,6 +3837,9 @@ const showEditUserForm = (user) => {
 // فایل: js/main.js
 // ▼▼▼ کل این تابع را با نسخه نهایی زیر جایگزین کنید ▼▼▼
 
+// فایل: js/main.js
+// ▼▼▼ کل این تابع را با نسخه کامل و نهایی زیر جایگزین کنید ▼▼▼
+
 function setupProfileModalListeners(emp) {
     const container = document.getElementById('modalContent');
     if (!container) return;
@@ -3908,13 +3911,13 @@ function setupProfileModalListeners(emp) {
         }
         
         // بقیه دکمه‌های پروفایل
+        if (id === 'change-avatar-btn') { handleAvatarChange(emp); return; }
+        if (id === 'delete-avatar-btn') { /* ... */ return; }
         if (id === 'main-edit-employee-btn') { showEmployeeForm(emp.firestoreId); return; }
         if (id === 'edit-competencies-btn') { showEditCompetenciesForm(emp); return; }
         if (id === 'edit-personal-info-btn') { showEditPersonalInfoForm(emp); return; }
         if (id === 'add-contract-btn') { showContractForm(emp); return; }
         if (id === 'edit-career-path-btn') { showEditCareerPathForm(emp); return; }
-        if (id === 'change-avatar-btn') { handleAvatarChange(emp); return; }
-        if (id === 'delete-avatar-btn') { /* ... */ return; }
     });
 }
 // Contract editor (add/extend)
