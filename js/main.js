@@ -3936,7 +3936,60 @@ function showEditTeamMissionForm(team) {
 }
 // expose for legacy callers
 try { window.setupProfileModalListeners = setupProfileModalListeners; } catch {}
+// فایل: js/main.js
+// ▼▼▼ این تابع جدید را به فایل خود اضافه کنید ▼▼▼
 
+const setupTeamProfileModalListeners = (team) => {
+    const content = document.getElementById('modalContent');
+    if (!content) return;
+
+    // ۱. فعال‌سازی تب‌های داخل مودال
+    const tabs = content.querySelectorAll('.profile-tab');
+    const panes = content.querySelectorAll('.profile-tab-content');
+    tabs.forEach(tab => {
+        tab.addEventListener('click', (e) => {
+            e.preventDefault();
+            tabs.forEach(t => t.classList.remove('active'));
+            panes.forEach(p => p.classList.add('hidden'));
+            tab.classList.add('active');
+            const targetPane = content.querySelector(`#${tab.dataset.tab}`);
+            if (targetPane) targetPane.classList.remove('hidden');
+        });
+    });
+
+    // ۲. فعال‌سازی تمام دکمه‌ها با یک شنونده مرکزی
+    content.addEventListener('click', (e) => {
+        const button = e.target.closest('button');
+        if (!button) return;
+
+        // دکمه‌های هدر
+        if (button.id === 'edit-team-details-btn') showTeamForm(team.firestoreId);
+        if (button.id === 'edit-team-mission-btn') showEditTeamMissionForm(team);
+        if (button.id === 'change-team-avatar-btn') {
+            const input = document.getElementById('image-upload-input');
+            input.onchange = async () => {
+                const file = input.files[0];
+                if (!file) return;
+                try {
+                    showToast("در حال آپلود عکس...", "success", null);
+                    const storageRef = ref(storage, `teams/${team.firestoreId}/avatar_${Date.now()}`);
+                    const snapshot = await uploadBytes(storageRef, file);
+                    const url = await getDownloadURL(snapshot.ref);
+                    await updateDoc(doc(db, `artifacts/${appId}/public/data/teams`, team.firestoreId), { avatar: url });
+                    showToast('عکس تیم به‌روزرسانی شد.');
+                    viewTeamProfile(team.firestoreId);
+                } catch (err) {
+                    showToast('خطا در آپلود عکس.', 'error');
+                }
+            };
+            input.click();
+        }
+
+        // دکمه‌های داخل تب "نمای کلی"
+        if (button.id === 'edit-team-members-btn') showEditTeamMembersForm(team);
+        if (button.id === 'edit-team-okrs-btn') showEditTeamOkrsForm(team);
+    });
+};
 const viewEmployeeProfile = (employeeId) => {
     const emp = state.employees.find(e => e.firestoreId === employeeId);
     if (!emp) return;
@@ -4145,29 +4198,33 @@ const viewEmployeeProfile = (employeeId) => {
 // فایل: js/main.js
 // ▼▼▼ کل این تابع را با نسخه کامل و صحیح زیر جایگزین کنید ▼▼▼
 
+// فایل: js/main.js
+// ▼▼▼ کل این تابع را با نسخه کامل و نهایی زیر جایگزین کنید ▼▼▼
+
 const viewTeamProfile = (teamId) => {
     const team = state.teams.find(t => t.firestoreId === teamId);
     if (!team) return;
 
-    // [اصلاح ۱] خواندن مدیر از ساختار داده جدید به جای leaderId
+    // [اصلاح ۱] خواندن مدیر از ساختار داده جدید
     const manager = state.employees.find(e => e.id === team.leadership?.manager);
-
-    // [اصلاح ۲] ایجاد لیست کامل و بدون تکرار اعضا (شامل مدیر) برای شمارش صحیح
+    
+    // [اصلاح ۲] ایجاد لیست کامل و بدون تکرار اعضا (شامل مدیر)
     const allPersonnelIds = new Set(team.memberIds || []);
     if (team.leadership?.manager) {
         allPersonnelIds.add(team.leadership.manager);
     }
     const members = Array.from(allPersonnelIds)
         .map(id => state.employees.find(e => e.id === id))
-        .filter(Boolean); // حذف اعضای null (اگر کارمندی حذف شده باشد)
+        .filter(Boolean); // حذف اعضای null
 
     // [اصلاح ۳] استفاده از آواتار پیش‌فرض برای جلوگیری از خطای 404
     const avatarUrl = team.avatar || 'logo.png';
 
     const basicAnalysis = generateTeamSmartAnalysis(team);
     const advancedAnalysis = analyzeTeamData(team, members);
+
     const highRiskNames = advancedAnalysis.highRiskMembers.map(e => e.name).join('، ');
-    if(highRiskNames) {
+    if (highRiskNames) {
         basicAnalysis.risk = { text: `اعضای پرریسک: <strong>${highRiskNames}</strong>`, icon: 'shield-alert', color: 'text-red-600' };
     }
 
@@ -4233,16 +4290,21 @@ const viewTeamProfile = (teamId) => {
             </div>
             <div class="lg:col-span-2 space-y-6">
                 <div class="bg-white rounded-xl shadow-md">
-                    <div class="border-b border-gray-200"><nav id="profile-tabs" class="flex -mb-px overflow-x-auto"><button data-tab="team-overview" class="profile-tab active shrink-0">نمای کلی</button><button data-tab="team-health" class="profile-tab shrink-0">سلامت تیم</button><button data-tab="team-talent" class="profile-tab shrink-0">ماتریس استعداد</button></nav></div>
+                    <div class="border-b border-gray-200">
+                        <nav id="profile-tabs" class="flex -mb-px overflow-x-auto">
+                            <button data-tab="tab-team-overview" class="profile-tab active shrink-0 px-4 py-2 text-sm font-medium border-b-2 border-indigo-500 text-indigo-600">نمای کلی</button>
+                            <button data-tab="tab-team-health" class="profile-tab shrink-0 px-4 py-2 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700">سلامت تیم</button>
+                        </nav>
+                    </div>
                     <div class="p-4">
-                        <div id="tab-team-overview" class="profile-tab-content active">
+                        <div id="tab-team-overview" class="profile-tab-content">
                             <div class="space-y-4">
                                 <div class="card p-4 bg-white rounded-xl border border-slate-200">
                                     <div class="flex justify-between items-center mb-3">
                                         <h4 class="font-semibold text-gray-700">اعضای تیم (${members.length} نفر)</h4>
-                                        <button id="edit-team-members-btn" class="text-sm bg-blue-600 text-white py-1 px-3 rounded-md hover:bg-blue-700">ویرایش</button>
+                                        ${canEdit() ? `<button id="edit-team-members-btn" class="text-sm bg-blue-600 text-white py-1 px-3 rounded-md hover:bg-blue-700">ویرایش</button>`: ''}
                                     </div>
-                                    <div class="flex flex-wrap gap-4">${members.map(m => `<div class="text-center" title="${m.name}"><div class="w-12 h-12 rounded-full mx-auto overflow-hidden bg-gray-200"><img src="${m.avatar}" class="w-full h-full object-cover"></div><p class="text-xs mt-1 truncate w-16">${m.name}</p></div>`).join('')}</div>
+                                    <div class="flex flex-wrap gap-4">${members.map(m => `<div class="text-center" title="${m.name}"><img src="${m.avatar}" class="w-12 h-12 rounded-full mx-auto object-cover"><p class="text-xs mt-1 truncate w-16">${m.name}</p></div>`).join('')}</div>
                                 </div>
                                 <div class="card p-4 bg-white rounded-xl border border-slate-200">
                                     <div class="flex justify-between items-center mb-3">
@@ -4253,17 +4315,17 @@ const viewTeamProfile = (teamId) => {
                                 </div>
                             </div>
                         </div>
-                        <div id="tab-team-health" class="profile-tab-content">${renderTeamHealthMetrics(team)}</div>
-                        <div id="tab-team-talent" class="profile-tab-content"><div class="card p-6 bg-white rounded-xl border border-slate-200"><h4 class="font-semibold mb-3 text-gray-700">توزیع استعداد در تیم</h4><div class="grid grid-cols-3 gap-1 text-center text-xs border-t-2 border-l-2 border-gray-300 mt-4 bg-white">${ (typeof generateTeamNineBoxGrid==='function' ? generateTeamNineBoxGrid(members) : '') }</div></div></div>
+                        <div id="tab-team-health" class="profile-tab-content hidden">${renderTeamHealthMetrics(team)}</div>
                     </div>
                 </div>
             </div>
         </div>
     `;
     openModal(mainModal, mainModalContainer);
-    if (typeof window.setupTeamProfileModalListeners === 'function') {
-        setupTeamProfileModalListeners(team);
-    }
+    lucide.createIcons();
+    
+    modalContent = clearEventListeners(document.getElementById('modalContent'));
+    setupTeamProfileModalListeners(team);
 };
 
         // --- NAVIGATION & ROUTING ---
