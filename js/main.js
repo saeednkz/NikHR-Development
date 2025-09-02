@@ -4353,7 +4353,7 @@ const renderPage = (pageName) => {
         }
  if (pageName === 'evaluation') { // [!] این if را اضافه کنید
     if (isAdmin()) {
-        setupEvaluationPageListeners();
+      
     }
 }
         lucide.createIcons();
@@ -6922,81 +6922,138 @@ const showTeamDirectoryModal = (team) => {
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید و کامل جایگزین کنید
 
+// فایل: js/main.js
+// ▼▼▼ کل این تابع را با نسخه جدید و یکپارچه زیر جایگزین کنید ▼▼▼
+
 const setupEventListeners = () => {
-    // بخش ۱: مدیریت رویدادهای مودال‌ها (اصلاح شده و کامل)
-    mainModal.addEventListener('click', (e) => {
-        // اگر روی پس‌زمینه خاکستری یا دکمه بستن (×) کلیک شد، مودال را ببند
+    // بخش ۱: مدیریت رویدادهای مودال‌ها (که فقط یک بار نیاز به تعریف دارند)
+    const mainModal = document.getElementById('mainModal');
+    const mainModalContainer = mainModal?.querySelector('div');
+    const confirmModal = document.getElementById('confirmModal');
+    const confirmModalContainer = confirmModal?.querySelector('div');
+    let confirmCallback = () => {};
+
+    mainModal?.addEventListener('click', (e) => {
         if (e.target === mainModal || e.target.closest('#closeModal')) {
             closeModal(mainModal, mainModalContainer);
         }
     });
-    document.getElementById('confirmCancel').addEventListener('click', () => closeModal(confirmModal, confirmModalContainer)); 
-    document.getElementById('confirmAccept').addEventListener('click', () => { confirmCallback(); closeModal(confirmModal, confirmModalContainer); });
+    document.getElementById('confirmCancel')?.addEventListener('click', () => closeModal(confirmModal, confirmModalContainer));
+    document.getElementById('confirmAccept')?.addEventListener('click', () => { confirmCallback(); closeModal(confirmModal, confirmModalContainer); });
 
-    // بخش ۲: منوی موبایل
-    const menuBtn = document.getElementById('menu-btn'); 
+    // بخش ۲: منوی موبایل (که فقط یک بار نیاز به تعریف دارد)
+    const menuBtn = document.getElementById('menu-btn');
     if (menuBtn) {
-        const sidebar = document.getElementById('sidebar'); 
-        const overlay = document.getElementById('sidebar-overlay'); 
-        const toggleMenu = () => { 
-            sidebar.classList.toggle('translate-x-full'); 
-            overlay.classList.toggle('hidden'); 
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        const toggleMenu = () => {
+            sidebar.classList.toggle('translate-x-full');
+            overlay.classList.toggle('hidden');
         };
         menuBtn.addEventListener('click', toggleMenu);
         overlay.addEventListener('click', toggleMenu);
     }
 
     // بخش ۳: ناوبری (منوی کناری ادمین)
-// کد اصلاح شده برای main.js
-
-const handleNavClick = (e) => {
-    const link = e.target.closest('a');
-    // اگر لینکی وجود نداشت یا لینک مربوط به دکمه خروج بود، ادامه نده
-    if (!link || link.id === 'logout-btn') {
-        return;
-    }
-
-    if (link.classList.contains('sidebar-item') || link.classList.contains('sidebar-logo')) {
-        e.preventDefault();
-        const pageName = link.getAttribute('href').substring(1);
-        navigateTo(pageName);
-        // بستن منوی موبایل بعد از کلیک
-        if (window.innerWidth < 768) {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('sidebar-overlay');
-            if (sidebar) sidebar.classList.add('translate-x-full');
-            if (overlay) overlay.classList.add('hidden');
+    const handleNavClick = (e) => {
+        const link = e.target.closest('a');
+        if (!link || link.id === 'logout-btn') return;
+        if (link.classList.contains('sidebar-item') || link.classList.contains('sidebar-logo')) {
+            e.preventDefault();
+            const pageName = link.getAttribute('href').substring(1);
+            navigateTo(pageName);
+            if (window.innerWidth < 768) {
+                document.getElementById('sidebar')?.classList.add('translate-x-full');
+                document.getElementById('sidebar-overlay')?.classList.add('hidden');
+            }
         }
-    }
-};
+    };
     document.getElementById('sidebar')?.addEventListener('click', handleNavClick);
     document.querySelector('header .sidebar-logo')?.addEventListener('click', handleNavClick);
 
-    // بخش ۴: نوتیفیکیشن (کدی که شما داشتید)
+    // بخش ۴: نوتیفیکیشن
     const bellBtn = document.getElementById('notification-bell-btn');
     const dropdown = document.getElementById('notification-dropdown');
     if (bellBtn && dropdown) {
-        bellBtn.addEventListener('click', () => {
-            dropdown.classList.toggle('hidden');
-        });
-        // بستن منو با کلیک بیرون از آن
+        bellBtn.addEventListener('click', () => dropdown.classList.toggle('hidden'));
         document.addEventListener('click', (e) => {
             if (!bellBtn.parentElement.contains(e.target)) {
                 dropdown.classList.add('hidden');
             }
         });
-        // مدیریت کلیک روی آیتم‌های نوتیفیکیشن
         dropdown.addEventListener('click', (e) => {
             const item = e.target.closest('.notification-item');
             if (item) {
-                state.requestFilter = item.dataset.filter; // 'mine'
+                state.requestFilter = item.dataset.filter;
                 navigateTo(item.getAttribute('href').substring(1));
                 dropdown.classList.add('hidden');
             }
         });
     }
 
-    // بخش ۵: روتر اصلی برنامه
+    // [!code start]
+    // ▼▼▼ بخش ۵: شنونده واحد و مرکزی برای تمام کلیک‌های داخل محتوای اصلی ▼▼▼
+    const mainContentArea = document.getElementById('main-content');
+    if (mainContentArea) {
+        mainContentArea.addEventListener('click', (e) => {
+            const target = e.target;
+            
+            // --- رویدادهای صفحه "استعدادها" ---
+            if (target.closest('.view-employee-profile-btn')) viewEmployeeProfile(target.closest('.view-employee-profile-btn').dataset.employeeId);
+            if (target.closest('.edit-employee-btn')) showEmployeeForm(target.closest('.edit-employee-btn').dataset.employeeId);
+            if (target.closest('.delete-employee-btn')) {
+                const btn = target.closest('.delete-employee-btn');
+                showConfirmationModal("حذف کارمند", "آیا مطمئن هستید؟", async () => {
+                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/employees`, btn.dataset.employeeId));
+                    showToast("کارمند حذف شد.");
+                });
+            }
+            if (target.closest('.pagination-btn') && !target.closest('.pagination-btn').disabled) {
+                if (state.currentPage === 'talent') {
+                    state.currentPageTalent = Number(target.closest('.pagination-btn').dataset.page);
+                    renderEmployeeTable();
+                }
+                // ... (می‌توانید برای صفحات دیگر هم اضافه کنید)
+            }
+
+            // --- رویدادهای صفحه "سازمان" ---
+            if (target.closest('#add-team-btn') || target.closest('#add-team-btn-empty')) showTeamForm();
+            if (target.closest('.view-team-profile-btn')) viewTeamProfile(target.closest('.view-team-profile-btn').dataset.teamId);
+            if (target.closest('.delete-team-btn')) {
+                const btn = target.closest('.delete-team-btn');
+                showConfirmationModal("حذف تیم", "آیا از حذف این تیم مطمئن هستید؟", async () => {
+                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/teams`, btn.dataset.teamId));
+                    showToast("تیم حذف شد.");
+                });
+            }
+            
+            // --- رویدادهای صفحه "مدیریت ارزیابی" ---
+            if (target.closest('#add-cycle-btn')) showEvaluationCycleForm();
+            if (target.closest('.edit-cycle-btn')) showEvaluationCycleForm(target.closest('.edit-cycle-btn').dataset.id);
+            if (target.closest('.delete-cycle-btn')) {
+                const btn = target.closest('.delete-cycle-btn');
+                showConfirmationModal('حذف دوره ارزیابی', 'آیا مطمئن هستید؟', async () => {
+                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/evaluationCycles`, btn.dataset.id));
+                    showToast('دوره ارزیابی حذف شد.');
+                });
+            }
+            if (target.closest('.start-cycle-btn')) {
+                const btn = target.closest('.start-cycle-btn');
+                showConfirmationModal('شروع دوره ارزیابی', 'ارزیابی برای تمام کارمندان فعال ایجاد می‌شود. آیا ادامه می‌دهید؟', async () => {
+                    try {
+                        const startCycleFunction = httpsCallable(functions, 'startEvaluationCycle');
+                        await startCycleFunction({ cycleId: btn.dataset.id });
+                        showToast("دوره ارزیابی با موفقیت آغاز شد.");
+                    } catch (error) {
+                        showToast(`خطا: ${error.message}`, "error");
+                    }
+                });
+            }
+        });
+    }
+    // [!code end]
+
+    // بخش ۶: روتر اصلی برنامه
     window.addEventListener('hashchange', router);
 };
 // فایل: js/main.js - اضافه کردن توابع جدید
@@ -7066,57 +7123,7 @@ const showEvaluationCycleForm = (cycleId = null) => {
 // فایل: js/main.js
 // ▼▼▼ کل این تابع را با نسخه جدید و کامل زیر جایگزین کنید ▼▼▼
 
-const setupEvaluationPageListeners = () => {
-    let mainContentArea = document.getElementById('main-content');
-    // [اصلاح کلیدی] قبل از افزودن شنونده جدید، تمام شنونده‌های قدیمی را پاک می‌کنیم
-    mainContentArea = clearEventListeners(mainContentArea);
 
-    mainContentArea.addEventListener('click', (e) => {
-        const addBtn = e.target.closest('#add-cycle-btn');
-        const editBtn = e.target.closest('.edit-cycle-btn');
-        const deleteBtn = e.target.closest('.delete-cycle-btn');
-        const startBtn = e.target.closest('.start-cycle-btn');
-
-        if (addBtn) {
-            showEvaluationCycleForm();
-            return;
-        }
-        if (editBtn) {
-            showEvaluationCycleForm(editBtn.dataset.id);
-            return;
-        }
-        if (startBtn) {
-            const cycleId = startBtn.dataset.id;
-            showConfirmationModal('شروع دوره ارزیابی', 'با شروع دوره، ارزیابی برای تمام کارمندان فعال ایجاد می‌شود. آیا ادامه می‌دهید؟', async () => {
-                try {
-                    const startCycleFunction = httpsCallable(functions, 'startEvaluationCycle');
-                    const result = await startCycleFunction({ cycleId: cycleId });
-                    showToast(result.data.message, "success");
-                } catch (error) {
-                    showToast(`خطا در فعال‌سازی دوره: ${error.message}`, "error");
-                }
-            });
-            return;
-        }
-        if (deleteBtn) {
-            const cycleId = deleteBtn.dataset.id;
-            showConfirmationModal(
-                'حذف دوره ارزیابی',
-                'آیا از حذف این دوره مطمئن هستید؟ این عمل غیرقابل بازگشت است.',
-                async () => {
-                    try {
-                        await deleteDoc(doc(db, `artifacts/${appId}/public/data/evaluationCycles`, cycleId));
-                        showToast('دوره ارزیابی با موفقیت حذف شد.');
-                    } catch (error) {
-                        console.error("Error deleting evaluation cycle:", error);
-                        showToast('خطا در حذف دوره ارزیابی.', 'error');
-                    }
-                }
-            );
-            return;
-        }
-    });
-};
 // [!code end]
 const setupDocumentsPageListeners = () => {
     const main = document.getElementById('main-content');
