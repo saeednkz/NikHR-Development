@@ -1534,6 +1534,19 @@ const tableRows = teamMembers.map(member => {
         contentContainer.innerHTML = `
             <section class="rounded-2xl overflow-hidden border mb-6" style="background:linear-gradient(90deg,#10B981,#6B69D6)"><div class="p-6 sm:p-8"><h1 class="text-2xl sm:text-3xl font-extrabولد text-white">مدیریت تیم: ${myTeam.name}</h1><p class="text-white/90 text-xs mt-1">وضعیت ارزیابی اعضا در دوره فعال</p></div></section>
             ${summaryCards}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div class="card p-4">
+                    <h3 class="font-semibold text-slate-800 mb-3">پیشرفت کلی ارزیابی</h3>
+                    <div class="flex items-center gap-4">
+                        <div class="w-36 h-36"><canvas id="teamProgressChart"></canvas></div>
+                        <div class="text-xs text-slate-600 space-y-1">
+                            <div><span class="inline-block w-2 h-2 rounded-full align-middle" style="background:#10B981"></span><span class="mr-2">تکمیل شده: ${summary.completed}</span></div>
+                            <div><span class="inline-block w-2 h-2 rounded-full align-middle" style="background:#3B82F6"></span><span class="mr-2">در جریان: ${summary.pendingSelf + summary.pendingManager}</span></div>
+                            <div><span class="inline-block w-2 h-2 rounded-full align-middle" style="background:#94A3B8"></span><span class="mr-2">شروع نشده: ${summary.notStarted}</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div class="card p-0">
                 <div class="p-4 border-b"><h3 class="font-semibold">وضعیت ارزیابی اعضا در دوره: ${activeCycle.title}</h3></div>
                 <div class="overflow-x-auto">
@@ -1544,6 +1557,13 @@ const tableRows = teamMembers.map(member => {
                 </div>
             </div>
         `;
+        try {
+            const ctx = document.getElementById('teamProgressChart')?.getContext('2d');
+            if (ctx) {
+                const data = [summary.completed, summary.pendingSelf + summary.pendingManager, summary.notStarted];
+                new Chart(ctx, { type: 'doughnut', data: { labels: ['تکمیل شده','در جریان','شروع نشده'], datasets: [{ data, backgroundColor: ['#10B981','#3B82F6','#94A3B8'], borderWidth: 0 }] }, options: { responsive: true, cutout: '65%', plugins: { legend: { display: false } } } });
+            }
+        } catch (err) { console.warn('teamProgressChart error', err); }
     }
     // [!code end]
     // [!code start]
