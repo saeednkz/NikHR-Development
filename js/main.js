@@ -423,7 +423,7 @@ function renderBirthdaysWidget(currentEmployee) {
                 daysUntil: Math.ceil((nextBirthday - today) / (1000 * 60 * 60 * 24))
             };
         })
-        .filter(emp => emp.daysUntil >= 0 && emp.daysUntil <= 3)
+        .filter(emp => emp.daysUntil >= 0 && emp.daysUntil <= 30)
         .sort((a, b) => a.daysUntil - b.daysUntil);
 
     if (upcomingBirthdays.length === 0) return '';
@@ -482,32 +482,17 @@ function renderMyBirthdayWishesWidget(employee) {
     `).join('');
 
     return `
-        <div class="relative overflow-hidden rounded-2xl border border-violet-200 shadow-2xl">
-            <div class="absolute inset-0 bg-gradient-to-br from-violet-600 via-indigo-600 to-indigo-700"></div>
-            <div class="absolute -left-14 -top-16 w-48 h-48 rounded-full bg-white/10 blur-2xl"></div>
-            <div class="absolute -right-10 -bottom-20 w-64 h-64 rounded-full bg-indigo-400/20 blur-3xl"></div>
-            <div class="relative z-10 p-6 sm:p-8 text-white">
-                <div class="flex items-start gap-4">
-                    <div class="shrink-0 w-12 h-12 rounded-xl bg-white/15 backdrop-blur flex items-center justify-center ring-2 ring-white/20">
-                        <i data-lucide="cake" class="w-6 h-6 text-white"></i>
+        <div class="card p-6 bg-gradient-to-br from-indigo-500 to-purple-600 text-white relative overflow-hidden">
+            <div class="absolute -right-10 -top-10 w-32 h-32 text-white/10"><i data-lucide="party-popper" class="w-32 h-32"></i></div>
+            <div class="relative z-10">
+                <h3 class="text-2xl font-bold">تولدت مبارک، ${employee.name}!</h3>
+                <p class="mt-2 text-indigo-200">تیم NikHR بهترین آرزوها را برای شما در سال جدید زندگی‌تان دارد.</p>
+                ${myWishes.length > 0 ? `
+                    <div class="mt-4 border-t border-white/20 pt-3">
+                        <h4 class="font-semibold text-sm">پیام‌های دریافتی:</h4>
+                        ${wishesHtml}
                     </div>
-                    <div class="flex-1">
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-bold bg-white/15 ring-1 ring-white/20">
-                                <i data-lucide="party-popper" class="w-3.5 h-3.5"></i>
-                                <span>روز ویژه شما</span>
-                            </span>
-                        </div>
-                        <h3 class="mt-2 text-2xl sm:text-3xl font-extrabold tracking-tight">تولدت مبارک، ${employee.name}!</h3>
-                        <p class="mt-2 text-sm sm:text-base text-violet-100/90">برای شما سالی پر از شادی، سلامتی و موفقیت آرزو می‌کنیم.</p>
-                        ${myWishes.length > 0 ? `
-                            <div class="mt-5 rounded-xl border border-white/15 bg-white/10 backdrop-blur-sm p-3 sm:p-4">
-                                <h4 class="font-bold text-sm text-white/95">پیام‌های دریافت‌شده</h4>
-                                ${wishesHtml}
-                            </div>
-                        ` : ''}
-                    </div>
-                </div>
+                ` : ''}
             </div>
         </div>
     `;
@@ -650,92 +635,20 @@ const performanceHistoryHtml = (employee.performanceHistory || [])
         return `<div id="info-bubble" data-info-id="${latestInfo.firestoreId}" class="glass rounded-2xl p-4 flex items-start gap-3 fade-up"><i data-lucide="megaphone" class="w-5 h-5" style="color:#6B69D6"></i><div class="flex-1"><div class="text-sm font-bold text-slate-800">اطلاعیه</div><div class="text-xs text-slate-700 mt-1">${latestInfo.content || latestInfo.title || ''}</div></div><button id="dismiss-info" class="text-slate-500 hover:text-slate-800"><i data-lucide="x" class="w-5 h-5"></i></button></div>`;
     })();
 
-    const completion = computeProfileCompletion(employee);
-    const completionRing = renderProgressRing(completion, 112, 10);
-
     contentContainer.innerHTML = `
         ${infoBanner}
         ${renderMyBirthdayWishesWidget(employee)}
-        <section class="bg-white rounded-2xl border border-slate-200 p-6 relative overflow-hidden ${renderMyBirthdayWishesWidget(employee) ? 'mt-8' : ''}">
-            <div class="absolute -left-20 -top-12 w-56 h-56 rounded-full" style="background:rgba(107,105,214,.08)"></div>
-            <div class="relative z-10 flex items-center gap-5">
-                <div class="w-16 h-16 rounded-full overflow-hidden ring-2 ring-indigo-100 bg-slate-100"><img src="${employee.avatar}" alt="${employee.name}" class="w-full h-full object-cover"></div>
-                <div class="min-w-0">
-                    <div class="text-lg font-extrabold text-slate-800 truncate">${employee.name}</div>
-                    <div class="text-sm text-slate-500 truncate">${employee.jobTitle || 'بدون عنوان شغلی'}</div>
-                    <div class="hidden sm:flex items-center gap-2 mt-1 text-xs text-slate-600">
-                        <span>تیم:</span><span class="font-semibold">${(state.teams.find(t=>t.memberIds?.includes(employee.id))?.name) || '-'}</span>
-                        <span class="opacity-60">|</span>
-                        <span>مدیر:</span><span class="font-semibold">${manager?.name || '-'}</span>
-                    </div>
-                </div>
-                <div class="ml-auto hidden md:block">${completionRing}</div>
-            </div>
-            <div class="mt-4 flex flex-wrap gap-2">
-                <button class="qa-evaluations primary-btn text-xs py-2 px-3 inline-flex items-center gap-2"><i data-lucide="clipboard-check" class="w-4 h-4"></i><span>خودارزیابی</span></button>
-                <button class="qa-request secondary-btn text-xs py-2 px-3 inline-flex items-center gap-2"><i data-lucide="send" class="w-4 h-4"></i><span>ثبت درخواست</span></button>
-                <button class="qa-edit-profile secondary-btn text-xs py-2 px-3 inline-flex items-center gap-2"><i data-lucide="user-cog" class="w-4 h-4"></i><span>ویرایش پروفایل</span></button>
-                <button class="qa-docs secondary-btn text-xs py-2 px-3 inline-flex items-center gap-2"><i data-lucide="folder-kanban" class="w-4 h-4"></i><span>دانش‌نامه</span></button>
-            </div>
-        </section>
-
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 ${renderMyBirthdayWishesWidget(employee) ? 'mt-8' : ''}">
             <div class="lg:col-span-2 space-y-6">
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div class="glass rounded-2xl p-4 flex items-center justify-between fade-up"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full flex items-center justify-center" style="background:rgba(107,105,214,.12)"><i data-lucide="send" style="color:#6B69D6" class="w-5 h-5"></i></div><div><div class="text-xl font-extrabold text-slate-800">${requestsOpen}</div><div class="text-xs text-slate-500">درخواست‌های باز</div></div></div></div>
                     <div class="glass rounded-2xl p-4 flex items-center justify-between fade-up"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full flex items-center justify-center" style="background:rgba(107,105,214,.12)"><i data-lucide="mail" style="color:#6B69D6" class="w-5 h-5"></i></div><div><div class="text-xl font-extrabold text-slate-800">${unreadCount}</div><div class="text-xs text-slate-500">پیام‌های نخوانده</div></div></div></div>
                     <div class="glass rounded-2xl p-4 flex items-center justify-between fade-up"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full flex items-center justify-center" style="background:rgba(107,105,214,.12)"><i data-lucide="target" style="color:#6B69D6" class="w-5 h-5"></i></div><div><div class="text-xl font-extrabold text-slate-800">${okrAvg}%</div><div class="text-xs text-slate-500">میانگین OKR تیم</div></div></div></div>
                 </div>
-
+                
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                    <div class="flex items-center justify-between mb-3">
-                        <h3 class="font-semibold text-slate-800 flex items-center gap-2">
-                            <i data-lucide="sparkles" class="w-5 h-5 text-violet-500"></i>
-                            هایلایت لحظه‌های تیم
-                        </h3>
-                        <button id="view-all-moments-btn" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800">
-                            مشاهده همه
-                        </button>
-                    </div>
-                    <div class="space-y-3">
-                        ${(() => {
-                            const myTeam = state.teams.find(t=> t.memberIds?.includes(employee.id));
-                            const teamUids = (myTeam?.memberIds||[])
-                                .map(mid => (state.employees||[]).find(e=> e.id===mid)?.uid)
-                                .filter(Boolean);
-                            const items = (state.moments||[])
-                                .filter(m => teamUids.includes(m.ownerUid))
-                                .sort((a,b)=> new Date(b.createdAt?.toDate?.()||0) - new Date(a.createdAt?.toDate?.()||0))
-                                .slice(0,4);
-                            if (!items.length) return '<div class="text-xs text-slate-500">هنوز لحظه‌ای از تیم شما ثبت نشده است.</div>';
-                            return items.map(m => {
-                                const owner = (state.employees||[]).find(e=> e.uid===m.ownerUid) || {};
-                                const previewText = (m.text||'').length>100 ? (m.text||'').slice(0,100)+'…' : (m.text||'');
-                                const reactionsCount = (m.reactions||[]).length;
-                                return `
-                                    <div class="p-3 hover:bg-slate-50 rounded-lg border border-slate-100 flex items-start gap-3">
-                                        <img src="${owner.avatar || 'icons/icon-128x128.png'}" class="w-9 h-9 rounded-full object-cover"/>
-                                        <div class="flex-1 min-w-0">
-                                            <div class="text-xs font-bold text-slate-800 truncate">${owner.name || m.ownerName || 'کاربر'}</div>
-                                            <div class="text-[11px] text-slate-500">${toPersianDate(m.createdAt)}</div>
-                                            ${m.imageUrl ? `<img src="${m.imageUrl}" class="mt-2 w-full rounded-lg border bg-slate-100 max-h-32 object-cover"/>` : (previewText ? `<div class="text-sm text-slate-700 mt-2">${previewText}</div>` : '')}
-                                            <div class="mt-2 inline-flex items-center gap-1 text-[11px] text-slate-500">
-                                                <i data-lucide="smile" class="w-3.5 h-3.5"></i>
-                                                <span>${reactionsCount}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                `;
-                            }).join('');
-                        })()}
-                    </div>
-                </div>
-
-                <div class="card p-6">
-                    <div class="flex items-center justify-between mb-3">
-                        <h3 class="font-semibold text-slate-800 flex items-center gap-2"><i data-lucide="list-checks" class="w-5 h-5 text-emerald-500"></i>وظایف من</h3>
-                    </div>
-                    <div id="my-tasks-list"></div>
+                    <div class="flex items-center gap-4 mb-4"><div class="w-16 h-16 rounded-full overflow-hidden bg-slate-100 ring-2 ring-indigo-100"><img src="${employee.avatar}" alt="${employee.name}" class="w-full h-full object-cover"></div><div><div class="text-lg font-bold text-slate-800">${employee.name}</div><div class="text-sm text-slate-500">${employee.jobTitle || 'بدون عنوان شغلی'}</div></div><div class="ml-auto hidden md:flex items-center gap-3"><span class="text-xs text-slate-500">تیم:</span><span class="text-xs font-semibold text-slate-700">${(state.teams.find(t=>t.memberIds?.includes(employee.id))?.name) || '-'}</span><span class="text-xs text-slate-500">مدیر:</span><span class="text-xs font-semibold text-slate-700">${manager?.name || '-'}</span></div></div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm"><div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500 mb-1">ایمیل</div><div class="font-medium text-slate-700">${employee.personalInfo?.email || '-'}</div></div><div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500 mb-1">شماره موبایل</div><div class="font-medium text-slate-700">${employee.personalInfo?.phone || '-'}</div></div><div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500 mb-1">تیم</div><div class="font-medium text-slate-700">${(state.teams.find(t=>t.memberIds?.includes(employee.id))?.name) || '-'}</div></div><div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500 mb-1">مدیر</div><div class="font-medium text-slate-700">${manager?.name || '-'}</div></div></div>
                 </div>
 
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
@@ -762,7 +675,7 @@ const performanceHistoryHtml = (employee.performanceHistory || [])
                 ${renderBirthdaysWidget(employee) || `
                 <div class=\"card p-0\">
                     <div class=\"card-header flex items-center gap-2\"><i data-lucide=\"cake\" class=\"w-5 h-5 text-pink-500\"></i><h3 class=\"font-semibold text-slate-800\">تولدهای نزدیک</h3></div>
-                    <div class=\"card-content p-4 text-xs text-slate-500\">موردی در ۳ روز آینده نیست.</div>
+                    <div class=\"card-content p-4 text-xs text-slate-500\">موردی در ۳۰ روز آینده نیست.</div>
                 </div>`}
                 <div class="card p-0">
                     <div class="card-header flex items-center gap-2"><i data-lucide="send" class="w-5 h-5 text-indigo-500"></i><h3 class="font-semibold text-slate-800">درخواست‌های اخیر</h3></div>
@@ -824,7 +737,6 @@ const performanceHistoryHtml = (employee.performanceHistory || [])
             });
         }
     } catch (err) { console.error('Performance chart error', err); }
-    try { renderMyTasks(employee); } catch {}
     
     function renderEmployeeSidebarMessages(emp) { /* ... */ }
     function renderEmployeeSidebarTeam(emp) { /* ... */ }
@@ -992,38 +904,21 @@ else if (pageName === 'documents') {
     // --- لحظه‌های نیک‌اندیشی ---
     else if (pageName === 'moments') {
         const composer = `
-            <div class="bg-white rounded-2xl border border-slate-200 p-4 mb-4 shadow-sm">
+            <div class="glass rounded-2xl p-4 mb-4">
                 <div class="flex items-start gap-3">
-                    <img src="${employee.avatar}" class="w-12 h-12 rounded-full ring-2 ring-indigo-100 object-cover"/>
+                    <img src="${employee.avatar}" class="w-10 h-10 rounded-full object-cover"/>
                     <div class="flex-1">
-                        <div class="rounded-xl border border-slate-200 focus-within:ring-2 focus-within:ring-indigo-500">
-                            <textarea id="moment-text" class="w-full p-3 outline-none rounded-xl resize-none" rows="3" maxlength="280" placeholder="چه خبری می‌خواهی به اشتراک بگذاری؟"></textarea>
+                        <textarea id="moment-text" class="w-full p-3 border rounded-xl" maxlength="280" placeholder="چه خبر خوب یا فکری می‌خواهی به اشتراک بگذاری؟ (حداکثر ۲۸۰ کاراکتر)"></textarea>
+                        <div class="flex items-center justify-between mt-2">
+                            <input type="file" id="moment-image" accept="image/png,image/jpeg" class="text-xs"/>
+                            <button id="moment-post-btn" class="primary-btn text-xs">ارسال</button>
                         </div>
-                        <div id="moment-image-preview" class="hidden mt-3 relative">
-                            <img id="moment-image-preview-img" class="max-h-64 rounded-xl border bg-slate-50 w-full object-cover"/>
-                            <button id="moment-image-remove" class="absolute top-2 left-2 bg-white/90 text-slate-700 hover:text-red-600 p-1.5 rounded-full border shadow" title="حذف تصویر">
-                                <i data-lucide="x" class="w-4 h-4"></i>
-                            </button>
-                        </div>
-                        <div class="mt-3 flex items-center justify-between">
-                            <div class="flex items-center gap-2">
-                                <label for="moment-image" class="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900 text-xs cursor-pointer bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-full">
-                                    <i data-lucide="image" class="w-4 h-4"></i>
-                                    <span>عکس</span>
-                                </label>
-                                <input type="file" id="moment-image" accept="image/png,image/jpeg" class="hidden"/>
-                            </div>
-                            <div class="flex items-center gap-3">
-                                <span id="moment-char-count" class="text-[11px] text-slate-500">0/280</span>
-                                <button id="moment-post-btn" class="primary-btn text-xs opacity-50 cursor-not-allowed" disabled>ارسال</button>
-                            </div>
-                        </div>
-                        <p class="text-[11px] text-slate-400 mt-2">فقط متن یا فقط عکس؛ همزمان هر دو مجاز نیست.</p>
+                        <p class="text-[11px] text-slate-500 mt-1">فقط متن یا فقط عکس؛ همزمان هر دو مجاز نیست.</p>
                     </div>
                 </div>
             </div>`;
 
-        const listContainer = `<div id="moments-list" class="space-y-4"></div><div id="moments-sentinel" class="h-8"></div>`;
+        const listContainer = `<div id="moments-list" class="space-y-3"></div><div id="moments-sentinel" class="h-8"></div>`;
         contentContainer.innerHTML = `
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 page-header mb-4">
                 <div>
@@ -1061,47 +956,28 @@ window.renderMomentsList = () => {
         const canDelete = isOwner || isAdmin(); // تابع isAdmin از auth.js می‌آید
         // ▲▲▲ پایان بخش جدید ▲▲▲
 
-        const commentsCount = Number(m.commentsCount || 0);
         return `
             <div class="bg-white rounded-2xl border border-slate-200 p-4 relative">
-                <div class="flex items-center justify-between mb-3">
-                    <div class="flex items-center gap-3">
-                        <img src="${owner.avatar || 'icons/icon-128x128.png'}" class="w-10 h-10 rounded-full object-cover"/>
-                        <div>
-                            <div class="font-bold text-slate-800 text-sm">${owner.name || m.ownerName || 'کاربر'}</div>
-                            <div class="text-[11px] text-slate-500">${toPersianDate(m.createdAt)}</div>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-1">
-                        ${canDelete ? `
-                            <button class="moment-delete-btn p-1.5 text-slate-400 hover:text-red-500 rounded-full hover:bg-red-50 transition-colors" data-id="${m.firestoreId}" title="حذف">
-                                <i data-lucide="trash-2" class="w-4 h-4"></i>
-                            </button>
-                        ` : ''}
-                        <button class="p-1.5 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-50" title="گزینه‌ها"><i data-lucide="more-horizontal" class="w-4 h-4"></i></button>
+                
+                ${canDelete ? `
+                    <button class="moment-delete-btn absolute top-3 left-3 p-1.5 text-slate-400 hover:text-red-500 rounded-full hover:bg-red-50 transition-colors" data-id="${m.firestoreId}" title="حذف">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                ` : ''}
+                
+                <div class="flex items-center gap-2 mb-3">
+                    <img src="${owner.avatar || 'icons/icon-128x128.png'}" class="w-10 h-10 rounded-full object-cover"/>
+                    <div>
+                        <div class="font-bold text-slate-800 text-sm">${owner.name || m.ownerName || 'کاربر'}</div>
+                        <div class="text-[11px] text-slate-500">${toPersianDate(m.createdAt)}</div>
                     </div>
                 </div>
-                ${m.text ? `<div class="text-sm leading-7 text-slate-800 whitespace-pre-wrap mb-3">${m.text}</div>` : ''}
+                ${m.text ? `<div class="text-sm text-slate-800 whitespace-pre-wrap mb-3">${m.text}</div>` : ''}
                 ${m.imageUrl ? `<img src="${m.imageUrl}" class="w-full h-auto max-h-[32rem] rounded-xl object-cover border bg-slate-100 mb-3"/>` : ''}
                 <div class="flex items-center gap-2">
                     ${['👍','❤️','😂','🎉','👎'].map(e=> `<button class="moment-react-btn text-sm px-2 py-1 rounded-full ${meReact===e ? 'bg-slate-800 text-white':'bg-slate-100 text-slate-700'}" data-id="${m.firestoreId}" data-emoji="${e}">${e}</button>`).join('')}
                 </div>
                 <div class="flex flex-wrap gap-2 mt-3">${reactionsHtml}</div>
-                <div class="mt-4 flex items-center gap-4 text-slate-500 text-xs">
-                    <button class="moment-toggle-comments-btn inline-flex items-center gap-1 hover:text-slate-700" data-id="${m.firestoreId}">
-                        <i data-lucide="message-circle" class="w-4 h-4"></i>
-                        <span>نظرات</span>
-                        <span class="comments-count" data-id="${m.firestoreId}">(${commentsCount})</span>
-                    </button>
-                </div>
-                <div id="comments-${m.firestoreId}" class="hidden mt-3">
-                    <div id="comments-list-${m.firestoreId}" class="space-y-2"></div>
-                    <div class="mt-3 flex items-center gap-2">
-                        <img src="${employee.avatar}" class="w-8 h-8 rounded-full object-cover"/>
-                        <input type="text" class="moment-comment-input flex-1 border rounded-full px-3 py-2 text-sm" placeholder="نظر خود را بنویسید..." data-id="${m.firestoreId}" maxlength="200"/>
-                        <button class="moment-comment-send-btn primary-btn text-xs px-3 py-2" data-id="${m.firestoreId}">ارسال</button>
-                    </div>
-                </div>
             </div>`;
     }).join('');
     if (window.lucide?.createIcons) lucide.createIcons();
@@ -1408,71 +1284,7 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
     // مدیریت رویدادهای داخل محتوای اصلی
     const mainContent = document.getElementById('employee-main-content');
     if (mainContent) {
-        // Helper: enable/disable post button based on content
-        const updatePostButtonState = () => {
-            const textEl = document.getElementById('moment-text');
-            const fileEl = document.getElementById('moment-image');
-            const btn = document.getElementById('moment-post-btn');
-            if (!btn) return;
-            const text = textEl?.value?.trim() || '';
-            const hasFile = !!(fileEl && fileEl.files && fileEl.files[0]);
-            const valid = (text && !hasFile) || (!text && hasFile);
-            btn.disabled = !valid;
-            if (valid) {
-                btn.classList.remove('opacity-50','cursor-not-allowed');
-            } else {
-                btn.classList.add('opacity-50','cursor-not-allowed');
-            }
-        };
-
-        // Comments renderer
-        const renderComments = async (momentId) => {
-            try {
-                const listEl = document.getElementById(`comments-list-${momentId}`);
-                if (!listEl) return;
-                const commentsCol = collection(db, `artifacts/${appId}/public/data/moments/${momentId}/comments`);
-                const snap = await getDocs(commentsCol);
-                const comments = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-                    .sort((a,b)=> new Date((b.createdAt?.toDate?.()||b.createdAt)||0) - new Date((a.createdAt?.toDate?.()||a.createdAt)||0));
-                listEl.innerHTML = comments.map(c => {
-                    const user = (state.employees||[]).find(e => e.uid === c.ownerUid) || {};
-                    return `<div class="flex items-start gap-2 bg-slate-50 rounded-xl p-2">
-                        <img src="${user.avatar || 'icons/icon-128x128.png'}" class="w-7 h-7 rounded-full object-cover"/>
-                        <div class="flex-1">
-                            <div class="text-xs font-bold text-slate-700">${user.name || c.ownerName || 'کاربر'}</div>
-                            <div class="text-xs text-slate-600">${c.text || ''}</div>
-                        </div>
-                    </div>`;
-                }).join('') || '<div class="text-xs text-slate-400">نظری ثبت نشده است.</div>';
-                // Update count badge
-                const countEl = document.querySelector(`.comments-count[data-id="${momentId}"]`);
-                if (countEl) countEl.textContent = `(${comments.length})`;
-            } catch (err) { console.error('Render comments error', err); }
-        };
-
-        // Delegated clicks
         mainContent.addEventListener('click', (e) => {
-            // Quick action buttons
-            const qaEval = e.target.closest('.qa-evaluations');
-            if (qaEval) {
-                document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-                const evalLink = document.querySelector('.nav-item[href="#evaluations"]');
-                if (evalLink) evalLink.classList.add('active');
-                renderEmployeePortalPage('evaluations', employee);
-                return;
-            }
-            const qaReq = e.target.closest('.qa-request');
-            if (qaReq) { showNewRequestForm(employee); return; }
-            const qaEdit = e.target.closest('.qa-edit-profile');
-            if (qaEdit) { showMyProfileEditForm(employee); return; }
-            const qaDocs = e.target.closest('.qa-docs');
-            if (qaDocs) {
-                document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-                const docsLink = document.querySelector('.nav-item[href="#documents"]');
-                if (docsLink) docsLink.classList.add('active');
-                renderEmployeePortalPage('documents', employee);
-                return;
-            }
                       // [!code start]
             // ▼▼▼ این بلوک کد جدید را به اینجا اضافه کنید ▼▼▼
             const selfAssessBtn = e.target.closest('.start-self-assessment-btn');
@@ -1623,13 +1435,6 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
 
                     if (document.getElementById('moment-text')) document.getElementById('moment-text').value = '';
                     if (fileInput) fileInput.value = '';
-                    const prev = document.getElementById('moment-image-preview');
-                    if (prev) prev.classList.add('hidden');
-                    const prevImg = document.getElementById('moment-image-preview-img');
-                    if (prevImg) prevImg.src = '';
-                    const counter = document.getElementById('moment-char-count');
-                    if (counter) counter.textContent = '0/280';
-                    updatePostButtonState();
                     showToast('لحظه شما با موفقیت منتشر شد.');
                 } catch (err) {
                     showToast('خطا در انتشار لحظه.', 'error');
@@ -1688,98 +1493,6 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
                 });
                 return; 
             }
-
-            // Remove selected image
-            const removeImgBtn = e.target.closest('#moment-image-remove');
-            if (removeImgBtn) {
-                const fileInput = document.getElementById('moment-image');
-                const prev = document.getElementById('moment-image-preview');
-                const prevImg = document.getElementById('moment-image-preview-img');
-                if (fileInput) fileInput.value = '';
-                if (prev) prev.classList.add('hidden');
-                if (prevImg) prevImg.src = '';
-                updatePostButtonState();
-                return;
-            }
-
-            // Toggle comments
-            const toggleCommentsBtn = e.target.closest('.moment-toggle-comments-btn');
-            if (toggleCommentsBtn) {
-                const id = toggleCommentsBtn.dataset.id;
-                const section = document.getElementById(`comments-${id}`);
-                if (section) {
-                    const willShow = section.classList.contains('hidden');
-                    section.classList.toggle('hidden');
-                    if (willShow) renderComments(id);
-                }
-                return;
-            }
-
-            // Send comment
-            const sendCommentBtn = e.target.closest('.moment-comment-send-btn');
-            if (sendCommentBtn) {
-                (async () => {
-                    const id = sendCommentBtn.dataset.id;
-                    const input = document.querySelector(`.moment-comment-input[data-id="${id}"]`);
-                    const text = input?.value?.trim() || '';
-                    if (!text) return;
-                    try {
-                        await addDoc(collection(db, `artifacts/${appId}/public/data/moments/${id}/comments`), {
-                            ownerUid: employee.uid,
-                            ownerName: employee.name,
-                            text,
-                            createdAt: serverTimestamp()
-                        });
-                        if (input) input.value = '';
-                        // Update comments count optimistically
-                        const badge = document.querySelector(`.comments-count[data-id="${id}"]`);
-                        if (badge) {
-                            const current = Number((badge.textContent||'').replace(/[^0-9]/g,'')) || 0;
-                            badge.textContent = `(${current+1})`;
-                        }
-                        await renderComments(id);
-                    } catch (err) {
-                        console.error('Add comment error', err);
-                        showToast('خطا در ثبت نظر.', 'error');
-                    }
-                })();
-                return;
-            }
-        });
-
-        // Delegated input events
-        mainContent.addEventListener('input', (e) => {
-            const textEl = e.target.closest('#moment-text');
-            if (textEl) {
-                const counter = document.getElementById('moment-char-count');
-                const len = (textEl.value || '').length;
-                if (counter) counter.textContent = `${len}/280`;
-                updatePostButtonState();
-            }
-        });
-
-        // Delegated change events (file input)
-        mainContent.addEventListener('change', (e) => {
-            const fileEl = e.target.closest('#moment-image');
-            if (fileEl) {
-                const text = (document.getElementById('moment-text') || {}).value?.trim() || '';
-                const file = fileEl.files && fileEl.files[0];
-                if (!file) { updatePostButtonState(); return; }
-                if (text) {
-                    showToast('نمی‌توانید همزمان متن و عکس ارسال کنید.', 'error');
-                    fileEl.value = '';
-                    updatePostButtonState();
-                    return;
-                }
-                const url = URL.createObjectURL(file);
-                const prev = document.getElementById('moment-image-preview');
-                const prevImg = document.getElementById('moment-image-preview-img');
-                if (prev && prevImg) {
-                    prevImg.src = url;
-                    prev.classList.remove('hidden');
-                }
-                updatePostButtonState();
-            }
         });
     }
 }
@@ -1800,120 +1513,125 @@ function renderEmployeePortal() {
         return;
     }
 
-    const managerNavlink = isTeamManager(employee) 
-        ? `<a href="#team-performance" class="nav-item"><i data-lucide="users-2"></i><span>مدیریت تیم من</span></a>` 
-        : '';
+    // ۱. بررسی اینکه آیا کاربر مدیر است و ساخت لینک مربوطه
+     const managerNavlink = isTeamManager(employee) 
+        ? `<a href="#team-performance" class="nav-item"><i data-lucide="users-2"></i><span>مدیریت تیم من</span></a>` 
+        : '';
+
 
     const employeeName = employee.name || state.currentUser.email;
 
-    portalContainer.innerHTML = `
-<div class="flex h-screen" style="background:#F5F6FA; overflow-x:hidden; overflow-y:hidden;">
-    <aside class="w-72 employee-sidebar hidden md:flex z-30">
-        <div class="text-center"><img src="${employee.avatar}" alt="Avatar" class="profile-pic object-cover"><h2 class="employee-name">${employeeName}</h2><p class="employee-title">${employee.jobTitle || 'بدون عنوان شغلی'}</p></div><div class="my-6 border-t border-white/20"></div>
-        <nav id="employee-portal-nav" class="flex flex-col gap-2">
-            <a href="#profile" class="nav-item active"><i data-lucide="layout-dashboard"></i><span>مسیر من</span></a>
-            ${managerNavlink}
-            <a href="#evaluations" class="nav-item"><i data-lucide="clipboard-check"></i><span>ارزیابی‌های من</span></a>
-            <a href="#requests" class="nav-item"><i data-lucide="send"></i><span>کارهای من</span></a>
-            <a href="#directory" class="nav-item"><i data-lucide="users"></i><span>تیم‌ها</span></a>
-            <a href="#documents" class="nav-item"><i data-lucide="folder-kanban"></i><span>دانش‌نامه</span></a>
-            <a href="#inbox" class="nav-item"><i data-lucide="inbox"></i><span>پیام‌ها</span></a>
-            <a href="#moments" class="nav-item"><i data-lucide="sparkles"></i><span>لحظه‌های نیک‌اندیشی</span></a>
-        </nav>
-        <div class="mt-auto space-y-4"><button id="portal-logout-btn" class="w-full flex items-center justify-center gap-3 px-4 py-2 rounded-lg logout-btn"><i data-lucide="log-out"></i><span>خروج از حساب</span></button></div>
-    </aside>
+    portalContainer.innerHTML = `
+        <div class="flex h-screen" style="background:#F5F6FA; overflow-x:hidden; overflow-y:hidden;">
+            <aside class="w-72 employee-sidebar hidden md:flex z-30">
+                <div class="text-center"><img src="${employee.avatar}" alt="Avatar" class="profile-pic object-cover"><h2 class="employee-name">${employeeName}</h2><p class="employee-title">${employee.jobTitle || 'بدون عنوان شغلی'}</p></div><div class="my-6 border-t border-white/20"></div>
+<nav id="employee-portal-nav" class="flex flex-col gap-2">
+    <a href="#profile" class="nav-item active"><i data-lucide="layout-dashboard"></i><span>مسیر من</span></a>
+    ${managerNavlink}  <a href="#evaluations" class="nav-item"><i data-lucide="clipboard-check"></i><span>ارزیابی‌های من</span></a>
+    <a href="#requests" class="nav-item"><i data-lucide="send"></i><span>کارهای من</span></a>
+    <a href="#directory" class="nav-item"><i data-lucide="users"></i><span>تیم‌ها</span></a>
+    <a href="#documents" class="nav-item"><i data-lucide="folder-kanban"></i><span>دانش‌نامه</span></a>
+    <a href="#inbox" class="nav-item"><i data-lucide="inbox"></i><span>پیام‌ها</span></a>
+    <a href="#moments" class="nav-item"><i data-lucide="sparkles"></i><span>لحظه‌های نیک‌اندیشی</span></a>
+</nav>
+                <div class="mt-auto space-y-4"><button id="portal-logout-btn" class="w-full flex items-center justify-center gap-3 px-4 py-2 rounded-lg logout-btn"><i data-lucide="log-out"></i><span>خروج از حساب</span></button></div>
+            </aside>
 
-    <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
-        <div id="portal-sidebar-overlay" class="hidden fixed inset-0 bg-black/40 z-20 sm:hidden"></div>
-        <div class="blob" style="top:-60px; right:-80px; width:240px; height:240px; background:#FF6A3D"></div>
-        <div class="blob" style="bottom:-80px; left:-80px; width:220px; height:220px; background:#F72585"></div>
-        
-        <header style="background:linear-gradient(90deg,#FF6A3D,#F72585)" class="shadow-sm relative z-20 pt-6">
-            <div class="w-full px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-                <div class="flex items-center gap-3">
-                    <button id="portal-menu-btn" class="inline-flex sm:hidden items-center justify-center p-2 rounded-md bg-white/20 hover:bg-white/30 text-white" title="منو"><i data-lucide="menu" class="w-5 h-5"></i></button>
-                    <img src="logo.png" alt="Logo" class="w-8 h-8 rounded-md ring-2 ring-white/30">
-                    <div class="w-10 h-10 rounded-full overflow-hidden ring-2 ring-white/30"><img src="${employee.avatar}" alt="${employeeName}" class="w-full h-full object-cover"></div>
-                    <div><div class="text-white/80 text-xs">خوش آمدید</div><h1 class="text-2xl font-bold text-white">${employeeName}</h1></div>
-                </div>
-                <div class="flex items-center gap-2">
-                    <div id="okr-pill" class="hidden sm:flex items-center gap-2 text-xs font-bold bg-white/20 text-white px-3 py-2 rounded-full"><i data-lucide="target" class="w-4 h-4"></i><span id="okr-pill-text">OKR: 0%</span></div>
-                    <button id="quick-new-request-btn" class="hidden sm:inline-flex items-center gap-2 text-xs font-semibold bg-white/15 hover:bg-white/20 text-white px-3 py-2 rounded-lg transition"><i data-lucide="plus" class="w-4 h-4"></i><span>ثبت درخواست</span></button>
-                    <button id="quick-edit-profile-btn" class="hidden sm:inline-flex items-center gap-2 text-xs font-semibold bg-white/80 hover:bg-white text-slate-800 px-3 py-2 rounded-lg transition"><i data-lucide="user-cog" class="w-4 h-4"></i><span>ویرایش پروفایل</span></button>
-                    <button id="quick-change-password-btn" class="hidden sm:inline-flex items-center gap-2 text-xs font-semibold bg-white/80 hover:bg-white text-slate-800 px-3 py-2 rounded-lg transition"><i data-lucide="key-round" class="w-4 h-4"></i><span>رمز عبور</span></button>
-                    <button id="theme-toggle-btn" class="hidden sm:inline-flex items-center gap-2 text-xs font-semibold bg-white/15 hover:bg-white/20 text-white px-3 py-2 rounded-lg transition" title="حالت تیره/روشن"><i data-lucide="moon" class="w-4 h-4"></i><span>حالت تیره</span></button>
-                    <div class="relative sm:hidden">
-                        <button id="mobile-options-btn" class="p-2 rounded-full text-white hover:bg-white/20 transition-colors"><i data-lucide="more-vertical" class="w-5 h-5"></i></button>
-                        <div id="mobile-options-dropdown" class="hidden absolute left-0 mt-2 w-48 bg-white rounded-lg shadow-xl z-30 text-slate-700">
-                            <a href="#" id="mobile-edit-profile" class="flex items-center gap-3 px-4 py-2 hover:bg-slate-100 text-sm"><i data-lucide="user-cog" class="w-4 h-4"></i><span>ویرایش پروفایل</span></a>
-                            <a href="#" id="mobile-change-password" class="flex items-center gap-3 px-4 py-2 hover:bg-slate-100 text-sm"><i data-lucide="key-round" class="w-4 h-4"></i><span>رمز عبور</span></a>
-                            <a href="#" id="mobile-theme-toggle" class="flex items-center gap-3 px-4 py-2 hover:bg-slate-100 text-sm"><i data-lucide="moon" class="w-4 h-4"></i><span>تغییر تم</span></a>
-                            <a href="#" id="mobile-new-request" class="flex items-center gap-3 px-4 py-2 border-t hover:bg-slate-100 text-sm"><i data-lucide="plus" class="w-4 h-4"></i><span>ثبت درخواست</span></a>
+            <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
+                <div id="portal-sidebar-overlay" class="hidden fixed inset-0 bg-black/40 z-20 sm:hidden"></div>
+                <div class="blob" style="top:-60px; right:-80px; width:240px; height:240px; background:#FF6A3D"></div>
+                <div class="blob" style="bottom:-80px; left:-80px; width:220px; height:220px; background:#F72585"></div>
+                
+                <header style="background:linear-gradient(90deg,#FF6A3D,#F72585)" class="shadow-sm relative z-20">
+                    <div class="w-full py-4 px-0 sm:px-6 lg:px-8 flex justify-between items-center" style="padding-top: env(safe-area-inset-top);">
+                        <div class="flex items-center gap-3">
+                            <button id="portal-menu-btn" class="inline-flex sm:hidden items-center justify-center p-2 rounded-md bg-white/20 hover:bg-white/30 text-white" title="منو"><i data-lucide="menu" class="w-5 h-5"></i></button>
+                            <img src="logo.png" alt="Logo" class="w-8 h-8 rounded-md ring-2 ring-white/30">
+                            <div class="w-10 h-10 rounded-full overflow-hidden ring-2 ring-white/30"><img src="${employee.avatar}" alt="${employeeName}" class="w-full h-full object-cover"></div>
+                            <div><div class="text-white/80 text-xs">خوش آمدید</div><h1 class="text-2xl font-bold text-white">${employeeName}</h1></div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div id="okr-pill" class="hidden sm:flex items-center gap-2 text-xs font-bold bg-white/20 text-white px-3 py-2 rounded-full"><i data-lucide="target" class="w-4 h-4"></i><span id="okr-pill-text">OKR: 0%</span></div>
+                            <button id="quick-new-request-btn" class="hidden sm:inline-flex items-center gap-2 text-xs font-semibold bg-white/15 hover:bg-white/20 text-white px-3 py-2 rounded-lg transition"><i data-lucide="plus" class="w-4 h-4"></i><span>ثبت درخواست</span></button>
+                            <button id="quick-edit-profile-btn" class="hidden sm:inline-flex items-center gap-2 text-xs font-semibold bg-white/80 hover:bg-white text-slate-800 px-3 py-2 rounded-lg transition"><i data-lucide="user-cog" class="w-4 h-4"></i><span>ویرایش پروفایل</span></button>
+                            <button id="quick-change-password-btn" class="hidden sm:inline-flex items-center gap-2 text-xs font-semibold bg-white/80 hover:bg-white text-slate-800 px-3 py-2 rounded-lg transition"><i data-lucide="key-round" class="w-4 h-4"></i><span>رمز عبور</span></button>
+                            <button id="theme-toggle-btn" class="hidden sm:inline-flex items-center gap-2 text-xs font-semibold bg-white/15 hover:bg-white/20 text-white px-3 py-2 rounded-lg transition" title="حالت تیره/روشن"><i data-lucide="moon" class="w-4 h-4"></i><span>حالت تیره</span></button>
+                            <div class="relative sm:hidden">
+                                <button id="mobile-options-btn" class="p-2 rounded-full text-white hover:bg-white/20 transition-colors"><i data-lucide="more-vertical" class="w-5 h-5"></i></button>
+                                <div id="mobile-options-dropdown" class="hidden absolute left-0 mt-2 w-48 bg-white rounded-lg shadow-xl z-30 text-slate-700">
+                                    <a href="#" id="mobile-edit-profile" class="flex items-center gap-3 px-4 py-2 hover:bg-slate-100 text-sm"><i data-lucide="user-cog" class="w-4 h-4"></i><span>ویرایش پروفایل</span></a>
+                                    <a href="#" id="mobile-change-password" class="flex items-center gap-3 px-4 py-2 hover:bg-slate-100 text-sm"><i data-lucide="key-round" class="w-4 h-4"></i><span>رمز عبور</span></a>
+                                    <a href="#" id="mobile-theme-toggle" class="flex items-center gap-3 px-4 py-2 hover:bg-slate-100 text-sm"><i data-lucide="moon" class="w-4 h-4"></i><span>تغییر تم</span></a>
+                                    <a href="#" id="mobile-new-request" class="flex items-center gap-3 px-4 py-2 border-t hover:bg-slate-100 text-sm"><i data-lucide="plus" class="w-4 h-4"></i><span>ثبت درخواست</span></a>
+                                </div>
+                            </div>
+                            <div id="portal-notification-bell-wrapper" class="relative">
+                                <button id="portal-notification-bell-btn" class="relative cursor-pointer p-2 rounded-full hover:bg-white/10"><i data-lucide="bell" class="text-white"></i><span id="portal-notification-count" class="hidden absolute -top-1 -right-1 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full border-2 border-white" style="background:#FF2E63"></span></button>
+                            </div>
                         </div>
                     </div>
-                    <div id="portal-notification-bell-wrapper" class="relative">
-                        <button id="portal-notification-bell-btn" class="relative cursor-pointer p-2 rounded-full hover:bg-white/10"><i data-lucide="bell" class="text-white"></i><span id="portal-notification-count" class="hidden absolute -top-1 -right-1 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full border-2 border-white" style="background:#FF2E63"></span></button>
-                    </div>
-                </div>
-            </div>
-        </header>
-<main id="employee-main-content" class="flex-1 p-4 sm:p-6 lg:p-10 overflow-y-auto relative z-10"></main>
-    </div>
-</div>
+                </header>
+                <main id="employee-main-content" class="flex-1 p-0 sm:p-6 lg:p-10 overflow-y-auto relative z-10"></main>
+            </div>
+        </div>
     `;
-    
+    
     lucide.createIcons();
     renderEmployeePortalPage('profile', employee);
-    setupEmployeePortalEventListeners(employee, auth, signOut);
+    setupEmployeePortalEventListeners(employee, auth, signOut);
     updateEmployeeNotificationBell(employee);
 
-    try {
-        const okrs = employee.okrs || [];
-        const okrAvg = okrs.length ? Math.round(okrs.reduce((s, o)=> s + (o.progress||0), 0) / okrs.length) : 0;
-        const okrPill = document.getElementById('okr-pill');
-        const okrText = document.getElementById('okr-pill-text');
-        if (okrPill && okrText) {
-            okrText.textContent = `OKR: ${okrAvg}%`; // <-- بک‌اسلش حذف شد
-            okrPill.classList.remove('hidden');
-        }
-    } catch {}
+    // Update OKR pill with simple average progress if exists
+    try {
+        const okrs = employee.okrs || [];
+        const okrAvg = okrs.length ? Math.round(okrs.reduce((s, o)=> s + (o.progress||0), 0) / okrs.length) : 0;
+        const okrPill = document.getElementById('okr-pill');
+        const okrText = document.getElementById('okr-pill-text');
+        if (okrPill && okrText) {
+            okrText.textContent = `OKR: ${okrAvg}%`;
+            okrPill.classList.remove('hidden');
+        }
+    } catch {}
 
-    try {
-        const bd = employee.personalInfo?.birthDate ? new Date(employee.personalInfo.birthDate) : null;
-        const now = new Date();
-        if (bd && bd.getMonth() === now.getMonth() && bd.getDate() === now.getDate() && !localStorage.getItem('birthdayPostcardShown')) {
-            const confetti = document.createElement('div');
-            confetti.className = 'confetti';
-            for (let i=0; i<150; i++) {
-                const piece = document.createElement('i');
-                piece.style.left = Math.random()*100 + 'vw';
-                piece.style.background = ['#6B69D6','#8B5CF6','#22D3EE','#F59E0B','#10B981','#F72585'][Math.floor(Math.random()*6)];
-                piece.style.animationDelay = (Math.random()*1.2)+'s';
-                confetti.appendChild(piece);
-            }
-            document.body.appendChild(confetti);
+    // Birthday postcard + confetti if today is user's birthday
+    try {
+        const bd = employee.personalInfo?.birthDate ? new Date(employee.personalInfo.birthDate) : null;
+        const now = new Date();
+        if (bd && bd.getMonth() === now.getMonth() && bd.getDate() === now.getDate() && !localStorage.getItem('birthdayPostcardShown')) {
+            // Confetti
+            const confetti = document.createElement('div');
+            confetti.className = 'confetti';
+            for (let i=0; i<150; i++) {
+                const piece = document.createElement('i');
+                piece.style.left = Math.random()*100 + 'vw';
+                piece.style.background = ['#6B69D6','#8B5CF6','#22D3EE','#F59E0B','#10B981','#F72585'][Math.floor(Math.random()*6)];
+                piece.style.animationDelay = (Math.random()*1.2)+'s';
+                confetti.appendChild(piece);
+            }
+            document.body.appendChild(confetti);
 
-            const wishes = (state.birthdayWishes || []).filter(w => w.targetUid === employee.uid).sort((a,b)=> new Date(b.createdAt?.toDate?.()||0) - new Date(a.createdAt?.toDate?.()||0));
-            const wishesHtml = wishes.map(w => `<div class="p-3 rounded-lg bg-white/80 backdrop-blur border mt-2"><p class="text-slate-700 text-sm">${w.message}</p><p class="text-xs text-slate-500 text-left mt-1">- ${w.wisherName}</p></div>`).join('') || '<p class="text-sm text-slate-600">اولین پیام تبریک را دریافت کنید! 🎉</p>';
-            modalTitle.innerText = '🎂 کارت پستال تولد';
-            modalContent.innerHTML = `
-                <div class="rounded-2xl overflow-hidden border" style="background:linear-gradient(135deg,#FFDEE9 0%, #B5FFFC 100%)">
-                    <div class="p-6 sm:p-8">
-                        <div class="flex items-center gap-3">
-                            <div class="w-12 h-12 rounded-xl bg-white/60 flex items-center justify-center"><i data-lucide="party-popper" class="w-6 h-6" style="color:#F72585"></i></div>
-                            <div>
-                                <div class="text-sm text-slate-600">تولدت مبارک ${employee.name}!</div>
-                                <div class="text-lg font-extrabold text-slate-800">یک سال پر از موفقیت پیش‌رو داشته باشی</div>
-                            </div>
-                        </div>
-                        <div class="mt-4">${wishesHtml}</div>
-                    </div>
-                </div>`;
-            openModal(mainModal, mainModalContainer);
-            setTimeout(()=> confetti.remove(), 3200);
-            localStorage.setItem('birthdayPostcardShown', String(now.getFullYear()));
-        }
-    } catch {}
+            // Postcard modal
+            const wishes = (state.birthdayWishes || []).filter(w => w.targetUid === employee.uid).sort((a,b)=> new Date(b.createdAt?.toDate?.()||0) - new Date(a.createdAt?.toDate?.()||0));
+            const wishesHtml = wishes.map(w => `<div class=\"p-3 rounded-lg bg-white/80 backdrop-blur border mt-2\"><p class=\"text-slate-700 text-sm\">${w.message}</p><p class=\"text-xs text-slate-500 text-left mt-1\">- ${w.wisherName}</p></div>`).join('') || '<p class=\"text-sm text-slate-600\">اولین پیام تبریک را دریافت کنید! 🎉</p>';
+            modalTitle.innerText = '🎂 کارت پستال تولد';
+            modalContent.innerHTML = `
+                <div class=\"rounded-2xl overflow-hidden border\" style=\"background:linear-gradient(135deg,#FFDEE9 0%, #B5FFFC 100%)\">
+                    <div class=\"p-6 sm:p-8\">
+                        <div class=\"flex items-center gap-3\">
+                            <div class=\"w-12 h-12 rounded-xl bg-white/60 flex items-center justify-center\"><i data-lucide=\"party-popper\" class=\"w-6 h-6\" style=\"color:#F72585\"></i></div>
+                            <div>
+                                <div class=\"text-sm text-slate-600\">تولدت مبارک ${employee.name}!</div>
+                                <div class=\"text-lg font-extrabold text-slate-800\">یک سال پر از موفقیت پیش‌رو داشته باشی</div>
+                            </div>
+                        </div>
+                        <div class=\"mt-4\">${wishesHtml}</div>
+                    </div>
+                </div>`;
+            openModal(mainModal, mainModalContainer);
+            setTimeout(()=> confetti.remove(), 3200);
+            localStorage.setItem('birthdayPostcardShown', String(now.getFullYear()));
+        }
+    } catch {}
 }
         // --- UTILITY & HELPER FUNCTIONS ---
         // --- تابع جدید برای تبدیل تاریخ به شمسی ---
@@ -1932,43 +1650,6 @@ function renderEmployeePortal() {
             .replace(/۹/g, '9')
             .replace(/۰/g, '0');
     };
-
-// --- Helpers: Profile completion & Progress Ring ---
-function computeProfileCompletion(employee) {
-    try {
-        const checks = [
-            !!employee?.avatar,
-            !!employee?.name,
-            !!employee?.jobTitle,
-            !!employee?.personalInfo?.email,
-            !!employee?.personalInfo?.phone,
-            !!employee?.personalInfo?.nationalId,
-            !!employee?.personalInfo?.address,
-            !!employee?.emergencyContact?.name,
-            !!employee?.emergencyContact?.phone,
-            !!employee?.bankAccount?.iban || !!employee?.bankAccount?.card
-        ];
-        const filled = checks.filter(Boolean).length;
-        return Math.max(0, Math.min(100, Math.round((filled / checks.length) * 100)));
-    } catch {
-        return 0;
-    }
-}
-
-function renderProgressRing(percent, size = 104, stroke = 10) {
-    const clamped = Math.max(0, Math.min(100, Number(percent) || 0));
-    const radius = (size - stroke) / 2;
-    const circumference = 2 * Math.PI * radius;
-    const dashOffset = circumference * (1 - clamped / 100);
-    return `
-        <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
-            <circle cx="${size/2}" cy="${size/2}" r="${radius}" stroke="#E2E8F0" stroke-width="${stroke}" fill="none"/>
-            <circle cx="${size/2}" cy="${size/2}" r="${radius}" stroke="#6B69D6" stroke-linecap="round" stroke-width="${stroke}"
-                    fill="none" stroke-dasharray="${circumference}" stroke-dashoffset="${dashOffset}" transform="rotate(-90 ${size/2} ${size/2})"/>
-            <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="16" font-weight="800" fill="#334155">${clamped}%</text>
-        </svg>
-    `;
-}
 
 function clearEventListeners(element) {
     if (!element) return;
@@ -2876,54 +2557,7 @@ const updateNotificationBell = () => {
         const showAssignmentRuleForm = (...args) => window.showAssignmentRuleForm?.(...args);
         const showProcessReminderForm = (...args) => window.showProcessReminderForm?.(...args);
         if (typeof renderTeamHealthMetrics !== 'function') { window.renderTeamHealthMetrics = (team) => { const metrics = team.healthMetrics || []; if(!metrics.length) return '<p class=\"text-sm text-slate-500\">معیاری ثبت نشده است.</p>'; return metrics.map(m=>`<div class=\"flex justify-between text-sm\"><span>${m.name}</span><span class=\"font-medium\">${m.value}</span></div>`).join(''); }; }
-        if (typeof showTeamForm !== 'function') {
-            window.showTeamForm = (teamId = null) => {
-                const team = (state.teams || []).find(t => t.firestoreId === teamId) || { name: '', leaderId: '', missionLine: '' };
-                const leaders = state.employees.map(e => `<option value=\"${e.id}\" ${e.id===team.leaderId?'selected':''}>${e.name}</option>`).join('');
-                modalTitle.innerText = teamId ? 'ویرایش تیم' : 'افزودن تیم جدید';
-                modalContent.innerHTML = `
-                    <form id=\"team-form\" class=\"space-y-4\">
-                        <div>
-                            <label class=\"block text-sm\">نام تیم</label>
-                            <input id=\"team-name\" class=\"w-full p-2 border rounded-md\" value=\"${team.name}\" required>
-                        </div>
-                        <div>
-                            <label class=\"block text-sm\">مدیر تیم</label>
-                            <select id=\"team-leader\" class=\"w-full p-2 border rounded-md\">${leaders}</select>
-                        </div>
-                        <div>
-                            <label class=\"block text-sm\">هدف یک‌خطی تیم</label>
-                            <input id=\"team-mission\" class=\"w-full p-2 border rounded-md\" placeholder=\"یک جمله درباره هدف تیم...\" value=\"${team.missionLine || ''}\">
-                        </div>
-                        <div class=\"flex justify-end\">
-                            <button type=\"submit\" class=\"bg-blue-600 text-white py-2 px-4 rounded-md\">ذخیره</button>
-                        </div>
-                    </form>`;
-                openModal(mainModal, mainModalContainer);
-                // در برخی مسیرها modalContent با clearEventListeners جایگزین می‌شود؛ دوباره مرجع را تازه‌سازی می‌کنیم
-                const formEl = document.getElementById('team-form');
-                if (!formEl) return; // اگر فرم هنوز در DOM نیست، ایمن خارج شویم
-                formEl.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    const name = document.getElementById('team-name')?.value.trim();
-                    const leader = document.getElementById('team-leader')?.value;
-                    const mission = document.getElementById('team-mission')?.value.trim();
-                    try {
-                        if (teamId) {
-                            await updateDoc(doc(db, `artifacts/${appId}/public/data/teams`, teamId), { name, leaderId: leader, missionLine: mission });
-                        } else {
-                            await addDoc(collection(db, `artifacts/${appId}/public/data/teams`), { name, leaderId: leader, missionLine: mission, memberIds: [] });
-                        }
-                        showToast('تیم ذخیره شد.');
-                        closeModal(mainModal, mainModalContainer);
-                        renderPage('organization');
-                    } catch (err) {
-                        console.error(err);
-                        showToast('خطا در ذخیره تیم.', 'error');
-                    }
-                });
-            };
-        }
+        if (typeof showTeamForm !== 'function') { window.showTeamForm = (teamId=null) => { const team=(state.teams||[]).find(t=>t.firestoreId===teamId)||{name:'',leaderId:'',missionLine:''}; const leaders=state.employees.map(e=>`<option value=\"${e.id}\" ${e.id===team.leaderId?'selected':''}>${e.name}</option>`).join(''); modalTitle.innerText=teamId?'ویرایش تیم':'افزودن تیم جدید'; modalContent.innerHTML = `<form id=\"team-form\" class=\"space-y-4\"><div><label class=\"block text-sm\">نام تیم</label><input id=\"team-name\" class=\"w-full p-2 border rounded-md\" value=\"${team.name}\" required></div><div><label class=\"block text-sm\">مدیر تیم</label><select id=\"team-leader\" class=\"w-full p-2 border rounded-md\">${leaders}</select></div><div><label class=\"block text-sm\">هدف یک‌خطی تیم</label><input id=\"team-mission\" class=\"w-full p-2 border rounded-md\" placeholder=\"یک جمله درباره هدف تیم...\" value=\"${team.missionLine || ''}\"></div><div class=\"flex justify-end\"><button type=\"submit\" class=\"bg-blue-600 text-white py-2 px-4 rounded-md\">ذخیره</button></div></form>`; openModal(mainModal, mainModalContainer); document.getElementById('team-form').addEventListener('submit', async (e)=>{ e.preventDefault(); const name=document.getElementById('team-name').value.trim(); const leader=document.getElementById('team-leader').value; const mission=document.getElementById('team-mission').value.trim(); try { if(teamId){ await updateDoc(doc(db, `artifacts/${appId}/public/data/teams`, teamId), { name, leaderId: leader, missionLine: mission }); } else { await addDoc(collection(db, `artifacts/${appId}/public/data/teams`), { name, leaderId: leader, missionLine: mission, memberIds: [] }); } showToast('تیم ذخیره شد.'); closeModal(mainModal, mainModalContainer); renderPage('organization'); } catch(err){ console.error(err); showToast('خطا در ذخیره تیم.', 'error'); } }); }; }
        // فایل: js/main.js
 // تابع showPerformanceForm را به طور کامل با این نسخه جایگزین کنید ▼
 
@@ -3846,7 +3480,7 @@ surveys: () => {
                 <h3 class="text-lg font-bold text-slate-800">${survey.title}</h3>
                 <p class="text-sm text-slate-500 mt-2 flex-grow min-h-[60px]">${survey.description}</p>
                 
-                <button class="create-survey-link-btn mt-auto w-full text-sm bg-slate-800 text-white py-2.5 px-4 rounded-lg hover:bg-slate-900 transition-colors" data-survey-id="${survey.id}" onclick="event.stopPropagation();">
+                <button class="create-survey-link-btn mt-auto w-full text-sm bg-slate-800 text-white py-2.5 px-4 rounded-lg hover:bg-slate-900 transition-colors" data-survey-id="${survey.id}">
                     ایجاد لینک نظرسنجی
                 </button>
             </div>
@@ -7931,28 +7565,18 @@ const setupEventListeners = () => {
     document.getElementById('confirmCancel')?.addEventListener('click', () => closeModal(confirmModal, confirmModalContainer));
     document.getElementById('confirmAccept')?.addEventListener('click', () => { confirmCallback(); closeModal(confirmModal, confirmModalContainer); });
 
-    // بخش ۲: منوی موبایل (با Event Delegation تا بعد از رندر مجدد هم کار کند)
-    const toggleAdminSidebar = () => {
+    // بخش ۲: منوی موبایل (که فقط یک بار نیاز به تعریف دارد)
+    const menuBtn = document.getElementById('menu-btn');
+    if (menuBtn) {
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('sidebar-overlay');
-        if (!sidebar || !overlay) return;
-        sidebar.classList.toggle('translate-x-full');
-        overlay.classList.toggle('hidden');
-    };
-    const closeAdminSidebar = () => {
-        const sidebar = document.getElementById('sidebar');
-        const overlay = document.getElementById('sidebar-overlay');
-        if (!sidebar || !overlay) return;
-        sidebar.classList.add('translate-x-full');
-        overlay.classList.add('hidden');
-    };
-    document.addEventListener('click', (e) => {
-        if (e.target.closest('#menu-btn')) {
-            toggleAdminSidebar();
-        } else if (e.target.closest('#sidebar-overlay')) {
-            closeAdminSidebar();
-        }
-    });
+        const toggleMenu = () => {
+            sidebar.classList.toggle('translate-x-full');
+            overlay.classList.toggle('hidden');
+        };
+        menuBtn.addEventListener('click', toggleMenu);
+        overlay.addEventListener('click', toggleMenu);
+    }
 
     // بخش ۳: ناوبری (منوی کناری ادمین)
     const handleNavClick = (e) => {
