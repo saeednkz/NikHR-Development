@@ -68,7 +68,7 @@ const documentCategories = [
     { id: 'مزایا و حقوق',     key: 'benefits', icon: 'coins',          desc: 'حقوق، مزایا، بیمه و سیاست‌های مالی.' },
     { id: 'مستندات پروژه‌ها', key: 'projects', icon: 'folder-kanban',  desc: 'مستندات فنی و اجرایی پروژه‌ها.' }
 ];
-        export const state = { employees: [], teams: [], reminders: [], surveyResponses: [], users: [], competencies: [], expenses: [], pettyCashCards: [], chargeHistory: [], dashboardMetrics: {}, orgAnalytics: {}, currentPage: 'dashboard', currentPageTalent: 1, currentUser: null,currentPageRequests: 1,currentPageTasks: 1,currentPageAnnouncements: 1 };
+        export const state = { employees: [], teams: [], reminders: [], surveyResponses: [], users: [], competencies: [], expenses: [], pettyCashCards: [], chargeHistory: [], dashboardMetrics: {}, orgAnalytics: {}, currentPage: 'dashboard', currentPageTalent: 1, currentUser: null,currentPageRequests: 1,currentPageTasks: 1,currentPageAnnouncements: 1, anniversaryWishes: [], companyWishes: [] };
 window.state = state; // این خط را برای دیباگ اضافه کنید
         let charts = {};
 let activeListeners = []; // [!code ++] این خط را اضافه کنید
@@ -293,7 +293,7 @@ function listenToData() {
     
     const collectionsToListen = [
         'employees', 'teams', 'reminders', 'surveyResponses', 'users', 
-        'competencies', 'requests', 'assignmentRules', 'companyDocuments', 'announcements', 'birthdayWishes', 'moments','jobPositions','evaluationCycles','jobFamilies','employeeEvaluations' 
+        'competencies', 'requests', 'assignmentRules', 'companyDocuments', 'announcements', 'birthdayWishes', 'anniversaryWishes', 'companyWishes', 'moments','jobPositions','evaluationCycles','jobFamilies','employeeEvaluations' 
     ];
     let initialLoads = collectionsToListen.length;
 
@@ -454,6 +454,65 @@ function renderBirthdaysWidget(currentEmployee) {
             <div class="card-content divide-y divide-slate-100">${birthdayListHtml}</div>
         </div>
     `;
+}
+// ویجت: سالگردهای استخدام نزدیک
+function renderUpcomingHireAnniversariesWidget(currentEmployee) {
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const upcoming = (state.employees||[])
+        .filter(emp => emp.firestoreId !== currentEmployee.firestoreId && emp.startDate)
+        .map(emp => {
+            const start = new Date(emp.startDate);
+            let next = new Date(today.getFullYear(), start.getMonth(), start.getDate());
+            if (next < today) next.setFullYear(today.getFullYear()+1);
+            return { ...emp, next, daysUntil: Math.ceil((next - today)/(1000*60*60*24)) };
+        })
+        .filter(emp => emp.daysUntil >= 0 && emp.daysUntil <= 30)
+        .sort((a,b)=> a.daysUntil - b.daysUntil);
+    if (!upcoming.length) return '';
+    const list = upcoming.map(emp => `
+        <div class="flex items-center justify-between p-3 hover:bg-slate-50 rounded-lg transition-colors duration-200">
+            <div class="flex items-center gap-3">
+                <img src="${emp.avatar}" alt="${emp.name}" class="w-10 h-10 rounded-full object-cover">
+                <div>
+                    <p class="font-semibold text-sm text-slate-800">${emp.name}</p>
+                    <p class="text-xs text-slate-500">${toPersianDate(emp.next)}</p>
+                </div>
+            </div>
+            <div class="text-center">
+                <button class="send-hire-anniv-wish-btn text-sm bg-blue-500 text-white py-1.5 px-3 rounded-full hover:bg-blue-600 shadow-sm" data-id="${emp.uid}" data-name="${emp.name}">تبریک بگو!</button>
+            </div>
+        </div>
+    `).join('');
+    return `
+      <div class="card p-0">
+        <div class="card-header flex items-center gap-2"><i data-lucide="award" class="w-5 h-5 text-blue-500"></i><h3 class="font-semibold text-slate-800">سالگردهای استخدام نزدیک</h3></div>
+        <div class="card-content divide-y divide-slate-100">${list}</div>
+      </div>`;
+}
+
+// ویجت: تبریک‌های روز سالگرد استخدام خودم
+function renderMyHireAnniversaryWishesWidget(employee) {
+    const today = new Date();
+    const start = employee.startDate ? new Date(employee.startDate) : null;
+    if (!start || start.getMonth() !== today.getMonth() || start.getDate() !== today.getDate()) return '';
+    const wishes = (state.anniversaryWishes||[])
+        .filter(w => w.targetUid === employee.uid)
+        .sort((a,b)=> new Date(b.createdAt?.toDate?.()||0) - new Date(a.createdAt?.toDate?.()||0));
+    const wishesHtml = wishes.map(w => `
+        <div class="p-3 bg-white/20 rounded-lg backdrop-blur-sm mt-2">
+            <p class="text-sm text-white">${w.message}</p>
+            <p class="text-xs text-indigo-200 font-semibold text-left mt-1">- ${w.wisherName}</p>
+        </div>`).join('');
+    return `
+        <div class="card p-6 bg-gradient-to-br from-blue-500 to-indigo-600 text-white relative overflow-hidden">
+            <div class="absolute -right-10 -top-10 w-32 h-32 text-white/10"><i data-lucide="award" class="w-32 h-32"></i></div>
+            <div class="relative z-10">
+                <h3 class="text-2xl font-bold">سالگرد استخدام مبارک، ${employee.name}!</h3>
+                <p class="mt-2 text-indigo-200">یک سال دیگر کنار هم رشد کردیم.</p>
+                ${wishes.length ? `<div class="mt-4 border-t border-white/20 pt-3"><h4 class="font-semibold text-sm">پیام‌های دریافتی:</h4>${wishesHtml}</div>` : ''}
+            </div>
+        </div>`;
 }
 // در فایل js/main.js
 // این تابع را جایگزین نسخه فعلی کنید
@@ -638,6 +697,7 @@ const performanceHistoryHtml = (employee.performanceHistory || [])
     contentContainer.innerHTML = `
         ${infoBanner}
         ${renderMyBirthdayWishesWidget(employee)}
+        ${renderMyHireAnniversaryWishesWidget(employee)}
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 ${renderMyBirthdayWishesWidget(employee) ? 'mt-8' : ''}">
             <div class="lg:col-span-2 space-y-6">
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -705,6 +765,7 @@ const performanceHistoryHtml = (employee.performanceHistory || [])
                         })()}
                     </div>
                 </div>
+                ${renderUpcomingHireAnniversariesWidget(employee) || ''}
             </aside>
         </div>`;
 
@@ -1318,6 +1379,12 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
                     showViewCategoryDocsModal(key);
                 }
             }
+            // CTA کمپین سالگرد شرکت
+            const openCompanyWishBtn = e.target.closest('#open-company-wish');
+            if (openCompanyWishBtn) {
+                showCompanyAnniversaryWishForm();
+                return;
+            }
             if (e.target.closest('#edit-my-profile-btn')) {
                 showMyProfileEditForm(employee);
             }
@@ -1394,9 +1461,9 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
                 })();
             }
             const sendWishBtn = e.target.closest('.send-wish-btn');
-            if (sendWishBtn) {
-                showBirthdayWishForm(sendWishBtn.dataset.id, sendWishBtn.dataset.name);
-            }
+            if (sendWishBtn) { showBirthdayWishForm(sendWishBtn.dataset.id, sendWishBtn.dataset.name); }
+            const sendHireAnnivBtn = e.target.closest('.send-hire-anniv-wish-btn');
+            if (sendHireAnnivBtn) { showHireAnniversaryWishForm(sendHireAnnivBtn.dataset.id, sendHireAnnivBtn.dataset.name); }
             // ارسال لحظه جدید
 // فایل: js/main.js - داخل تابع setupEmployeePortalEventListeners
 // ... داخل mainContent.addEventListener('click', ...)
@@ -1597,6 +1664,7 @@ function renderEmployeePortal() {
     // Birthday postcard + confetti if today is user's birthday
     try {
         const bd = employee.personalInfo?.birthDate ? new Date(employee.personalInfo.birthDate) : null;
+        const start = employee.startDate ? new Date(employee.startDate) : null;
         const now = new Date();
         if (bd && bd.getMonth() === now.getMonth() && bd.getDate() === now.getDate() && !localStorage.getItem('birthdayPostcardShown')) {
             // Confetti
@@ -1632,6 +1700,75 @@ function renderEmployeePortal() {
             setTimeout(()=> confetti.remove(), 3200);
             localStorage.setItem('birthdayPostcardShown', String(now.getFullYear()));
         }
+        // Hire anniversary postcard (day-of)
+        if (start && start.getMonth() === now.getMonth() && start.getDate() === now.getDate() && !localStorage.getItem('hireAnnivPostcardShown')) {
+            const confetti2 = document.createElement('div');
+            confetti2.className = 'confetti';
+            for (let i=0; i<120; i++) { const piece = document.createElement('i'); piece.style.left = Math.random()*100 + 'vw'; piece.style.background = ['#60A5FA','#A78BFA','#34D399','#F59E0B','#F472B6'][Math.floor(Math.random()*5)]; piece.style.animationDelay = (Math.random()*1.2)+'s'; confetti2.appendChild(piece); }
+            document.body.appendChild(confetti2);
+            const wishes = (state.anniversaryWishes || []).filter(w => w.targetUid === employee.uid).sort((a,b)=> new Date(b.createdAt?.toDate?.()||0) - new Date(a.createdAt?.toDate?.()||0));
+            const wishesHtml = wishes.map(w => `<div class=\"p-3 rounded-lg bg-white/80 backdrop-blur border mt-2\"><p class=\"text-slate-700 text-sm\">${w.message}</p><p class=\"text-xs text-slate-500 text-left mt-1\">- ${w.wisherName}</p></div>`).join('') || '<p class=\"text-sm text-slate-600\">اولین پیام تبریک را دریافت کنید! 🎉</p>';
+            modalTitle.innerText = '🎉 سالگرد استخدام';
+            modalContent.innerHTML = `
+                <div class=\"rounded-2xl overflow-hidden border\" style=\"background:linear-gradient(135deg,#DBEAFE 0%, #E9D5FF 100%)\">
+                    <div class=\"p-6 sm:p-8\">
+                        <div class=\"flex items-center gap-3\">
+                            <div class=\"w-12 h-12 rounded-xl bg-white/60 flex items-center justify-center\"><i data-lucide=\"award\" class=\"w-6 h-6\" style=\"color:#2563EB\"></i></div>
+                            <div>
+                                <div class=\"text-sm text-slate-600\">${employee.name} عزیز،</div>
+                                <div class=\"text-lg font-extrabold text-slate-800\">سالگرد استخدامت مبارک</div>
+                            </div>
+                        </div>
+                        <div class=\"mt-4\">${wishesHtml}</div>
+                    </div>
+                </div>`;
+            openModal(mainModal, mainModalContainer);
+            setTimeout(()=> confetti2.remove(), 3200);
+            localStorage.setItem('hireAnnivPostcardShown', String(now.getFullYear()));
+        }
+        // Company anniversary: campaign banner 3 days before on employee profile, and day-of postcard for all
+        try {
+            const thisYear = now.getFullYear();
+            const eventDate = getCompanyAnniversaryDate(thisYear);
+            const daysToEvent = Math.round((eventDate.setHours(0,0,0,0) - (new Date(now.getFullYear(), now.getMonth(), now.getDate())).getTime())/(1000*60*60*24));
+            // Campaign banner 3 days before
+            if (daysToEvent === 3) {
+                const banner = document.createElement('div');
+                banner.className = 'glass rounded-2xl p-4 flex items-center gap-3 mb-4';
+                banner.innerHTML = `<div class="w-10 h-10 rounded-xl bg-pink-100 flex items-center justify-center"><i data-lucide="megaphone" class="w-5 h-5" style="color:#F72585"></i></div><div class="flex-1"><div class="text-sm font-bold text-slate-800">کمپین تبریک سالگرد تاسیس نیک‌اندیش</div><div class="text-xs text-slate-600 mt-0.5">پیام تبریک خودت را بنویس تا کارت پستال گروهی بسازیم.</div></div><button id="open-company-wish" class="primary-btn text-xs py-1.5 px-3">ارسال پیام</button>`;
+                const main = document.getElementById('employee-main-content');
+                if (main) main.prepend(banner);
+                lucide.createIcons();
+                document.getElementById('open-company-wish')?.addEventListener('click', () => {
+                    showCompanyAnniversaryWishForm();
+                });
+            }
+            // Day-of postcard
+            if (daysToEvent === 0 && !localStorage.getItem('companyAnnivPostcardShown')) {
+                const confetti3 = document.createElement('div'); confetti3.className = 'confetti';
+                for (let i=0; i<200; i++) { const piece = document.createElement('i'); piece.style.left = Math.random()*100 + 'vw'; piece.style.background = ['#6B69D6','#FF6A3D','#10B981','#0EA5E9','#F72585'][Math.floor(Math.random()*5)]; piece.style.animationDelay = (Math.random()*1.2)+'s'; confetti3.appendChild(piece); }
+                document.body.appendChild(confetti3);
+                const wishes = (state.companyWishes || []).slice().sort((a,b)=> new Date(b.createdAt?.toDate?.()||0) - new Date(a.createdAt?.toDate?.()||0));
+                const wishesHtml = wishes.map(w => `<div class=\"p-3 rounded-lg bg-white/80 backdrop-blur border mt-2\"><p class=\"text-slate-700 text-sm\">${w.message}</p><p class=\"text-xs text-slate-500 text-left mt-1\">- ${w.wisherName}</p></div>`).join('') || '<p class=\"text-sm text-slate-600\">اولین پیام تبریک را ثبت کنید! 🎉</p>';
+                modalTitle.innerText = '🎉 سالگرد تاسیس نیک‌اندیش';
+                modalContent.innerHTML = `
+                    <div class=\"rounded-2xl overflow-hidden border\" style=\"background:linear-gradient(135deg,#FFDEE9 0%, #B5FFFC 100%)\">
+                        <div class=\"p-6 sm:p-8\">
+                            <div class=\"flex items-center gap-3\">
+                                <div class=\"w-12 h-12 rounded-xl bg-white/60 flex items-center justify-center\"><i data-lucide=\"party-popper\" class=\"w-6 h-6\" style=\"color:#F72585\"></i></div>
+                                <div>
+                                    <div class=\"text-sm text-slate-600\">خانواده نیک‌اندیش</div>
+                                    <div class=\"text-lg font-extrabold text-slate-800\">سالگرد تاسیس مبارک</div>
+                                </div>
+                            </div>
+                            <div class=\"mt-4\">${wishesHtml}</div>
+                        </div>
+                    </div>`;
+                openModal(mainModal, mainModalContainer);
+                setTimeout(()=> confetti3.remove(), 3200);
+                localStorage.setItem('companyAnnivPostcardShown', String(now.getFullYear()));
+            }
+        } catch {}
     } catch {}
 }
         // --- UTILITY & HELPER FUNCTIONS ---
@@ -1842,6 +1979,14 @@ const persianToEnglishDate = (persianDateStr) => {
         return null;
     }
 };
+
+// محاسبه تاریخ میلادی ۱ اردیبهشت هر سال (Anniversary of Nik Andish)
+const getCompanyAnniversaryDate = (year) => {
+    // 1 Ordibehesht in Jalali -> convert to Gregorian using jalaali
+    const j = { jy: year, jm: 2, jd: 1 }; // 1 Ordibehesht = month 2 in Jalali index
+    const g = jalaali.toGregorian(j.jy, j.jm, j.jd);
+    return new Date(g.gy, g.gm - 1, g.gd);
+};
 // --- نسخه نهایی با استراتژی Lazy Initialization (ساخت تقویم فقط در زمان کلیک) ---
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
@@ -2026,8 +2171,8 @@ const generateSmartReminders = async () => {
                 const endDate = new Date(lastContract.endDate);
                 const daysUntilEnd = Math.round((endDate - now) / oneDay);
 
-                // اگر تاریخ پایان قرارداد بین امروز تا ۹۰ روز آینده بود، یادآور را بساز
-                if (daysUntilEnd >= 0 && daysUntilEnd <= 90) {
+                // اگر دقیقاً یک ماه (۳۰ روز) تا پایان قرارداد مانده بود، یادآور را بساز
+                if (daysUntilEnd === 30) {
                     events.push({
                         type: 'تمدید قرارداد',
                         date: endDate,
@@ -2047,7 +2192,7 @@ const generateSmartReminders = async () => {
             const nextBirthday = new Date(now.getFullYear(), birthDate.getMonth(), birthDate.getDate());
             if (nextBirthday < now) nextBirthday.setFullYear(now.getFullYear() + 1);
             const daysUntilBirthday = Math.round((nextBirthday - now) / oneDay);
-            if (daysUntilBirthday >= 0 && daysUntilBirthday <= 7) {
+            if (daysUntilBirthday === 2) {
                 events.push({ type: 'تولد', date: nextBirthday, text: `تولد: ${emp.name}`, subtext: `در ${daysUntilBirthday === 0 ? 'امروز' : daysUntilBirthday + ' روز دیگر'}`, icon: 'cake', id: `bday-${emp.id}-${nextBirthday.getFullYear()}` });
             }
         }
@@ -2061,8 +2206,8 @@ const generateSmartReminders = async () => {
                 nextAnniversary.setFullYear(now.getFullYear() + 1);
             }
             const daysUntilAnniversary = Math.round((nextAnniversary - now) / oneDay);
-            if (daysUntilAnniversary === 1) {
-                events.push({ type: 'سالگرد استخدام', date: nextAnniversary, text: `یادآوری سالگرد استخدام ${emp.name}`, subtext: `فردا سالگرد ورود ایشان به شرکت است.`, icon: 'award', id: `anniv-${emp.id}-${nextAnniversary.getFullYear()}` });
+            if (daysUntilAnniversary === 0) {
+                events.push({ type: 'سالگرد استخدام', date: nextAnniversary, text: `سالگرد استخدام: ${emp.name}`, subtext: `امروز!`, icon: 'award', id: `anniv-${emp.id}-${nextAnniversary.getFullYear()}` });
             }
         }
 
@@ -2096,6 +2241,36 @@ const generateSmartReminders = async () => {
             }
         }
     }
+
+    // Company anniversary: 1 Ordibehesht campaign and day-of postcard for all employees
+    try {
+        const thisYear = (new Date()).getFullYear();
+        const eventDate = getCompanyAnniversaryDate(thisYear);
+        const now2 = new Date(); now2.setHours(0,0,0,0);
+        const daysToEvent = Math.round((eventDate - now2) / (1000*60*60*24));
+        const defaultRule = (state.assignmentRules || []).find(r => r.firestoreId === '_default');
+        const campaignId = `company-anniv-${thisYear}`;
+        if (daysToEvent === 3 || daysToEvent === 0) {
+            const reminderRef = doc(db, `artifacts/${appId}/public/data/reminders`, campaignId);
+            const snap = await getDoc(reminderRef);
+            if (!snap.exists()) {
+                const assignedUid = defaultRule?.assigneeUid || (state.users.find(u=>u.role==='admin')||{}).firestoreId;
+                if (assignedUid) {
+                    await setDoc(reminderRef, {
+                        text: daysToEvent===3 ? 'کمپین تبریک سالگرد تاسیس نیک‌اندیش را فعال کنید' : 'نمایش کارت پستال سالگرد تاسیس نیک‌اندیش',
+                        subtext: daysToEvent===3 ? '۳ روز مانده تا سالگرد (۱ اردیبهشت)' : 'امروز ۱ اردیبهشت است',
+                        icon: daysToEvent===3 ? 'megaphone' : 'party-popper',
+                        type: 'سالگرد تاسیس شرکت',
+                        date: eventDate,
+                        assignedTo: assignedUid,
+                        isReadByAssignee: false,
+                        createdAt: serverTimestamp(),
+                        status: 'جدید'
+                    });
+                }
+            }
+        }
+    } catch (e) { console.debug('company anniversary check failed', e); }
 
     if (hasNewReminders) {
         await batch.commit();
@@ -3138,6 +3313,76 @@ async function showMyProfileEditForm(employee) {
                     closeModal(mainModal, mainModalContainer);
                 } catch (err) {
                     console.error('Error sending wish', err);
+                    showToast('خطا در ارسال پیام تبریک.', 'error');
+                }
+            });
+        }
+
+        async function showCompanyAnniversaryWishForm() {
+            modalTitle.innerText = `ارسال پیام برای سالگرد تاسیس نیک‌اندیش`;
+            modalContent.innerHTML = `
+                <form id=\"company-wish-form\" class=\"space-y-4\">
+                    <div>
+                        <label class=\"block text-sm font-medium\">پیام شما</label>
+                        <textarea id=\"company-wish-text\" rows=\"4\" class=\"w-full p-2 border rounded-md\" placeholder=\"مثال: تبریک به مناسبت سالگرد تاسیس!\" required></textarea>
+                    </div>
+                    <div class=\"flex justify-end gap-2\">
+                        <button type=\"button\" id=\"company-wish-cancel\" class=\"bg-slate-200 text-slate-800 py-2 px-4 rounded-md hover:bg-slate-300\">انصراف</button>
+                        <button type=\"submit\" class=\"bg-fuchsia-600 text-white py-2 px-4 rounded-md hover:bg-fuchsia-700\">ارسال</button>
+                    </div>
+                </form>`;
+            openModal(mainModal, mainModalContainer);
+            document.getElementById('company-wish-cancel').addEventListener('click', () => closeModal(mainModal, mainModalContainer));
+            document.getElementById('company-wish-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const text = document.getElementById('company-wish-text').value.trim();
+                if (!text) return;
+                try {
+                    await addDoc(collection(db, `artifacts/${appId}/public/data/companyWishes`), {
+                        wisherUid: state.currentUser?.uid || 'anonymous',
+                        wisherName: state.currentUser?.email || 'یک همکار',
+                        message: text,
+                        createdAt: serverTimestamp()
+                    });
+                    showToast('پیام شما ثبت شد.');
+                    closeModal(mainModal, mainModalContainer);
+                } catch (err) {
+                    console.error('Error sending company wish', err);
+                    showToast('خطا در ارسال پیام.', 'error');
+                }
+            });
+        }
+        async function showHireAnniversaryWishForm(targetUid, targetName) {
+            modalTitle.innerText = `ارسال تبریک سالگرد استخدام برای ${targetName}`;
+            modalContent.innerHTML = `
+                <form id=\"hire-wish-form\" class=\"space-y-4\">
+                    <div>
+                        <label class=\"block text-sm font-medium\">پیام شما</label>
+                        <textarea id=\"hire-wish-text\" rows=\"4\" class=\"w-full p-2 border rounded-md\" placeholder=\"مثال: سالگرد استخدام مبارک!\" required></textarea>
+                    </div>
+                    <div class=\"flex justify-end gap-2\">
+                        <button type=\"button\" id=\"hire-wish-cancel\" class=\"bg-slate-200 text-slate-800 py-2 px-4 rounded-md hover:bg-slate-300\">انصراف</button>
+                        <button type=\"submit\" class=\"bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700\">ارسال</button>
+                    </div>
+                </form>`;
+            openModal(mainModal, mainModalContainer);
+            document.getElementById('hire-wish-cancel').addEventListener('click', () => closeModal(mainModal, mainModalContainer));
+            document.getElementById('hire-wish-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const text = document.getElementById('hire-wish-text').value.trim();
+                if (!text) return;
+                try {
+                    await addDoc(collection(db, `artifacts/${appId}/public/data/anniversaryWishes`), {
+                        targetUid,
+                        wisherUid: state.currentUser?.uid || 'anonymous',
+                        wisherName: state.currentUser?.email || 'یک همکار',
+                        message: text,
+                        createdAt: serverTimestamp()
+                    });
+                    showToast('پیام تبریک ارسال شد.');
+                    closeModal(mainModal, mainModalContainer);
+                } catch (err) {
+                    console.error('Error sending anniversary wish', err);
                     showToast('خطا در ارسال پیام تبریک.', 'error');
                 }
             });
