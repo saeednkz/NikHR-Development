@@ -1213,6 +1213,9 @@ else if (pageName === 'documents') {
                     <img src="${employee.avatar}" class="w-10 h-10 rounded-full object-cover"/>
                     <div class="flex-1">
                         <textarea id="moment-text" class="w-full p-3 border rounded-xl" maxlength="280" placeholder="یک متن کوتاه بنویس... (حداکثر ۲۸۰ کاراکتر)"></textarea>
+                        <div id="moment-emoji-bar" class="mt-2 flex flex-wrap gap-1">
+                            ${['👍','❤️','😂','🎉','🔥','👏','😍','🤝','💯','🤩','🙏','💡','😮','😢','👀','👋','✨','🌟','🚀','🥳'].map(e=> `<button type="button" class="moment-emoji-btn text-sm px-2 py-1 rounded-full bg-slate-100 hover:bg-slate-200" data-emoji="${e}">${e}</button>`).join('')}
+                        </div>
                         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-2 gap-2">
                             <div class="flex items-center gap-2">
                                 <input type="file" id="moment-image" accept="image/png,image/jpeg" class="hidden"/>
@@ -1224,6 +1227,10 @@ else if (pageName === 'documents') {
                                 <button id="moment-post-btn" class="primary-btn text-xs w-full sm:w-auto">انتشار</button>
                             </div>
                         </div>
+                        <div id="moment-image-preview" class="mt-2 hidden relative w-full max-w-lg">
+                            <img id="moment-image-preview-img" class="w-full rounded-xl object-cover border bg-slate-50"/>
+                            <button id="moment-image-remove" type="button" class="absolute top-2 left-2 p-1.5 rounded-full bg-white/90 text-slate-700 hover:bg-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+                        </div>
                         <p class="text-[11px] text-slate-500 mt-1">فقط متن یا فقط عکس؛ همزمان هر دو مجاز نیست.</p>
                     </div>
                 </div>
@@ -1233,6 +1240,7 @@ else if (pageName === 'documents') {
         contentContainer.innerHTML = `
             ${composer}
             ${listContainer}
+            <button id="moment-fab" class="fixed bottom-6 right-6 z-20 rounded-full w-12 h-12 flex items-center justify-center shadow-lg" style="background:#6B69D6;color:#fff"><i data-lucide="plus" class="w-5 h-5"></i></button>
         `;
 
         // نگه‌داری وضعیت صفحه‌بندی
@@ -1295,6 +1303,10 @@ window.renderMomentsList = () => {
         const momentImage = document.getElementById('moment-image');
         const momentImageBtn = document.getElementById('moment-image-btn');
         const momentImageName = document.getElementById('moment-image-name');
+        const momentImagePreview = document.getElementById('moment-image-preview');
+        const momentImagePreviewImg = document.getElementById('moment-image-preview-img');
+        const momentImageRemove = document.getElementById('moment-image-remove');
+        const momentFab = document.getElementById('moment-fab');
         momentText?.addEventListener('input', () => {
             const len = (momentText.value || '').length;
             momentChar.textContent = `${len}/280`;
@@ -1304,6 +1316,37 @@ window.renderMomentsList = () => {
         momentImage?.addEventListener('change', () => {
             const f = momentImage.files && momentImage.files[0];
             momentImageName.textContent = f ? f.name : '';
+            if (f) {
+                const url = URL.createObjectURL(f);
+                momentImagePreviewImg.src = url;
+                momentImagePreview.classList.remove('hidden');
+            } else {
+                momentImagePreview.classList.add('hidden');
+                momentImagePreviewImg.removeAttribute('src');
+            }
+        });
+        momentImageRemove?.addEventListener('click', () => {
+            momentImage.value = '';
+            momentImageName.textContent = '';
+            momentImagePreview.classList.add('hidden');
+            momentImagePreviewImg.removeAttribute('src');
+        });
+        momentFab?.addEventListener('click', () => {
+            document.getElementById('moment-text')?.focus();
+            document.getElementById('employee-main-content')?.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+        document.querySelectorAll('.moment-emoji-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const emoji = e.currentTarget.getAttribute('data-emoji') || '';
+                const el = document.getElementById('moment-text');
+                if (!el) return;
+                const start = el.selectionStart || el.value.length;
+                const end = el.selectionEnd || el.value.length;
+                el.value = el.value.slice(0, start) + emoji + ' ' + el.value.slice(end);
+                el.dispatchEvent(new Event('input'));
+                el.focus();
+                el.setSelectionRange(start + emoji.length + 1, start + emoji.length + 1);
+            });
         });
 
         window.renderMomentsList();
