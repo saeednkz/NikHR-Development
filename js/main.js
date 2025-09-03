@@ -933,21 +933,38 @@ else if (pageName === 'documents') {
     // --- لحظه‌های نیک‌اندیشی ---
     else if (pageName === 'moments') {
         const composer = `
-            <div class="glass rounded-2xl p-4 mb-4">
+            <div class="bg-white rounded-2xl border border-slate-200 p-4 mb-4 shadow-sm">
                 <div class="flex items-start gap-3">
-                    <img src="${employee.avatar}" class="w-10 h-10 rounded-full object-cover"/>
+                    <img src="${employee.avatar}" class="w-12 h-12 rounded-full ring-2 ring-indigo-100 object-cover"/>
                     <div class="flex-1">
-                        <textarea id="moment-text" class="w-full p-3 border rounded-xl" maxlength="280" placeholder="چه خبر خوب یا فکری می‌خواهی به اشتراک بگذاری؟ (حداکثر ۲۸۰ کاراکتر)"></textarea>
-                        <div class="flex items-center justify-between mt-2">
-                            <input type="file" id="moment-image" accept="image/png,image/jpeg" class="text-xs"/>
-                            <button id="moment-post-btn" class="primary-btn text-xs">ارسال</button>
+                        <div class="rounded-xl border border-slate-200 focus-within:ring-2 focus-within:ring-indigo-500">
+                            <textarea id="moment-text" class="w-full p-3 outline-none rounded-xl resize-none" rows="3" maxlength="280" placeholder="چه خبری می‌خواهی به اشتراک بگذاری؟"></textarea>
                         </div>
-                        <p class="text-[11px] text-slate-500 mt-1">فقط متن یا فقط عکس؛ همزمان هر دو مجاز نیست.</p>
+                        <div id="moment-image-preview" class="hidden mt-3 relative">
+                            <img id="moment-image-preview-img" class="max-h-64 rounded-xl border bg-slate-50 w-full object-cover"/>
+                            <button id="moment-image-remove" class="absolute top-2 left-2 bg-white/90 text-slate-700 hover:text-red-600 p-1.5 rounded-full border shadow" title="حذف تصویر">
+                                <i data-lucide="x" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                        <div class="mt-3 flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <label for="moment-image" class="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900 text-xs cursor-pointer bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-full">
+                                    <i data-lucide="image" class="w-4 h-4"></i>
+                                    <span>عکس</span>
+                                </label>
+                                <input type="file" id="moment-image" accept="image/png,image/jpeg" class="hidden"/>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <span id="moment-char-count" class="text-[11px] text-slate-500">0/280</span>
+                                <button id="moment-post-btn" class="primary-btn text-xs opacity-50 cursor-not-allowed" disabled>ارسال</button>
+                            </div>
+                        </div>
+                        <p class="text-[11px] text-slate-400 mt-2">فقط متن یا فقط عکس؛ همزمان هر دو مجاز نیست.</p>
                     </div>
                 </div>
             </div>`;
 
-        const listContainer = `<div id="moments-list" class="space-y-3"></div><div id="moments-sentinel" class="h-8"></div>`;
+        const listContainer = `<div id="moments-list" class="space-y-4"></div><div id="moments-sentinel" class="h-8"></div>`;
         contentContainer.innerHTML = `
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 page-header mb-4">
                 <div>
@@ -985,28 +1002,47 @@ window.renderMomentsList = () => {
         const canDelete = isOwner || isAdmin(); // تابع isAdmin از auth.js می‌آید
         // ▲▲▲ پایان بخش جدید ▲▲▲
 
+        const commentsCount = Number(m.commentsCount || 0);
         return `
             <div class="bg-white rounded-2xl border border-slate-200 p-4 relative">
-                
-                ${canDelete ? `
-                    <button class="moment-delete-btn absolute top-3 left-3 p-1.5 text-slate-400 hover:text-red-500 rounded-full hover:bg-red-50 transition-colors" data-id="${m.firestoreId}" title="حذف">
-                        <i data-lucide="trash-2" class="w-4 h-4"></i>
-                    </button>
-                ` : ''}
-                
-                <div class="flex items-center gap-2 mb-3">
-                    <img src="${owner.avatar || 'icons/icon-128x128.png'}" class="w-10 h-10 rounded-full object-cover"/>
-                    <div>
-                        <div class="font-bold text-slate-800 text-sm">${owner.name || m.ownerName || 'کاربر'}</div>
-                        <div class="text-[11px] text-slate-500">${toPersianDate(m.createdAt)}</div>
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-3">
+                        <img src="${owner.avatar || 'icons/icon-128x128.png'}" class="w-10 h-10 rounded-full object-cover"/>
+                        <div>
+                            <div class="font-bold text-slate-800 text-sm">${owner.name || m.ownerName || 'کاربر'}</div>
+                            <div class="text-[11px] text-slate-500">${toPersianDate(m.createdAt)}</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        ${canDelete ? `
+                            <button class="moment-delete-btn p-1.5 text-slate-400 hover:text-red-500 rounded-full hover:bg-red-50 transition-colors" data-id="${m.firestoreId}" title="حذف">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        ` : ''}
+                        <button class="p-1.5 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-50" title="گزینه‌ها"><i data-lucide="more-horizontal" class="w-4 h-4"></i></button>
                     </div>
                 </div>
-                ${m.text ? `<div class="text-sm text-slate-800 whitespace-pre-wrap mb-3">${m.text}</div>` : ''}
+                ${m.text ? `<div class="text-sm leading-7 text-slate-800 whitespace-pre-wrap mb-3">${m.text}</div>` : ''}
                 ${m.imageUrl ? `<img src="${m.imageUrl}" class="w-full h-auto max-h-[32rem] rounded-xl object-cover border bg-slate-100 mb-3"/>` : ''}
                 <div class="flex items-center gap-2">
                     ${['👍','❤️','😂','🎉','👎'].map(e=> `<button class="moment-react-btn text-sm px-2 py-1 rounded-full ${meReact===e ? 'bg-slate-800 text-white':'bg-slate-100 text-slate-700'}" data-id="${m.firestoreId}" data-emoji="${e}">${e}</button>`).join('')}
                 </div>
                 <div class="flex flex-wrap gap-2 mt-3">${reactionsHtml}</div>
+                <div class="mt-4 flex items-center gap-4 text-slate-500 text-xs">
+                    <button class="moment-toggle-comments-btn inline-flex items-center gap-1 hover:text-slate-700" data-id="${m.firestoreId}">
+                        <i data-lucide="message-circle" class="w-4 h-4"></i>
+                        <span>نظرات</span>
+                        <span class="comments-count" data-id="${m.firestoreId}">(${commentsCount})</span>
+                    </button>
+                </div>
+                <div id="comments-${m.firestoreId}" class="hidden mt-3">
+                    <div id="comments-list-${m.firestoreId}" class="space-y-2"></div>
+                    <div class="mt-3 flex items-center gap-2">
+                        <img src="${employee.avatar}" class="w-8 h-8 rounded-full object-cover"/>
+                        <input type="text" class="moment-comment-input flex-1 border rounded-full px-3 py-2 text-sm" placeholder="نظر خود را بنویسید..." data-id="${m.firestoreId}" maxlength="200"/>
+                        <button class="moment-comment-send-btn primary-btn text-xs px-3 py-2" data-id="${m.firestoreId}">ارسال</button>
+                    </div>
+                </div>
             </div>`;
     }).join('');
     if (window.lucide?.createIcons) lucide.createIcons();
@@ -1313,6 +1349,49 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
     // مدیریت رویدادهای داخل محتوای اصلی
     const mainContent = document.getElementById('employee-main-content');
     if (mainContent) {
+        // Helper: enable/disable post button based on content
+        const updatePostButtonState = () => {
+            const textEl = document.getElementById('moment-text');
+            const fileEl = document.getElementById('moment-image');
+            const btn = document.getElementById('moment-post-btn');
+            if (!btn) return;
+            const text = textEl?.value?.trim() || '';
+            const hasFile = !!(fileEl && fileEl.files && fileEl.files[0]);
+            const valid = (text && !hasFile) || (!text && hasFile);
+            btn.disabled = !valid;
+            if (valid) {
+                btn.classList.remove('opacity-50','cursor-not-allowed');
+            } else {
+                btn.classList.add('opacity-50','cursor-not-allowed');
+            }
+        };
+
+        // Comments renderer
+        const renderComments = async (momentId) => {
+            try {
+                const listEl = document.getElementById(`comments-list-${momentId}`);
+                if (!listEl) return;
+                const commentsCol = collection(db, `artifacts/${appId}/public/data/moments/${momentId}/comments`);
+                const snap = await getDocs(commentsCol);
+                const comments = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+                    .sort((a,b)=> new Date((b.createdAt?.toDate?.()||b.createdAt)||0) - new Date((a.createdAt?.toDate?.()||a.createdAt)||0));
+                listEl.innerHTML = comments.map(c => {
+                    const user = (state.employees||[]).find(e => e.uid === c.ownerUid) || {};
+                    return `<div class="flex items-start gap-2 bg-slate-50 rounded-xl p-2">
+                        <img src="${user.avatar || 'icons/icon-128x128.png'}" class="w-7 h-7 rounded-full object-cover"/>
+                        <div class="flex-1">
+                            <div class="text-xs font-bold text-slate-700">${user.name || c.ownerName || 'کاربر'}</div>
+                            <div class="text-xs text-slate-600">${c.text || ''}</div>
+                        </div>
+                    </div>`;
+                }).join('') || '<div class="text-xs text-slate-400">نظری ثبت نشده است.</div>';
+                // Update count badge
+                const countEl = document.querySelector(`.comments-count[data-id="${momentId}"]`);
+                if (countEl) countEl.textContent = `(${comments.length})`;
+            } catch (err) { console.error('Render comments error', err); }
+        };
+
+        // Delegated clicks
         mainContent.addEventListener('click', (e) => {
             // Quick action buttons
             const qaEval = e.target.closest('.qa-evaluations');
@@ -1485,6 +1564,13 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
 
                     if (document.getElementById('moment-text')) document.getElementById('moment-text').value = '';
                     if (fileInput) fileInput.value = '';
+                    const prev = document.getElementById('moment-image-preview');
+                    if (prev) prev.classList.add('hidden');
+                    const prevImg = document.getElementById('moment-image-preview-img');
+                    if (prevImg) prevImg.src = '';
+                    const counter = document.getElementById('moment-char-count');
+                    if (counter) counter.textContent = '0/280';
+                    updatePostButtonState();
                     showToast('لحظه شما با موفقیت منتشر شد.');
                 } catch (err) {
                     showToast('خطا در انتشار لحظه.', 'error');
@@ -1542,6 +1628,98 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
                     }
                 });
                 return; 
+            }
+
+            // Remove selected image
+            const removeImgBtn = e.target.closest('#moment-image-remove');
+            if (removeImgBtn) {
+                const fileInput = document.getElementById('moment-image');
+                const prev = document.getElementById('moment-image-preview');
+                const prevImg = document.getElementById('moment-image-preview-img');
+                if (fileInput) fileInput.value = '';
+                if (prev) prev.classList.add('hidden');
+                if (prevImg) prevImg.src = '';
+                updatePostButtonState();
+                return;
+            }
+
+            // Toggle comments
+            const toggleCommentsBtn = e.target.closest('.moment-toggle-comments-btn');
+            if (toggleCommentsBtn) {
+                const id = toggleCommentsBtn.dataset.id;
+                const section = document.getElementById(`comments-${id}`);
+                if (section) {
+                    const willShow = section.classList.contains('hidden');
+                    section.classList.toggle('hidden');
+                    if (willShow) renderComments(id);
+                }
+                return;
+            }
+
+            // Send comment
+            const sendCommentBtn = e.target.closest('.moment-comment-send-btn');
+            if (sendCommentBtn) {
+                (async () => {
+                    const id = sendCommentBtn.dataset.id;
+                    const input = document.querySelector(`.moment-comment-input[data-id="${id}"]`);
+                    const text = input?.value?.trim() || '';
+                    if (!text) return;
+                    try {
+                        await addDoc(collection(db, `artifacts/${appId}/public/data/moments/${id}/comments`), {
+                            ownerUid: employee.uid,
+                            ownerName: employee.name,
+                            text,
+                            createdAt: serverTimestamp()
+                        });
+                        if (input) input.value = '';
+                        // Update comments count optimistically
+                        const badge = document.querySelector(`.comments-count[data-id="${id}"]`);
+                        if (badge) {
+                            const current = Number((badge.textContent||'').replace(/[^0-9]/g,'')) || 0;
+                            badge.textContent = `(${current+1})`;
+                        }
+                        await renderComments(id);
+                    } catch (err) {
+                        console.error('Add comment error', err);
+                        showToast('خطا در ثبت نظر.', 'error');
+                    }
+                })();
+                return;
+            }
+        });
+
+        // Delegated input events
+        mainContent.addEventListener('input', (e) => {
+            const textEl = e.target.closest('#moment-text');
+            if (textEl) {
+                const counter = document.getElementById('moment-char-count');
+                const len = (textEl.value || '').length;
+                if (counter) counter.textContent = `${len}/280`;
+                updatePostButtonState();
+            }
+        });
+
+        // Delegated change events (file input)
+        mainContent.addEventListener('change', (e) => {
+            const fileEl = e.target.closest('#moment-image');
+            if (fileEl) {
+                const text = (document.getElementById('moment-text') || {}).value?.trim() || '';
+                const file = fileEl.files && fileEl.files[0];
+                if (!file) { updatePostButtonState(); return; }
+                if (text) {
+                    showToast('نمی‌توانید همزمان متن و عکس ارسال کنید.', 'error');
+                    fileEl.value = '';
+                    updatePostButtonState();
+                    return;
+                }
+                const url = URL.createObjectURL(file);
+                const prev = document.getElementById('moment-image-preview');
+                const prevImg = document.getElementById('moment-image-preview-img');
+                if (prev && prevImg) {
+                    prevImg.src = url;
+                    prev.classList.remove('hidden');
+                }
+                updatePostButtonState();
             }
         });
     }
