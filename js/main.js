@@ -423,7 +423,7 @@ function renderBirthdaysWidget(currentEmployee) {
                 daysUntil: Math.ceil((nextBirthday - today) / (1000 * 60 * 60 * 24))
             };
         })
-        .filter(emp => emp.daysUntil >= 0 && emp.daysUntil <= 30)
+        .filter(emp => emp.daysUntil >= 0 && emp.daysUntil <= 7)
         .sort((a, b) => a.daysUntil - b.daysUntil);
 
     if (upcomingBirthdays.length === 0) return '';
@@ -746,7 +746,7 @@ const performanceHistoryHtml = (employee.performanceHistory || [])
                 ${renderBirthdaysWidget(employee) || `
                 <div class=\"card p-0\">
                     <div class=\"card-header flex items-center gap-2\"><i data-lucide=\"cake\" class=\"w-5 h-5 text-pink-500\"></i><h3 class=\"font-semibold text-slate-800\">تولدهای نزدیک</h3></div>
-                    <div class=\"card-content p-4 text-xs text-slate-500\">موردی در ۳۰ روز آینده نیست.</div>
+                    <div class=\"card-content p-4 text-xs text-slate-500\">موردی در ۷ روز آینده نیست.</div>
                 </div>`}
                 <div class="card p-0">
                     <div class="card-header flex items-center gap-2"><i data-lucide="send" class="w-5 h-5 text-indigo-500"></i><h3 class="font-semibold text-slate-800">درخواست‌های اخیر</h3></div>
@@ -754,7 +754,7 @@ const performanceHistoryHtml = (employee.performanceHistory || [])
                         ${(() => {
                             const myRequests = (state.requests||[]).filter(r => r.uid === employee.uid).sort((a,b)=> (b.lastUpdatedAt?.toDate?.()||b.createdAt?.toDate?.()||0) - (a.lastUpdatedAt?.toDate?.()||a.createdAt?.toDate?.()||0)).slice(0,5);
                             if (myRequests.length===0) return '<div class="p-3 text-xs text-slate-500">درخواستی ثبت نشده است.</div>';
-                            return myRequests.map(r=> `<a href="#requests" class=\"flex items-center justify-between p-3 hover:bg-slate-50 transition\" data-link="#requests"><div class=\"text-xs\"><div class=\"font-semibold text-slate-800\">${r.title||'بدون عنوان'}</div><div class=\"text-slate-500 mt-0.5\">${toPersianDate(r.createdAt?.toDate?.()||new Date())}</div></div><span class=\"text-[10px] px-2 py-1 rounded-full ${r.status==='تایید شده'?'bg-green-100 text-green-700':r.status==='رد شده'?'bg-rose-100 text-rose-700':'bg-slate-100 text-slate-700'}\">${r.status}</span></a>`).join('');
+                            return myRequests.map(r=> { const title = (r.title && r.title.trim()) || r.requestType || 'درخواست'; return `<a href="#requests" class=\"flex items-center justify-between p-3 hover:bg-slate-50 transition\" data-link=\"#requests\"><div class=\"text-xs\"><div class=\"font-semibold text-slate-800\">${title}</div><div class=\"text-slate-500 mt-0.5\">${toPersianDate(r.createdAt?.toDate?.()||new Date())}</div></div><span class=\"text-[10px] px-2 py-1 rounded-full ${r.status==='تایید شده'?'bg-green-100 text-green-700':r.status==='رد شده'?'bg-rose-100 text-rose-700':'bg-slate-100 text-slate-700'}\">${r.status}</span></a>`; }).join('');
                         })()}
                     </div>
                 </div>
