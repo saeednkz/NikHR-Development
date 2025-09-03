@@ -1310,6 +1310,7 @@ window.renderMomentsList = () => {
             const user = state.employees.find(e => e.uid === r.uid) || {};
             return `<div class="flex items-center gap-1 text-xs bg-slate-100 rounded-full px-2 py-1"><span>${r.emoji}</span><img src="${user.avatar || 'icons/icon-128x128.png'}" class="w-4 h-4 rounded-full object-cover"/><span class="text-slate-600">${user.name || ''}</span></div>`;
         }).join('');
+        const reshareCount = (state.moments || []).filter(x => (x.resharedFrom || {}).sourceId === m.firestoreId).length;
 
         // ▼▼▼ بخش جدید: شرط نمایش دکمه حذف ▼▼▼
         const isOwner = m.ownerUid === employee.uid;
@@ -1344,8 +1345,8 @@ window.renderMomentsList = () => {
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
-                        <button class="moment-comment-toggle text-xs px-2 py-1 rounded-lg border" data-id="${m.firestoreId}"><i data-lucide="message-circle" class="w-4 h-4"></i><span class="mr-1">نظر</span></button>
-                        <button class="moment-reshare-btn text-xs px-2 py-1 rounded-lg border" data-id="${m.firestoreId}"><i data-lucide="repeat" class="w-4 h-4"></i><span class="mr-1">بازنشر</span></button>
+                        <button class="moment-comment-toggle text-xs px-2 py-1 rounded-lg border" data-id="${m.firestoreId}"><i data-lucide="message-circle" class="w-4 h-4"></i><span class="mr-1">نظر</span><span class="text-[11px] text-slate-500 mr-1">(${(m.comments||[]).length})</span></button>
+                        <button class="moment-reshare-btn text-xs px-2 py-1 rounded-lg border" data-id="${m.firestoreId}"><i data-lucide="repeat" class="w-4 h-4"></i><span class="mr-1">بازنشر</span><span class="text-[11px] text-slate-500 mr-1">(${reshareCount})</span></button>
                     </div>
                 </div>
                 <div class="px-4 pb-3">
@@ -1363,6 +1364,26 @@ window.renderMomentsList = () => {
             </div>`;
     }).join('');
     if (window.lucide?.createIcons) lucide.createIcons();
+    // اتصال مستقیم دکمه‌های واکنش (برای اطمینان از کارکرد روی موبایل)
+    document.querySelectorAll('.moment-react-btn').forEach(btn => {
+        btn.addEventListener('click', async (ev) => {
+            ev.stopPropagation();
+            const id = btn.getAttribute('data-id');
+            const emoji = btn.getAttribute('data-emoji');
+            try {
+                const docRef = doc(db, `artifacts/${appId}/public/data/moments`, id);
+                const snap = await getDoc(docRef);
+                const data = snap.data() || {}; const reactions = data.reactions || [];
+                const mineIdx = reactions.findIndex(r => r.uid === employee.uid);
+                if (mineIdx >= 0) { if (reactions[mineIdx].emoji === emoji) { reactions.splice(mineIdx,1); } else { reactions[mineIdx].emoji = emoji; } }
+                else { reactions.push({ uid: employee.uid, emoji }); }
+                await updateDoc(docRef, { reactions, lastUpdatedAt: serverTimestamp() });
+                const pop = document.getElementById(`moment-react-popover-${id}`);
+                if (pop) pop.classList.add('hidden');
+                window.renderMomentsList && window.renderMomentsList();
+            } catch (err) { showToast('خطا در ثبت واکنش.', 'error'); }
+        }, { passive: true });
+    });
 };
         // فیلترهای لحظه‌ها
         document.getElementById('moments-scope')?.addEventListener('change', () => { window.renderMomentsList(); });
