@@ -1017,7 +1017,7 @@ const performanceHistoryHtml = (employee.performanceHistory || [])
         const statusSelect = document.getElementById('request-status');
         function updateFilters() {
             const q = (searchInput?.value || '').trim();
-            const st = statusSelect?..value || 'all';
+            const st = statusSelect?.value || 'all';
             const base = '#requests';
             const next = `${base}?q=${encodeURIComponent(q)}&status=${encodeURIComponent(st)}`;
             history.replaceState(null, '', next);
