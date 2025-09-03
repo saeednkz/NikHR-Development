@@ -635,20 +635,48 @@ const performanceHistoryHtml = (employee.performanceHistory || [])
         return `<div id="info-bubble" data-info-id="${latestInfo.firestoreId}" class="glass rounded-2xl p-4 flex items-start gap-3 fade-up"><i data-lucide="megaphone" class="w-5 h-5" style="color:#6B69D6"></i><div class="flex-1"><div class="text-sm font-bold text-slate-800">اطلاعیه</div><div class="text-xs text-slate-700 mt-1">${latestInfo.content || latestInfo.title || ''}</div></div><button id="dismiss-info" class="text-slate-500 hover:text-slate-800"><i data-lucide="x" class="w-5 h-5"></i></button></div>`;
     })();
 
+    const completion = computeProfileCompletion(employee);
+    const completionRing = renderProgressRing(completion, 112, 10);
+
     contentContainer.innerHTML = `
         ${infoBanner}
         ${renderMyBirthdayWishesWidget(employee)}
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 ${renderMyBirthdayWishesWidget(employee) ? 'mt-8' : ''}">
+        <section class="bg-white rounded-2xl border border-slate-200 p-6 relative overflow-hidden ${renderMyBirthdayWishesWidget(employee) ? 'mt-8' : ''}">
+            <div class="absolute -left-20 -top-12 w-56 h-56 rounded-full" style="background:rgba(107,105,214,.08)"></div>
+            <div class="relative z-10 flex items-center gap-5">
+                <div class="w-16 h-16 rounded-full overflow-hidden ring-2 ring-indigo-100 bg-slate-100"><img src="${employee.avatar}" alt="${employee.name}" class="w-full h-full object-cover"></div>
+                <div class="min-w-0">
+                    <div class="text-lg font-extrabold text-slate-800 truncate">${employee.name}</div>
+                    <div class="text-sm text-slate-500 truncate">${employee.jobTitle || 'بدون عنوان شغلی'}</div>
+                    <div class="hidden sm:flex items-center gap-2 mt-1 text-xs text-slate-600">
+                        <span>تیم:</span><span class="font-semibold">${(state.teams.find(t=>t.memberIds?.includes(employee.id))?.name) || '-'}</span>
+                        <span class="opacity-60">|</span>
+                        <span>مدیر:</span><span class="font-semibold">${manager?.name || '-'}</span>
+                    </div>
+                </div>
+                <div class="ml-auto hidden md:block">${completionRing}</div>
+            </div>
+            <div class="mt-4 flex flex-wrap gap-2">
+                <button class="qa-evaluations primary-btn text-xs py-2 px-3 inline-flex items-center gap-2"><i data-lucide="clipboard-check" class="w-4 h-4"></i><span>خودارزیابی</span></button>
+                <button class="qa-request secondary-btn text-xs py-2 px-3 inline-flex items-center gap-2"><i data-lucide="send" class="w-4 h-4"></i><span>ثبت درخواست</span></button>
+                <button class="qa-edit-profile secondary-btn text-xs py-2 px-3 inline-flex items-center gap-2"><i data-lucide="user-cog" class="w-4 h-4"></i><span>ویرایش پروفایل</span></button>
+                <button class="qa-docs secondary-btn text-xs py-2 px-3 inline-flex items-center gap-2"><i data-lucide="folder-kanban" class="w-4 h-4"></i><span>دانش‌نامه</span></button>
+            </div>
+        </section>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
             <div class="lg:col-span-2 space-y-6">
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div class="glass rounded-2xl p-4 flex items-center justify-between fade-up"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full flex items-center justify-center" style="background:rgba(107,105,214,.12)"><i data-lucide="send" style="color:#6B69D6" class="w-5 h-5"></i></div><div><div class="text-xl font-extrabold text-slate-800">${requestsOpen}</div><div class="text-xs text-slate-500">درخواست‌های باز</div></div></div></div>
                     <div class="glass rounded-2xl p-4 flex items-center justify-between fade-up"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full flex items-center justify-center" style="background:rgba(107,105,214,.12)"><i data-lucide="mail" style="color:#6B69D6" class="w-5 h-5"></i></div><div><div class="text-xl font-extrabold text-slate-800">${unreadCount}</div><div class="text-xs text-slate-500">پیام‌های نخوانده</div></div></div></div>
                     <div class="glass rounded-2xl p-4 flex items-center justify-between fade-up"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full flex items-center justify-center" style="background:rgba(107,105,214,.12)"><i data-lucide="target" style="color:#6B69D6" class="w-5 h-5"></i></div><div><div class="text-xl font-extrabold text-slate-800">${okrAvg}%</div><div class="text-xs text-slate-500">میانگین OKR تیم</div></div></div></div>
                 </div>
-                
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                    <div class="flex items-center gap-4 mb-4"><div class="w-16 h-16 rounded-full overflow-hidden bg-slate-100 ring-2 ring-indigo-100"><img src="${employee.avatar}" alt="${employee.name}" class="w-full h-full object-cover"></div><div><div class="text-lg font-bold text-slate-800">${employee.name}</div><div class="text-sm text-slate-500">${employee.jobTitle || 'بدون عنوان شغلی'}</div></div><div class="ml-auto hidden md:flex items-center gap-3"><span class="text-xs text-slate-500">تیم:</span><span class="text-xs font-semibold text-slate-700">${(state.teams.find(t=>t.memberIds?.includes(employee.id))?.name) || '-'}</span><span class="text-xs text-slate-500">مدیر:</span><span class="text-xs font-semibold text-slate-700">${manager?.name || '-'}</span></div></div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm"><div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500 mb-1">ایمیل</div><div class="font-medium text-slate-700">${employee.personalInfo?.email || '-'}</div></div><div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500 mb-1">شماره موبایل</div><div class="font-medium text-slate-700">${employee.personalInfo?.phone || '-'}</div></div><div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500 mb-1">تیم</div><div class="font-medium text-slate-700">${(state.teams.find(t=>t.memberIds?.includes(employee.id))?.name) || '-'}</div></div><div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500 mb-1">مدیر</div><div class="font-medium text-slate-700">${manager?.name || '-'}</div></div></div>
+
+                <div class="card p-6">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-semibold text-slate-800 flex items-center gap-2"><i data-lucide="list-checks" class="w-5 h-5 text-emerald-500"></i>وظایف من</h3>
+                    </div>
+                    <div id="my-tasks-list"></div>
                 </div>
 
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
@@ -737,6 +765,7 @@ const performanceHistoryHtml = (employee.performanceHistory || [])
             });
         }
     } catch (err) { console.error('Performance chart error', err); }
+    try { renderMyTasks(employee); } catch {}
     
     function renderEmployeeSidebarMessages(emp) { /* ... */ }
     function renderEmployeeSidebarTeam(emp) { /* ... */ }
@@ -1285,6 +1314,27 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
     const mainContent = document.getElementById('employee-main-content');
     if (mainContent) {
         mainContent.addEventListener('click', (e) => {
+            // Quick action buttons
+            const qaEval = e.target.closest('.qa-evaluations');
+            if (qaEval) {
+                document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+                const evalLink = document.querySelector('.nav-item[href="#evaluations"]');
+                if (evalLink) evalLink.classList.add('active');
+                renderEmployeePortalPage('evaluations', employee);
+                return;
+            }
+            const qaReq = e.target.closest('.qa-request');
+            if (qaReq) { showNewRequestForm(employee); return; }
+            const qaEdit = e.target.closest('.qa-edit-profile');
+            if (qaEdit) { showMyProfileEditForm(employee); return; }
+            const qaDocs = e.target.closest('.qa-docs');
+            if (qaDocs) {
+                document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+                const docsLink = document.querySelector('.nav-item[href="#documents"]');
+                if (docsLink) docsLink.classList.add('active');
+                renderEmployeePortalPage('documents', employee);
+                return;
+            }
                       // [!code start]
             // ▼▼▼ این بلوک کد جدید را به اینجا اضافه کنید ▼▼▼
             const selfAssessBtn = e.target.closest('.start-self-assessment-btn');
@@ -1528,7 +1578,7 @@ function renderEmployeePortal() {
 <nav id="employee-portal-nav" class="flex flex-col gap-2">
     <a href="#profile" class="nav-item active"><i data-lucide="layout-dashboard"></i><span>مسیر من</span></a>
     ${managerNavlink}  <a href="#evaluations" class="nav-item"><i data-lucide="clipboard-check"></i><span>ارزیابی‌های من</span></a>
-    <a href="#requests" class="nav-item"><i data-lucide="send"></i><span>کارهای من</span></a>
+    <a href="#requests" class="nav-item"><i data-lucide="send"></i><span>درخواست‌ها</span></a>
     <a href="#directory" class="nav-item"><i data-lucide="users"></i><span>تیم‌ها</span></a>
     <a href="#documents" class="nav-item"><i data-lucide="folder-kanban"></i><span>دانش‌نامه</span></a>
     <a href="#inbox" class="nav-item"><i data-lucide="inbox"></i><span>پیام‌ها</span></a>
@@ -1650,6 +1700,43 @@ function renderEmployeePortal() {
             .replace(/۹/g, '9')
             .replace(/۰/g, '0');
     };
+
+// --- Helpers: Profile completion & Progress Ring ---
+function computeProfileCompletion(employee) {
+    try {
+        const checks = [
+            !!employee?.avatar,
+            !!employee?.name,
+            !!employee?.jobTitle,
+            !!employee?.personalInfo?.email,
+            !!employee?.personalInfo?.phone,
+            !!employee?.personalInfo?.nationalId,
+            !!employee?.personalInfo?.address,
+            !!employee?.emergencyContact?.name,
+            !!employee?.emergencyContact?.phone,
+            !!employee?.bankAccount?.iban || !!employee?.bankAccount?.card
+        ];
+        const filled = checks.filter(Boolean).length;
+        return Math.max(0, Math.min(100, Math.round((filled / checks.length) * 100)));
+    } catch {
+        return 0;
+    }
+}
+
+function renderProgressRing(percent, size = 104, stroke = 10) {
+    const clamped = Math.max(0, Math.min(100, Number(percent) || 0));
+    const radius = (size - stroke) / 2;
+    const circumference = 2 * Math.PI * radius;
+    const dashOffset = circumference * (1 - clamped / 100);
+    return `
+        <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+            <circle cx="${size/2}" cy="${size/2}" r="${radius}" stroke="#E2E8F0" stroke-width="${stroke}" fill="none"/>
+            <circle cx="${size/2}" cy="${size/2}" r="${radius}" stroke="#6B69D6" stroke-linecap="round" stroke-width="${stroke}"
+                    fill="none" stroke-dasharray="${circumference}" stroke-dashoffset="${dashOffset}" transform="rotate(-90 ${size/2} ${size/2})"/>
+            <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="16" font-weight="800" fill="#334155">${clamped}%</text>
+        </svg>
+    `;
+}
 
 function clearEventListeners(element) {
     if (!element) return;
