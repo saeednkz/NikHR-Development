@@ -1236,7 +1236,28 @@ else if (pageName === 'documents') {
                 </div>
             </div>`;
 
-        const listContainer = `<div id="moments-list" class="space-y-3"></div><div id="moments-sentinel" class="h-8"></div>`;
+        const listContainer = `
+            <div class="bg-white rounded-2xl p-3 border shadow-sm mb-3 flex flex-wrap items-center gap-2 sticky top-2 z-10">
+                <div class="flex items-center gap-2 text-xs">
+                    <span>نمایش:</span>
+                    <select id="moments-scope" class="p-1.5 border rounded-lg bg-white">
+                        <option value="all">همه</option>
+                        <option value="team">تیم من</option>
+                        <option value="me">فقط من</option>
+                    </select>
+                </div>
+                <div class="flex items-center gap-2 text-xs">
+                    <span>مرتب‌سازی:</span>
+                    <select id="moments-sort" class="p-1.5 border rounded-lg bg-white">
+                        <option value="new">جدیدترین</option>
+                        <option value="top">بیشترین واکنش</option>
+                    </select>
+                </div>
+                <input id="moments-search" class="p-2 border rounded-lg text-xs flex-1 min-w-[140px]" placeholder="جستجو در متن/نام"/>
+                <div class="text-[11px] text-slate-500 ml-auto">نتایج: <span id="moments-count">0</span></div>
+            </div>
+            <div id="moments-list" class="space-y-3"></div>
+            <div id="moments-sentinel" class="h-8"></div>`;
         contentContainer.innerHTML = `
             ${composer}
             ${listContainer}
@@ -1252,7 +1273,26 @@ else if (pageName === 'documents') {
 window.renderMomentsList = () => {
     const container = document.getElementById('moments-list');
     if (!container) return;
-    const items = (state.moments || []).slice().sort((a,b)=> new Date(b.createdAt?.toDate?.()||0) - new Date(a.createdAt?.toDate?.()||0));
+    const itemsAll = (state.moments || []).slice();
+    const team = state.teams.find(t => t.memberIds?.includes(employee.id));
+    const myTeamIds = new Set(team?.memberIds || []);
+    const scopeSel = document.getElementById('moments-scope');
+    const sortSel = document.getElementById('moments-sort');
+    const searchInp = document.getElementById('moments-search');
+    const countEl = document.getElementById('moments-count');
+    const scope = scopeSel?.value || 'all';
+    const sort = sortSel?.value || 'new';
+    const q = (searchInp?.value || '').trim();
+    let items = itemsAll.filter(m => {
+        if (scope==='me') return m.ownerUid === employee.uid;
+        if (scope==='team') return myTeamIds.has((state.employees.find(e=> e.uid===m.ownerUid)||{}).id);
+        return true;
+    }).filter(m => q ? ((m.text||'').includes(q) || (m.ownerName||'').includes(q)) : true);
+    items = items.sort((a,b)=> {
+        if (sort==='top') return (b.reactions||[]).length - (a.reactions||[]).length;
+        return new Date(b.createdAt?.toDate?.()||0) - new Date(a.createdAt?.toDate?.()||0);
+    });
+    if (countEl) countEl.textContent = String(items.length);
     
     const page = window._momentsPage;
     const slice = items.filter((it, idx) => idx < (page.pageSize + (page.extra || 0)));
@@ -1310,6 +1350,10 @@ window.renderMomentsList = () => {
     }).join('');
     if (window.lucide?.createIcons) lucide.createIcons();
 };
+        // فیلترهای لحظه‌ها
+        document.getElementById('moments-scope')?.addEventListener('change', () => { window.renderMomentsList(); });
+        document.getElementById('moments-sort')?.addEventListener('change', () => { window.renderMomentsList(); });
+        document.getElementById('moments-search')?.addEventListener('input', () => { clearTimeout(window._momDeb); window._momDeb = setTimeout(()=> window.renderMomentsList(), 250); });
         // شمارشگر کاراکتر لحظه‌ها
         const momentText = document.getElementById('moment-text');
         const momentChar = document.getElementById('moment-char');
