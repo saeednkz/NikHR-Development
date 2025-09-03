@@ -23,263 +23,215 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css">
     
 <style>
-    html, body { height: 100%; width: 100%; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
-    body { margin: 0; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
-    *, *::before, *::after { box-sizing: border-box; }
-    body {
-        font-family: 'Vazirmatn', sans-serif;
-        background-color: #f8fafc; /* Slate 50 */
-        color: #334155; /* Slate 700 */
-    }
-    #employee-portal-container { width: 100%; overflow-x: hidden; }
-    #employee-main-content { max-width: 100vw; padding-left: 0; padding-right: 0; }
+    html, body { height: 100%; width: 100%; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+    body { margin: 0; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+        font-family: 'Vazirmatn', sans-serif;
+        background-color: #f8fafc; /* Slate 50 */
+        color: #334155; /* Slate 700 */
+    }
 
-    /* --- استایل‌های عمومی -- */
-    .card {
-        background-color: #ffffff;
-        border-radius: 16px;
-        box-shadow: 0 8px 24px rgba(2,6,23,0.04);
-        border: 1px solid #e2e8f0;
-    }
-    .card-header {
-        padding: 1rem 1.5rem;
-        border-bottom: 1px solid #e2e8f0;
-    }
-    .card-content {
-        padding: 1.5rem;
-    }
-    .page-header { margin-bottom: 2rem; }
-    .primary-btn {
-        background-color: #6B69D6; color: white; padding: 10px 20px;
-        border-radius: 10px; font-weight: 600; transition: background-color 0.2s, box-shadow 0.2s;
-        box-shadow: 0 6px 14px rgba(107,105,214,0.22);
-    }
-    .primary-btn:hover { background-color: #5A58C9; box-shadow: 0 8px 18px rgba(107,105,214,0.28); }
-    .secondary-btn {
-        background-color: #ECEEF3; color: #6B69D6; padding: 10px 20px;
-        border-radius: 10px; font-weight: 600; transition: background-color 0.2s, border-color 0.2s;
-        border: 1px solid rgba(107,105,214,0.25);
-    }
-    .secondary-btn:hover { background-color: #E6E8F1; }
+    /* --- استایل‌های عمومی -- */
+    .card {
+        background-color: #ffffff;
+        border-radius: 16px;
+        box-shadow: 0 8px 24px rgba(2,6,23,0.04);
+        border: 1px solid #e2e8f0;
+    }
+    .card-header {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    .card-content {
+        padding: 1.5rem;
+    }
+    .page-header { margin-bottom: 2rem; }
+    .primary-btn {
+        background-color: #6B69D6; color: white; padding: 10px 20px;
+        border-radius: 10px; font-weight: 600; transition: background-color 0.2s, box-shadow 0.2s;
+        box-shadow: 0 6px 14px rgba(107,105,214,0.22);
+    }
+    .primary-btn:hover { background-color: #5A58C9; box-shadow: 0 8px 18px rgba(107,105,214,0.28); }
+    .secondary-btn {
+        background-color: #ECEEF3; color: #6B69D6; padding: 10px 20px;
+        border-radius: 10px; font-weight: 600; transition: background-color 0.2s, border-color 0.2s;
+        border: 1px solid rgba(107,105,214,0.25);
+    }
+    .secondary-btn:hover { background-color: #E6E8F1; }
 
-    /* --- استایل‌های جدید برای پورتال کارمندان (پالت سفارشی) --- */
-    .employee-sidebar {
-        background-color: #ECEEF3; /* Sidebar */
-        color: #475569; /* slate-600 like */
-        display: flex;
-        flex-direction: column;
-        padding: 1.5rem;
-    }
-    .employee-sidebar .profile-pic {
-        width: 120px; height: 120px;
-        border-radius: 50%;
-        border: 4px solid rgba(107,105,214,0.25);
-        box-shadow: 0 0 0 8px rgba(107,105,214,0.10);
-        margin: 1rem auto 1.5rem auto;
-    }
-    .employee-sidebar .employee-name {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: #1f2937; /* slate-800 */
-    }
-    .employee-sidebar .employee-title {
-        color: #64748b; /* Slate 500 */
-        font-weight: 500;
-    }
-    .employee-sidebar .nav-item {
-        display: flex;
+    /* --- استایل‌های جدید برای پورتال کارمندان (پالت سفارشی) --- */
+    .employee-sidebar {
+        background-color: #ECEEF3; /* Sidebar */
+        color: #475569; /* slate-600 like */
+        display: flex;
+        flex-direction: column;
+        padding: 1.5rem;
+    }
+    .employee-sidebar .profile-pic {
+        width: 120px; height: 120px;
+        border-radius: 50%;
+        border: 4px solid rgba(107,105,214,0.25);
+        box-shadow: 0 0 0 8px rgba(107,105,214,0.10);
+        margin: 1rem auto 1.5rem auto;
+    }
+    .employee-sidebar .employee-name {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1f2937; /* slate-800 */
+    }
+    .employee-sidebar .employee-title {
+        color: #64748b; /* Slate 500 */
+        font-weight: 500;
+    }
+    .employee-sidebar .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 12px 16px;
+        border-radius: 10px;
+        color: #475569; /* Slate 600 */
+        transition: all 0.2s ease;
+        font-weight: 500;
+    }
+    .employee-sidebar .nav-item:hover {
+        background-color: rgba(107,105,214,0.10);
+        color: #1f2937; /* slate-800 */
+    }
+    .employee-sidebar .nav-item.active {
+        background-color: rgba(107,105,214,0.18); /* #6B69D6 tint */
+        color: #6B69D6;
+        font-weight: 700;
+    }
+    .employee-sidebar .nav-item i {
+        color: #64748b;
+    }
+    .employee-sidebar .nav-item.active i {
+        color: #6B69D6;
+    }
+    .employee-sidebar .logout-btn {
+        color: #64748b;
+    }
+    .employee-sidebar .logout-btn:hover {
+        background-color: rgba(107,105,214,0.10);
+        color: #1f2937;
+    }
+    
+    /* --- استایل‌های پنل ادمین (سایدبار) --- */
+    .sidebar {
+        background-color: #ffffff;
+        border-left: 1px solid #e2e8f0; /* slate-200 */
+    }
+    .sidebar-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        color: #475569; /* slate-600 */
+        transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+        border: 1px solid transparent;
+    }
+    .sidebar-item:hover {
+        background-color: rgba(107,105,214,0.08);
+        color: #0f172a; /* slate-900 */
+    }
+    .sidebar-item.active {
+        background-color: rgba(107,105,214,0.18);
+        color: #6B69D6;
+        border-color: rgba(107,105,214,0.35);
+        font-weight: 700;
+    }
+    .sidebar-item i {
+        width: 1.25rem;
+        height: 1.25rem;
+    }
+
+    /* سایر استایل‌ها */
+    #loading-overlay { position: fixed; inset: 0; background-color: rgba(248, 250, 252, 0.8); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+    .spinner { width: 56px; height: 56px; border: 6px solid #e0e7ff; border-top: 6px solid #4f46e5; border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    /* --- استایل‌های تکمیلی برای جلوه‌های مدرن --- */
+    .glass { background: rgba(255,255,255,0.55); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.3); }
+    .blob { position: absolute; border-radius: 9999px; filter: blur(20px); opacity: .25; animation: float 12s ease-in-out infinite; }
+    @keyframes float { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-10px) } }
+    /* animations */
+    .fade-up { opacity: 0; transform: translateY(8px); animation: fadeUp .5s ease forwards; }
+    .fade-up-delayed { opacity: 0; transform: translateY(8px); animation: fadeUp .6s .08s ease forwards; }
+    @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+    /* confetti */
+    .confetti { position: fixed; inset: 0; pointer-events: none; z-index: 50; overflow: hidden; }
+    .confetti > i { position: absolute; width: 8px; height: 14px; border-radius: 2px; animation: drop 1.6s ease-in forwards; }
+    @keyframes drop { to { transform: translateY(100vh) rotate(360deg); opacity: 0; } }
+
+    /* Dark theme overrides */
+    body.theme-dark { background: #0B0F19; color: #E2E8F0; }
+    body.theme-dark .employee-sidebar { background: #0F172A; color: #CBD5E1; }
+    body.theme-dark .employee-sidebar .nav-item { color: #94A3B8; }
+    body.theme-dark .employee-sidebar .nav-item:hover { background: rgba(148,163,184,.12); color: #E2E8F0; }
+    body.theme-dark .employee-sidebar .nav-item.active { background: rgba(255,255,255,.08); color: #FFFFFF; }
+    body.theme-dark .employee-sidebar .nav-item.active i { color: #FFFFFF; }
+    body.theme-dark .card, body.theme-dark .bg-white { background: #111827 !important; color: #E5E7EB; border-color: #1F2937 !important; }
+    body.theme-dark .primary-btn { background: #6B69D6; }
+    body.theme-dark .secondary-btn { background: #0F172A; color: #C7D2FE; border-color: #1F2937; }
+
+    /* Tables */
+    table thead { background: #ECEEF3; }
+    table thead th { color: #475569; font-weight: 700; }
+    table tbody tr:hover { background: #F8FAFC; }
+
+    /* Form fields */
+    input[type="text"], input[type="email"], input[type="number"], input[type="file"], select, textarea {
+        border-radius: 10px;
+    }
+    body.theme-dark .text-slate-800 { color: #E5E7EB !important; }
+    body.theme-dark .text-slate-700 { color: #D1D5DB !important; }
+    body.theme-dark .text-slate-600 { color: #9CA3AF !important; }
+    body.theme-dark .bg-slate-50 { background: #0B1220 !important; }
+    /* =========================================== */
+    /* --- Toast Notification Styles --- */
+    /* =========================================== */
+    #toast-container {
+        position: fixed; top: 1.5rem; left: 50%;
+        transform: translateX(-50%); z-index: 9999;
+        display: flex; flex-direction: column; gap: 0.75rem;
         align-items: center;
-        gap: 0.75rem;
-        padding: 12px 16px;
-        border-radius: 10px;
-        color: #475569; /* Slate 600 */
-        transition: all 0.2s ease;
-        font-weight: 500;
     }
-    .employee-sidebar .nav-item:hover {
-        background-color: rgba(107,105,214,0.10);
-        color: #1f2937; /* slate-800 */
+    .toast {
+        display: flex; align-items: center;
+        padding: 0.9rem 1.25rem; border-radius: 12px;
+        color: white; font-size: 0.9rem; font-weight: 600;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        min-width: 320px;
+        animation: fadeInOut 5s ease-in-out forwards;
     }
-    .employee-sidebar .nav-item.active {
-        background-color: rgba(107,105,214,0.18); /* #6B69D6 tint */
-        color: #6B69D6;
-        font-weight: 700;
+    .toast.success { background-color: #059669; }
+    .toast.error { background-color: #dc2626; }
+
+    @keyframes fadeInOut {
+        0% { opacity: 0; transform: translateY(-20px); }
+        10%, 90% { opacity: 1; transform: translateY(0); }
+        100% { opacity: 0; transform: translateY(-20px); }
     }
-    .employee-sidebar .nav-item i {
-        color: #64748b;
-    }
-    .employee-sidebar .nav-item.active i {
-        color: #6B69D6;
-    }
-    .employee-sidebar .logout-btn {
-        color: #64748b;
-    }
-    .employee-sidebar .logout-btn:hover {
-        background-color: rgba(107,105,214,0.10);
-        color: #1f2937;
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-20px); }
+        to { opacity: 1; transform: translateY(0); }
     }
     
-    /* --- استایل‌های پنل ادمین (سایدبار) --- */
-    .sidebar {
-        background-color: #ffffff;
-        border-left: 1px solid #e2e8f0; /* slate-200 */
-    }
-    .sidebar-item {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        padding: 0.75rem 1rem;
-        border-radius: 0.5rem;
-        color: #475569; /* slate-600 */
-        transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
-        border: 1px solid transparent;
-    }
-    .sidebar-item:hover {
-        background-color: rgba(107,105,214,0.08);
-        color: #0f172a; /* slate-900 */
-    }
-    .sidebar-item.active {
-        background-color: rgba(107,105,214,0.18);
-        color: #6B69D6;
-        border-color: rgba(107,105,214,0.35);
-        font-weight: 700;
-    }
-    .sidebar-item i {
-        width: 1.25rem;
-        height: 1.25rem;
-    }
+    /* --- [FIX] Mobile Edge-to-edge Layout --- */
+    @media (max-width: 639px) {
+        /* Adjust the header to have a bit of horizontal padding */
+        #employee-portal-container header > div {
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
+        }
 
-    /* سایر استایل‌ها */
-    #loading-overlay { position: fixed; inset: 0; background-color: rgba(248, 250, 252, 0.8); display: flex; align-items: center; justify-content: center; z-index: 9999; }
-    .spinner { width: 56px; height: 56px; border: 6px solid #e0e7ff; border-top: 6px solid #4f46e5; border-radius: 50%; animation: spin 1s linear infinite; }
-    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-    /* --- استایل‌های تکمیلی برای جلوه‌های مدرن --- */
-    .glass { background: rgba(255,255,255,0.55); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.3); }
-    .blob { position: absolute; border-radius: 9999px; filter: blur(20px); opacity: .25; animation: float 12s ease-in-out infinite; }
-    @keyframes float { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-10px) } }
-    /* animations */
-    .fade-up { opacity: 0; transform: translateY(8px); animation: fadeUp .5s ease forwards; }
-    .fade-up-delayed { opacity: 0; transform: translateY(8px); animation: fadeUp .6s .08s ease forwards; }
-    @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
-    /* confetti */
-    .confetti { position: fixed; inset: 0; pointer-events: none; z-index: 50; overflow: hidden; }
-    .confetti > i { position: absolute; width: 8px; height: 14px; border-radius: 2px; animation: drop 1.6s ease-in forwards; }
-    @keyframes drop { to { transform: translateY(100vh) rotate(360deg); opacity: 0; } }
-
-    /* Dark theme overrides */
-    body.theme-dark { background: #0B0F19; color: #E2E8F0; }
-    body.theme-dark .employee-sidebar { background: #0F172A; color: #CBD5E1; }
-    body.theme-dark .employee-sidebar .nav-item { color: #94A3B8; }
-    body.theme-dark .employee-sidebar .nav-item:hover { background: rgba(148,163,184,.12); color: #E2E8F0; }
-    body.theme-dark .employee-sidebar .nav-item.active { background: rgba(255,255,255,.08); color: #FFFFFF; }
-    body.theme-dark .employee-sidebar .nav-item.active i { color: #FFFFFF; }
-    body.theme-dark .card, body.theme-dark .bg-white { background: #111827 !important; color: #E5E7EB; border-color: #1F2937 !important; }
-    body.theme-dark .primary-btn { background: #6B69D6; }
-    body.theme-dark .secondary-btn { background: #0F172A; color: #C7D2FE; border-color: #1F2937; }
-
-    /* Tables */
-    table thead { background: #ECEEF3; }
-    table thead th { color: #475569; font-weight: 700; }
-    table tbody tr:hover { background: #F8FAFC; }
-
-    /* Form fields */
-    input[type="text"], input[type="email"], input[type="number"], input[type="file"], select, textarea {
-        border-radius: 10px;
+        /* Adjust the main content area to have consistent padding on mobile */
+        #employee-main-content {
+            padding: 1.5rem 1rem !important; /* 1.5rem top/bottom, 1rem left/right */
+        }
     }
-    body.theme-dark .text-slate-800 { color: #E5E7EB !important; }
-    body.theme-dark .text-slate-700 { color: #D1D5DB !important; }
-    body.theme-dark .text-slate-600 { color: #9CA3AF !important; }
-    body.theme-dark .bg-slate-50 { background: #0B1220 !important; }
-    /* =========================================== */
-/* --- استایل‌های جدید برای اعلان (Toast) --- */
-/* =========================================== */
-
-/* کانتینر اصلی که اعلان‌ها در آن قرار می‌گیرند */
-#toast-container {
-    position: fixed; /* باعث می‌شود روی تمام محتوا شناور باشد */
-    top: 1.5rem;     /* فاصله از بالای صفحه */
-    left: 50%;       /* در مرکز افقی قرار می‌گیرد */
-    transform: translateX(-50%); /* ترفند مرکز چین کردن دقیق */
-    z-index: 9999;   /* بالاتر از همه المان‌ها نمایش داده می‌شود */
-    display: flex;
-    flex-direction: column; /* اعلان‌ها را زیر هم می‌چیند */
-    gap: 0.75rem;    /* فاصله بین اعلان‌ها */
-    align-items: center;
-}
-
-/* استایل پایه برای هر اعلان */
-.toast {
-    display: flex;
-    align-items: center;
-    padding: 0.9rem 1.25rem;
-    border-radius: 12px;
-    color: white;
-    font-size: 0.9rem;
-    font-weight: 600;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-    min-width: 320px; /* حداقل عرض */
-    animation: fadeInOut 5s ease-in-out forwards;
-}
-
-/* استایل برای اعلان موفقیت‌آمیز (سبز) */
-.toast.success {
-    background-color: #059669; /* رنگ سبز تیره و شیک */
-}
-
-/* استایل برای اعلان خطا (قرمز) */
-.toast.error {
-    background-color: #dc2626; /* رنگ قرمز */
-}
-
-/* انیمیشن ظاهر و محو شدن */
-@keyframes fadeInOut {
-    0% {
-        opacity: 0;
-        transform: translateY(-20px);
-    }
-    10%, 90% {
-        opacity: 1;
-        transform: translateY(0);
-    }
-    100% {
-        opacity: 0;
-        transform: translateY(-20px);
-    }
-}
-/* --- Edge-to-edge fix for employee portal on mobile --- */
-@media (max-width: 639px) {
-    #employee-portal-container,
-    #employee-portal-container > div,
-    #employee-main-content {
-        margin-left: 0 !important;
-        margin-right: 0 !important;
-        padding-left: 0 !important;
-        padding-right: 0 !important;
-        width: 100vw !important;
-        max-width: 100vw !important;
-    }
-    #employee-portal-container > div.flex {
-        width: 100vw !important;
-    }
-    /* Force wrapper and flex child to be edge-to-edge on mobile */
-    #employee-portal-container .flex.h-screen,
-    #employee-portal-container .flex.h-screen > .flex-1 {
-        margin: 0 !important;
-        padding: 0 !important;
-        width: 100vw !important;
-        max-width: 100vw !important;
-    }
-    /* Ensure header inner wrapper has no horizontal padding */
-    #employee-portal-container header > div {
-        padding-left: 0 !important;
-        padding-right: 0 !important;
-    }
-    /* Force the main container to have no vertical padding either */
-    #employee-main-content {
-        padding: 0 !important;
-    }
-}
 </style>
 </head>
 <body class="bg-slate-100">
