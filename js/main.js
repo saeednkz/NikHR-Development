@@ -1539,8 +1539,8 @@ function renderEmployeePortal() {
 
             <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
                 <div id="portal-sidebar-overlay" class="hidden fixed inset-0 bg-black/40 z-20 sm:hidden"></div>
-                <div class="blob" style="top:-40px; right:-60px; width:220px; height:220px; background:#FF6A3D"></div>
-                <div class="blob" style="bottom:-60px; left:-40px; width:180px; height:180px; background:#F72585"></div>
+                <div class="blob" style="top:-60px; right:-80px; width:240px; height:240px; background:#FF6A3D"></div>
+                <div class="blob" style="bottom:-80px; left:-80px; width:220px; height:220px; background:#F72585"></div>
                 
                 <header style="background:linear-gradient(90deg,#FF6A3D,#F72585)" class="shadow-sm relative z-20">
                     <div class="w-full py-4 px-3 sm:px-6 lg:px-8 flex justify-between items-center" style="padding-top: env(safe-area-inset-top);">
