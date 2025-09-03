@@ -1335,16 +1335,9 @@ window.renderMomentsList = () => {
                     ${m.text ? `<div class=\"text-sm text-slate-800 whitespace-pre-wrap mb-3 leading-7\">${m.text}</div>` : ''}
                 </div>
                 ${m.imageUrl ? `<img src="${m.imageUrl}" class="w-full h-auto max-h-[40rem] object-cover bg-slate-100"/>` : ''}
-                <div class="p-4 border-t flex items-center justify-between">
-                    <div class="relative">
-                        <button class="moment-react-toggle text-xs px-2 py-1 rounded-lg border flex items-center gap-1" data-id="${m.firestoreId}"><i data-lucide="smile" class="w-4 h-4"></i><span>واکنش</span></button>
-                        <div id="moment-react-popover-${m.firestoreId}" class="moment-react-popover hidden absolute z-50 bg-white border rounded-xl shadow-lg p-2 w-56 mt-2" style="inset-inline-start:0;">
-                            <div class="grid grid-cols-8 gap-1 text-lg">
-                                ${['👍','❤️','😂','🎉','🔥','👏','😍','🤝','💯','🤩','🙏','💡','😮','😢','👀','👋','✨','🌟','🚀','🥳','😎','🤗','🤔','🥰','😇','😴','🤤','😅','😆','😏','🤌'].map(e=> `<button type="button" class="moment-react-btn" data-id="${m.firestoreId}" data-emoji="${e}">${e}</button>`).join('')}
-                            </div>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-2">
+                <div class="p-4 border-t flex flex-wrap items-center gap-2">
+                    ${['👍','❤️','😂','🎉','🔥','👏','😍','🤝','💯','🤩','🙏','💡','😮','😢','👀','👋'].map(e=> `<button class=\"moment-react-btn text-sm px-2 py-1 rounded-full ${meReact===e ? 'bg-slate-800 text-white':'bg-slate-100 text-slate-700'}\" data-id=\"${m.firestoreId}\" data-emoji=\"${e}\">${e}</button>`).join('')}
+                    <div class="ml-auto flex items-center gap-2">
                         <button class="moment-comment-toggle text-xs px-2 py-1 rounded-lg border" data-id="${m.firestoreId}"><i data-lucide="message-circle" class="w-4 h-4"></i><span class="mr-1">نظر</span><span class="text-[11px] text-slate-500 mr-1">(${(m.comments||[]).length})</span></button>
                         <button class="moment-reshare-btn text-xs px-2 py-1 rounded-lg border" data-id="${m.firestoreId}"><i data-lucide="repeat" class="w-4 h-4"></i><span class="mr-1">بازنشر</span><span class="text-[11px] text-slate-500 mr-1">(${reshareCount})</span></button>
                     </div>
