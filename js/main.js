@@ -514,41 +514,6 @@ function renderMyHireAnniversaryWishesWidget(employee) {
             </div>
         </div>`;
 }
-
-// کارت: آخرین لحظه‌های تیم (Top-level helper)
-function renderRecentTeamMomentsCard(employee) {
-    try {
-        const myTeam = state.teams.find(t => t.memberIds?.includes(employee.id));
-        if (!myTeam) return '';
-        const teamMemberUids = (state.employees||[]).filter(e => myTeam.memberIds.includes(e.id)).map(e=> e.uid);
-        const recent = (state.moments || [])
-            .filter(m => teamMemberUids.includes(m.ownerUid))
-            .sort((a,b)=> new Date(b.createdAt?.toDate?.()||0) - new Date(a.createdAt?.toDate?.()||0))
-            .slice(0,4);
-        if (!recent.length) return '';
-        const cards = recent.map(m => {
-            const owner = (state.employees||[]).find(e=> e.uid === m.ownerUid) || {};
-            return `
-                <div class=\"bg-white rounded-xl border p-4 flex items-start gap-3\">
-                    <img src=\"${owner.avatar || 'icons/icon-128x128.png'}\" class=\"w-10 h-10 rounded-full object-cover\"/>
-                    <div class=\"flex-1\">
-                        <div class=\"text-sm font-bold text-slate-800\">${owner.name || 'عضو تیم'}</div>
-                        <div class=\"text-xs text-slate-500\">${toPersianDate(m.createdAt)}</div>
-                        ${m.text ? `<div class=\\"mt-2 text-sm text-slate-700 whitespace-pre-wrap\\">${m.text}</div>` : ''}
-                        ${m.imageUrl ? `<img src=\\"${m.imageUrl}\\" class=\\"mt-2 w-full h-auto max-h-60 rounded-lg object-cover border bg-slate-50\\"/>` : ''}
-                    </div>
-                </div>`;
-        }).join('');
-        return `
-            <div class=\"bg-white rounded-2xl shadow-sm border border-slate-200 p-6\">
-                <div class=\"flex items-center justify-between mb-4\">
-                    <h3 class=\"font-semibold text-slate-800 flex items-center gap-2\"><i data-lucide=\"sparkles\" class=\"w-5 h-5 text-indigo-500\"></i>آخرین لحظه‌های تیم</h3>
-                    <a href=\"#moments\" class=\"text-xs font-semibold text-indigo-600 hover:underline\">همه</a>
-                </div>
-                <div class=\"grid grid-cols-1 md:grid-cols-2 gap-4\">${cards}</div>
-            </div>`;
-    } catch { return ''; }
-}
 // در فایل js/main.js
 // این تابع را جایگزین نسخه فعلی کنید
 // در فایل js/main.js
@@ -699,15 +664,6 @@ const performanceHistoryHtml = (employee.performanceHistory || [])
         ? Math.round(myTeam.okrs.reduce((sum, okr) => sum + (okr.progress || 0), 0) / myTeam.okrs.length)
         : 0;
     const requestsOpen = (state.requests || []).filter(r => r.uid === employee.uid && (r.status === 'درحال بررسی' || r.status === 'در حال انجام')).length;
-    const yearsAtCompany = (() => {
-        try {
-            if (!employee.startDate) return 0;
-            const start = new Date(employee.startDate);
-            const now = new Date();
-            const diffYears = (now - start) / (1000*60*60*24*365.25);
-            return Math.max(0, Math.floor(diffYears));
-        } catch { return 0; }
-    })();
     const readIds = new Set(employee.readAnnouncements || []);
     const myTeamId = myTeam ? myTeam.firestoreId : null;
     const unreadCount = (state.announcements || []).filter(msg => {
@@ -742,13 +698,12 @@ const performanceHistoryHtml = (employee.performanceHistory || [])
         ${infoBanner}
         ${renderMyBirthdayWishesWidget(employee)}
         ${renderMyHireAnniversaryWishesWidget(employee)}
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 ${renderMyBirthdayWishesWidget(employee) ? 'mt-8' : ''}">
-            <div class="lg:col-span-3 space-y-6">
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 ${renderMyBirthdayWishesWidget(employee) ? 'mt-8' : ''}">
+            <div class="lg:col-span-2 space-y-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div class="glass rounded-2xl p-4 flex items-center justify-between fade-up"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full flex items-center justify-center" style="background:rgba(107,105,214,.12)"><i data-lucide="send" style="color:#6B69D6" class="w-5 h-5"></i></div><div><div class="text-xl font-extrabold text-slate-800">${requestsOpen}</div><div class="text-xs text-slate-500">درخواست‌های باز</div></div></div></div>
                     <div class="glass rounded-2xl p-4 flex items-center justify-between fade-up"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full flex items-center justify-center" style="background:rgba(107,105,214,.12)"><i data-lucide="mail" style="color:#6B69D6" class="w-5 h-5"></i></div><div><div class="text-xl font-extrabold text-slate-800">${unreadCount}</div><div class="text-xs text-slate-500">پیام‌های نخوانده</div></div></div></div>
                     <div class="glass rounded-2xl p-4 flex items-center justify-between fade-up"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full flex items-center justify-center" style="background:rgba(107,105,214,.12)"><i data-lucide="target" style="color:#6B69D6" class="w-5 h-5"></i></div><div><div class="text-xl font-extrabold text-slate-800">${okrAvg}%</div><div class="text-xs text-slate-500">میانگین OKR تیم</div></div></div></div>
-                    <div class="glass rounded-2xl p-4 flex items-center justify-between fade-up hidden xl:flex"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full flex items-center justify-center" style="background:rgba(107,105,214,.12)"><i data-lucide="calendar" style="color:#6B69D6" class="w-5 h-5"></i></div><div><div class="text-xl font-extrabold text-slate-800">${yearsAtCompany}</div><div class="text-xs text-slate-500">سال‌های همکاری</div></div></div></div>
                 </div>
                 
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
@@ -766,8 +721,6 @@ const performanceHistoryHtml = (employee.performanceHistory || [])
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm"><div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500 mb-1">ایمیل</div><div class="font-medium text-slate-700">${employee.personalInfo?.email || '-'}</div></div><div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500 mb-1">شماره موبایل</div><div class="font-medium text-slate-700">${employee.personalInfo?.phone || '-'}</div></div><div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500 mb-1">تیم</div><div class="font-medium text-slate-700">${(state.teams.find(t=>t.memberIds?.includes(employee.id))?.name) || '-'}</div></div><div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500 mb-1">مدیر</div><div class="font-medium text-slate-700">${manager?.name || '-'}</div></div></div>
                 </div>
-
-                ${renderRecentTeamMomentsCard(employee)}
 
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
                     <h3 class="font-semibold text-slate-800 flex items-center gap-2 mb-4">
@@ -863,41 +816,6 @@ const performanceHistoryHtml = (employee.performanceHistory || [])
 
     // فراخوانی توابع مخصوص این صفحه (حذف ویجت تسک‌های قدیمی)
     lucide.createIcons();
-}
-
-// کارت: آخرین لحظه‌های تیم
-function renderRecentTeamMomentsCard(employee) {
-    try {
-        const myTeam = state.teams.find(t => t.memberIds?.includes(employee.id));
-        if (!myTeam) return '';
-        const teamMemberUids = (state.employees||[]).filter(e => myTeam.memberIds.includes(e.id)).map(e=> e.uid);
-        const recent = (state.moments || [])
-            .filter(m => teamMemberUids.includes(m.ownerUid))
-            .sort((a,b)=> new Date(b.createdAt?.toDate?.()||0) - new Date(a.createdAt?.toDate?.()||0))
-            .slice(0,4);
-        if (!recent.length) return '';
-        const cards = recent.map(m => {
-            const owner = (state.employees||[]).find(e=> e.uid === m.ownerUid) || {};
-            return `
-                <div class=\"bg-white rounded-xl border p-4 flex items-start gap-3\">
-                    <img src=\"${owner.avatar || 'icons/icon-128x128.png'}\" class=\"w-10 h-10 rounded-full object-cover\"/>
-                    <div class=\"flex-1\">
-                        <div class=\"text-sm font-bold text-slate-800\">${owner.name || 'عضو تیم'}</div>
-                        <div class=\"text-xs text-slate-500\">${toPersianDate(m.createdAt)}</div>
-                        ${m.text ? `<div class=\\"mt-2 text-sm text-slate-700 whitespace-pre-wrap\\">${m.text}</div>` : ''}
-                        ${m.imageUrl ? `<img src=\\"${m.imageUrl}\\" class=\\"mt-2 w-full h-auto max-h-60 rounded-lg object-cover border bg-slate-50\\"/>` : ''}
-                    </div>
-                </div>`;
-        }).join('');
-        return `
-            <div class=\"bg-white rounded-2xl shadow-sm border border-slate-200 p-6\">
-                <div class=\"flex items-center justify-between mb-4\">
-                    <h3 class=\"font-semibold text-slate-800 flex items-center gap-2\"><i data-lucide=\"sparkles\" class=\"w-5 h-5 text-indigo-500\"></i>آخرین لحظه‌های تیم</h3>
-                    <a href=\"#moments\" class=\"text-xs font-semibold text-indigo-600 hover:underline\">همه</a>
-                </div>
-                <div class=\"grid grid-cols-1 md:grid-cols-2 gap-4\">${cards}</div>
-            </div>`;
-    } catch { return ''; }
 }
     // --- بخش دایرکتوری (تیمی) ---
     else if (pageName === 'directory') {
@@ -1703,7 +1621,7 @@ function renderEmployeePortal() {
         <div class="blob" style="top:-60px; right:-80px; width:240px; height:240px; background:#FF6A3D"></div>
         <div class="blob" style="bottom:-80px; left:-80px; width:220px; height:220px; background:#F72585"></div>
         
-        <header style="margin-top: 16px; background:linear-gradient(90deg,#FF6A3D,#F72585)" class="shadow-sm relative z-20">
+        <header style="background:linear-gradient(90deg,#FF6A3D,#F72585)" class="shadow-sm relative z-20">
             <div class="w-full py-4 px-0 sm:px-6 lg:px-8 flex justify-between items-center" style="padding-top: env(safe-area-inset-top);">
                 <div class="flex items-center gap-3">
                     <button id="portal-menu-btn" class="inline-flex sm:hidden items-center justify-center p-2 rounded-md bg-white/20 hover:bg-white/30 text-white" title="منو"><i data-lucide="menu" class="w-5 h-5"></i></button>
