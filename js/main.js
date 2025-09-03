@@ -1620,7 +1620,7 @@ function renderEmployeePortal() {
                 </div>
             </div>
         </header>
-        <main id="employee-main-content" class="flex-1 p-0 sm:p-6 lg:p-10 overflow-y-auto relative z-10"></main>
+<main id="employee-main-content" class="flex-1 p-4 sm:p-6 lg:p-10 overflow-y-auto relative z-10"></main>
     </div>
 </div>
     `;
