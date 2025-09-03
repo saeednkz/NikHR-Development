@@ -423,7 +423,7 @@ function renderBirthdaysWidget(currentEmployee) {
                 daysUntil: Math.ceil((nextBirthday - today) / (1000 * 60 * 60 * 24))
             };
         })
-        .filter(emp => emp.daysUntil >= 0 && emp.daysUntil <= 30)
+        .filter(emp => emp.daysUntil >= 0 && emp.daysUntil <= 3)
         .sort((a, b) => a.daysUntil - b.daysUntil);
 
     if (upcomingBirthdays.length === 0) return '';
@@ -687,6 +687,50 @@ const performanceHistoryHtml = (employee.performanceHistory || [])
                     <div class="glass rounded-2xl p-4 flex items-center justify-between fade-up"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full flex items-center justify-center" style="background:rgba(107,105,214,.12)"><i data-lucide="target" style="color:#6B69D6" class="w-5 h-5"></i></div><div><div class="text-xl font-extrabold text-slate-800">${okrAvg}%</div><div class="text-xs text-slate-500">میانگین OKR تیم</div></div></div></div>
                 </div>
 
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-semibold text-slate-800 flex items-center gap-2">
+                            <i data-lucide="sparkles" class="w-5 h-5 text-violet-500"></i>
+                            هایلایت لحظه‌های تیم
+                        </h3>
+                        <button id="view-all-moments-btn" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800">
+                            مشاهده همه
+                        </button>
+                    </div>
+                    <div class="space-y-3">
+                        ${(() => {
+                            const myTeam = state.teams.find(t=> t.memberIds?.includes(employee.id));
+                            const teamUids = (myTeam?.memberIds||[])
+                                .map(mid => (state.employees||[]).find(e=> e.id===mid)?.uid)
+                                .filter(Boolean);
+                            const items = (state.moments||[])
+                                .filter(m => teamUids.includes(m.ownerUid))
+                                .sort((a,b)=> new Date(b.createdAt?.toDate?.()||0) - new Date(a.createdAt?.toDate?.()||0))
+                                .slice(0,4);
+                            if (!items.length) return '<div class="text-xs text-slate-500">هنوز لحظه‌ای از تیم شما ثبت نشده است.</div>';
+                            return items.map(m => {
+                                const owner = (state.employees||[]).find(e=> e.uid===m.ownerUid) || {};
+                                const previewText = (m.text||'').length>100 ? (m.text||'').slice(0,100)+'…' : (m.text||'');
+                                const reactionsCount = (m.reactions||[]).length;
+                                return `
+                                    <div class="p-3 hover:bg-slate-50 rounded-lg border border-slate-100 flex items-start gap-3">
+                                        <img src="${owner.avatar || 'icons/icon-128x128.png'}" class="w-9 h-9 rounded-full object-cover"/>
+                                        <div class="flex-1 min-w-0">
+                                            <div class="text-xs font-bold text-slate-800 truncate">${owner.name || m.ownerName || 'کاربر'}</div>
+                                            <div class="text-[11px] text-slate-500">${toPersianDate(m.createdAt)}</div>
+                                            ${m.imageUrl ? `<img src="${m.imageUrl}" class="mt-2 w-full rounded-lg border bg-slate-100 max-h-32 object-cover"/>` : (previewText ? `<div class="text-sm text-slate-700 mt-2">${previewText}</div>` : '')}
+                                            <div class="mt-2 inline-flex items-center gap-1 text-[11px] text-slate-500">
+                                                <i data-lucide="smile" class="w-3.5 h-3.5"></i>
+                                                <span>${reactionsCount}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('');
+                        })()}
+                    </div>
+                </div>
+
                 <div class="card p-6">
                     <div class="flex items-center justify-between mb-3">
                         <h3 class="font-semibold text-slate-800 flex items-center gap-2"><i data-lucide="list-checks" class="w-5 h-5 text-emerald-500"></i>وظایف من</h3>
@@ -718,7 +762,7 @@ const performanceHistoryHtml = (employee.performanceHistory || [])
                 ${renderBirthdaysWidget(employee) || `
                 <div class=\"card p-0\">
                     <div class=\"card-header flex items-center gap-2\"><i data-lucide=\"cake\" class=\"w-5 h-5 text-pink-500\"></i><h3 class=\"font-semibold text-slate-800\">تولدهای نزدیک</h3></div>
-                    <div class=\"card-content p-4 text-xs text-slate-500\">موردی در ۳۰ روز آینده نیست.</div>
+                    <div class=\"card-content p-4 text-xs text-slate-500\">موردی در ۳ روز آینده نیست.</div>
                 </div>`}
                 <div class="card p-0">
                     <div class="card-header flex items-center gap-2"><i data-lucide="send" class="w-5 h-5 text-indigo-500"></i><h3 class="font-semibold text-slate-800">درخواست‌های اخیر</h3></div>
@@ -1784,10 +1828,8 @@ function renderEmployeePortal() {
         <div class="blob" style="top:-60px; right:-80px; width:240px; height:240px; background:#FF6A3D"></div>
         <div class="blob" style="bottom:-80px; left:-80px; width:220px; height:220px; background:#F72585"></div>
         
-
-        <header style="background:linear-gradient(90deg,#FF6A3D,#F72585)" class="shadow-sm relative z-20 pt-6">
-            <div class="w-full px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-
+        <header style="background:linear-gradient(90deg,#FF6A3D,#F72585)" class="shadow-sm relative z-20">
+            <div class="w-full py-4 px-0 sm:px-6 lg:px-8 flex justify-between items-center" style="padding-top: env(safe-area-inset-top);">
                 <div class="flex items-center gap-3">
                     <button id="portal-menu-btn" class="inline-flex sm:hidden items-center justify-center p-2 rounded-md bg-white/20 hover:bg-white/30 text-white" title="منو"><i data-lucide="menu" class="w-5 h-5"></i></button>
                     <img src="logo.png" alt="Logo" class="w-8 h-8 rounded-md ring-2 ring-white/30">
