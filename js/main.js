@@ -1059,26 +1059,31 @@ else if (pageName === 'documents') {
     const colors = ['#6B69D6','#FF6A3D','#10B981','#F59E0B','#0EA5E9','#F43F5E'];
     const cards = docSections.map((s, idx) => {
         const color = colors[idx % colors.length];
+        const total = (state.companyDocuments || []).filter(d => d.categoryKey === s.key).length;
         return `
             <div class="bg-white rounded-2xl border border-slate-200 p-5 hover:shadow-lg transition-shadow fade-up">
-                <div class="w-16 h-16 mx-auto rounded-full flex items-center justify-center ring-4" style="ring-color:${color}33; background:${color}1a;">
-                    <i data-lucide="${s.icon}" class="w-8 h-8" style="color:${color}"></i>
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-xl flex items-center justify-center ring-4" style="ring-color:${color}33; background:${color}1a;">
+                        <i data-lucide="${s.icon}" class="w-6 h-6" style="color:${color}"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-base font-bold text-slate-800">${s.id}</h3>
+                        <p class="text-xs text-slate-600 leading-6">${s.desc}</p>
+                    </div>
+                    <span class="text-[11px] px-2 py-1 rounded-full" style="background:${color}1a;color:${color}">${total} فایل</span>
                 </div>
-                <h3 class="text-center text-base font-bold text-slate-800 mt-3">${s.id}</h3>
-                <p class="text-center text-xs text-slate-600 leading-6 mt-1">${s.desc}</p>
-                <div class="mt-4 flex justify-center">
+                <div class="mt-4 flex justify-between">
                     <button class="doc-category-btn text-xs font-semibold px-3 py-1.5 rounded-lg" data-category="${s.key}" style="color:#fff;background:${color}">مشاهده</button>
+                    <a href="#" class="text-[11px] text-slate-500 hover:text-slate-700">راهنما</a>
                 </div>
             </div>`;
     }).join('');
     contentContainer.innerHTML = `
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 page-header mb-6">
-            <div><h1 class="text-3xl font-extrabold" style="color:#242A38">دانش‌نامه</h1><p class="text-slate-500 text-sm mt-1">دسترسی سریع به منابع و مستندات کلیدی</p></div>
-        </div>
+        <section class="rounded-2xl overflow-hidden border mb-6" style="background:linear-gradient(90deg,#0EA5E9,#6B69D6)"><div class="p-6 sm:p-8"><h1 class="text-2xl sm:text-3xl font-extrabold text-white">دانش‌نامه</h1><p class="text-white/90 text-xs mt-1">دسترسی سریع به منابع و مستندات کلیدی</p></div></section>
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 mb-4">
             <input id="docs-search" class="w-full p-2 border rounded-lg text-sm" placeholder="جستجو در دسته/توضیحات"/>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6" id="docs-cards">${cards}</div>`;
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6" id="docs-cards">${cards}</div>`;
     const docsSearch = document.getElementById('docs-search');
     docsSearch?.addEventListener('input', () => {
         const q = (docsSearch.value || '').trim();
@@ -1086,15 +1091,22 @@ else if (pageName === 'documents') {
         const colors = ['#6B69D6','#FF6A3D','#10B981','#F59E0B','#0EA5E9','#F43F5E'];
         const html = filtered.map((s, idx) => {
             const color = colors[idx % colors.length];
+            const total = (state.companyDocuments || []).filter(d => d.categoryKey === s.key).length;
             return `
             <div class="bg-white rounded-2xl border border-slate-200 p-5 hover:shadow-lg transition-shadow fade-up">
-                <div class="w-16 h-16 mx-auto rounded-full flex items-center justify-center ring-4" style="ring-color:${color}33; background:${color}1a;">
-                    <i data-lucide="${s.icon}" class="w-8 h-8" style="color:${color}"></i>
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-xl flex items-center justify-center ring-4" style="ring-color:${color}33; background:${color}1a;">
+                        <i data-lucide="${s.icon}" class="w-6 h-6" style="color:${color}"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-base font-bold text-slate-800">${s.id}</h3>
+                        <p class="text-xs text-slate-600 leading-6">${s.desc}</p>
+                    </div>
+                    <span class="text-[11px] px-2 py-1 rounded-full" style="background:${color}1a;color:${color}">${total} فایل</span>
                 </div>
-                <h3 class="text-center text-base font-bold text-slate-800 mt-3">${s.id}</h3>
-                <p class="text-center text-xs text-slate-600 leading-6 mt-1">${s.desc}</p>
-                <div class="mt-4 flex justify-center">
+                <div class="mt-4 flex justify-between">
                     <button class="doc-category-btn text-xs font-semibold px-3 py-1.5 rounded-lg" data-category="${s.key}" style="color:#fff;background:${color}">مشاهده</button>
+                    <a href="#" class="text-[11px] text-slate-500 hover:text-slate-700">راهنما</a>
                 </div>
             </div>`;
         }).join('');
@@ -8348,6 +8360,7 @@ function showManageCategoryDocsModal(categoryKey) {
         <tr class="border-b">
             <td class="p-2 text-sm">${d.title}</td>
             <td class="p-2 text-xs text-slate-500"><a href="${d.fileUrl}" target="_blank" class="text-indigo-600 hover:underline">دانلود</a></td>
+            <td class="p-2 text-xs text-slate-500">${(d.tags||[]).join('، ')}</td>
             <td class="p-2 text-xs">${formatTargetsText(d.targets)}</td>
             <td class="p-2 text-left"><button class="delete-document-btn text-rose-500" data-id="${d.firestoreId}"><i data-lucide="trash-2" class="w-4 h-4"></i></button></td>
         </tr>`).join('');
@@ -8364,6 +8377,10 @@ function showManageCategoryDocsModal(categoryKey) {
                     <div>
                         <label class="block text-xs mb-1">فایل</label>
                         <input id="cat-doc-file" type="file" class="w-full" required>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs mb-1">برچسب‌ها (با ویرگول جدا کنید)</label>
+                        <input id="cat-doc-tags" class="w-full p-2 border rounded-md" placeholder="مثال: آیین‌نامه، مرخصی">
                     </div>
                     <div class="md:col-span-2">
                         <label class="block text-xs mb-1">گیرندگان</label>
@@ -8392,7 +8409,7 @@ function showManageCategoryDocsModal(categoryKey) {
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
                     <thead class="bg-slate-100 text-slate-600">
-                        <tr><th class="p-2 text-right">عنوان</th><th class="p-2 text-right">فایل</th><th class="p-2 text-right">گیرندگان</th><th class="p-2 text-right"></th></tr>
+                        <tr><th class="p-2 text-right">عنوان</th><th class="p-2 text-right">فایل</th><th class="p-2 text-right">برچسب‌ها</th><th class="p-2 text-right">گیرندگان</th><th class="p-2 text-right"></th></tr>
                     </thead>
                     <tbody id="cat-docs-tbody">${rows || `<tr><td colspan='4' class='p-4 text-center text-slate-400'>فایلی ثبت نشده است.</td></tr>`}</tbody>
                 </table>
@@ -8416,6 +8433,7 @@ function showManageCategoryDocsModal(categoryKey) {
         e.preventDefault();
         const file = document.getElementById('cat-doc-file').files[0];
         const title = document.getElementById('cat-doc-title').value.trim();
+        const tags = (document.getElementById('cat-doc-tags').value || '').split(',').map(t=>t.trim()).filter(Boolean);
         if (!file || !title) return;
         try {
             const sRef = ref(storage, `companyDocs/${Date.now()}_${file.name}`);
@@ -8432,7 +8450,7 @@ function showManageCategoryDocsModal(categoryKey) {
                 targets.roles = Array.from(document.querySelectorAll('.cat-doc-target-checkbox-role:checked')).map(cb => cb.value);
             }
             await addDoc(collection(db, `artifacts/${appId}/public/data/companyDocuments`), {
-                title, categoryKey: categoryKey, fileUrl: url, uploadedAt: serverTimestamp(), targets
+                title, categoryKey: categoryKey, fileUrl: url, uploadedAt: serverTimestamp(), targets, tags
             });
             showToast('فایل افزوده شد.');
             closeModal(mainModal, mainModalContainer);
@@ -8454,16 +8472,63 @@ function showViewCategoryDocsModal(categoryKey) {
         if (targets.type === 'users') return employeeProfile ? targets.userIds?.includes(employeeProfile.firestoreId) : false;
         return false;
     });
-    const rows = visibleDocs.map(d => `<tr class="border-b"><td class="p-2 text-sm">${d.title}</td><td class="p-2 text-left"><a href="${d.fileUrl}" target="_blank" class="text-indigo-600 hover:underline">دانلود</a></td></tr>`).join('');
+    const itemsHtml = (docsList) => docsList.map(d => `
+        <div class="flex items-center justify-between p-3 border-b last:border-b-0">
+            <div>
+                <div class="font-semibold text-slate-800 text-sm">${d.title}</div>
+                <div class="text-[11px] text-slate-500 mt-0.5">${toPersianDate(d.uploadedAt?.toDate?.() || d.createdAt || new Date())}</div>
+                ${(d.tags||[]).length ? `<div class=\"mt-1 flex flex-wrap gap-1\">${(d.tags||[]).map(t=>`<span class=\"text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-700\">${t}</span>`).join('')}</div>` : ''}
+            </div>
+            <div class="flex items-center gap-2">
+                <a href="${d.fileUrl}" target="_blank" class="text-xs px-2 py-1 rounded-lg border text-indigo-600 border-indigo-200 hover:bg-indigo-50">دانلود</a>
+            </div>
+        </div>`).join('');
     modalTitle.innerText = 'نمایش اسناد';
     modalContent.innerHTML = `
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead class="bg-slate-100 text-slate-600"><tr><th class="p-2 text-right">عنوان</th><th class="p-2 text-right">فایل</th></tr></thead>
-                <tbody>${rows || `<tr><td colspan='2' class='p-4 text-center text-slate-400'>موردی برای نمایش نیست.</td></tr>`}</tbody>
-            </table>
+        <div class="bg-gradient-to-l from-[#0EA5E9]/10 to-[#6B69D6]/10 rounded-xl p-4 mb-4">
+            <div class="text-sm text-slate-600">دسته‌بندی انتخاب‌شده</div>
+            <div class="text-lg font-bold text-slate-800">${(documentCategories.find(c=>c.key===categoryKey)?.id) || ''}</div>
+        </div>
+        <div class="bg-white rounded-2xl border mb-3 p-3 flex flex-wrap items-center gap-2">
+            <input id="docs-view-search" class="p-2 border rounded-lg text-xs" placeholder="جستجو در عنوان"/>
+            <select id="docs-view-sort" class="p-2 border rounded-lg text-xs bg-white">
+                <option value="date_desc">جدیدترین</option>
+                <option value="date_asc">قدیمی‌ترین</option>
+                <option value="title_asc">عنوان (الف-ی)</option>
+                <option value="title_desc">عنوان (ی-الف)</option>
+            </select>
+            <input id="docs-view-tags" class="p-2 border rounded-lg text-xs" placeholder="فیلتر برچسب‌ها (ویرگول‌دار)">
+            <div class="text-[11px] text-slate-500 ml-auto">نتایج: <span id="docs-view-count">0</span></div>
+        </div>
+        <div id="docs-view-list" class="bg-white rounded-2xl border">
         </div>`;
     openModal(mainModal, mainModalContainer);
+    const listEl = document.getElementById('docs-view-list');
+    const countEl = document.getElementById('docs-view-count');
+    const searchEl = document.getElementById('docs-view-search');
+    const sortEl = document.getElementById('docs-view-sort');
+    const tagsEl = document.getElementById('docs-view-tags');
+    function applyDocFilters() {
+        const q = (searchEl.value || '').trim();
+        const sort = sortEl.value;
+        const tags = (tagsEl.value || '').split(',').map(t=>t.trim()).filter(Boolean);
+        let list = visibleDocs.filter(d => q ? (d.title||'').includes(q) : true);
+        if (tags.length) list = list.filter(d => (d.tags||[]).some(t => tags.includes(t)));
+        list = list.slice().sort((a,b)=>{
+            const ad = new Date(a.uploadedAt?.toDate?.() || a.createdAt || 0);
+            const bd = new Date(b.uploadedAt?.toDate?.() || b.createdAt || 0);
+            if (sort==='date_desc') return bd - ad;
+            if (sort==='date_asc') return ad - bd;
+            if (sort==='title_desc') return (b.title||'').localeCompare(a.title||'');
+            return (a.title||'').localeCompare(b.title||'');
+        });
+        countEl.textContent = String(list.length);
+        listEl.innerHTML = itemsHtml(list) || '<div class="p-6 text-center text-slate-400 text-sm">موردی برای نمایش نیست.</div>';
+    }
+    searchEl.addEventListener('input', () => { clearTimeout(window._docDeb); window._docDeb = setTimeout(applyDocFilters, 250); });
+    sortEl.addEventListener('change', applyDocFilters);
+    tagsEl.addEventListener('input', () => { clearTimeout(window._docDeb2); window._docDeb2 = setTimeout(applyDocFilters, 300); });
+    applyDocFilters();
 }
 
 function formatTargetsText(targets) {
