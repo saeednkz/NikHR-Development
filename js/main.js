@@ -1329,8 +1329,8 @@ const tableRows = teamMembers.map(member => {
     // [!code end]
     // [!code start]
     // ▼▼▼ این بلوک کد جدید را به اینجا اضافه کنید ▼▼▼
-    else if (pageName === 'evaluations') {
-        contentContainer.innerHTML = `
+    else if (pageName === 'evaluations') {
+        contentContainer.innerHTML = `
             <div class="flex justify-between items-center mb-6">
                 <h1 class="text-3xl font-bold text-slate-800">ارزیابی‌های من</h1>
             </div>
@@ -1350,13 +1350,26 @@ const tableRows = teamMembers.map(member => {
                 </div>
             </div>
         `;
+        // قهرمان بالای صفحه و فیلترها
+        const headerEl = contentContainer.firstElementChild;
+        if (headerEl) {
+            headerEl.outerHTML = `<section class="rounded-2xl overflow-hidden border mb-6" style="background:linear-gradient(90deg,#6B69D6,#0EA5E9)"><div class="p-6 sm:p-8"><h1 class="text-2xl sm:text-3xl font-extrabold text-white">ارزیابی‌های من</h1><p class="text-white/90 text-xs mt-1">پیگیری وضعیت ارزیابی‌ها و شروع خودارزیابی</p></div></section>`;
+        }
+        const filtersEl = document.createElement('div');
+        filtersEl.className = 'bg-white rounded-2xl shadow-sm border border-slate-200 p-4 mb-4';
+        const paramsEval = new URLSearchParams(window.location.hash.split('?')[1] || '');
+        const qParamEval = paramsEval.get('q') || '';
+        const statusParamEval = paramsEval.get('status') || 'all';
+        filtersEl.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-3 gap-3"><input id="evals-search" class="p-2 border rounded-lg text-sm" placeholder="جستجو در عنوان دوره" value="${qParamEval}"/><select id="evals-status" class="p-2 border rounded-lg text-sm bg-white"><option value="all" ${statusParamEval==='all'?'selected':''}>همه وضعیت‌ها</option><option value="pending_self_assessment" ${statusParamEval==='pending_self_assessment'?'selected':''}>در انتظار خودارزیابی</option><option value="pending_manager_assessment" ${statusParamEval==='pending_manager_assessment'?'selected':''}>در انتظار ارزیابی مدیر</option><option value="completed" ${statusParamEval==='completed'?'selected':''}>تکمیل شده</option></select><div class="text-xs text-slate-500 self-center">نتایج: <span id="evals-results-count">0</span></div></div>`;
+        const firstCard = contentContainer.querySelector('.card');
+        if (firstCard) { contentContainer.insertBefore(filtersEl, firstCard); }
 
         const myEvaluations = (state.employeeEvaluations || [])
             .filter(ev => ev.employeeId === employee.id)
             .sort((a, b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0));
 
-        const tbody = contentContainer.querySelector('#my-evaluations-tbody');
-        if (myEvaluations.length === 0) {
+        const tbody = contentContainer.querySelector('#my-evaluations-tbody');
+        if (myEvaluations.length === 0) {
             tbody.innerHTML = `<tr><td colspan="4" class="text-center p-6 text-slate-500">هیچ ارزیابی برای شما ثبت نشده است.</td></tr>`;
             return;
         }
@@ -1367,7 +1380,16 @@ const tableRows = teamMembers.map(member => {
             'completed': { text: 'تکمیل شده', color: 'bg-green-100 text-green-800' }
         };
 
-        const rowsHtml = myEvaluations.map(ev => {
+        const paramsNow = new URLSearchParams(window.location.hash.split('?')[1] || '');
+        const qNow = paramsNow.get('q') || '';
+        const sNow = paramsNow.get('status') || 'all';
+        const filteredEvals = myEvaluations.filter(ev => {
+            const cycle = state.evaluationCycles.find(c => c.firestoreId === ev.cycleId) || { title: ev.cycleId };
+            const matchesText = qNow ? (cycle.title||'').includes(qNow) : true;
+            const matchesStatus = sNow==='all' ? true : ev.status === sNow;
+            return matchesText && matchesStatus;
+        });
+        const rowsHtml = filteredEvals.map(ev => {
             const cycle = state.evaluationCycles.find(c => c.firestoreId === ev.cycleId) || { title: ev.cycleId };
             const status = statusMap[ev.status] || { text: ev.status, color: 'bg-slate-100' };
 
@@ -1388,7 +1410,20 @@ const tableRows = teamMembers.map(member => {
             `;
         }).join('');
 
-        tbody.innerHTML = rowsHtml;
+        tbody.innerHTML = rowsHtml;
+        const rc = document.getElementById('evals-results-count'); if (rc) rc.textContent = String(filteredEvals.length);
+        const evalSearch = document.getElementById('evals-search');
+        const evalStatus = document.getElementById('evals-status');
+        function updateEvalFilters() {
+            const q = (evalSearch?.value || '').trim();
+            const st = evalStatus?.value || 'all';
+            const base = '#evaluations';
+            const next = `${base}?q=${encodeURIComponent(q)}&status=${encodeURIComponent(st)}`;
+            history.replaceState(null, '', next);
+            renderEmployeePortalPage('evaluations', employee);
+        }
+        evalSearch?.addEventListener('input', () => { clearTimeout(window._evDeb); window._evDeb = setTimeout(updateEvalFilters, 250); });
+        evalStatus?.addEventListener('change', updateEvalFilters);
     }
     // [!code end]
 
@@ -3996,10 +4031,19 @@ requests: () => {
 tasks: () => {
     const TASKS_PAGE_SIZE = 10;
     if (!state.currentUser) return '';
-    
+    const params = new URLSearchParams(window.location.hash.split('?')[1] || '');
+    const statusParam = params.get('status') || 'all';
+    const sortParam = params.get('sort') || 'date_asc';
     const allMyTasks = (state.reminders || [])
         .filter(r => r.assignedTo === state.currentUser.uid)
-        .sort((a, b) => new Date(a.date?.toDate ? a.date.toDate() : a.date) - new Date(b.date?.toDate ? b.date.toDate() : b.date));
+        .filter(t => statusParam==='all' ? true : t.status === statusParam)
+        .sort((a, b) => {
+            const ad = new Date(a.date?.toDate ? a.date.toDate() : a.date);
+            const bd = new Date(b.date?.toDate ? b.date.toDate() : b.date);
+            if (sortParam==='date_desc') return bd - ad;
+            if (sortParam==='status') return (a.status||'').localeCompare(b.status||'');
+            return ad - bd; // date_asc
+        });
 
     const startIndex = (state.currentPageTasks - 1) * TASKS_PAGE_SIZE;
     const endIndex = startIndex + TASKS_PAGE_SIZE;
@@ -4015,6 +4059,25 @@ tasks: () => {
     return `
         <section class="rounded-2xl overflow-hidden border mb-6" style="background:linear-gradient(90deg,#FF6A3D,#F72585)"><div class="p-6 sm:p-8"><h1 class="text-2xl sm:text-3xl font-extrabold text-white">وظایف من</h1><p class="text-white/90 text-xs mt-1">یادآورها و کارهایی که به شما واگذار شده است</p></div></section>
         <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200">
+            <div class="flex flex-wrap gap-3 mb-4">
+                <div class="flex items-center gap-2 text-xs">
+                    <span>فیلتر وضعیت:</span>
+                    <select id="tasks-status" class="p-1.5 border rounded-lg bg-white">
+                        <option value="all" ${statusParam==='all'?'selected':''}>همه</option>
+                        <option value="جدید" ${statusParam==='جدید'?'selected':''}>جدید</option>
+                        <option value="در حال انجام" ${statusParam==='در حال انجام'?'selected':''}>در حال انجام</option>
+                        <option value="انجام شده" ${statusParam==='انجام شده'?'selected':''}>انجام شده</option>
+                    </select>
+                </div>
+                <div class="flex items-center gap-2 text-xs">
+                    <span>مرتب‌سازی:</span>
+                    <select id="tasks-sort" class="p-1.5 border rounded-lg bg-white">
+                        <option value="date_asc" ${sortParam==='date_asc'?'selected':''}>تاریخ صعودی</option>
+                        <option value="date_desc" ${sortParam==='date_desc'?'selected':''}>تاریخ نزولی</option>
+                        <option value="status" ${sortParam==='status'?'selected':''}>وضعیت</option>
+                    </select>
+                </div>
+            </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
                     <thead style="background:#ECEEF3"><tr><th class="px-4 py-2 font-semibold">تاریخ</th><th class="px-4 py-2 font-semibold">نوع</th><th class="px-4 py-2 font-semibold">متن</th><th class="px-4 py-2 font-semibold">وضعیت</th><th class="px-4 py-2 font-semibold">واگذار به</th><th class="px-4 py-2 font-semibold">عملیات</th></tr></thead>
