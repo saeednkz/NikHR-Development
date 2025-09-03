@@ -1280,7 +1280,7 @@ window.renderMomentsList = () => {
                 ${m.imageUrl ? `<img src="${m.imageUrl}" class="w-full h-auto max-h-[40rem] object-cover bg-slate-100"/>` : ''}
                 <div class="p-4 border-t flex items-center justify-between">
                     <div class="flex items-center gap-2">
-                        ${['👍','❤️','😂','🎉','👎'].map(e=> `<button class="moment-react-btn text-sm px-2 py-1 rounded-full ${meReact===e ? 'bg-slate-800 text-white':'bg-slate-100 text-slate-700'}" data-id="${m.firestoreId}" data-emoji="${e}">${e}</button>`).join('')}
+                        ${['👍','❤️','😂','🎉','🔥','👏','😍','🤝','💯','🤩','🙏','💡','😮','😢','👀','👋'].map(e=> `<button class="moment-react-btn text-sm px-2 py-1 rounded-full ${meReact===e ? 'bg-slate-800 text-white':'bg-slate-100 text-slate-700'}" data-id="${m.firestoreId}" data-emoji="${e}">${e}</button>`).join('')}
                     </div>
                     <div class="flex flex-wrap gap-2">${reactionsHtml}</div>
                 </div>
