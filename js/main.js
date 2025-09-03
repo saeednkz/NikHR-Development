@@ -4034,9 +4034,9 @@ tasks: () => {
     const params = new URLSearchParams(window.location.hash.split('?')[1] || '');
     const statusParam = params.get('status') || 'all';
     const sortParam = params.get('sort') || 'date_asc';
-    const allMyTasks = (state.reminders || [])
+    const qParam = params.get('q') || '';
+    const myTasksAll = (state.reminders || [])
         .filter(r => r.assignedTo === state.currentUser.uid)
-        .filter(t => statusParam==='all' ? true : t.status === statusParam)
         .sort((a, b) => {
             const ad = new Date(a.date?.toDate ? a.date.toDate() : a.date);
             const bd = new Date(b.date?.toDate ? b.date.toDate() : b.date);
@@ -4044,6 +4044,15 @@ tasks: () => {
             if (sortParam==='status') return (a.status||'').localeCompare(b.status||'');
             return ad - bd; // date_asc
         });
+    const statusCounts = {
+        all: myTasksAll.length,
+        new: myTasksAll.filter(t => t.status === 'جدید').length,
+        doing: myTasksAll.filter(t => t.status === 'در حال انجام').length,
+        done: myTasksAll.filter(t => t.status === 'انجام شده').length,
+    };
+    const allMyTasks = myTasksAll
+        .filter(t => statusParam==='all' ? true : t.status === statusParam)
+        .filter(t => qParam ? ((t.text||'').includes(qParam) || (t.type||'').includes(qParam)) : true);
 
     const startIndex = (state.currentPageTasks - 1) * TASKS_PAGE_SIZE;
     const endIndex = startIndex + TASKS_PAGE_SIZE;
@@ -4061,8 +4070,12 @@ tasks: () => {
         <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200">
             <div class="flex flex-wrap gap-3 mb-4">
                 <div class="flex items-center gap-2 text-xs">
+                    <span>جستجو:</span>
+                    <input id="tasks-search" value="${qParam}" class="p-1.5 border rounded-lg bg-white" placeholder="نوع/متن" oninput="(function(){var st=document.getElementById('tasks-status').value;var so=document.getElementById('tasks-sort').value;var q=document.getElementById('tasks-search').value;location.hash='#tasks?status='+encodeURIComponent(st)+'&sort='+encodeURIComponent(so)+'&q='+encodeURIComponent(q);})();"/>
+                </div>
+                <div class="flex items-center gap-2 text-xs">
                     <span>فیلتر وضعیت:</span>
-                    <select id="tasks-status" class="p-1.5 border rounded-lg bg-white">
+                    <select id="tasks-status" class="p-1.5 border rounded-lg bg-white" onchange="(function(){var st=document.getElementById('tasks-status').value;var so=document.getElementById('tasks-sort').value;var q=document.getElementById('tasks-search')?document.getElementById('tasks-search').value:'';location.hash='#tasks?status='+encodeURIComponent(st)+'&sort='+encodeURIComponent(so)+'&q='+encodeURIComponent(q);})();">
                         <option value="all" ${statusParam==='all'?'selected':''}>همه</option>
                         <option value="جدید" ${statusParam==='جدید'?'selected':''}>جدید</option>
                         <option value="در حال انجام" ${statusParam==='در حال انجام'?'selected':''}>در حال انجام</option>
@@ -4071,17 +4084,23 @@ tasks: () => {
                 </div>
                 <div class="flex items-center gap-2 text-xs">
                     <span>مرتب‌سازی:</span>
-                    <select id="tasks-sort" class="p-1.5 border rounded-lg bg-white">
+                    <select id="tasks-sort" class="p-1.5 border rounded-lg bg-white" onchange="(function(){var st=document.getElementById('tasks-status').value;var so=document.getElementById('tasks-sort').value;var q=document.getElementById('tasks-search')?document.getElementById('tasks-search').value:'';location.hash='#tasks?status='+encodeURIComponent(st)+'&sort='+encodeURIComponent(so)+'&q='+encodeURIComponent(q);})();">
                         <option value="date_asc" ${sortParam==='date_asc'?'selected':''}>تاریخ صعودی</option>
                         <option value="date_desc" ${sortParam==='date_desc'?'selected':''}>تاریخ نزولی</option>
                         <option value="status" ${sortParam==='status'?'selected':''}>وضعیت</option>
                     </select>
                 </div>
+                <div class="flex items-center gap-2 text-[11px] ml-auto">
+                    <span class="px-2 py-1 rounded-full ${statusParam==='all'?'bg-slate-800 text-white':'bg-slate-100 text-slate-700'} cursor-pointer" onclick="location.hash='#tasks?status=all&sort=${encodeURIComponent(sortParam)}&q=${encodeURIComponent(qParam)}'">همه ${statusCounts.all}</span>
+                    <span class="px-2 py-1 rounded-full ${statusParam==='جدید'?'bg-yellow-500 text-white':'bg-yellow-100 text-yellow-800'} cursor-pointer" onclick="location.hash='#tasks?status=${encodeURIComponent('جدید')}&sort=${encodeURIComponent(sortParam)}&q=${encodeURIComponent(qParam)}'">جدید ${statusCounts.new}</span>
+                    <span class="px-2 py-1 rounded-full ${statusParam==='در حال انجام'?'bg-blue-500 text-white':'bg-blue-100 text-blue-800'} cursor-pointer" onclick="location.hash='#tasks?status=${encodeURIComponent('در حال انجام')}&sort=${encodeURIComponent(sortParam)}&q=${encodeURIComponent(qParam)}'">در حال انجام ${statusCounts.doing}</span>
+                    <span class="px-2 py-1 rounded-full ${statusParam==='انجام شده'?'bg-green-500 text-white':'bg-green-100 text-green-800'} cursor-pointer" onclick="location.hash='#tasks?status=${encodeURIComponent('انجام شده')}&sort=${encodeURIComponent(sortParam)}&q=${encodeURIComponent(qParam)}'">انجام شده ${statusCounts.done}</span>
+                </div>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
                     <thead style="background:#ECEEF3"><tr><th class="px-4 py-2 font-semibold">تاریخ</th><th class="px-4 py-2 font-semibold">نوع</th><th class="px-4 py-2 font-semibold">متن</th><th class="px-4 py-2 font-semibold">وضعیت</th><th class="px-4 py-2 font-semibold">واگذار به</th><th class="px-4 py-2 font-semibold">عملیات</th></tr></thead>
-                    <tbody id="tasks-table-body">${tasksHtml || '<tr><td colspan="6" class="text-center py-8 text-slate-500">هیچ وظیفه‌ای به شما واگذار نشده است.</td></tr>'}</tbody>
+                    <tbody id="tasks-table-body">${tasksHtml || '<tr><td colspan="6" class="text-center py-8 text-slate-500">هیچ وظیفه‌ای مطابق فیلترها یافت نشد.</td></tr>'}</tbody>
                 </table>
             </div>
             <div id="pagination-container" class="p-4 flex justify-center mt-6"></div>
