@@ -543,24 +543,10 @@ function renderEmployeePortalPage(pageName, employee) {
     const contentContainer = document.getElementById('employee-main-content');
     if (!contentContainer) return;
 
-// فایل: js/main.js - این کد را به جای بلوک if (pageName === 'profile') فعلی قرار دهید
-
-// فایل: js/main.js - داخل تابع renderEmployeePortalPage
-// این بلوک کد را به جای بلوک if (pageName === 'profile') فعلی قرار دهید ▼
-
 if (pageName === 'profile') {
 const team = state.teams.find(t => t.memberIds?.includes(employee.id));
 const manager = team ? state.employees.find(e => e.id === team.leadership?.manager) : null;
         
-// فایل: js/main.js -> داخل تابع viewEmployeeProfile
-// ▼▼▼ این بلوک کد را به طور کامل جایگزین نسخه فعلی performanceHistoryHtml کنید ▼▼▼
-
-// فایل: js/main.js -> داخل تابع viewEmployeeProfile
-// ▼▼▼ کل این متغیر را با نسخه جدید و کامل زیر جایگزین کنید ▼▼▼
-
-// فایل: js/main.js -> داخل تابع viewEmployeeProfile
-// ▼▼▼ کل این متغیر را با نسخه جدید و کامل زیر جایگزین کنید ▼▼▼
-
 const performanceHistoryHtml = (employee.performanceHistory || [])
     .sort((a, b) => new Date(b.reviewDate) - new Date(a.reviewDate))
     .map((review, index) => {
