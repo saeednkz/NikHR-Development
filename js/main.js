@@ -906,12 +906,7 @@ const performanceHistoryHtml = (employee.performanceHistory || [])
         }).join('');
 
         contentContainer.innerHTML = `
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 page-header mb-6">
-                <div>
-                    <h1 class="text-3xl font-extrabold" style="color:#242A38">تیم‌ها</h1>
-                    <p class="text-slate-500 text-sm mt-1">تیم‌ها، اعضا و اطلاعات مرتبط</p>
-                </div>
-            </div>
+            <section class="rounded-2xl overflow-hidden border mb-6" style="background:linear-gradient(90deg,#6B69D6,#10B981)"><div class="p-6 sm:p-8"><h1 class="text-2xl sm:text-3xl font-extrabold text-white">تیم‌ها</h1><p class="text-white/90 text-xs mt-1">تیم‌ها، اعضا و اطلاعات مرتبط</p></div></section>
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 mb-4">
                 <input id="team-search" class="w-full p-2 border rounded-lg text-sm" placeholder="جستجوی نام تیم/مدیر"/>
             </div>
@@ -1529,7 +1524,7 @@ const tableRows = teamMembers.map(member => {
 }).join('');
 
         contentContainer.innerHTML = `
-            <h1 class="text-3xl font-bold text-slate-800 mb-6">داشبورد ارزیابی تیم: ${myTeam.name}</h1>
+            <section class="rounded-2xl overflow-hidden border mb-6" style="background:linear-gradient(90deg,#10B981,#6B69D6)"><div class="p-6 sm:p-8"><h1 class="text-2xl sm:text-3xl font-extrabولد text-white">مدیریت تیم: ${myTeam.name}</h1><p class="text-white/90 text-xs mt-1">وضعیت ارزیابی اعضا در دوره فعال</p></div></section>
             <div class="card p-0">
                 <div class="p-4 border-b"><h3 class="font-semibold">وضعیت ارزیابی اعضا در دوره: ${activeCycle.title}</h3></div>
                 <div class="overflow-x-auto">
