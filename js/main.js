@@ -1147,41 +1147,62 @@ else if (pageName === 'documents') {
                 </div>`;
         }).join('');
         contentContainer.innerHTML = `
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 page-header mb-6">
-                <div>
-                    <h1 class="text-3xl font-extrabold" style="color:#242A38">صندوق پیام</h1>
-                    <p class="text-slate-500 text-sm mt-1">پیام‌های سازمانی شما</p>
-                </div>
-            </div>
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 mb-4 flex items-center gap-3">
+            <section class="rounded-2xl overflow-hidden border mb-6" style="background:linear-gradient(90deg,#F59E0B,#6B69D6)"><div class="p-6 sm:p-8"><h1 class="text-2xl sm:text-3xl font-extrabold text-white">پیام‌ها</h1><p class="text-white/90 text-xs mt-1">صندوق پیام‌های سازمانی شما</p></div></section>
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 mb-4 flex flex-wrap items-center gap-3">
                 <label class="flex items-center gap-2 text-xs"><input type="radio" name="inbox-filter" value="all" checked/><span>همه</span></label>
                 <label class="flex items-center gap-2 text-xs"><input type="radio" name="inbox-filter" value="unread"/><span>فقط نخوانده</span></label>
+                <div class="mx-2 w-px h-5 bg-slate-200"></div>
+                <input id="inbox-search" class="p-2 border rounded-lg text-xs" placeholder="جستجو در عنوان/متن"/>
+                <select id="inbox-sort" class="p-2 border rounded-lg text-xs bg-white">
+                    <option value="new">جدیدترین</option>
+                    <option value="old">قدیمی‌ترین</option>
+                    <option value="title">عنوان</option>
+                </select>
+                <div class="text-[11px] text-slate-500 ml-auto">نتایج: <span id="inbox-count">${myMessages.length}</span></div>
             </div>
             <div class="space-y-3" id="inbox-list">${messagesHtml || '<div class="text-center p-10"><i data-lucide="inbox" class="mx-auto w-12 h-12 text-slate-300"></i><p class="mt-3 text-sm text-slate-500">پیامی ندارید.</p></div>'}</div>`;
         document.querySelectorAll('input[name="inbox-filter"]').forEach(el => {
             el.addEventListener('change', () => {
-                const val = document.querySelector('input[name="inbox-filter"]:checked')?.value || 'all';
-                const readIds = new Set((employee.readAnnouncements || []));
-                const list = myMessages.filter(m => val==='all' ? true : !readIds.has(m.firestoreId));
-                const html = list.map(msg => {
-                    const isUnread = !readIds.has(msg.firestoreId);
-                    const badge = isUnread ? '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold" style="background:#FF2E63;color:#fff">جدید</span>' : '';
-                    return `
-                        <div class="bg-white rounded-2xl border border-slate-200 p-4 flex items-start justify-between gap-3">
-                            <div class="flex items-start gap-3">
-                                <div class="w-9 h-9 rounded-full flex items-center justify-center" style="background:rgba(107,105,214,.12)"><i data-lucide="message-square" style="color:#6B69D6" class="w-4 h-4"></i></div>
-                                <div>
-                                    <div class="flex items-center gap-2">${badge}<span class="text-sm ${isUnread ? 'font-bold text-slate-900' : 'font-medium text-slate-700'}">${msg.title}</span></div>
-                                    <div class="text-[11px] text-slate-500 mt-1">${msg.senderName} • ${toPersianDate(msg.createdAt)}</div>
-                                </div>
-                            </div>
-                            <button class="view-message-btn text-xs font-semibold" data-id="${msg.firestoreId}" style="color:#6B69D6">مشاهده</button>
-                        </div>`;
-                }).join('');
-                document.getElementById('inbox-list').innerHTML = html || '<div class="text-center p-10"><i data-lucide="inbox" class="mx-auto w-12 h-12 text-slate-300"></i><p class="mt-3 text-sm text-slate-500">پیامی ندارید.</p></div>';
-                lucide.createIcons();
+                applyInboxFilters();
             });
         });
+        const searchEl = document.getElementById('inbox-search');
+        const sortEl = document.getElementById('inbox-sort');
+        searchEl.addEventListener('input', () => { clearTimeout(window._inbDeb); window._inbDeb = setTimeout(applyInboxFilters, 250); });
+        sortEl.addEventListener('change', applyInboxFilters);
+        function applyInboxFilters() {
+            const val = document.querySelector('input[name="inbox-filter"]:checked')?.value || 'all';
+            const q = (searchEl.value || '').trim();
+            const sort = sortEl.value;
+            const readIds = new Set((employee.readAnnouncements || []));
+            let list = myMessages.filter(m => val==='all' ? true : !readIds.has(m.firestoreId));
+            if (q) list = list.filter(m => (m.title||'').includes(q) || (m.content||'').includes(q));
+            list = list.slice().sort((a,b)=>{
+                if (sort==='title') return (a.title||'').localeCompare(b.title||'');
+                const ad = new Date(a.createdAt?.toDate?.()||0);
+                const bd = new Date(b.createdAt?.toDate?.()||0);
+                return sort==='old' ? ad - bd : bd - ad;
+            });
+            document.getElementById('inbox-count').textContent = String(list.length);
+            const html = list.map(msg => {
+                const isUnread = !readIds.has(msg.firestoreId);
+                const badge = isUnread ? '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold" style="background:#FF2E63;color:#fff">جدید</span>' : '';
+                return `
+                    <div class="bg-white rounded-2xl border border-slate-200 p-4 flex items-start justify-between gap-3">
+                        <div class="flex items-start gap-3">
+                            <div class="w-9 h-9 rounded-full flex items-center justify-center" style="background:rgba(107,105,214,.12)"><i data-lucide="message-square" style="color:#6B69D6" class="w-4 h-4"></i></div>
+                            <div>
+                                <div class="flex items-center gap-2">${badge}<span class="text-sm ${isUnread ? 'font-bold text-slate-900' : 'font-medium text-slate-700'}">${msg.title}</span></div>
+                                <div class="text-[11px] text-slate-500 mt-1">${msg.senderName} • ${toPersianDate(msg.createdAt)}</div>
+                            </div>
+                        </div>
+                        <button class="view-message-btn text-xs font-semibold" data-id="${msg.firestoreId}" style="color:#6B69D6">مشاهده</button>
+                    </div>`;
+            }).join('');
+            document.getElementById('inbox-list').innerHTML = html || '<div class="text-center p-10"><i data-lucide="inbox" class="mx-auto w-12 h-12 text-slate-300"></i><p class="mt-3 text-sm text-slate-500">پیامی ندارید.</p></div>';
+            lucide.createIcons();
+        }
+        applyInboxFilters();
     }
     // --- لحظه‌های نیک‌اندیشی ---
     else if (pageName === 'moments') {
