@@ -491,6 +491,56 @@ function renderUpcomingHireAnniversariesWidget(currentEmployee) {
       </div>`;
 }
 
+// ویجت: رویدادهای این هفته (تولدها و سالگردهای استخدام)
+function renderThisWeekEventsWidget(currentEmployee) {
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const events = [];
+    // تولدها
+    (state.employees || []).forEach(emp => {
+        if (!emp || emp.firestoreId === currentEmployee.firestoreId) return;
+        const b = emp.personalInfo?.birthDate ? new Date(emp.personalInfo.birthDate) : null;
+        if (!b) return;
+        let next = new Date(today.getFullYear(), b.getMonth(), b.getDate());
+        if (next < today) next.setFullYear(today.getFullYear()+1);
+        const daysUntil = Math.ceil((next - today)/(1000*60*60*24));
+        if (daysUntil >= 0 && daysUntil <= 7) {
+            events.push({ type: 'birthday', icon: 'cake', color: 'text-pink-500', date: next, daysUntil, name: emp.name, avatar: emp.avatar });
+        }
+    });
+    // سالگرد استخدام
+    (state.employees || []).forEach(emp => {
+        if (!emp || emp.firestoreId === currentEmployee.firestoreId) return;
+        const s = emp.startDate ? new Date(emp.startDate) : null;
+        if (!s) return;
+        let next = new Date(today.getFullYear(), s.getMonth(), s.getDate());
+        if (next < today) next.setFullYear(today.getFullYear()+1);
+        const daysUntil = Math.ceil((next - today)/(1000*60*60*24));
+        if (daysUntil >= 0 && daysUntil <= 7) {
+            events.push({ type: 'anniversary', icon: 'award', color: 'text-blue-500', date: next, daysUntil, name: emp.name, avatar: emp.avatar });
+        }
+    });
+    if (!events.length) return '';
+    events.sort((a,b)=> a.daysUntil - b.daysUntil || a.name.localeCompare(b.name));
+    const list = events.map(ev => `
+        <div class="flex items-center justify-between p-3 hover:bg-slate-50 rounded-lg transition-colors duration-200">
+            <div class="flex items-center gap-3">
+                <img src="${ev.avatar}" alt="${ev.name}" class="w-8 h-8 rounded-full object-cover">
+                <div>
+                    <p class="font-semibold text-sm text-slate-800">${ev.name}</p>
+                    <p class="text-[11px] text-slate-500">${toPersianDate(ev.date)} • ${ev.daysUntil===0 ? 'امروز' : ev.daysUntil + ' روز دیگر'}</p>
+                </div>
+            </div>
+            <i data-lucide="${ev.icon}" class="w-4 h-4 ${ev.color}"></i>
+        </div>
+    `).join('');
+    return `
+      <div class="card p-0">
+        <div class="card-header flex items-center gap-2"><i data-lucide="calendar" class="w-5 h-5 text-emerald-500"></i><h3 class="font-semibold text-slate-800">رویدادهای این هفته</h3></div>
+        <div class="card-content divide-y divide-slate-100">${list}</div>
+      </div>`;
+}
+
 // ویجت: تبریک‌های روز سالگرد استخدام خودم
 function renderMyHireAnniversaryWishesWidget(employee) {
     const today = new Date();
@@ -743,6 +793,7 @@ const performanceHistoryHtml = (employee.performanceHistory || [])
                 </div>
             </div>
             <aside class="space-y-6 min-w-[260px] w-full lg:w-auto">
+                ${renderThisWeekEventsWidget(employee) || ''}
                 ${renderBirthdaysWidget(employee) || `
                 <div class=\"card p-0\">
                     <div class=\"card-header flex items-center gap-2\"><i data-lucide=\"cake\" class=\"w-5 h-5 text-pink-500\"></i><h3 class=\"font-semibold text-slate-800\">تولدهای نزدیک</h3></div>
@@ -756,6 +807,14 @@ const performanceHistoryHtml = (employee.performanceHistory || [])
                             if (myRequests.length===0) return '<div class="p-3 text-xs text-slate-500">درخواستی ثبت نشده است.</div>';
                             return myRequests.map(r=> { const title = (r.title && r.title.trim()) || r.requestType || 'درخواست'; return `<a href="#requests" class=\"flex items-center justify-between p-3 hover:bg-slate-50 transition\" data-link=\"#requests\"><div class=\"text-xs\"><div class=\"font-semibold text-slate-800\">${title}</div><div class=\"text-slate-500 mt-0.5\">${toPersianDate(r.createdAt?.toDate?.()||new Date())}</div></div><span class=\"text-[10px] px-2 py-1 rounded-full ${r.status==='تایید شده'?'bg-green-100 text-green-700':r.status==='رد شده'?'bg-rose-100 text-rose-700':'bg-slate-100 text-slate-700'}\">${r.status}</span></a>`; }).join('');
                         })()}
+                    </div>
+                </div>
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <a href="#requests" class="flex items-center gap-2 p-3 rounded-xl border hover:bg-slate-50" data-link="#requests"><i data-lucide="send" class="w-4 h-4 text-indigo-500"></i><span class="text-xs font-semibold text-slate-700">ثبت/پیگیری درخواست</span></a>
+                        <a href="#documents" class="flex items-center gap-2 p-3 rounded-xl border hover:bg-slate-50" data-link="#documents"><i data-lucide="book-open" class="w-4 h-4 text-teal-500"></i><span class="text-xs font-semibold text-slate-700">دانش‌نامه</span></a>
+                        <a href="#directory" class="flex items-center gap-2 p-3 rounded-xl border hover:bg-slate-50" data-link="#directory"><i data-lucide="users" class="w-4 h-4 text-rose-500"></i><span class="text-xs font-semibold text-slate-700">تیم‌ها</span></a>
+                        <a href="#moments" class="flex items-center gap-2 p-3 rounded-xl border hover:bg-slate-50" data-link="#moments"><i data-lucide="sparkles" class="w-4 h-4 text-amber-500"></i><span class="text-xs font-semibold text-slate-700">لحظه‌های نیک‌اندیشی</span></a>
                     </div>
                 </div>
                 <div class="card p-0">
@@ -844,11 +903,40 @@ const performanceHistoryHtml = (employee.performanceHistory || [])
                     <p class="text-slate-500 text-sm mt-1">تیم‌ها، اعضا و اطلاعات مرتبط</p>
                 </div>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">${teamCardsHtml || '<p class="text-slate-500">تیمی ثبت نشده است.</p>'}</div>`;
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 mb-4">
+                <input id="team-search" class="w-full p-2 border rounded-lg text-sm" placeholder="جستجوی نام تیم/مدیر"/>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6" id="team-cards">${teamCardsHtml || '<p class="text-slate-500">تیمی ثبت نشده است.</p>'}</div>`;
+        const teamSearch = document.getElementById('team-search');
+        teamSearch?.addEventListener('input', () => {
+            const q = (teamSearch.value || '').trim();
+            const teams = (state.teams || []).filter(t => (t.name||'').includes(q) || ((state.employees.find(e=> e.id===t.leaderId)?.name)||'').includes(q));
+            const html = teams.map((team, idx) => {
+                const leader = state.employees.find(e => e.id === team.leaderId);
+                const color = colorsDir[idx % colorsDir.length];
+                const avatar = team.avatar || 'icons/icon-128x128.png';
+                return `
+                <div class="bg-white rounded-2xl border border-slate-200 p-5 hover:shadow-lg transition-shadow fade-up">
+                    <div class="w-16 h-16 mx-auto rounded-full overflow-hidden ring-4" style="ring-color:${color}; ring: 4px solid ${color}; background:rgba(0,0,0,.03)">
+                        <img src="${avatar}" alt="${team.name}" class="w-full h-full object-cover">
+                    </div>
+                    <h3 class="text-center text-base font-bold text-slate-800 mt-3">${team.name}</h3>
+                    ${team.missionLine ? `<p class=\"text-center text-xs text-slate-600 mt-1\">${team.missionLine}</p>` : `<p class=\"text-center text-xs text-slate-600 mt-1\">مدیر: ${leader?.name || 'نامشخص'}</p>`}
+                    <div class="mt-4 flex justify-center">
+                        <button class="view-team-employee-btn text-xs font-semibold px-3 py-1.5 rounded-lg" data-team-id="${team.firestoreId}" style="color:#fff;background:${color}">مشاهده</button>
+                    </div>
+                </div>`;
+            }).join('');
+            document.getElementById('team-cards').innerHTML = html;
+            lucide.createIcons();
+        });
     }
     // --- بخش درخواست‌ها ---
     else if (pageName === 'requests') {
         let myRequests = (state.requests || []).filter(req => req.uid === employee.uid);
+        const params = new URLSearchParams(window.location.hash.split('?')[1] || '');
+        const qParam = params.get('q') || '';
+        const statusParam = params.get('status') || 'all';
         // مرتب‌سازی: ابتدا درخواست‌هایی که پاسخ جدید دارند (نسبت به lastSeenAt)، سپس بر اساس lastUpdatedAt/createdAt
         myRequests = myRequests.sort((a, b) => {
             const aHasNew = (a.thread || []).some(item => item.createdAt?.toDate && (!a.lastSeenAt || item.createdAt.toDate() > a.lastSeenAt.toDate()));
@@ -858,7 +946,12 @@ const performanceHistoryHtml = (employee.performanceHistory || [])
             const bTime = b.lastUpdatedAt?.toDate?.() || b.createdAt?.toDate?.() || 0;
             return bTime - aTime;
         });
-        const requestsHtml = myRequests.map(req => {
+        const filtered = myRequests.filter(req => {
+            const matchesText = qParam ? ((req.requestType||'').includes(qParam) || (req.details||'').includes(qParam)) : true;
+            const matchesStatus = statusParam==='all' ? true : req.status === statusParam;
+            return matchesText && matchesStatus;
+        });
+        const requestsHtml = filtered.map(req => {
             const statusMap = {'درحال بررسی': { text: 'در حال بررسی', color: 'bg-yellow-100 text-yellow-800' },'در حال انجام': { text: 'در حال انجام', color: 'bg-blue-100 text-blue-800' },'تایید شده': { text: 'تایید شده', color: 'bg-green-100 text-green-800' },'رد شده': { text: 'رد شده', color: 'bg-red-100 text-red-800' }};
             const status = statusMap[req.status] || { text: req.status, color: 'bg-slate-100' };
             const hasNewReply = (req.thread || []).some(item => item.createdAt?.toDate && (!req.lastSeenAt || item.createdAt.toDate() > req.lastSeenAt.toDate()));
@@ -898,6 +991,19 @@ const performanceHistoryHtml = (employee.performanceHistory || [])
                     <button id="add-new-request-btn" class="inline-flex items-center gap-2 text-xs font-semibold" style="background:#6B69D6;color:#fff;padding:.6rem 1rem;border-radius:.75rem"><i data-lucide="plus-circle" class="w-4 h-4"></i><span>ثبت درخواست جدید</span></button>
                 </div>
             </div>
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 mb-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <input id="request-search" class="p-2 border rounded-lg text-sm" placeholder="جستجو در نوع/جزئیات" value="${qParam}"/>
+                    <select id="request-status" class="p-2 border rounded-lg text-sm bg-white">
+                        <option value="all" ${statusParam==='all'?'selected':''}>همه وضعیت‌ها</option>
+                        <option value="درحال بررسی" ${statusParam==='درحال بررسی'?'selected':''}>در حال بررسی</option>
+                        <option value="در حال انجام" ${statusParam==='در حال انجام'?'selected':''}>در حال انجام</option>
+                        <option value="تایید شده" ${statusParam==='تایید شده'?'selected':''}>تایید شده</option>
+                        <option value="رد شده" ${statusParam==='رد شده'?'selected':''}>رد شده</option>
+                    </select>
+                    <div class="text-xs text-slate-500 self-center">نتایج: <span id="request-results-count">${filtered.length}</span></div>
+                </div>
+            </div>
             ${myRequests.length ? [
                 sectionTable('گواهی اشتغال به کار', byType['گواهی اشتغال به کار']),
                 sectionTable('بیمه', byType['بیمه']),
@@ -906,6 +1012,19 @@ const performanceHistoryHtml = (employee.performanceHistory || [])
                 sectionTable('عمومی', byType['سایر'])
             ].join('') : `<div>${emptyState}</div>`}
             `;
+        // اتصال فیلترها
+        const searchInput = document.getElementById('request-search');
+        const statusSelect = document.getElementById('request-status');
+        function updateFilters() {
+            const q = (searchInput?.value || '').trim();
+            const st = statusSelect?..value || 'all';
+            const base = '#requests';
+            const next = `${base}?q=${encodeURIComponent(q)}&status=${encodeURIComponent(st)}`;
+            history.replaceState(null, '', next);
+            renderEmployeePortalPage('requests', employee);
+        }
+        searchInput?.addEventListener('input', () => { clearTimeout(window._rqDeb); window._rqDeb = setTimeout(updateFilters, 250); });
+        statusSelect?.addEventListener('change', updateFilters);
     }
     // --- بخش اسناد ---
 else if (pageName === 'documents') {
@@ -930,7 +1049,32 @@ else if (pageName === 'documents') {
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 page-header mb-6">
             <div><h1 class="text-3xl font-extrabold" style="color:#242A38">دانش‌نامه</h1><p class="text-slate-500 text-sm mt-1">دسترسی سریع به منابع و مستندات کلیدی</p></div>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">${cards}</div>`;
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 mb-4">
+            <input id="docs-search" class="w-full p-2 border rounded-lg text-sm" placeholder="جستجو در دسته/توضیحات"/>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6" id="docs-cards">${cards}</div>`;
+    const docsSearch = document.getElementById('docs-search');
+    docsSearch?.addEventListener('input', () => {
+        const q = (docsSearch.value || '').trim();
+        const filtered = documentCategories.filter(s => (s.id||'').includes(q) || (s.desc||'').includes(q));
+        const colors = ['#6B69D6','#FF6A3D','#10B981','#F59E0B','#0EA5E9','#F43F5E'];
+        const html = filtered.map((s, idx) => {
+            const color = colors[idx % colors.length];
+            return `
+            <div class="bg-white rounded-2xl border border-slate-200 p-5 hover:shadow-lg transition-shadow fade-up">
+                <div class="w-16 h-16 mx-auto rounded-full flex items-center justify-center ring-4" style="ring-color:${color}33; background:${color}1a;">
+                    <i data-lucide="${s.icon}" class="w-8 h-8" style="color:${color}"></i>
+                </div>
+                <h3 class="text-center text-base font-bold text-slate-800 mt-3">${s.id}</h3>
+                <p class="text-center text-xs text-slate-600 leading-6 mt-1">${s.desc}</p>
+                <div class="mt-4 flex justify-center">
+                    <button class="doc-category-btn text-xs font-semibold px-3 py-1.5 rounded-lg" data-category="${s.key}" style="color:#fff;background:${color}">مشاهده</button>
+                </div>
+            </div>`;
+        }).join('');
+        document.getElementById('docs-cards').innerHTML = html;
+        lucide.createIcons();
+    });
 }
 
     // --- بخش صندوق پیام ---
@@ -971,7 +1115,35 @@ else if (pageName === 'documents') {
                     <p class="text-slate-500 text-sm mt-1">پیام‌های سازمانی شما</p>
                 </div>
             </div>
-            <div class="space-y-3">${messagesHtml || '<div class="text-center p-10"><i data-lucide="inbox" class="mx-auto w-12 h-12 text-slate-300"></i><p class="mt-3 text-sm text-slate-500">پیامی ندارید.</p></div>'}</div>`;
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 mb-4 flex items-center gap-3">
+                <label class="flex items-center gap-2 text-xs"><input type="radio" name="inbox-filter" value="all" checked/><span>همه</span></label>
+                <label class="flex items-center gap-2 text-xs"><input type="radio" name="inbox-filter" value="unread"/><span>فقط نخوانده</span></label>
+            </div>
+            <div class="space-y-3" id="inbox-list">${messagesHtml || '<div class="text-center p-10"><i data-lucide="inbox" class="mx-auto w-12 h-12 text-slate-300"></i><p class="mt-3 text-sm text-slate-500">پیامی ندارید.</p></div>'}</div>`;
+        document.querySelectorAll('input[name="inbox-filter"]').forEach(el => {
+            el.addEventListener('change', () => {
+                const val = document.querySelector('input[name="inbox-filter"]:checked')?.value || 'all';
+                const readIds = new Set((employee.readAnnouncements || []));
+                const list = myMessages.filter(m => val==='all' ? true : !readIds.has(m.firestoreId));
+                const html = list.map(msg => {
+                    const isUnread = !readIds.has(msg.firestoreId);
+                    const badge = isUnread ? '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold" style="background:#FF2E63;color:#fff">جدید</span>' : '';
+                    return `
+                        <div class="bg-white rounded-2xl border border-slate-200 p-4 flex items-start justify-between gap-3">
+                            <div class="flex items-start gap-3">
+                                <div class="w-9 h-9 rounded-full flex items-center justify-center" style="background:rgba(107,105,214,.12)"><i data-lucide="message-square" style="color:#6B69D6" class="w-4 h-4"></i></div>
+                                <div>
+                                    <div class="flex items-center gap-2">${badge}<span class="text-sm ${isUnread ? 'font-bold text-slate-900' : 'font-medium text-slate-700'}">${msg.title}</span></div>
+                                    <div class="text-[11px] text-slate-500 mt-1">${msg.senderName} • ${toPersianDate(msg.createdAt)}</div>
+                                </div>
+                            </div>
+                            <button class="view-message-btn text-xs font-semibold" data-id="${msg.firestoreId}" style="color:#6B69D6">مشاهده</button>
+                        </div>`;
+                }).join('');
+                document.getElementById('inbox-list').innerHTML = html || '<div class="text-center p-10"><i data-lucide="inbox" class="mx-auto w-12 h-12 text-slate-300"></i><p class="mt-3 text-sm text-slate-500">پیامی ندارید.</p></div>';
+                lucide.createIcons();
+            });
+        });
     }
     // --- لحظه‌های نیک‌اندیشی ---
     else if (pageName === 'moments') {
@@ -983,7 +1155,10 @@ else if (pageName === 'documents') {
                         <textarea id="moment-text" class="w-full p-3 border rounded-xl" maxlength="280" placeholder="چه خبر خوب یا فکری می‌خواهی به اشتراک بگذاری؟ (حداکثر ۲۸۰ کاراکتر)"></textarea>
                         <div class="flex items-center justify-between mt-2">
                             <input type="file" id="moment-image" accept="image/png,image/jpeg" class="text-xs"/>
-                            <button id="moment-post-btn" class="primary-btn text-xs">ارسال</button>
+                            <div class="flex items-center gap-3">
+                                <span id="moment-char" class="text-[11px] text-slate-500">0/280</span>
+                                <button id="moment-post-btn" class="primary-btn text-xs">ارسال</button>
+                            </div>
                         </div>
                         <p class="text-[11px] text-slate-500 mt-1">فقط متن یا فقط عکس؛ همزمان هر دو مجاز نیست.</p>
                     </div>
@@ -1054,6 +1229,14 @@ window.renderMomentsList = () => {
     }).join('');
     if (window.lucide?.createIcons) lucide.createIcons();
 };
+        // شمارشگر کاراکتر لحظه‌ها
+        const momentText = document.getElementById('moment-text');
+        const momentChar = document.getElementById('moment-char');
+        momentText?.addEventListener('input', () => {
+            const len = (momentText.value || '').length;
+            momentChar.textContent = `${len}/280`;
+            momentChar.style.color = len > 260 ? '#DC2626' : '#64748B';
+        });
 
         window.renderMomentsList();
 
