@@ -698,16 +698,27 @@ const performanceHistoryHtml = (employee.performanceHistory || [])
         ${infoBanner}
         ${renderMyBirthdayWishesWidget(employee)}
         ${renderMyHireAnniversaryWishesWidget(employee)}
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 ${renderMyBirthdayWishesWidget(employee) ? 'mt-8' : ''}">
-            <div class="lg:col-span-2 space-y-6">
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 ${renderMyBirthdayWishesWidget(employee) ? 'mt-10' : ''}">
+            <div class="lg:col-span-2 space-y-8">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div class="glass rounded-2xl p-4 flex items-center justify-between fade-up"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full flex items-center justify-center" style="background:rgba(107,105,214,.12)"><i data-lucide="send" style="color:#6B69D6" class="w-5 h-5"></i></div><div><div class="text-xl font-extrabold text-slate-800">${requestsOpen}</div><div class="text-xs text-slate-500">درخواست‌های باز</div></div></div></div>
                     <div class="glass rounded-2xl p-4 flex items-center justify-between fade-up"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full flex items-center justify-center" style="background:rgba(107,105,214,.12)"><i data-lucide="mail" style="color:#6B69D6" class="w-5 h-5"></i></div><div><div class="text-xl font-extrabold text-slate-800">${unreadCount}</div><div class="text-xs text-slate-500">پیام‌های نخوانده</div></div></div></div>
                     <div class="glass rounded-2xl p-4 flex items-center justify-between fade-up"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full flex items-center justify-center" style="background:rgba(107,105,214,.12)"><i data-lucide="target" style="color:#6B69D6" class="w-5 h-5"></i></div><div><div class="text-xl font-extrabold text-slate-800">${okrAvg}%</div><div class="text-xs text-slate-500">میانگین OKR تیم</div></div></div></div>
                 </div>
                 
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                    <div class="flex items-center gap-4 mb-4"><div class="w-16 h-16 rounded-full overflow-hidden bg-slate-100 ring-2 ring-indigo-100"><img src="${employee.avatar}" alt="${employee.name}" class="w-full h-full object-cover"></div><div><div class="text-lg font-bold text-slate-800">${employee.name}</div><div class="text-sm text-slate-500">${employee.jobTitle || 'بدون عنوان شغلی'}</div></div><div class="ml-auto hidden md:flex items-center gap-3"><span class="text-xs text-slate-500">تیم:</span><span class="text-xs font-semibold text-slate-700">${(state.teams.find(t=>t.memberIds?.includes(employee.id))?.name) || '-'}</span><span class="text-xs text-slate-500">مدیر:</span><span class="text-xs font-semibold text-slate-700">${manager?.name || '-'}</span></div></div>
+                    <div class="flex items-center gap-5 mb-6">
+                        <div class="w-20 h-20 rounded-2xl overflow-hidden bg-slate-100 ring-4 ring-indigo-100"><img src="${employee.avatar}" alt="${employee.name}" class="w-full h-full object-cover"></div>
+                        <div class="space-y-1">
+                            <div class="text-2xl font-extrabold text-slate-900">${employee.name}</div>
+                            <div class="text-sm text-slate-500">${employee.jobTitle || 'بدون عنوان شغلی'}</div>
+                        </div>
+                        <div class="ml-auto hidden md:flex items-center gap-4 bg-slate-50 px-4 py-2 rounded-xl">
+                            <div class="text-xs text-slate-500">تیم</div><div class="text-xs font-bold text-slate-700">${(state.teams.find(t=>t.memberIds?.includes(employee.id))?.name) || '-'}</div>
+                            <div class="w-px h-4 bg-slate-200"></div>
+                            <div class="text-xs text-slate-500">مدیر</div><div class="text-xs font-bold text-slate-700">${manager?.name || '-'}</div>
+                        </div>
+                    </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm"><div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500 mb-1">ایمیل</div><div class="font-medium text-slate-700">${employee.personalInfo?.email || '-'}</div></div><div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500 mb-1">شماره موبایل</div><div class="font-medium text-slate-700">${employee.personalInfo?.phone || '-'}</div></div><div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500 mb-1">تیم</div><div class="font-medium text-slate-700">${(state.teams.find(t=>t.memberIds?.includes(employee.id))?.name) || '-'}</div></div><div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500 mb-1">مدیر</div><div class="font-medium text-slate-700">${manager?.name || '-'}</div></div></div>
                 </div>
 
