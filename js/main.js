@@ -2557,7 +2557,54 @@ const updateNotificationBell = () => {
         const showAssignmentRuleForm = (...args) => window.showAssignmentRuleForm?.(...args);
         const showProcessReminderForm = (...args) => window.showProcessReminderForm?.(...args);
         if (typeof renderTeamHealthMetrics !== 'function') { window.renderTeamHealthMetrics = (team) => { const metrics = team.healthMetrics || []; if(!metrics.length) return '<p class=\"text-sm text-slate-500\">معیاری ثبت نشده است.</p>'; return metrics.map(m=>`<div class=\"flex justify-between text-sm\"><span>${m.name}</span><span class=\"font-medium\">${m.value}</span></div>`).join(''); }; }
-        if (typeof showTeamForm !== 'function') { window.showTeamForm = (teamId=null) => { const team=(state.teams||[]).find(t=>t.firestoreId===teamId)||{name:'',leaderId:'',missionLine:''}; const leaders=state.employees.map(e=>`<option value=\"${e.id}\" ${e.id===team.leaderId?'selected':''}>${e.name}</option>`).join(''); modalTitle.innerText=teamId?'ویرایش تیم':'افزودن تیم جدید'; modalContent.innerHTML = `<form id=\"team-form\" class=\"space-y-4\"><div><label class=\"block text-sm\">نام تیم</label><input id=\"team-name\" class=\"w-full p-2 border rounded-md\" value=\"${team.name}\" required></div><div><label class=\"block text-sm\">مدیر تیم</label><select id=\"team-leader\" class=\"w-full p-2 border rounded-md\">${leaders}</select></div><div><label class=\"block text-sm\">هدف یک‌خطی تیم</label><input id=\"team-mission\" class=\"w-full p-2 border rounded-md\" placeholder=\"یک جمله درباره هدف تیم...\" value=\"${team.missionLine || ''}\"></div><div class=\"flex justify-end\"><button type=\"submit\" class=\"bg-blue-600 text-white py-2 px-4 rounded-md\">ذخیره</button></div></form>`; openModal(mainModal, mainModalContainer); document.getElementById('team-form').addEventListener('submit', async (e)=>{ e.preventDefault(); const name=document.getElementById('team-name').value.trim(); const leader=document.getElementById('team-leader').value; const mission=document.getElementById('team-mission').value.trim(); try { if(teamId){ await updateDoc(doc(db, `artifacts/${appId}/public/data/teams`, teamId), { name, leaderId: leader, missionLine: mission }); } else { await addDoc(collection(db, `artifacts/${appId}/public/data/teams`), { name, leaderId: leader, missionLine: mission, memberIds: [] }); } showToast('تیم ذخیره شد.'); closeModal(mainModal, mainModalContainer); renderPage('organization'); } catch(err){ console.error(err); showToast('خطا در ذخیره تیم.', 'error'); } }); }; }
+        if (typeof showTeamForm !== 'function') {
+            window.showTeamForm = (teamId = null) => {
+                const team = (state.teams || []).find(t => t.firestoreId === teamId) || { name: '', leaderId: '', missionLine: '' };
+                const leaders = state.employees.map(e => `<option value=\"${e.id}\" ${e.id===team.leaderId?'selected':''}>${e.name}</option>`).join('');
+                modalTitle.innerText = teamId ? 'ویرایش تیم' : 'افزودن تیم جدید';
+                modalContent.innerHTML = `
+                    <form id=\"team-form\" class=\"space-y-4\">
+                        <div>
+                            <label class=\"block text-sm\">نام تیم</label>
+                            <input id=\"team-name\" class=\"w-full p-2 border rounded-md\" value=\"${team.name}\" required>
+                        </div>
+                        <div>
+                            <label class=\"block text-sm\">مدیر تیم</label>
+                            <select id=\"team-leader\" class=\"w-full p-2 border rounded-md\">${leaders}</select>
+                        </div>
+                        <div>
+                            <label class=\"block text-sm\">هدف یک‌خطی تیم</label>
+                            <input id=\"team-mission\" class=\"w-full p-2 border rounded-md\" placeholder=\"یک جمله درباره هدف تیم...\" value=\"${team.missionLine || ''}\">
+                        </div>
+                        <div class=\"flex justify-end\">
+                            <button type=\"submit\" class=\"bg-blue-600 text-white py-2 px-4 rounded-md\">ذخیره</button>
+                        </div>
+                    </form>`;
+                openModal(mainModal, mainModalContainer);
+                // در برخی مسیرها modalContent با clearEventListeners جایگزین می‌شود؛ دوباره مرجع را تازه‌سازی می‌کنیم
+                const formEl = document.getElementById('team-form');
+                if (!formEl) return; // اگر فرم هنوز در DOM نیست، ایمن خارج شویم
+                formEl.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const name = document.getElementById('team-name')?.value.trim();
+                    const leader = document.getElementById('team-leader')?.value;
+                    const mission = document.getElementById('team-mission')?.value.trim();
+                    try {
+                        if (teamId) {
+                            await updateDoc(doc(db, `artifacts/${appId}/public/data/teams`, teamId), { name, leaderId: leader, missionLine: mission });
+                        } else {
+                            await addDoc(collection(db, `artifacts/${appId}/public/data/teams`), { name, leaderId: leader, missionLine: mission, memberIds: [] });
+                        }
+                        showToast('تیم ذخیره شد.');
+                        closeModal(mainModal, mainModalContainer);
+                        renderPage('organization');
+                    } catch (err) {
+                        console.error(err);
+                        showToast('خطا در ذخیره تیم.', 'error');
+                    }
+                });
+            };
+        }
        // فایل: js/main.js
 // تابع showPerformanceForm را به طور کامل با این نسخه جایگزین کنید ▼
 
@@ -3480,7 +3527,7 @@ surveys: () => {
                 <h3 class="text-lg font-bold text-slate-800">${survey.title}</h3>
                 <p class="text-sm text-slate-500 mt-2 flex-grow min-h-[60px]">${survey.description}</p>
                 
-                <button class="create-survey-link-btn mt-auto w-full text-sm bg-slate-800 text-white py-2.5 px-4 rounded-lg hover:bg-slate-900 transition-colors" data-survey-id="${survey.id}">
+                <button class="create-survey-link-btn mt-auto w-full text-sm bg-slate-800 text-white py-2.5 px-4 rounded-lg hover:bg-slate-900 transition-colors" data-survey-id="${survey.id}" onclick="event.stopPropagation();">
                     ایجاد لینک نظرسنجی
                 </button>
             </div>
