@@ -467,7 +467,7 @@ function renderUpcomingHireAnniversariesWidget(currentEmployee) {
             if (next < today) next.setFullYear(today.getFullYear()+1);
             return { ...emp, next, daysUntil: Math.ceil((next - today)/(1000*60*60*24)) };
         })
-        .filter(emp => emp.daysUntil >= 0 && emp.daysUntil <= 30)
+        .filter(emp => emp.daysUntil >= 0 && emp.daysUntil <= 7)
         .sort((a,b)=> a.daysUntil - b.daysUntil);
     if (!upcoming.length) return '';
     const list = upcoming.map(emp => `
