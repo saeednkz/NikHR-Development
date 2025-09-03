@@ -883,6 +883,10 @@ const performanceHistoryHtml = (employee.performanceHistory || [])
             const leader = state.employees.find(e => e.id === team.leaderId);
             const color = colorsDir[idx % colorsDir.length];
             const avatar = team.avatar || 'icons/icon-128x128.png';
+            const membersCount = (team.memberIds || []).length;
+            const okrs = team.okrs || [];
+            const okrCount = okrs.length;
+            const avgProgress = okrCount ? Math.round(okrs.reduce((s,o)=> s + (o.progress || 0), 0) / okrCount) : 0;
             return `
                 <div class="bg-white rounded-2xl border border-slate-200 p-5 hover:shadow-lg transition-shadow fade-up">
                     <div class="w-16 h-16 mx-auto rounded-full overflow-hidden ring-4" style="ring-color:${color}; ring: 4px solid ${color}; background:rgba(0,0,0,.03)">
@@ -890,6 +894,11 @@ const performanceHistoryHtml = (employee.performanceHistory || [])
                     </div>
                     <h3 class="text-center text-base font-bold text-slate-800 mt-3">${team.name}</h3>
                     ${team.missionLine ? `<p class=\"text-center text-xs text-slate-600 mt-1\">${team.missionLine}</p>` : `<p class=\"text-center text-xs text-slate-600 mt-1\">مدیر: ${leader?.name || 'نامشخص'}</p>`}
+                    <div class="mt-3 flex justify-center gap-2 text-[11px]">
+                        <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">اعضا: ${membersCount}</span>
+                        <span class="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">OKR: ${okrCount}</span>
+                        <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">میانگین: ${avgProgress}%</span>
+                    </div>
                     <div class="mt-4 flex justify-center">
                         <button class="view-team-employee-btn text-xs font-semibold px-3 py-1.5 rounded-lg" data-team-id="${team.firestoreId}" style="color:#fff;background:${color}">مشاهده</button>
                     </div>
@@ -906,7 +915,7 @@ const performanceHistoryHtml = (employee.performanceHistory || [])
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 mb-4">
                 <input id="team-search" class="w-full p-2 border rounded-lg text-sm" placeholder="جستجوی نام تیم/مدیر"/>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6" id="team-cards">${teamCardsHtml || '<p class="text-slate-500">تیمی ثبت نشده است.</p>'}</div>`;
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6" id="team-cards">${teamCardsHtml || '<p class="text-slate-500">تیمی ثبت نشده است.</p>'}</div>`;
         const teamSearch = document.getElementById('team-search');
         teamSearch?.addEventListener('input', () => {
             const q = (teamSearch.value || '').trim();
@@ -915,6 +924,10 @@ const performanceHistoryHtml = (employee.performanceHistory || [])
                 const leader = state.employees.find(e => e.id === team.leaderId);
                 const color = colorsDir[idx % colorsDir.length];
                 const avatar = team.avatar || 'icons/icon-128x128.png';
+                const membersCount = (team.memberIds || []).length;
+                const okrs = team.okrs || [];
+                const okrCount = okrs.length;
+                const avgProgress = okrCount ? Math.round(okrs.reduce((s,o)=> s + (o.progress || 0), 0) / okrCount) : 0;
                 return `
                 <div class="bg-white rounded-2xl border border-slate-200 p-5 hover:shadow-lg transition-shadow fade-up">
                     <div class="w-16 h-16 mx-auto rounded-full overflow-hidden ring-4" style="ring-color:${color}; ring: 4px solid ${color}; background:rgba(0,0,0,.03)">
@@ -922,6 +935,11 @@ const performanceHistoryHtml = (employee.performanceHistory || [])
                     </div>
                     <h3 class="text-center text-base font-bold text-slate-800 mt-3">${team.name}</h3>
                     ${team.missionLine ? `<p class=\"text-center text-xs text-slate-600 mt-1\">${team.missionLine}</p>` : `<p class=\"text-center text-xs text-slate-600 mt-1\">مدیر: ${leader?.name || 'نامشخص'}</p>`}
+                    <div class="mt-3 flex justify-center gap-2 text-[11px]">
+                        <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">اعضا: ${membersCount}</span>
+                        <span class="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">OKR: ${okrCount}</span>
+                        <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">میانگین: ${avgProgress}%</span>
+                    </div>
                     <div class="mt-4 flex justify-center">
                         <button class="view-team-employee-btn text-xs font-semibold px-3 py-1.5 rounded-lg" data-team-id="${team.firestoreId}" style="color:#fff;background:${color}">مشاهده</button>
                     </div>
@@ -8016,6 +8034,7 @@ const showMessageDetailsModal = (announcementId) => {
 const showTeamDirectoryModal = (team) => {
     const leader = state.employees.find(e => e.id === team.leaderId);
     const members = (team.memberIds || []).map(id => state.employees.find(e => e.id === id)).filter(Boolean);
+    const colorsDir = ['#6B69D6','#FF6A3D','#10B981','#F59E0B','#0EA5E9','#F43F5E'];
 
     const membersCards = members.map(member => {
         const compEntries = Object.entries(member.competencies || {});
@@ -8039,6 +8058,11 @@ const showTeamDirectoryModal = (team) => {
             </div>
         </div>`).join('') || '<p class="text-sm text-slate-500">OKR ثبت نشده است.</p>';
 
+    const membersCount = members.length;
+    const okrCount = (team.okrs || []).length;
+    const avgProgress = okrCount ? Math.round((team.okrs||[]).reduce((s,o)=> s + (o.progress || 0), 0) / okrCount) : 0;
+    const leaderName = leader?.name || 'نامشخص';
+
     modalTitle.innerText = `تیم ${team.name}`;
     modalContent.innerHTML = `
         <div class="bg-gradient-to-l from-[#F72585]/10 to-[#6B69D6]/10 rounded-xl p-4 mb-4">
@@ -8049,6 +8073,12 @@ const showTeamDirectoryModal = (team) => {
                     <div class="text-lg font-bold text-slate-800">${team.name}</div>
                     ${team.missionLine ? `<div class=\"text-xs text-slate-600 mt-1\">${team.missionLine}</div>` : ''}
                 </div>
+            </div>
+            <div class="mt-3 flex flex-wrap gap-2 text-[11px]">
+                <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">مدیر: ${leaderName}</span>
+                <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">اعضا: ${membersCount}</span>
+                <span class="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">OKR: ${okrCount}</span>
+                <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">میانگین: ${avgProgress}%</span>
             </div>
         </div>
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
