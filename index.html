@@ -249,35 +249,15 @@
 }
 /* --- Edge-to-edge fix for employee portal on mobile --- */
 @media (max-width: 639px) {
-    #employee-portal-container,
-    #employee-portal-container > div,
-    #employee-main-content {
-        margin-left: 0 !important;
-        margin-right: 0 !important;
-        padding-left: 0 !important;
-        padding-right: 0 !important;
-        width: 100vw !important;
-        max-width: 100vw !important;
-    }
-    #employee-portal-container > div.flex {
-        width: 100vw !important;
-    }
-    /* Force wrapper and flex child to be edge-to-edge on mobile */
-    #employee-portal-container .flex.h-screen,
-    #employee-portal-container .flex.h-screen > .flex-1 {
-        margin: 0 !important;
-        padding: 0 !important;
-        width: 100vw !important;
-        max-width: 100vw !important;
-    }
-    /* Ensure header inner wrapper has no horizontal padding */
+    /* به هدر کمی حاشیه داخلی افقی می‌دهد */
     #employee-portal-container header > div {
-        padding-left: 0 !important;
-        padding-right: 0 !important;
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
     }
-    /* Force the main container to have no vertical padding either */
+
+    /* به محتوای اصلی حاشیه داخلی مناسب در موبایل می‌دهد */
     #employee-main-content {
-        padding: 0 !important;
+        padding: 1.5rem 1rem !important; /* 24px بالا و پایین، 16px چپ و راست */
     }
 }
 </style>
