@@ -1213,8 +1213,15 @@ else if (pageName === 'documents') {
                     <img src="${employee.avatar}" class="w-10 h-10 rounded-full object-cover"/>
                     <div class="flex-1">
                         <textarea id="moment-text" class="w-full p-3 border rounded-xl" maxlength="280" placeholder="یک متن کوتاه بنویس... (حداکثر ۲۸۰ کاراکتر)"></textarea>
-                        <div id="moment-emoji-bar" class="mt-2 flex flex-wrap gap-1 overflow-x-auto">
-                            ${['👍','❤️','😂','🎉','🔥','👏','😍','🤝','💯','🤩','🙏','💡','😮','😢','👀','👋','✨','🌟','🚀','🥳'].map(e=> `<button type="button" class="moment-emoji-btn text-sm px-2 py-1 rounded-full bg-slate-100 hover:bg-slate-200" data-emoji="${e}">${e}</button>`).join('')}
+                        <div class="mt-2 relative flex items-center gap-2">
+                            <div class="relative">
+                                <button type="button" id="moment-emoji-toggle" class="text-xs px-2 py-1 rounded-lg border flex items-center gap-1"><i data-lucide="smile" class="w-4 h-4"></i><span>ایموجی</span></button>
+                                <div id="moment-emoji-popover" class="hidden absolute z-20 bg-white border rounded-xl shadow-lg p-2 w-56 mt-2" style="inset-inline-end:0;">
+                                    <div class="grid grid-cols-8 gap-1 text-lg">
+                                        ${['👍','❤️','😂','🎉','🔥','👏','😍','🤝','💯','🤩','🙏','💡','😮','😢','👀','👋','✨','🌟','🚀','🥳','😎','🤗','🤔','🥰','😇','😴','🤤','😅','😆','😏','🤌'].map(e=> `<button type=\"button\" class=\"moment-emoji-choice\" data-emoji=\"${e}\">${e}</button>`).join('')}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-2 gap-2">
                             <div class="flex items-center gap-2">
@@ -1364,6 +1371,8 @@ window.renderMomentsList = () => {
         const momentImagePreviewImg = document.getElementById('moment-image-preview-img');
         const momentImageRemove = document.getElementById('moment-image-remove');
         const momentFab = document.getElementById('moment-fab');
+        const emojiToggle = document.getElementById('moment-emoji-toggle');
+        const emojiPopover = document.getElementById('moment-emoji-popover');
         momentText?.addEventListener('input', () => {
             const len = (momentText.value || '').length;
             momentChar.textContent = `${len}/280`;
@@ -1392,7 +1401,16 @@ window.renderMomentsList = () => {
             document.getElementById('moment-text')?.focus();
             document.getElementById('employee-main-content')?.scrollTo({ top: 0, behavior: 'smooth' });
         });
-        document.querySelectorAll('.moment-emoji-btn').forEach(btn => {
+        emojiToggle?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            emojiPopover?.classList.toggle('hidden');
+        });
+        document.addEventListener('click', (e)=>{
+            if (!emojiPopover) return;
+            if (e.target.closest && (e.target.closest('#moment-emoji-popover') || e.target.closest('#moment-emoji-toggle'))) return;
+            emojiPopover.classList.add('hidden');
+        });
+        document.querySelectorAll('.moment-emoji-choice').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const emoji = e.currentTarget.getAttribute('data-emoji') || '';
                 const el = document.getElementById('moment-text');
@@ -1403,6 +1421,7 @@ window.renderMomentsList = () => {
                 el.dispatchEvent(new Event('input'));
                 el.focus();
                 el.setSelectionRange(start + emoji.length + 1, start + emoji.length + 1);
+                emojiPopover?.classList.add('hidden');
             });
         });
 
