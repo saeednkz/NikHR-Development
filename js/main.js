@@ -4352,92 +4352,6 @@ const showEditUserForm = (user) => {
 // ▼▼▼ کل این تابع را با نسخه جدید و کامل زیر جایگزین کنید ▼▼▼
 
 function setupProfileModalListeners(emp) {
-    const container = document.getElementById('modalContent');
-    if (!container) return;
-
-    // ۱. منطق صحیح فعال‌سازی تب‌ها
-    const tabs = container.querySelectorAll('#profile-tabs .profile-tab');
-    const contents = container.querySelectorAll('.profile-tab-content');
-    tabs.forEach(tab => {
-        tab.addEventListener('click', (e) => {
-            e.preventDefault();
-            const targetId = tab.getAttribute('data-tab');
-            if (!targetId) return;
-            
-            tabs.forEach(t => {
-                t.classList.remove('active', 'primary-btn');
-                t.classList.add('secondary-btn');
-            });
-            tab.classList.add('active', 'primary-btn');
-            tab.classList.remove('secondary-btn');
-
-            contents.forEach(c => c.classList.add('hidden'));
-            const panel = document.getElementById(`tab-${targetId}`);
-            if (panel) panel.classList.remove('hidden');
-        });
-    });
-
-    // ۲. شنونده مرکزی برای تمام دکمه‌ها
-    container.addEventListener('click', async (e) => {
-        const btn = e.target.closest('button');
-        if (!btn) return;
-
-        // دکمه افزودن سابقه عملکرد (کارکرد صحیح)
-        if (btn.id === 'add-performance-btn') {
-            showPerformanceForm(emp);
-            return;
-        }
-
-        // دکمه مشاهده سابقه عملکرد
-        const viewPerfBtn = e.target.closest('.view-performance-btn');
-        if (viewPerfBtn) {
-            const reviewIndex = parseInt(viewPerfBtn.dataset.index);
-            if (emp.performanceHistory && emp.performanceHistory[reviewIndex]) {
-                showViewPerformanceDetailsModal(emp.performanceHistory[reviewIndex]);
-            }
-            return;
-        }
-
-        // دکمه ویرایش سابقه عملکرد
-        if (btn.classList.contains('edit-performance-btn')) {
-            showPerformanceForm(emp, parseInt(btn.dataset.index));
-            return;
-        }
-
-        // دکمه حذف سابقه عملکرد
-        if (btn.classList.contains('delete-performance-btn')) {
-            const reviewIndex = parseInt(btn.dataset.index);
-            showConfirmationModal('حذف سابقه عملکرد', 'آیا از حذف این آیتم مطمئن هستید؟', async () => {
-                const currentHistory = emp.performanceHistory || [];
-                currentHistory.splice(reviewIndex, 1);
-                const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
-                await updateDoc(docRef, { performanceHistory: currentHistory });
-                showToast('سابقه ارزیابی حذف شد.');
-                viewEmployeeProfile(emp.firestoreId);
-            });
-            return;
-        }
-        
-        // بقیه دکمه‌های پروفایل
-        if (btn.id === 'main-edit-employee-btn') { showEmployeeForm(emp.firestoreId); return; }
-        if (btn.id === 'edit-competencies-btn') { showEditCompetenciesForm(emp); return; }
-        if (btn.id === 'edit-personal-info-btn') { showEditPersonalInfoForm(emp); return; }
-        if (btn.id === 'add-contract-btn') { showContractForm(emp); return; }
-        if (btn.id === 'edit-career-path-btn') { showEditCareerPathForm(emp); return; }
-                if (btn.id === 'change-avatar-btn') {
-            handleAvatarChange(emp);
-            return;
-        }
-        if (btn.id === 'delete-avatar-btn') {
-            showConfirmationModal('حذف عکس پروفایل', 'آیا مطمئن هستید؟', async () => {
-                const defaultAvatar = `https://placehold.co/100x100/E2E8F0/4A5568?text=${(emp.name||'NA').substring(0,2)}`;
-                await updateDoc(doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId), { avatar: defaultAvatar });
-                showToast('عکس پروفایل حذف شد.');
-                viewEmployeeProfile(emp.firestoreId);
-            });
-            return;
-        }
-    });
 }
 // Contract editor (add/extend)
 function showContractForm(emp, idx=null) {
@@ -4580,94 +4494,7 @@ try { window.setupProfileModalListeners = setupProfileModalListeners; } catch {}
 // ▼▼▼ این تابع جدید را به فایل خود اضافه کنید ▼▼▼
 
 const setupTeamProfileModalListeners = (team) => {
-    const content = document.getElementById('modalContent');
-    if (!content) return;
 
-    // ۱. فعال‌سازی تب‌های داخل مودال
-    const tabs = content.querySelectorAll('.profile-tab');
-    const panes = content.querySelectorAll('.profile-tab-content');
-    tabs.forEach(tab => {
-        tab.addEventListener('click', (e) => {
-            e.preventDefault();
-            tabs.forEach(t => {
-                t.classList.remove('active');
-                t.classList.remove('border-indigo-500', 'text-indigo-600');
-                t.classList.add('border-transparent', 'text-slate-500');
-            });
-            panes.forEach(p => p.classList.add('hidden'));
-            tab.classList.add('active');
-            tab.classList.remove('border-transparent', 'text-slate-500');
-            tab.classList.add('border-indigo-500', 'text-indigo-600');
-            const targetPane = content.querySelector(`#${tab.dataset.tab}`);
-            if (targetPane) targetPane.classList.remove('hidden');
-
-            // اگر تب سلامت تیم فعال شد، چارت‌ها را رندر کن
-            if (tab.dataset.tab === 'tab-team-health') {
-                try {
-                    const data = window._teamModalData || {};
-                    const ctx = document.getElementById('teamEngagementBreakdownChart')?.getContext('2d');
-                    if (ctx && !charts.teamEngagementBreakdown) {
-                        setupChartTheme();
-                        const labels = (data.engagementBreakdown || []).map(it => it.name);
-                        const values = (data.engagementBreakdown || []).map(it => it.score);
-                        charts.teamEngagementBreakdown = new Chart(ctx, {
-                            type: 'bar',
-                            data: {
-                                labels,
-                                datasets: [{
-                                    label: 'امتیاز (%)',
-                                    data: values,
-                                    backgroundColor: values.map((_,i)=> hexToRgba(getBrandColor(i),0.85)),
-                                    borderRadius: 10,
-                                    barPercentage: 0.55,
-                                    categoryPercentage: 0.6
-                                }]
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                plugins: { legend: { display: false } },
-                                scales: { y: { beginAtZero: true, suggestedMax: 100 } }
-                            }
-                        });
-                    }
-                } catch (err) { console.error('Health tab chart error', err); }
-            }
-        });
-    });
-
-    // ۲. فعال‌سازی تمام دکمه‌ها با یک شنونده مرکزی
-    content.addEventListener('click', (e) => {
-        const button = e.target.closest('button');
-        if (!button) return;
-
-        // دکمه‌های هدر
-        if (button.id === 'edit-team-details-btn') showTeamForm(team.firestoreId);
-        if (button.id === 'edit-team-mission-btn') showEditTeamMissionForm(team);
-        if (button.id === 'change-team-avatar-btn') {
-            const input = document.getElementById('image-upload-input');
-            input.onchange = async () => {
-                const file = input.files[0];
-                if (!file) return;
-                try {
-                    showToast("در حال آپلود عکس...", "success", null);
-                    const storageRef = ref(storage, `teams/${team.firestoreId}/avatar_${Date.now()}`);
-                    const snapshot = await uploadBytes(storageRef, file);
-                    const url = await getDownloadURL(snapshot.ref);
-                    await updateDoc(doc(db, `artifacts/${appId}/public/data/teams`, team.firestoreId), { avatar: url });
-                    showToast('عکس تیم به‌روزرسانی شد.');
-                    viewTeamProfile(team.firestoreId);
-                } catch (err) {
-                    showToast('خطا در آپلود عکس.', 'error');
-                }
-            };
-            input.click();
-        }
-
-        // دکمه‌های داخل تب "نمای کلی"
-        if (button.id === 'edit-team-members-btn') showEditTeamMembersForm(team);
-        if (button.id === 'edit-team-okrs-btn') showEditTeamOkrsForm(team);
-    });
 };
 // فایل: js/main.js
 // ▼▼▼ کل این تابع را با نسخه کامل و نهایی زیر جایگزین کنید ▼▼▼
@@ -4917,6 +4744,7 @@ const viewEmployeeProfile = (employeeId) => {
             </div>
         </div>`;
 
+        mainModal.dataset.employeeId = employeeId; // <-- این خط را اضافه کنید
     openModal(mainModal, mainModalContainer);
     modalContent = clearEventListeners(document.getElementById('modalContent'));
     setupProfileModalListeners(emp);
@@ -5229,6 +5057,7 @@ const viewTeamProfile = (teamId) => {
             </div>
         </div>
     `;
+        mainModal.dataset.teamId = teamId; // <-- این خط را اضافه کنید
     openModal(mainModal, mainModalContainer);
     lucide.createIcons();
     
@@ -6000,7 +5829,6 @@ const renderEmployeeTable = () => {
     document.body.removeChild(link);
 };
 const setupTalentPageListeners = () => {
-    // ریست کردن صفحه به ۱ هنگام جستجو یا فیلتر
     const resetToFirstPage = () => {
         state.currentPageTalent = 1;
         renderEmployeeTable();
@@ -6010,72 +5838,10 @@ const setupTalentPageListeners = () => {
     document.getElementById('departmentFilter')?.addEventListener('change', resetToFirstPage);
     document.getElementById('skillFilter')?.addEventListener('change', resetToFirstPage);
     document.getElementById('statusFilter')?.addEventListener('change', resetToFirstPage);
-    
-    // اتصال دکمه افزودن کارمند به تابع مربوطه
-    document.getElementById('add-employee-btn')?.addEventListener('click', () => showEmployeeForm());
-    
-    // اتصال دکمه خروجی CSV به تابع مربوطه
-    document.getElementById('export-csv-btn')?.addEventListener('click', exportToCSV);
-
-    // مدیریت کلیک روی کارت‌ها (مشاهده، ویرایش، حذف)
-    const mainContentArea = document.getElementById('main-content');
-    
-    mainContentArea.addEventListener('click', (e) => {
-        const viewEmpBtn = e.target.closest('.view-employee-profile-btn');
-        const editEmpBtn = e.target.closest('.edit-employee-btn');
-        const deleteEmpBtn = e.target.closest('.delete-employee-btn');
-        const paginationBtn = e.target.closest('.pagination-btn');
-        
-
-        if (paginationBtn && !paginationBtn.disabled) {
-            state.currentPageTalent = Number(paginationBtn.dataset.page);
-            renderEmployeeTable();
-        }
-
-        if (viewEmpBtn) {
-        viewEmployeeProfile(viewEmpBtn.dataset.employeeId);
-        } else if (editEmpBtn) {
-            showEmployeeForm(editEmpBtn.dataset.employeeId);
-        } else if (deleteEmpBtn) {
-            showConfirmationModal("حذف کارمند", "آیا از حذف این کارمند مطمئن هستید؟", async () => {
-                try {
-                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/employees`, deleteEmpBtn.dataset.employeeId));
-                    showToast("کارمند با موفقیت حذف شد.");
-                } catch (error) {
-                    console.error("Error deleting employee:", error);
-                    showToast("خطا در حذف کارمند.", "error");
-                }
-            });
-        }
-    });
 };
 // کل این تابع را با نسخه جدید جایگزین کنید
 const setupOrganizationPageListeners = () => {
-    document.getElementById('add-team-btn')?.addEventListener('click', () => showTeamForm());
-    document.getElementById('add-team-btn-empty')?.addEventListener('click', () => showTeamForm());
 
-    // از شناسه جدید برای پیدا کردن کانتینر استفاده می‌کنیم
-    const teamsContainer = document.getElementById('teams-container');
-    if(teamsContainer) {
-        teamsContainer.addEventListener('click', (e) => {
-            const viewTeamBtn = e.target.closest('.view-team-profile-btn');
-            const deleteTeamBtn = e.target.closest('.delete-team-btn');
-
-            if (viewTeamBtn) {
-                viewTeamProfile(viewTeamBtn.dataset.teamId);
-            } else if (deleteTeamBtn) {
-                showConfirmationModal("حذف تیم", "آیا از حذف این تیم مطمئن هستید؟", async () => { 
-                    try { 
-                        await deleteDoc(doc(db, `artifacts/${appId}/public/data/teams`, deleteTeamBtn.dataset.teamId)); 
-                        showToast("تیم با موفقیت حذف شد."); 
-                    } catch (error) { 
-                        console.error("Error deleting team:", error); 
-                        showToast("خطا در حذف تیم.", "error"); 
-                    } 
-                });
-            }
-        });
-    }
 };
 // این تابع جدید را به js/main.js اضافه کنید
 // در فایل js/main.js
@@ -7856,158 +7622,82 @@ const showTeamDirectoryModal = (team) => {
     lucide.createIcons();
 };
 
-        // --- EVENT LISTENERS & INITIALIZATION ---
-// در فایل js/main.js
-
-// در فایل js/main.js
-// کل این تابع را با نسخه جدید و کامل جایگزین کنید
-
-// در فایل js/main.js
-// کل این تابع را با نسخه جدید و کامل جایگزین کنید
-
 // فایل: js/main.js
-// ▼▼▼ کل این تابع را با نسخه جدید و یکپارچه زیر جایگزین کنید ▼▼▼
-
+// ▼▼▼ این کد را به طور کامل جایگزین تابع setupEventListeners فعلی کنید ▼▼▼
 const setupEventListeners = () => {
-    // بخش ۱: مدیریت رویدادهای مودال‌ها (که فقط یک بار نیاز به تعریف دارند)
-    const mainModal = document.getElementById('mainModal');
-    const mainModalContainer = mainModal?.querySelector('div');
-    const confirmModal = document.getElementById('confirmModal');
-    const confirmModalContainer = confirmModal?.querySelector('div');
-    let confirmCallback = () => {};
-
-    mainModal?.addEventListener('click', (e) => {
-        if (e.target === mainModal || e.target.closest('#closeModal')) {
-            closeModal(mainModal, mainModalContainer);
-        }
-    });
-    document.getElementById('confirmCancel')?.addEventListener('click', () => closeModal(confirmModal, confirmModalContainer));
-    document.getElementById('confirmAccept')?.addEventListener('click', () => { confirmCallback(); closeModal(confirmModal, confirmModalContainer); });
-
-    // بخش ۲: منوی موبایل (با Event Delegation تا بعد از رندر مجدد هم کار کند)
-    const toggleAdminSidebar = () => {
-        const sidebar = document.getElementById('sidebar');
-        const overlay = document.getElementById('sidebar-overlay');
-        if (!sidebar || !overlay) return;
-        sidebar.classList.toggle('translate-x-full');
-        overlay.classList.toggle('hidden');
-    };
-    const closeAdminSidebar = () => {
-        const sidebar = document.getElementById('sidebar');
-        const overlay = document.getElementById('sidebar-overlay');
-        if (!sidebar || !overlay) return;
-        sidebar.classList.add('translate-x-full');
-        overlay.classList.add('hidden');
-    };
-    document.addEventListener('click', (e) => {
-        if (e.target.closest('#menu-btn')) {
-            toggleAdminSidebar();
-        } else if (e.target.closest('#sidebar-overlay')) {
-            closeAdminSidebar();
-        }
-    });
-
-    // بخش ۳: ناوبری (منوی کناری ادمین)
-    const handleNavClick = (e) => {
-        const link = e.target.closest('a');
-        if (!link || link.id === 'logout-btn') return;
-        if (link.classList.contains('sidebar-item') || link.classList.contains('sidebar-logo')) {
-            e.preventDefault();
-            const pageName = link.getAttribute('href').substring(1);
-            navigateTo(pageName);
-            if (window.innerWidth < 768) {
-                document.getElementById('sidebar')?.classList.add('translate-x-full');
-                document.getElementById('sidebar-overlay')?.classList.add('hidden');
-            }
-        }
-    };
-    document.getElementById('sidebar')?.addEventListener('click', handleNavClick);
-    document.querySelector('header .sidebar-logo')?.addEventListener('click', handleNavClick);
-
-    // بخش ۴: نوتیفیکیشن
-    const bellBtn = document.getElementById('notification-bell-btn');
-    const dropdown = document.getElementById('notification-dropdown');
-    if (bellBtn && dropdown) {
-        bellBtn.addEventListener('click', () => dropdown.classList.toggle('hidden'));
-        document.addEventListener('click', (e) => {
-            if (!bellBtn.parentElement.contains(e.target)) {
-                dropdown.classList.add('hidden');
-            }
-        });
-        dropdown.addEventListener('click', (e) => {
-            const item = e.target.closest('.notification-item');
-            if (item) {
-                state.requestFilter = item.dataset.filter;
-                navigateTo(item.getAttribute('href').substring(1));
-                dropdown.classList.add('hidden');
-            }
-        });
-    }
-
-    // [!code start]
-    // ▼▼▼ بخش ۵: شنونده واحد و مرکزی برای تمام کلیک‌های داخل محتوای اصلی ▼▼▼
-    const mainContentArea = document.getElementById('main-content');
-    if (mainContentArea) {
-        mainContentArea.addEventListener('click', (e) => {
-            const target = e.target;
-            
-            // --- رویدادهای صفحه "استعدادها" ---
-            if (target.closest('.view-employee-profile-btn')) viewEmployeeProfile(target.closest('.view-employee-profile-btn').dataset.employeeId);
-            if (target.closest('.edit-employee-btn')) showEmployeeForm(target.closest('.edit-employee-btn').dataset.employeeId);
-            if (target.closest('.delete-employee-btn')) {
-                const btn = target.closest('.delete-employee-btn');
-                showConfirmationModal("حذف کارمند", "آیا مطمئن هستید؟", async () => {
-                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/employees`, btn.dataset.employeeId));
-                    showToast("کارمند حذف شد.");
-                });
-            }
-            if (target.closest('.pagination-btn') && !target.closest('.pagination-btn').disabled) {
-                if (state.currentPage === 'talent') {
-                    state.currentPageTalent = Number(target.closest('.pagination-btn').dataset.page);
-                    renderEmployeeTable();
-                }
-                // ... (می‌توانید برای صفحات دیگر هم اضافه کنید)
-            }
-
-            // --- رویدادهای صفحه "سازمان" ---
-            if (target.closest('#add-team-btn') || target.closest('#add-team-btn-empty')) showTeamForm();
-            if (target.closest('.view-team-profile-btn')) viewTeamProfile(target.closest('.view-team-profile-btn').dataset.teamId);
-            if (target.closest('.delete-team-btn')) {
-                const btn = target.closest('.delete-team-btn');
-                showConfirmationModal("حذف تیم", "آیا از حذف این تیم مطمئن هستید؟", async () => {
-                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/teams`, btn.dataset.teamId));
-                    showToast("تیم حذف شد.");
-                });
-            }
-            
-            // --- رویدادهای صفحه "مدیریت ارزیابی" ---
-            if (target.closest('#add-cycle-btn')) showEvaluationCycleForm();
-            if (target.closest('.edit-cycle-btn')) showEvaluationCycleForm(target.closest('.edit-cycle-btn').dataset.id);
-            if (target.closest('.delete-cycle-btn')) {
-                const btn = target.closest('.delete-cycle-btn');
-                showConfirmationModal('حذف دوره ارزیابی', 'آیا مطمئن هستید؟', async () => {
-                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/evaluationCycles`, btn.dataset.id));
-                    showToast('دوره ارزیابی حذف شد.');
-                });
-            }
-            if (target.closest('.start-cycle-btn')) {
-                const btn = target.closest('.start-cycle-btn');
-                showConfirmationModal('شروع دوره ارزیابی', 'ارزیابی برای تمام کارمندان فعال ایجاد می‌شود. آیا ادامه می‌دهید؟', async () => {
-                    try {
-                        const startCycleFunction = httpsCallable(functions, 'startEvaluationCycle');
-                        await startCycleFunction({ cycleId: btn.dataset.id });
-                        showToast("دوره ارزیابی با موفقیت آغاز شد.");
-                    } catch (error) {
-                        showToast(`خطا: ${error.message}`, "error");
-                    }
-                });
-            }
-        });
-    }
-    // [!code end]
-
-    // بخش ۶: روتر اصلی برنامه
+    // روتر اصلی برنامه که به تغییرات URL گوش می‌دهد
     window.addEventListener('hashchange', router);
+
+    // شنونده مرکزی برای تمام کلیک‌ها در برنامه
+    document.body.addEventListener('click', (e) => {
+        const target = e.target;
+        const targetBtn = target.closest('button'); // پیدا کردن نزدیک‌ترین دکمه به محل کلیک
+
+        // --- منوی همبرگری ادمین ---
+        if (target.closest('#menu-btn')) {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            sidebar?.classList.toggle('translate-x-full');
+            overlay?.classList.toggle('hidden');
+        }
+
+        // --- دکمه‌های صفحه استعدادها (و داخل مودال پروفایل) ---
+        if (target.closest('.view-employee-profile-btn')) viewEmployeeProfile(target.closest('.view-employee-profile-btn').dataset.employeeId);
+        if (target.closest('#main-edit-employee-btn, .edit-employee-btn')) showEmployeeForm(target.closest('[data-employee-id]').dataset.employeeId);
+        if (target.closest('.delete-employee-btn')) {
+            const btn = target.closest('.delete-employee-btn');
+            showConfirmationModal("حذف کارمند", "آیا از حذف این کارمند مطمئن هستید؟", async () => {
+                await deleteDoc(doc(db, `artifacts/${appId}/public/data/employees`, btn.dataset.employeeId));
+                showToast("کارمند حذف شد.");
+            });
+        }
+        if (target.closest('#edit-personal-info-btn')) showEditPersonalInfoForm(state.employees.find(emp => emp.firestoreId === mainModal.dataset.employeeId));
+
+
+        // --- دکمه‌های صفحه سازمان (و داخل مودال تیم) ---
+        if (target.closest('#add-team-btn') || target.closest('#add-team-btn-empty')) showTeamForm();
+        if (target.closest('.view-team-profile-btn')) viewTeamProfile(target.closest('.view-team-profile-btn').dataset.teamId);
+        if (target.closest('#edit-team-details-btn')) showTeamForm(mainModal.dataset.teamId);
+        if (target.closest('#edit-team-members-btn')) showEditTeamMembersForm(state.teams.find(t => t.firestoreId === mainModal.dataset.teamId));
+
+        if (target.closest('.delete-team-btn')) {
+            const btn = target.closest('.delete-team-btn');
+            showConfirmationModal("حذف تیم", "آیا از حذف این تیم مطمئن هستید؟", async () => {
+                await deleteDoc(doc(db, `artifacts/${appId}/public/data/teams`, btn.dataset.teamId));
+                showToast("تیم حذف شد.");
+            });
+        }
+
+        // --- دکمه‌های صفحه نظرسنجی ---
+        const surveyLinkBtn = target.closest('.create-survey-link-btn');
+        if (surveyLinkBtn) {
+            const surveyId = surveyLinkBtn.dataset.surveyId;
+            const template = surveyTemplates[surveyId];
+            // قبل از باز کردن مودال جدید، شنونده‌های قبلی را پاک می‌کنیم
+            modalContent = clearEventListeners(document.getElementById('modalContent'));
+            if (template.requiresTarget) {
+                showSurveyTargetSelector(surveyId);
+            } else {
+                generateAndShowSurveyLink(surveyId);
+            }
+        }
+
+        // --- دکمه‌های صفحه‌بندی ---
+        const paginationBtn = target.closest('.pagination-btn');
+        if (paginationBtn && !paginationBtn.disabled) {
+            const page = Number(paginationBtn.dataset.page);
+            if (state.currentPage === 'talent') {
+                state.currentPageTalent = page;
+                renderEmployeeTable();
+            } else if (state.currentPage === 'requests') {
+                state.currentPageRequests = page;
+                renderPage('requests');
+            } else if (state.currentPage === 'tasks') {
+                state.currentPageTasks = page;
+                renderPage('tasks');
+            }
+        }
+    });
 };
 // فایل: js/main.js - اضافه کردن توابع جدید
 
