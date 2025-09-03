@@ -1636,7 +1636,7 @@ function renderEmployeePortal() {
         const okrPill = document.getElementById('okr-pill');
         const okrText = document.getElementById('okr-pill-text');
         if (okrPill && okrText) {
-            okrText.textContent = \`OKR: ${okrAvg}%\`;
+            okrText.textContent = `OKR: ${okrAvg}%`; // <-- بک‌اسلش حذف شد
             okrPill.classList.remove('hidden');
         }
     } catch {}
