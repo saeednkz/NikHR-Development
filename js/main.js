@@ -1339,7 +1339,7 @@ window.renderMomentsList = () => {
                         <button class="moment-react-toggle text-xs px-2 py-1 rounded-lg border flex items-center gap-1" data-id="${m.firestoreId}"><i data-lucide="smile" class="w-4 h-4"></i><span>واکنش</span></button>
                         <div id="moment-react-popover-${m.firestoreId}" class="moment-react-popover hidden absolute z-20 bg-white border rounded-xl shadow-lg p-2 w-56 mt-2" style="inset-inline-start:0;">
                             <div class="grid grid-cols-8 gap-1 text-lg">
-                                ${['👍','❤️','😂','🎉','🔥','👏','😍','🤝','💯','🤩','🙏','💡','😮','😢','👀','👋','✨','🌟','🚀','🥳','😎','🤗','🤔','🥰','😇','😴','🤤','😅','😆','😏','🤌'].map(e=> `<button type=\\"button\\" class=\\"moment-react-btn\\" data-id=\\"${m.firestoreId}\\" data-emoji=\\"${e}\\">${e}</button>`).join('')}
+                                ${['👍','❤️','😂','🎉','🔥','👏','😍','🤝','💯','🤩','🙏','💡','😮','😢','👀','👋','✨','🌟','🚀','🥳','😎','🤗','🤔','🥰','😇','😴','🤤','😅','😆','😏','🤌'].map(e=> `<button type="button" class="moment-react-btn" data-id="${m.firestoreId}" data-emoji="${e}">${e}</button>`).join('')}
                             </div>
                         </div>
                     </div>
