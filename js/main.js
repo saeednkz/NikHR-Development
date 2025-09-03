@@ -482,17 +482,32 @@ function renderMyBirthdayWishesWidget(employee) {
     `).join('');
 
     return `
-        <div class="card p-6 bg-gradient-to-br from-indigo-500 to-purple-600 text-white relative overflow-hidden">
-            <div class="absolute -right-10 -top-10 w-32 h-32 text-white/10"><i data-lucide="party-popper" class="w-32 h-32"></i></div>
-            <div class="relative z-10">
-                <h3 class="text-2xl font-bold">تولدت مبارک، ${employee.name}!</h3>
-                <p class="mt-2 text-indigo-200">تیم NikHR بهترین آرزوها را برای شما در سال جدید زندگی‌تان دارد.</p>
-                ${myWishes.length > 0 ? `
-                    <div class="mt-4 border-t border-white/20 pt-3">
-                        <h4 class="font-semibold text-sm">پیام‌های دریافتی:</h4>
-                        ${wishesHtml}
+        <div class="relative overflow-hidden rounded-2xl border border-violet-200 shadow-2xl">
+            <div class="absolute inset-0 bg-gradient-to-br from-violet-600 via-indigo-600 to-indigo-700"></div>
+            <div class="absolute -left-14 -top-16 w-48 h-48 rounded-full bg-white/10 blur-2xl"></div>
+            <div class="absolute -right-10 -bottom-20 w-64 h-64 rounded-full bg-indigo-400/20 blur-3xl"></div>
+            <div class="relative z-10 p-6 sm:p-8 text-white">
+                <div class="flex items-start gap-4">
+                    <div class="shrink-0 w-12 h-12 rounded-xl bg-white/15 backdrop-blur flex items-center justify-center ring-2 ring-white/20">
+                        <i data-lucide="cake" class="w-6 h-6 text-white"></i>
                     </div>
-                ` : ''}
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-bold bg-white/15 ring-1 ring-white/20">
+                                <i data-lucide="party-popper" class="w-3.5 h-3.5"></i>
+                                <span>روز ویژه شما</span>
+                            </span>
+                        </div>
+                        <h3 class="mt-2 text-2xl sm:text-3xl font-extrabold tracking-tight">تولدت مبارک، ${employee.name}!</h3>
+                        <p class="mt-2 text-sm sm:text-base text-violet-100/90">برای شما سالی پر از شادی، سلامتی و موفقیت آرزو می‌کنیم.</p>
+                        ${myWishes.length > 0 ? `
+                            <div class="mt-5 rounded-xl border border-white/15 bg-white/10 backdrop-blur-sm p-3 sm:p-4">
+                                <h4 class="font-bold text-sm text-white/95">پیام‌های دریافت‌شده</h4>
+                                ${wishesHtml}
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
             </div>
         </div>
     `;
