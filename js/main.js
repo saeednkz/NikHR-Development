@@ -1523,8 +1523,17 @@ const tableRows = teamMembers.map(member => {
     `;
 }).join('');
 
+        const summaryCards = `
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                <div class="glass rounded-2xl p-4 flex items-center justify-between"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full flex items-center justify-center" style="background:rgba(16,185,129,.12)"><i data-lucide=\"users\" class=\"w-5 h-5\" style=\"color:#10B981\"></i></div><div><div class=\"text-xl font-extrabold text-slate-800\">${summary.total}</div><div class=\"text-xs text-slate-500\">اعضای تیم</div></div></div></div>
+                <div class="glass rounded-2xl p-4 flex items-center justify-between"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full flex items-center justify-center" style="background:rgba(251,191,36,.12)"><i data-lucide=\"clipboard-list\" class=\"w-5 h-5\" style=\"color:#F59E0B\"></i></div><div><div class=\"text-xl font-extrabold text-slate-800\">${summary.pendingSelf}</div><div class=\"text-xs text-slate-500\">منتظر خودارزیابی</div></div></div></div>
+                <div class="glass rounded-2xl p-4 flex items-center justify-between"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full flex items-center justify-center" style="background:rgba(59,130,246,.12)"><i data-lucide=\"user-check\" class=\"w-5 h-5\" style=\"color:#3B82F6\"></i></div><div><div class=\"text-xl font-extrabold text-slate-800\">${summary.pendingManager}</div><div class=\"text-xs text-slate-500\">آماده ارزیابی مدیر</div></div></div></div>
+                <div class="glass rounded-2xl p-4 flex items-center justify-between"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full flex items-center justify-center" style="background:rgba(16,185,129,.12)"><i data-lucide=\"check-circle\" class=\"w-5 h-5\" style=\"color:#10B981\"></i></div><div><div class=\"text-xl font-extrabold text-slate-800\">${summary.completed}</div><div class=\"text-xs text-slate-500\">تکمیل شده</div></div></div></div>
+            </div>`;
+
         contentContainer.innerHTML = `
             <section class="rounded-2xl overflow-hidden border mb-6" style="background:linear-gradient(90deg,#10B981,#6B69D6)"><div class="p-6 sm:p-8"><h1 class="text-2xl sm:text-3xl font-extrabولد text-white">مدیریت تیم: ${myTeam.name}</h1><p class="text-white/90 text-xs mt-1">وضعیت ارزیابی اعضا در دوره فعال</p></div></section>
+            ${summaryCards}
             <div class="card p-0">
                 <div class="p-4 border-b"><h3 class="font-semibold">وضعیت ارزیابی اعضا در دوره: ${activeCycle.title}</h3></div>
                 <div class="overflow-x-auto">
