@@ -1317,7 +1317,7 @@ window.renderMomentsList = () => {
         // ▲▲▲ پایان بخش جدید ▲▲▲
 
         return `
-            <div class="bg-white rounded-2xl border border-slate-200 p-0 overflow-hidden relative">
+            <div class="bg-white rounded-2xl border border-slate-200 p-0 relative" style="overflow:visible;">
                 ${canDelete ? `
                     <button class="moment-delete-btn absolute top-3 right-3 p-1.5 text-slate-100 hover:text-red-500 rounded-full hover:bg-red-50 transition-colors" data-id="${m.firestoreId}" title="حذف">
                         <i data-lucide="trash-2" class="w-4 h-4"></i>
@@ -1962,6 +1962,9 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
                             reactions.push({ uid: employee.uid, emoji });
                         }
                         await updateDoc(docRef, { reactions, lastUpdatedAt: serverTimestamp() });
+                        const pop = document.getElementById(`moment-react-popover-${id}`);
+                        if (pop) pop.classList.add('hidden');
+                        if (window.renderMomentsList) window.renderMomentsList();
                     } catch (err) { showToast('خطا در ثبت واکنش.', 'error'); }
                 })();
                 return;
