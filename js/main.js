@@ -1213,14 +1213,15 @@ else if (pageName === 'documents') {
                     <img src="${employee.avatar}" class="w-10 h-10 rounded-full object-cover"/>
                     <div class="flex-1">
                         <textarea id="moment-text" class="w-full p-3 border rounded-xl" maxlength="280" placeholder="یک متن کوتاه بنویس... (حداکثر ۲۸۰ کاراکتر)"></textarea>
-                        <div class="flex items-center justify-between mt-2">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-2 gap-2">
                             <div class="flex items-center gap-2">
-                                <input type="file" id="moment-image" accept="image/png,image/jpeg" class="text-xs"/>
-                                <button type="button" class="text-xs px-2 py-1 rounded-lg border">افزودن عکس</button>
+                                <input type="file" id="moment-image" accept="image/png,image/jpeg" class="hidden"/>
+                                <button type="button" id="moment-image-btn" class="text-xs px-2 py-1 rounded-lg border">افزودن عکس</button>
+                                <span id="moment-image-name" class="text-[11px] text-slate-500"></span>
                             </div>
                             <div class="flex items-center gap-3">
                                 <span id="moment-char" class="text-[11px] text-slate-500">0/280</span>
-                                <button id="moment-post-btn" class="primary-btn text-xs">انتشار</button>
+                                <button id="moment-post-btn" class="primary-btn text-xs w-full sm:w-auto">انتشار</button>
                             </div>
                         </div>
                         <p class="text-[11px] text-slate-500 mt-1">فقط متن یا فقط عکس؛ همزمان هر دو مجاز نیست.</p>
@@ -1291,10 +1292,18 @@ window.renderMomentsList = () => {
         // شمارشگر کاراکتر لحظه‌ها
         const momentText = document.getElementById('moment-text');
         const momentChar = document.getElementById('moment-char');
+        const momentImage = document.getElementById('moment-image');
+        const momentImageBtn = document.getElementById('moment-image-btn');
+        const momentImageName = document.getElementById('moment-image-name');
         momentText?.addEventListener('input', () => {
             const len = (momentText.value || '').length;
             momentChar.textContent = `${len}/280`;
             momentChar.style.color = len > 260 ? '#DC2626' : '#64748B';
+        });
+        momentImageBtn?.addEventListener('click', () => momentImage?.click());
+        momentImage?.addEventListener('change', () => {
+            const f = momentImage.files && momentImage.files[0];
+            momentImageName.textContent = f ? f.name : '';
         });
 
         window.renderMomentsList();
