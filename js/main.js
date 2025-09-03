@@ -1216,7 +1216,7 @@ else if (pageName === 'documents') {
                         <div class="mt-2 relative flex items-center gap-2">
                             <div class="relative">
                                 <button type="button" id="moment-emoji-toggle" class="text-xs px-2 py-1 rounded-lg border flex items-center gap-1"><i data-lucide="smile" class="w-4 h-4"></i><span>ایموجی</span></button>
-                                <div id="moment-emoji-popover" class="hidden absolute z-20 bg-white border rounded-xl shadow-lg p-2 w-56 mt-2" style="inset-inline-end:0;">
+                                <div id="moment-emoji-popover" class="hidden absolute z-50 bg-white border rounded-xl shadow-lg p-2 w-56 mt-2" style="inset-inline-end:0;">
                                     <div class="grid grid-cols-8 gap-1 text-lg">
                                         ${['👍','❤️','😂','🎉','🔥','👏','😍','🤝','💯','🤩','🙏','💡','😮','😢','👀','👋','✨','🌟','🚀','🥳','😎','🤗','🤔','🥰','😇','😴','🤤','😅','😆','😏','🤌'].map(e=> `<button type=\"button\" class=\"moment-emoji-choice\" data-emoji=\"${e}\">${e}</button>`).join('')}
                                     </div>
@@ -1337,7 +1337,7 @@ window.renderMomentsList = () => {
                 <div class="p-4 border-t flex items-center justify-between">
                     <div class="relative">
                         <button class="moment-react-toggle text-xs px-2 py-1 rounded-lg border flex items-center gap-1" data-id="${m.firestoreId}"><i data-lucide="smile" class="w-4 h-4"></i><span>واکنش</span></button>
-                        <div id="moment-react-popover-${m.firestoreId}" class="moment-react-popover hidden absolute z-20 bg-white border rounded-xl shadow-lg p-2 w-56 mt-2" style="inset-inline-start:0;">
+                        <div id="moment-react-popover-${m.firestoreId}" class="moment-react-popover hidden absolute z-50 bg-white border rounded-xl shadow-lg p-2 w-56 mt-2" style="inset-inline-start:0;">
                             <div class="grid grid-cols-8 gap-1 text-lg">
                                 ${['👍','❤️','😂','🎉','🔥','👏','😍','🤝','💯','🤩','🙏','💡','😮','😢','👀','👋','✨','🌟','🚀','🥳','😎','🤗','🤔','🥰','😇','😴','🤤','😅','😆','😏','🤌'].map(e=> `<button type="button" class="moment-react-btn" data-id="${m.firestoreId}" data-emoji="${e}">${e}</button>`).join('')}
                             </div>
@@ -1352,7 +1352,9 @@ window.renderMomentsList = () => {
                     <div class="flex flex-wrap gap-2">${reactionsHtml}</div>
                 </div>
                 <div class="px-4 pb-4 hidden" id="moment-comments-${m.firestoreId}">
-                    <div id="moment-comments-list-${m.firestoreId}" class="space-y-2"></div>
+                    <div id="moment-comments-list-${m.firestoreId}" class="space-y-2">
+                        ${(m.comments || []).slice(-3).map(c=> `<div class=\"p-2 rounded-lg bg-slate-50 border\"><div class=\"text-[11px] text-slate-500 mb-1\">${c.name || ''} • ${toPersianDate(c.createdAt)}</div><div class=\"text-sm text-slate-700\">${c.text}</div></div>`).join('')}
+                    </div>
                     <div class="mt-2 flex items-center gap-2">
                         <input id="moment-comment-input-${m.firestoreId}" class="flex-1 p-2 border rounded-lg text-sm" placeholder="نوشتن نظر..."/>
                         <button class="moment-comment-send text-xs px-3 py-1.5 rounded-lg primary-btn" data-id="${m.firestoreId}">ارسال</button>
