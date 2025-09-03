@@ -7884,18 +7884,28 @@ const setupEventListeners = () => {
     document.getElementById('confirmCancel')?.addEventListener('click', () => closeModal(confirmModal, confirmModalContainer));
     document.getElementById('confirmAccept')?.addEventListener('click', () => { confirmCallback(); closeModal(confirmModal, confirmModalContainer); });
 
-    // بخش ۲: منوی موبایل (که فقط یک بار نیاز به تعریف دارد)
-    const menuBtn = document.getElementById('menu-btn');
-    if (menuBtn) {
+    // بخش ۲: منوی موبایل (با Event Delegation تا بعد از رندر مجدد هم کار کند)
+    const toggleAdminSidebar = () => {
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('sidebar-overlay');
-        const toggleMenu = () => {
-            sidebar.classList.toggle('translate-x-full');
-            overlay.classList.toggle('hidden');
-        };
-        menuBtn.addEventListener('click', toggleMenu);
-        overlay.addEventListener('click', toggleMenu);
-    }
+        if (!sidebar || !overlay) return;
+        sidebar.classList.toggle('translate-x-full');
+        overlay.classList.toggle('hidden');
+    };
+    const closeAdminSidebar = () => {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        if (!sidebar || !overlay) return;
+        sidebar.classList.add('translate-x-full');
+        overlay.classList.add('hidden');
+    };
+    document.addEventListener('click', (e) => {
+        if (e.target.closest('#menu-btn')) {
+            toggleAdminSidebar();
+        } else if (e.target.closest('#sidebar-overlay')) {
+            closeAdminSidebar();
+        }
+    });
 
     // بخش ۳: ناوبری (منوی کناری ادمین)
     const handleNavClick = (e) => {
