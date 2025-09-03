@@ -1207,16 +1207,20 @@ else if (pageName === 'documents') {
     // --- لحظه‌های نیک‌اندیشی ---
     else if (pageName === 'moments') {
         const composer = `
-            <div class="glass rounded-2xl p-4 mb-4">
+            <section class="rounded-2xl overflow-hidden border mb-4" style="background:linear-gradient(90deg,#FF6A3D,#F72585)"><div class="p-5 sm:p-6 flex items-center gap-3"><img src="${employee.avatar}" class="w-10 h-10 rounded-full object-cover ring-2 ring-white/40"/><div class="flex-1"><div class="text-white/80 text-xs">لحظه‌ای ثبت کن</div><div class="text-lg font-extrabold text-white">چه خبر خوبی داری؟</div></div></div></section>
+            <div class="bg-white rounded-2xl p-4 border shadow-sm mb-4">
                 <div class="flex items-start gap-3">
                     <img src="${employee.avatar}" class="w-10 h-10 rounded-full object-cover"/>
                     <div class="flex-1">
-                        <textarea id="moment-text" class="w-full p-3 border rounded-xl" maxlength="280" placeholder="چه خبر خوب یا فکری می‌خواهی به اشتراک بگذاری؟ (حداکثر ۲۸۰ کاراکتر)"></textarea>
+                        <textarea id="moment-text" class="w-full p-3 border rounded-xl" maxlength="280" placeholder="یک متن کوتاه بنویس... (حداکثر ۲۸۰ کاراکتر)"></textarea>
                         <div class="flex items-center justify-between mt-2">
-                            <input type="file" id="moment-image" accept="image/png,image/jpeg" class="text-xs"/>
+                            <div class="flex items-center gap-2">
+                                <input type="file" id="moment-image" accept="image/png,image/jpeg" class="text-xs"/>
+                                <button type="button" class="text-xs px-2 py-1 rounded-lg border">افزودن عکس</button>
+                            </div>
                             <div class="flex items-center gap-3">
                                 <span id="moment-char" class="text-[11px] text-slate-500">0/280</span>
-                                <button id="moment-post-btn" class="primary-btn text-xs">ارسال</button>
+                                <button id="moment-post-btn" class="primary-btn text-xs">انتشار</button>
                             </div>
                         </div>
                         <p class="text-[11px] text-slate-500 mt-1">فقط متن یا فقط عکس؛ همزمان هر دو مجاز نیست.</p>
@@ -1226,12 +1230,6 @@ else if (pageName === 'documents') {
 
         const listContainer = `<div id="moments-list" class="space-y-3"></div><div id="moments-sentinel" class="h-8"></div>`;
         contentContainer.innerHTML = `
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 page-header mb-4">
-                <div>
-                    <h1 class="text-2xl font-extrabold" style="color:#242A38">لحظه‌های نیک‌اندیشی</h1>
-                    <p class="text-slate-500 text-sm mt-1">اشتراک‌گذاری افکار و عکس‌ها با هم‌تیمی‌ها</p>
-                </div>
-            </div>
             ${composer}
             ${listContainer}
         `;
@@ -1263,27 +1261,29 @@ window.renderMomentsList = () => {
         // ▲▲▲ پایان بخش جدید ▲▲▲
 
         return `
-            <div class="bg-white rounded-2xl border border-slate-200 p-4 relative">
-                
+            <div class="bg-white rounded-2xl border border-slate-200 p-0 overflow-hidden relative">
                 ${canDelete ? `
-                    <button class="moment-delete-btn absolute top-3 left-3 p-1.5 text-slate-400 hover:text-red-500 rounded-full hover:bg-red-50 transition-colors" data-id="${m.firestoreId}" title="حذف">
+                    <button class="moment-delete-btn absolute top-3 left-3 p-1.5 text-slate-100 hover:text-red-500 rounded-full hover:bg-red-50 transition-colors" data-id="${m.firestoreId}" title="حذف">
                         <i data-lucide="trash-2" class="w-4 h-4"></i>
                     </button>
                 ` : ''}
-                
-                <div class="flex items-center gap-2 mb-3">
-                    <img src="${owner.avatar || 'icons/icon-128x128.png'}" class="w-10 h-10 rounded-full object-cover"/>
-                    <div>
-                        <div class="font-bold text-slate-800 text-sm">${owner.name || m.ownerName || 'کاربر'}</div>
-                        <div class="text-[11px] text-slate-500">${toPersianDate(m.createdAt)}</div>
+                <div class="p-4">
+                    <div class="flex items-center gap-2 mb-3">
+                        <img src="${owner.avatar || 'icons/icon-128x128.png'}" class="w-10 h-10 rounded-full object-cover"/>
+                        <div>
+                            <div class="font-bold text-slate-800 text-sm">${owner.name || m.ownerName || 'کاربر'}</div>
+                            <div class="text-[11px] text-slate-500">${toPersianDate(m.createdAt)}</div>
+                        </div>
                     </div>
+                    ${m.text ? `<div class=\"text-sm text-slate-800 whitespace-pre-wrap mb-3 leading-7\">${m.text}</div>` : ''}
                 </div>
-                ${m.text ? `<div class="text-sm text-slate-800 whitespace-pre-wrap mb-3">${m.text}</div>` : ''}
-                ${m.imageUrl ? `<img src="${m.imageUrl}" class="w-full h-auto max-h-[32rem] rounded-xl object-cover border bg-slate-100 mb-3"/>` : ''}
-                <div class="flex items-center gap-2">
-                    ${['👍','❤️','😂','🎉','👎'].map(e=> `<button class="moment-react-btn text-sm px-2 py-1 rounded-full ${meReact===e ? 'bg-slate-800 text-white':'bg-slate-100 text-slate-700'}" data-id="${m.firestoreId}" data-emoji="${e}">${e}</button>`).join('')}
+                ${m.imageUrl ? `<img src="${m.imageUrl}" class="w-full h-auto max-h-[40rem] object-cover bg-slate-100"/>` : ''}
+                <div class="p-4 border-t flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        ${['👍','❤️','😂','🎉','👎'].map(e=> `<button class="moment-react-btn text-sm px-2 py-1 rounded-full ${meReact===e ? 'bg-slate-800 text-white':'bg-slate-100 text-slate-700'}" data-id="${m.firestoreId}" data-emoji="${e}">${e}</button>`).join('')}
+                    </div>
+                    <div class="flex flex-wrap gap-2">${reactionsHtml}</div>
                 </div>
-                <div class="flex flex-wrap gap-2 mt-3">${reactionsHtml}</div>
             </div>`;
     }).join('');
     if (window.lucide?.createIcons) lucide.createIcons();
