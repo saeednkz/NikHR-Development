@@ -4352,6 +4352,92 @@ const showEditUserForm = (user) => {
 // ▼▼▼ کل این تابع را با نسخه جدید و کامل زیر جایگزین کنید ▼▼▼
 
 function setupProfileModalListeners(emp) {
+    const container = document.getElementById('modalContent');
+    if (!container) return;
+
+    // ۱. منطق صحیح فعال‌سازی تب‌ها
+    const tabs = container.querySelectorAll('#profile-tabs .profile-tab');
+    const contents = container.querySelectorAll('.profile-tab-content');
+    tabs.forEach(tab => {
+        tab.addEventListener('click', (e) => {
+            e.preventDefault();
+            const targetId = tab.getAttribute('data-tab');
+            if (!targetId) return;
+            
+            tabs.forEach(t => {
+                t.classList.remove('active', 'primary-btn');
+                t.classList.add('secondary-btn');
+            });
+            tab.classList.add('active', 'primary-btn');
+            tab.classList.remove('secondary-btn');
+
+            contents.forEach(c => c.classList.add('hidden'));
+            const panel = document.getElementById(`tab-${targetId}`);
+            if (panel) panel.classList.remove('hidden');
+        });
+    });
+
+    // ۲. شنونده مرکزی برای تمام دکمه‌ها
+    container.addEventListener('click', async (e) => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+
+        // دکمه افزودن سابقه عملکرد (کارکرد صحیح)
+        if (btn.id === 'add-performance-btn') {
+            showPerformanceForm(emp);
+            return;
+        }
+
+        // دکمه مشاهده سابقه عملکرد
+        const viewPerfBtn = e.target.closest('.view-performance-btn');
+        if (viewPerfBtn) {
+            const reviewIndex = parseInt(viewPerfBtn.dataset.index);
+            if (emp.performanceHistory && emp.performanceHistory[reviewIndex]) {
+                showViewPerformanceDetailsModal(emp.performanceHistory[reviewIndex]);
+            }
+            return;
+        }
+
+        // دکمه ویرایش سابقه عملکرد
+        if (btn.classList.contains('edit-performance-btn')) {
+            showPerformanceForm(emp, parseInt(btn.dataset.index));
+            return;
+        }
+
+        // دکمه حذف سابقه عملکرد
+        if (btn.classList.contains('delete-performance-btn')) {
+            const reviewIndex = parseInt(btn.dataset.index);
+            showConfirmationModal('حذف سابقه عملکرد', 'آیا از حذف این آیتم مطمئن هستید؟', async () => {
+                const currentHistory = emp.performanceHistory || [];
+                currentHistory.splice(reviewIndex, 1);
+                const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
+                await updateDoc(docRef, { performanceHistory: currentHistory });
+                showToast('سابقه ارزیابی حذف شد.');
+                viewEmployeeProfile(emp.firestoreId);
+            });
+            return;
+        }
+        
+        // بقیه دکمه‌های پروفایل
+        if (btn.id === 'main-edit-employee-btn') { showEmployeeForm(emp.firestoreId); return; }
+        if (btn.id === 'edit-competencies-btn') { showEditCompetenciesForm(emp); return; }
+        if (btn.id === 'edit-personal-info-btn') { showEditPersonalInfoForm(emp); return; }
+        if (btn.id === 'add-contract-btn') { showContractForm(emp); return; }
+        if (btn.id === 'edit-career-path-btn') { showEditCareerPathForm(emp); return; }
+                if (btn.id === 'change-avatar-btn') {
+            handleAvatarChange(emp);
+            return;
+        }
+        if (btn.id === 'delete-avatar-btn') {
+            showConfirmationModal('حذف عکس پروفایل', 'آیا مطمئن هستید؟', async () => {
+                const defaultAvatar = `https://placehold.co/100x100/E2E8F0/4A5568?text=${(emp.name||'NA').substring(0,2)}`;
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId), { avatar: defaultAvatar });
+                showToast('عکس پروفایل حذف شد.');
+                viewEmployeeProfile(emp.firestoreId);
+            });
+            return;
+        }
+    });
 }
 // Contract editor (add/extend)
 function showContractForm(emp, idx=null) {
@@ -4494,7 +4580,94 @@ try { window.setupProfileModalListeners = setupProfileModalListeners; } catch {}
 // ▼▼▼ این تابع جدید را به فایل خود اضافه کنید ▼▼▼
 
 const setupTeamProfileModalListeners = (team) => {
+    const content = document.getElementById('modalContent');
+    if (!content) return;
 
+    // ۱. فعال‌سازی تب‌های داخل مودال
+    const tabs = content.querySelectorAll('.profile-tab');
+    const panes = content.querySelectorAll('.profile-tab-content');
+    tabs.forEach(tab => {
+        tab.addEventListener('click', (e) => {
+            e.preventDefault();
+            tabs.forEach(t => {
+                t.classList.remove('active');
+                t.classList.remove('border-indigo-500', 'text-indigo-600');
+                t.classList.add('border-transparent', 'text-slate-500');
+            });
+            panes.forEach(p => p.classList.add('hidden'));
+            tab.classList.add('active');
+            tab.classList.remove('border-transparent', 'text-slate-500');
+            tab.classList.add('border-indigo-500', 'text-indigo-600');
+            const targetPane = content.querySelector(`#${tab.dataset.tab}`);
+            if (targetPane) targetPane.classList.remove('hidden');
+
+            // اگر تب سلامت تیم فعال شد، چارت‌ها را رندر کن
+            if (tab.dataset.tab === 'tab-team-health') {
+                try {
+                    const data = window._teamModalData || {};
+                    const ctx = document.getElementById('teamEngagementBreakdownChart')?.getContext('2d');
+                    if (ctx && !charts.teamEngagementBreakdown) {
+                        setupChartTheme();
+                        const labels = (data.engagementBreakdown || []).map(it => it.name);
+                        const values = (data.engagementBreakdown || []).map(it => it.score);
+                        charts.teamEngagementBreakdown = new Chart(ctx, {
+                            type: 'bar',
+                            data: {
+                                labels,
+                                datasets: [{
+                                    label: 'امتیاز (%)',
+                                    data: values,
+                                    backgroundColor: values.map((_,i)=> hexToRgba(getBrandColor(i),0.85)),
+                                    borderRadius: 10,
+                                    barPercentage: 0.55,
+                                    categoryPercentage: 0.6
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: { legend: { display: false } },
+                                scales: { y: { beginAtZero: true, suggestedMax: 100 } }
+                            }
+                        });
+                    }
+                } catch (err) { console.error('Health tab chart error', err); }
+            }
+        });
+    });
+
+    // ۲. فعال‌سازی تمام دکمه‌ها با یک شنونده مرکزی
+    content.addEventListener('click', (e) => {
+        const button = e.target.closest('button');
+        if (!button) return;
+
+        // دکمه‌های هدر
+        if (button.id === 'edit-team-details-btn') showTeamForm(team.firestoreId);
+        if (button.id === 'edit-team-mission-btn') showEditTeamMissionForm(team);
+        if (button.id === 'change-team-avatar-btn') {
+            const input = document.getElementById('image-upload-input');
+            input.onchange = async () => {
+                const file = input.files[0];
+                if (!file) return;
+                try {
+                    showToast("در حال آپلود عکس...", "success", null);
+                    const storageRef = ref(storage, `teams/${team.firestoreId}/avatar_${Date.now()}`);
+                    const snapshot = await uploadBytes(storageRef, file);
+                    const url = await getDownloadURL(snapshot.ref);
+                    await updateDoc(doc(db, `artifacts/${appId}/public/data/teams`, team.firestoreId), { avatar: url });
+                    showToast('عکس تیم به‌روزرسانی شد.');
+                    viewTeamProfile(team.firestoreId);
+                } catch (err) {
+                    showToast('خطا در آپلود عکس.', 'error');
+                }
+            };
+            input.click();
+        }
+
+        // دکمه‌های داخل تب "نمای کلی"
+        if (button.id === 'edit-team-members-btn') showEditTeamMembersForm(team);
+        if (button.id === 'edit-team-okrs-btn') showEditTeamOkrsForm(team);
+    });
 };
 // فایل: js/main.js
 // ▼▼▼ کل این تابع را با نسخه کامل و نهایی زیر جایگزین کنید ▼▼▼
@@ -4744,7 +4917,6 @@ const viewEmployeeProfile = (employeeId) => {
             </div>
         </div>`;
 
-        mainModal.dataset.employeeId = employeeId; // <-- این خط را اضافه کنید
     openModal(mainModal, mainModalContainer);
     modalContent = clearEventListeners(document.getElementById('modalContent'));
     setupProfileModalListeners(emp);
@@ -5057,7 +5229,6 @@ const viewTeamProfile = (teamId) => {
             </div>
         </div>
     `;
-        mainModal.dataset.teamId = teamId; // <-- این خط را اضافه کنید
     openModal(mainModal, mainModalContainer);
     lucide.createIcons();
     
@@ -5829,6 +6000,7 @@ const renderEmployeeTable = () => {
     document.body.removeChild(link);
 };
 const setupTalentPageListeners = () => {
+    // ریست کردن صفحه به ۱ هنگام جستجو یا فیلتر
     const resetToFirstPage = () => {
         state.currentPageTalent = 1;
         renderEmployeeTable();
@@ -5838,10 +6010,72 @@ const setupTalentPageListeners = () => {
     document.getElementById('departmentFilter')?.addEventListener('change', resetToFirstPage);
     document.getElementById('skillFilter')?.addEventListener('change', resetToFirstPage);
     document.getElementById('statusFilter')?.addEventListener('change', resetToFirstPage);
+    
+    // اتصال دکمه افزودن کارمند به تابع مربوطه
+    document.getElementById('add-employee-btn')?.addEventListener('click', () => showEmployeeForm());
+    
+    // اتصال دکمه خروجی CSV به تابع مربوطه
+    document.getElementById('export-csv-btn')?.addEventListener('click', exportToCSV);
+
+    // مدیریت کلیک روی کارت‌ها (مشاهده، ویرایش، حذف)
+    const mainContentArea = document.getElementById('main-content');
+    
+    mainContentArea.addEventListener('click', (e) => {
+        const viewEmpBtn = e.target.closest('.view-employee-profile-btn');
+        const editEmpBtn = e.target.closest('.edit-employee-btn');
+        const deleteEmpBtn = e.target.closest('.delete-employee-btn');
+        const paginationBtn = e.target.closest('.pagination-btn');
+        
+
+        if (paginationBtn && !paginationBtn.disabled) {
+            state.currentPageTalent = Number(paginationBtn.dataset.page);
+            renderEmployeeTable();
+        }
+
+        if (viewEmpBtn) {
+        viewEmployeeProfile(viewEmpBtn.dataset.employeeId);
+        } else if (editEmpBtn) {
+            showEmployeeForm(editEmpBtn.dataset.employeeId);
+        } else if (deleteEmpBtn) {
+            showConfirmationModal("حذف کارمند", "آیا از حذف این کارمند مطمئن هستید؟", async () => {
+                try {
+                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/employees`, deleteEmpBtn.dataset.employeeId));
+                    showToast("کارمند با موفقیت حذف شد.");
+                } catch (error) {
+                    console.error("Error deleting employee:", error);
+                    showToast("خطا در حذف کارمند.", "error");
+                }
+            });
+        }
+    });
 };
 // کل این تابع را با نسخه جدید جایگزین کنید
 const setupOrganizationPageListeners = () => {
+    document.getElementById('add-team-btn')?.addEventListener('click', () => showTeamForm());
+    document.getElementById('add-team-btn-empty')?.addEventListener('click', () => showTeamForm());
 
+    // از شناسه جدید برای پیدا کردن کانتینر استفاده می‌کنیم
+    const teamsContainer = document.getElementById('teams-container');
+    if(teamsContainer) {
+        teamsContainer.addEventListener('click', (e) => {
+            const viewTeamBtn = e.target.closest('.view-team-profile-btn');
+            const deleteTeamBtn = e.target.closest('.delete-team-btn');
+
+            if (viewTeamBtn) {
+                viewTeamProfile(viewTeamBtn.dataset.teamId);
+            } else if (deleteTeamBtn) {
+                showConfirmationModal("حذف تیم", "آیا از حذف این تیم مطمئن هستید؟", async () => { 
+                    try { 
+                        await deleteDoc(doc(db, `artifacts/${appId}/public/data/teams`, deleteTeamBtn.dataset.teamId)); 
+                        showToast("تیم با موفقیت حذف شد."); 
+                    } catch (error) { 
+                        console.error("Error deleting team:", error); 
+                        showToast("خطا در حذف تیم.", "error"); 
+                    } 
+                });
+            }
+        });
+    }
 };
 // این تابع جدید را به js/main.js اضافه کنید
 // در فایل js/main.js
@@ -7053,84 +7287,74 @@ const isProfileComplete = (employee) => {
 
 // فایل: js/main.js
 // ▼▼▼ کل این تابع را با نسخه جدید و کامل زیر جایگزین کنید ▼▼▼
-// فایل: js/main.js
-// ▼▼▼ این تابع کاملا جدید را اضافه کنید ▼▼▼
-async function handleEmployeeFormSubmit(form) {
-    const isEditing = form.dataset.isEditing === 'true';
-    const employeeId = form.dataset.employeeId;
-    const oldTeamId = form.dataset.oldTeamId;
 
-    const name = form.querySelector('#name').value;
-    const id = form.querySelector('#id').value;
-    const email = form.querySelector('#employee-email').value;
-    const selectedTeamId = form.querySelector('#department-team-select').value;
-    const selectedTeam = state.teams.find(t => t.firestoreId === selectedTeamId);
-    const managedTeamId = form.querySelector('#managed-team-select').value;
-
-    const employeeCoreData = {
-        name: name,
-        id: id,
-        jobTitle: form.querySelector('#jobTitle').value,
-        jobPositionId: form.querySelector('#jobPositionId').value,
-        jobFamily: form.querySelector('#jobFamily').value,
-        level: form.querySelector('#level').value,
-        department: selectedTeam ? selectedTeam.name : '',
-        status: form.querySelector('#status').value,
-        startDate: persianToEnglishDate(form.querySelector('#startDate').value),
-    };
-
-    if (isEditing) {
-        const emp = state.employees.find(e => e.firestoreId === employeeId);
-        const batch = writeBatch(db);
-        const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
-        batch.update(docRef, employeeCoreData);
-
-        const oldManagedTeam = state.teams.find(t => t.leadership?.manager === emp.id);
-        if (oldManagedTeam && oldManagedTeam.firestoreId !== managedTeamId) {
-            const oldTeamRef = doc(db, `artifacts/${appId}/public/data/teams`, oldManagedTeam.firestoreId);
-            batch.update(oldTeamRef, { 'leadership.manager': null });
-        }
-
-        if (managedTeamId) {
-            const newManagedTeamRef = doc(db, `artifacts/${appId}/public/data/teams`, managedTeamId);
-            batch.set(newManagedTeamRef, { leadership: { manager: id } }, { merge: true });
-        }
-        await batch.commit();
-        showToast("اطلاعات کارمند با موفقیت بروزرسانی شد.");
-    } else { // ایجاد کارمند جدید
-        const employeeDataForCreation = { ...employeeCoreData, avatar: `https://placehold.co/100x100/E2E8F0/4A5568?text=${name.substring(0, 2)}`, personalInfo: { email: email } };
-        const createNewEmployee = httpsCallable(functions, 'createNewEmployee');
-        await createNewEmployee({
-            name, employeeId: id, email,
-            employeeData: employeeDataForCreation,
-            teamId: selectedTeamId,
-            managedTeamId: managedTeamId
-        });
-        showToast("کارمند و حساب کاربری با موفقیت ایجاد شد!");
-    }
-    closeModal(mainModal, mainModalContainer);
-}
-// فایل: js/main.js
-// ▼▼▼ کل تابع showEmployeeForm را با این نسخه جایگزین کنید ▼▼▼
 const showEmployeeForm = (employeeId = null) => {
     const isEditing = employeeId !== null;
     const emp = isEditing ? state.employees.find(e => e.firestoreId === employeeId) : {};
     const currentTeam = isEditing ? state.teams.find(t => t.memberIds?.includes(emp.id)) : null;
-
+    
     const teamOptions = state.teams.map(team => `<option value="${team.firestoreId}" ${currentTeam?.firestoreId === team.firestoreId ? 'selected' : ''}>${team.name}</option>`).join('');
     const familyOptions = (state.jobFamilies || []).map(family => `<option value="${family.name}" ${emp.jobFamily === family.name ? 'selected' : ''}>${family.name}</option>`).join('');
     const positionOptions = (state.jobPositions || []).map(pos => `<option value="${pos.firestoreId}" ${emp.jobPositionId === pos.firestoreId ? 'selected' : ''}>${pos.name}</option>`).join('');
 
     modalTitle.innerText = isEditing ? 'ویرایش اطلاعات کارمند' : 'افزودن کارمند جدید';
     modalContent.innerHTML = `
-        <form id="employee-form" class="space-y-5" 
-              data-is-editing="${isEditing}" 
-              data-employee-id="${employeeId || ''}" 
-              data-old-team-id="${currentTeam?.firestoreId || ''}">
-            
-            // ... تمام فیلدهای HTML فرم شما بدون تغییر اینجا قرار می‌گیرد ...
-            // (همان کدهای input و select که قبلا بود)
-
+        <form id="employee-form" class="space-y-5" data-old-team-id="${currentTeam?.firestoreId || ''}">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-white border rounded-xl p-4"><label for="name" class="block text-xs font-semibold text-slate-500">نام کامل</label><input type="text" id="name" value="${emp.name || ''}" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg" required></div>
+                <div class="bg-white border rounded-xl p-4"><label for="id" class="block text-xs font-semibold text-slate-500">کد پرسنلی</label><input type="text" id="id" value="${emp.id || ''}" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg" ${isEditing ? 'readonly' : ''} required></div>
+                <div class="md:col-span-2 bg-white border rounded-xl p-4"><label for="employee-email" class="block text-xs font-semibold text-slate-500">آدرس ایمیل (برای ورود)</label><input type="email" id="employee-email" value="${emp.personalInfo?.email || ''}" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg" ${isEditing ? 'readonly' : ''} required></div>
+                <div class="bg-white border rounded-xl p-4"><label for="jobTitle" class="block text-xs font-semibold text-slate-500">عنوان شغلی</label><input type="text" id="jobTitle" value="${emp.jobTitle || ''}" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg"></div>
+                <div class="bg-white border rounded-xl p-4">
+                    <label for="jobPositionId" class="block text-xs font-semibold text-slate-500">پوزیشن شغلی</label>
+                    <select id="jobPositionId" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg bg-white">
+                        <option value="">انتخاب کنید...</option>
+                        ${positionOptions}
+                    </select>
+                </div>
+                <div class="bg-white border rounded-xl p-4">
+                    <label for="jobFamily" class="block text-xs font-semibold text-slate-500">خانواده شغلی</label>
+                    <select id="jobFamily" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg bg-white">
+                        <option value="">انتخاب کنید...</option>
+                        ${familyOptions}
+                    </select>
+                </div>
+                <div class="bg-white border rounded-xl p-4">
+                    <label for="level" class="block text-xs font-semibold text-slate-500">سطح</label>
+                    <select id="level" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg bg-white">
+                        <option value="Junior" ${emp.level === 'Junior' ? 'selected' : ''}>Junior (کارشناس)</option>
+                        <option value="Mid-level" ${emp.level === 'Mid-level' ? 'selected' : ''}>Mid-level (کارشناس ارشد)</option>
+                        <option value="Senior" ${emp.level === 'Senior' ? 'selected' : ''}>Senior (خبره)</option>
+                        <option value="Lead" ${emp.level === 'Lead' ? 'selected' : ''}>Lead (راهبر)</option>
+                        <option value="Manager" ${emp.level === 'Manager' ? 'selected' : ''}>Manager (مدیر)</option>
+                    </select>
+                </div>
+                <div class="bg-white border rounded-xl p-4">
+                    <label for="department-team-select" class="block text-xs font-semibold text-slate-500">تیم عضویت</label>
+                    <select id="department-team-select" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg bg-white">
+                        <option value="">عضو هیچ تیمی نیست</option>
+                        ${teamOptions}
+                    </select>
+                </div>
+                <div id="managed-team-container" class="hidden bg-white border rounded-xl p-4 border-indigo-200">
+                    <label for="managed-team-select" class="block text-xs font-semibold text-indigo-700">تیم تحت مدیریت</label>
+                    <select id="managed-team-select" class="block w-full p-2 border border-slate-300 rounded-lg bg-white mt-2">
+                        <option value="">هیچکدام</option>
+                        ${teamOptions}
+                    </select>
+                </div>
+                <div class="bg-white border rounded-xl p-4">
+                    <label for="status" class="block text-xs font-semibold text-slate-500">وضعیت</label>
+                    <select id="status" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg bg-white">
+                        <option value="فعال" ${emp.status === 'فعال' ? 'selected' : ''}>فعال</option>
+                        <option value="غیرفعال" ${emp.status === 'غیرفعال' ? 'selected' : ''}>غیرفعال</option>
+                    </select>
+                </div>
+                <div class="md:col-span-2 bg-white border rounded-xl p-4">
+                    <label for="startDate" class="block text-xs font-semibold text-slate-500">تاریخ استخدام</label>
+                    <input type="text" id="startDate" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg">
+                </div>
+            </div>
             <div class="pt-2 flex justify-end">
                 <button type="submit" class="primary-btn">ذخیره</button>
             </div>
@@ -7139,17 +7363,100 @@ const showEmployeeForm = (employeeId = null) => {
     openModal(mainModal, mainModalContainer);
     activatePersianDatePicker('startDate', emp.startDate);
 
-    // منطق نمایش/عدم نمایش تیم تحت مدیریت را نگه دارید
     const levelSelect = document.getElementById('level');
     const managedTeamContainer = document.getElementById('managed-team-container');
     const toggleManagedTeamVisibility = () => {
         const selectedLevel = levelSelect.value;
-        managedTeamContainer.style.display = (selectedLevel === 'Manager' || selectedLevel === 'Lead') ? 'block' : 'none';
+        if (selectedLevel === 'Manager' || selectedLevel === 'Lead') {
+            managedTeamContainer.classList.remove('hidden');
+        } else {
+            managedTeamContainer.classList.add('hidden');
+        }
     };
     levelSelect.addEventListener('change', toggleManagedTeamVisibility);
     toggleManagedTeamVisibility();
 
-    // **** مهم: کل بلاک addEventListener('submit', ...) از اینجا حذف می‌شود ****
+    document.getElementById('employee-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const saveBtn = e.target.querySelector('button[type="submit"]');
+        saveBtn.disabled = true;
+        saveBtn.innerText = 'در حال پردازش...';
+
+        const name = document.getElementById('name').value;
+        const employeeId = document.getElementById('id').value;
+        const email = document.getElementById('employee-email').value;
+        const selectedTeamId = document.getElementById('department-team-select').value;
+        const selectedTeam = state.teams.find(t => t.firestoreId === selectedTeamId);
+        
+        // [!code start]
+        // ▼▼▼ این خط که جا افتاده بود، اینجا اضافه شد ▼▼▼
+        const managedTeamId = document.getElementById('managed-team-select').value;
+        // [!code end]
+
+        const employeeCoreData = {
+            name: name,
+            id: employeeId,
+            jobTitle: document.getElementById('jobTitle').value,
+            jobPositionId: document.getElementById('jobPositionId').value,
+            jobFamily: document.getElementById('jobFamily').value,
+            level: document.getElementById('level').value,
+            department: selectedTeam ? selectedTeam.name : '',
+            status: document.getElementById('status').value,
+            startDate: persianToEnglishDate(document.getElementById('startDate').value),
+        };
+        
+        if (isEditing) {
+            try {
+                const batch = writeBatch(db);
+                const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
+                batch.update(docRef, employeeCoreData);
+                
+                const oldManagedTeam = state.teams.find(t => t.leadership?.manager === emp.id);
+                if (oldManagedTeam && oldManagedTeam.firestoreId !== managedTeamId) {
+                    const oldTeamRef = doc(db, `artifacts/${appId}/public/data/teams`, oldManagedTeam.firestoreId);
+                    batch.update(oldTeamRef, { 'leadership.manager': null });
+                }
+
+                if (managedTeamId) {
+                    const newManagedTeamRef = doc(db, `artifacts/${appId}/public/data/teams`, managedTeamId);
+                    batch.set(newManagedTeamRef, { leadership: { manager: employeeId } }, { merge: true });
+                }
+                
+                await batch.commit();
+                showToast("اطلاعات کارمند با موفقیت بروزرسانی شد.");
+                closeModal(mainModal, mainModalContainer);
+            } catch (error) { 
+                console.error("Error updating employee:", error);
+                showToast("خطا در بروزرسانی اطلاعات.", "error");
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerText = 'ذخیره';
+            }
+        } else { // برای ساخت کارمند جدید
+            const employeeDataForCreation = { ...employeeCoreData, avatar: `https://placehold.co/100x100/E2E8F0/4A5568?text=${name.substring(0, 2)}`, personalInfo: { email: email } };
+            try {
+                const createNewEmployee = httpsCallable(functions, 'createNewEmployee');
+                await createNewEmployee({ 
+                    name: name, 
+                    employeeId: employeeId, 
+                    email: email, 
+                    employeeData: employeeDataForCreation,
+                    teamId: selectedTeamId,
+                    managedTeamId: managedTeamId
+                });
+                
+                showToast("کارمند و حساب کاربری با موفقیت ایجاد شد!");
+                closeModal(mainModal, mainModalContainer);
+                renderPage('talent');
+            } catch (error) { 
+                console.error("Cloud function error:", error);
+                showToast(`خطا: ${error.message}`, "error");
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerText = 'ذخیره';
+            }
+        }
+    });
 };
 // فایل: js/main.js
 // این تابع جدید را به فایل اضافه کنید ▼
@@ -7549,110 +7856,158 @@ const showTeamDirectoryModal = (team) => {
     lucide.createIcons();
 };
 
+        // --- EVENT LISTENERS & INITIALIZATION ---
+// در فایل js/main.js
+
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید و کامل جایگزین کنید
+
+// در فایل js/main.js
+// کل این تابع را با نسخه جدید و کامل جایگزین کنید
+
 // فایل: js/main.js
-// ▼▼▼ این کد را به طور کامل جایگزین تابع setupEventListeners فعلی کنید ▼▼▼
-// فایل: js/main.js
-// ▼▼▼ این کد را به طور کامل جایگزین تابع setupEventListeners فعلی کنید ▼▼▼
+// ▼▼▼ کل این تابع را با نسخه جدید و یکپارچه زیر جایگزین کنید ▼▼▼
+
 const setupEventListeners = () => {
-    // روتر اصلی برنامه
+    // بخش ۱: مدیریت رویدادهای مودال‌ها (که فقط یک بار نیاز به تعریف دارند)
+    const mainModal = document.getElementById('mainModal');
+    const mainModalContainer = mainModal?.querySelector('div');
+    const confirmModal = document.getElementById('confirmModal');
+    const confirmModalContainer = confirmModal?.querySelector('div');
+    let confirmCallback = () => {};
+
+    mainModal?.addEventListener('click', (e) => {
+        if (e.target === mainModal || e.target.closest('#closeModal')) {
+            closeModal(mainModal, mainModalContainer);
+        }
+    });
+    document.getElementById('confirmCancel')?.addEventListener('click', () => closeModal(confirmModal, confirmModalContainer));
+    document.getElementById('confirmAccept')?.addEventListener('click', () => { confirmCallback(); closeModal(confirmModal, confirmModalContainer); });
+
+    // بخش ۲: منوی موبایل (با Event Delegation تا بعد از رندر مجدد هم کار کند)
+    const toggleAdminSidebar = () => {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        if (!sidebar || !overlay) return;
+        sidebar.classList.toggle('translate-x-full');
+        overlay.classList.toggle('hidden');
+    };
+    const closeAdminSidebar = () => {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        if (!sidebar || !overlay) return;
+        sidebar.classList.add('translate-x-full');
+        overlay.classList.add('hidden');
+    };
+    document.addEventListener('click', (e) => {
+        if (e.target.closest('#menu-btn')) {
+            toggleAdminSidebar();
+        } else if (e.target.closest('#sidebar-overlay')) {
+            closeAdminSidebar();
+        }
+    });
+
+    // بخش ۳: ناوبری (منوی کناری ادمین)
+    const handleNavClick = (e) => {
+        const link = e.target.closest('a');
+        if (!link || link.id === 'logout-btn') return;
+        if (link.classList.contains('sidebar-item') || link.classList.contains('sidebar-logo')) {
+            e.preventDefault();
+            const pageName = link.getAttribute('href').substring(1);
+            navigateTo(pageName);
+            if (window.innerWidth < 768) {
+                document.getElementById('sidebar')?.classList.add('translate-x-full');
+                document.getElementById('sidebar-overlay')?.classList.add('hidden');
+            }
+        }
+    };
+    document.getElementById('sidebar')?.addEventListener('click', handleNavClick);
+    document.querySelector('header .sidebar-logo')?.addEventListener('click', handleNavClick);
+
+    // بخش ۴: نوتیفیکیشن
+    const bellBtn = document.getElementById('notification-bell-btn');
+    const dropdown = document.getElementById('notification-dropdown');
+    if (bellBtn && dropdown) {
+        bellBtn.addEventListener('click', () => dropdown.classList.toggle('hidden'));
+        document.addEventListener('click', (e) => {
+            if (!bellBtn.parentElement.contains(e.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
+        dropdown.addEventListener('click', (e) => {
+            const item = e.target.closest('.notification-item');
+            if (item) {
+                state.requestFilter = item.dataset.filter;
+                navigateTo(item.getAttribute('href').substring(1));
+                dropdown.classList.add('hidden');
+            }
+        });
+    }
+
+    // [!code start]
+    // ▼▼▼ بخش ۵: شنونده واحد و مرکزی برای تمام کلیک‌های داخل محتوای اصلی ▼▼▼
+    const mainContentArea = document.getElementById('main-content');
+    if (mainContentArea) {
+        mainContentArea.addEventListener('click', (e) => {
+            const target = e.target;
+            
+            // --- رویدادهای صفحه "استعدادها" ---
+            if (target.closest('.view-employee-profile-btn')) viewEmployeeProfile(target.closest('.view-employee-profile-btn').dataset.employeeId);
+            if (target.closest('.edit-employee-btn')) showEmployeeForm(target.closest('.edit-employee-btn').dataset.employeeId);
+            if (target.closest('.delete-employee-btn')) {
+                const btn = target.closest('.delete-employee-btn');
+                showConfirmationModal("حذف کارمند", "آیا مطمئن هستید؟", async () => {
+                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/employees`, btn.dataset.employeeId));
+                    showToast("کارمند حذف شد.");
+                });
+            }
+            if (target.closest('.pagination-btn') && !target.closest('.pagination-btn').disabled) {
+                if (state.currentPage === 'talent') {
+                    state.currentPageTalent = Number(target.closest('.pagination-btn').dataset.page);
+                    renderEmployeeTable();
+                }
+                // ... (می‌توانید برای صفحات دیگر هم اضافه کنید)
+            }
+
+            // --- رویدادهای صفحه "سازمان" ---
+            if (target.closest('#add-team-btn') || target.closest('#add-team-btn-empty')) showTeamForm();
+            if (target.closest('.view-team-profile-btn')) viewTeamProfile(target.closest('.view-team-profile-btn').dataset.teamId);
+            if (target.closest('.delete-team-btn')) {
+                const btn = target.closest('.delete-team-btn');
+                showConfirmationModal("حذف تیم", "آیا از حذف این تیم مطمئن هستید؟", async () => {
+                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/teams`, btn.dataset.teamId));
+                    showToast("تیم حذف شد.");
+                });
+            }
+            
+            // --- رویدادهای صفحه "مدیریت ارزیابی" ---
+            if (target.closest('#add-cycle-btn')) showEvaluationCycleForm();
+            if (target.closest('.edit-cycle-btn')) showEvaluationCycleForm(target.closest('.edit-cycle-btn').dataset.id);
+            if (target.closest('.delete-cycle-btn')) {
+                const btn = target.closest('.delete-cycle-btn');
+                showConfirmationModal('حذف دوره ارزیابی', 'آیا مطمئن هستید؟', async () => {
+                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/evaluationCycles`, btn.dataset.id));
+                    showToast('دوره ارزیابی حذف شد.');
+                });
+            }
+            if (target.closest('.start-cycle-btn')) {
+                const btn = target.closest('.start-cycle-btn');
+                showConfirmationModal('شروع دوره ارزیابی', 'ارزیابی برای تمام کارمندان فعال ایجاد می‌شود. آیا ادامه می‌دهید؟', async () => {
+                    try {
+                        const startCycleFunction = httpsCallable(functions, 'startEvaluationCycle');
+                        await startCycleFunction({ cycleId: btn.dataset.id });
+                        showToast("دوره ارزیابی با موفقیت آغاز شد.");
+                    } catch (error) {
+                        showToast(`خطا: ${error.message}`, "error");
+                    }
+                });
+            }
+        });
+    }
+    // [!code end]
+
+    // بخش ۶: روتر اصلی برنامه
     window.addEventListener('hashchange', router);
-
-    // --- شنونده مرکزی برای تمام کلیک‌ها ---
-    document.body.addEventListener('click', (e) => {
-        const target = e.target;
-        const btn = target.closest('button');
-        if (!btn) return; // اگر روی دکمه کلیک نشده بود، ادامه نده
-
-        // --- منوی همبرگری ادمین ---
-        if (btn.id === 'menu-btn') {
-            document.getElementById('sidebar')?.classList.toggle('translate-x-full');
-            document.getElementById('sidebar-overlay')?.classList.toggle('hidden');
-            return;
-        }
-
-        // --- دکمه‌های صفحه استعدادها و مودال پروفایل ---
-        if (btn.classList.contains('view-employee-profile-btn')) viewEmployeeProfile(btn.dataset.employeeId);
-        if (btn.classList.contains('edit-employee-btn') || btn.id === 'main-edit-employee-btn') showEmployeeForm(btn.dataset.employeeId);
-        if (btn.id === 'edit-personal-info-btn') showEditPersonalInfoForm(state.employees.find(emp => emp.firestoreId === mainModal.dataset.employeeId));
-
-        const deleteEmpBtn = target.closest('.delete-employee-btn');
-        if (deleteEmpBtn) {
-            showConfirmationModal("حذف کارمند", "آیا مطمئن هستید؟", async () => {
-                await deleteDoc(doc(db, `artifacts/${appId}/public/data/employees`, deleteEmpBtn.dataset.employeeId));
-                showToast("کارمند حذف شد.");
-                if (state.currentPage === 'talent') renderEmployeeTable();
-            });
-        }
-
-        // --- دکمه‌های صفحه سازمان و مودال تیم ---
-        if (btn.id === 'add-team-btn' || btn.id === 'add-team-btn-empty') showTeamForm();
-        if (btn.classList.contains('view-team-profile-btn')) viewTeamProfile(btn.dataset.teamId);
-        if (btn.id === 'edit-team-details-btn') showTeamForm(mainModal.dataset.teamId);
-        if (btn.id === 'edit-team-members-btn') showEditTeamMembersForm(state.teams.find(t => t.firestoreId === mainModal.dataset.teamId));
-
-        const deleteTeamBtn = target.closest('.delete-team-btn');
-        if (deleteTeamBtn) {
-            showConfirmationModal("حذف تیم", "آیا مطمئن هستید؟", async () => {
-                await deleteDoc(doc(db, `artifacts/${appId}/public/data/teams`, deleteTeamBtn.dataset.teamId));
-                showToast("تیم حذف شد.");
-            });
-        }
-
-        // --- دکمه‌های صفحه نظرسنجی ---
-        const surveyLinkBtn = target.closest('.create-survey-link-btn');
-        if (surveyLinkBtn) {
-            modalContent = clearEventListeners(document.getElementById('modalContent'));
-            const surveyId = surveyLinkBtn.dataset.surveyId;
-            const template = surveyTemplates[surveyId];
-            if (template.requiresTarget) {
-                showSurveyTargetSelector(surveyId);
-            } else {
-                generateAndShowSurveyLink(surveyId);
-            }
-        }
-
-        // --- صفحه‌بندی ---
-        const paginationBtn = target.closest('.pagination-btn');
-        if (paginationBtn && !paginationBtn.disabled) {
-            const page = Number(paginationBtn.dataset.page);
-            if (state.currentPage === 'talent') { state.currentPageTalent = page; renderEmployeeTable(); }
-            if (state.currentPage === 'requests') { state.currentPageRequests = page; renderPage('requests'); }
-            if (state.currentPage === 'tasks') { state.currentPageTasks = page; renderPage('tasks'); }
-        }
-    });
-
-    // --- شنونده مرکزی برای تمام فرم‌ها ---
-    document.body.addEventListener('submit', async (e) => {
-        const form = e.target.closest('form');
-        if (!form) return;
-
-        e.preventDefault();
-        const saveBtn = form.querySelector('button[type="submit"]');
-        if (saveBtn) {
-            saveBtn.disabled = true;
-            saveBtn.innerText = 'در حال ذخیره...';
-        }
-
-        try {
-            if (form.id === 'employee-form') {
-                // منطق ذخیره فرم کارمند
-                // ... (کد کامل این بخش در قدم بعدی قرار دارد)
-                await handleEmployeeFormSubmit(form);
-            }
-            // می‌توانید بقیه فرم‌ها را نیز به همین شکل اضافه کنید
-            // if (form.id === 'some-other-form') { ... }
-
-        } catch (error) {
-            console.error("Form submission error:", error);
-            showToast(`خطا در پردازش فرم: ${error.message}`, 'error');
-        } finally {
-            if (saveBtn) {
-                saveBtn.disabled = false;
-                // متن دکمه را به حالت اولیه برگردانید
-                if (form.id === 'employee-form') saveBtn.innerText = 'ذخیره';
-            }
-        }
-    });
 };
 // فایل: js/main.js - اضافه کردن توابع جدید
 
