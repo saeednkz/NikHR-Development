@@ -1335,8 +1335,13 @@ window.renderMomentsList = () => {
                 </div>
                 ${m.imageUrl ? `<img src="${m.imageUrl}" class="w-full h-auto max-h-[40rem] object-cover bg-slate-100"/>` : ''}
                 <div class="p-4 border-t flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        ${['👍','❤️','😂','🎉','🔥','👏','😍','🤝','💯','🤩','🙏','💡','😮','😢','👀','👋'].map(e=> `<button class=\"moment-react-btn text-sm px-2 py-1 rounded-full ${meReact===e ? 'bg-slate-800 text-white':'bg-slate-100 text-slate-700'}\" data-id=\"${m.firestoreId}\" data-emoji=\"${e}\">${e}</button>`).join('')}
+                    <div class="relative">
+                        <button class="moment-react-toggle text-xs px-2 py-1 rounded-lg border flex items-center gap-1" data-id="${m.firestoreId}"><i data-lucide="smile" class="w-4 h-4"></i><span>واکنش</span></button>
+                        <div id="moment-react-popover-${m.firestoreId}" class="moment-react-popover hidden absolute z-20 bg-white border rounded-xl shadow-lg p-2 w-56 mt-2" style="inset-inline-start:0;">
+                            <div class="grid grid-cols-8 gap-1 text-lg">
+                                ${['👍','❤️','😂','🎉','🔥','👏','😍','🤝','💯','🤩','🙏','💡','😮','😢','👀','👋','✨','🌟','🚀','🥳','😎','🤗','🤔','🥰','😇','😴','🤤','😅','😆','😏','🤌'].map(e=> `<button type=\\"button\\" class=\\"moment-react-btn\\" data-id=\\"${m.firestoreId}\\" data-emoji=\\"${e}\\">${e}</button>`).join('')}
+                            </div>
+                        </div>
                     </div>
                     <div class="flex items-center gap-2">
                         <button class="moment-comment-toggle text-xs px-2 py-1 rounded-lg border" data-id="${m.firestoreId}"><i data-lucide="message-circle" class="w-4 h-4"></i><span class="mr-1">نظر</span></button>
@@ -1409,6 +1414,13 @@ window.renderMomentsList = () => {
             if (!emojiPopover) return;
             if (e.target.closest && (e.target.closest('#moment-emoji-popover') || e.target.closest('#moment-emoji-toggle'))) return;
             emojiPopover.classList.add('hidden');
+        });
+        // بستن پاپاور واکنش‌ها با کلیک بیرون
+        document.addEventListener('click', (e)=>{
+            document.querySelectorAll('.moment-react-popover').forEach(pop => {
+                if (e.target.closest && (e.target.closest('.moment-react-popover') || e.target.closest('.moment-react-toggle'))) return;
+                pop.classList.add('hidden');
+            });
         });
         document.querySelectorAll('.moment-emoji-choice').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -2512,6 +2524,14 @@ const activatePersianDatePicker = (elementId, initialValue = null) => {
         const totalPages = Math.ceil(totalItems / itemsPerPage);
         if (totalPages <= 1) {
             container.innerHTML = '';
+            return;
+        }
+        // باز/بستن پاپاور واکنش
+        const reactToggle = e.target.closest('.moment-react-toggle');
+        if (reactToggle) {
+            const id = reactToggle.dataset.id;
+            const pop = document.getElementById(`moment-react-popover-${id}`);
+            if (pop) pop.classList.toggle('hidden');
             return;
         }
 
