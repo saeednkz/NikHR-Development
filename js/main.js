@@ -967,7 +967,7 @@ const performanceHistoryHtml = (employee.performanceHistory || [])
             'درخواست مرخصی': [],
             'سایر': []
         };
-        myRequests.forEach(req => {
+        filtered.forEach(req => {
             const key = byType[req.requestType] ? req.requestType : (req.requestType?.includes('مرخصی') ? 'درخواست مرخصی' : 'سایر');
             byType[key].push(req);
         });
@@ -981,15 +981,23 @@ const performanceHistoryHtml = (employee.performanceHistory || [])
             return `<div class=\"mb-6\"><div class=\"flex items-center gap-2 mb-2\"><i data-lucide=\"folder\" class=\"w-4 h-4\"></i><h3 class=\"font-bold text-slate-800\">${title}</h3></div><div class=\"bg-white rounded-xl border overflow-hidden\"><table class=\"w-full text-sm\"><thead style=\"background:#ECEEF3\"><tr><th class=\"p-2\">نوع</th><th class=\"p-2\">تاریخ</th><th class=\"p-2\">وضعیت</th><th class=\"p-2\"></th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
         };
         const emptyState = '<div class="text-center p-10"><i data-lucide="inbox" class="mx-auto w-12 h-12 text-slate-300"></i><p class="mt-3 text-sm text-slate-500">شما هنوز درخواستی ثبت نکرده‌اید.</p><button id="add-new-request-btn" class="mt-4 inline-flex items-center gap-2 text-xs font-semibold" style="background:#6B69D6;color:#fff;padding:.6rem 1rem;border-radius:.75rem"><i data-lucide="plus-circle" class="w-4 h-4"></i><span>ثبت درخواست جدید</span></button></div>';
+        const counts = {
+            all: myRequests.length,
+            pending: myRequests.filter(r=> r.status==='درحال بررسی').length,
+            doing: myRequests.filter(r=> r.status==='در حال انجام').length,
+            approved: myRequests.filter(r=> r.status==='تایید شده').length,
+            rejected: myRequests.filter(r=> r.status==='رد شده').length,
+        };
         contentContainer.innerHTML = `
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 page-header">
-                <div>
-                    <h1 class="text-3xl font-extrabold" style="color:#242A38">درخواست‌های من</h1>
-                    <p class="text-slate-500 text-sm mt-1">پیگیری و ثبت درخواست‌های سازمانی</p>
-                </div>
-                <div class="flex items-center gap-2">
-                    <button id="add-new-request-btn" class="inline-flex items-center gap-2 text-xs font-semibold" style="background:#6B69D6;color:#fff;padding:.6rem 1rem;border-radius:.75rem"><i data-lucide="plus-circle" class="w-4 h-4"></i><span>ثبت درخواست جدید</span></button>
-                </div>
+            <section class="rounded-2xl overflow-hidden border mb-6" style="background:linear-gradient(90deg,#6B69D6,#0EA5E9)"><div class="p-6 sm:p-8"><h1 class="text-2xl sm:text-3xl font-extrabold text-white">درخواست‌های من</h1><p class="text-white/90 text-xs mt-1">پیگیری و ثبت درخواست‌های سازمانی</p></div></section>
+            <div class="flex flex-wrap items-center gap-2 mb-4">
+                <span class="px-2 py-1 rounded-full text-xs ${statusParam==='all'?'bg-slate-800 text-white':'bg-slate-100 text-slate-700'} cursor-pointer" onclick="location.hash='#requests?q=${encodeURIComponent(qParam)}&status=all'">همه ${counts.all}</span>
+                <span class="px-2 py-1 rounded-full text-xs ${statusParam==='درحال بررسی'?'bg-amber-500 text-white':'bg-amber-100 text-amber-800'} cursor-pointer" onclick="location.hash='#requests?q=${encodeURIComponent(qParam)}&status=${encodeURIComponent('درحال بررسی')}'">در حال بررسی ${counts.pending}</span>
+                <span class="px-2 py-1 rounded-full text-xs ${statusParam==='در حال انجام'?'bg-blue-500 text-white':'bg-blue-100 text-blue-800'} cursor-pointer" onclick="location.hash='#requests?q=${encodeURIComponent(qParam)}&status=${encodeURIComponent('در حال انجام')}'">در حال انجام ${counts.doing}</span>
+                <span class="px-2 py-1 rounded-full text-xs ${statusParam==='تایید شده'?'bg-green-500 text-white':'bg-green-100 text-green-800'} cursor-pointer" onclick="location.hash='#requests?q=${encodeURIComponent(qParam)}&status=${encodeURIComponent('تایید شده')}'">تایید شده ${counts.approved}</span>
+                <span class="px-2 py-1 rounded-full text-xs ${statusParam==='رد شده'?'bg-rose-500 text-white':'bg-rose-100 text-rose-800'} cursor-pointer" onclick="location.hash='#requests?q=${encodeURIComponent(qParam)}&status=${encodeURIComponent('رد شده')}'">رد شده ${counts.rejected}</span>
+                <div class="ml-auto"></div>
+                <button id="add-new-request-btn" class="inline-flex items-center gap-2 text-xs font-semibold" style="background:#6B69D6;color:#fff;padding:.6rem 1rem;border-radius:.75rem"><i data-lucide="plus-circle" class="w-4 h-4"></i><span>ثبت درخواست جدید</span></button>
             </div>
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 mb-4">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
