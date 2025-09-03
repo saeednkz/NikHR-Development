@@ -1213,14 +1213,14 @@ else if (pageName === 'documents') {
                     <img src="${employee.avatar}" class="w-10 h-10 rounded-full object-cover"/>
                     <div class="flex-1">
                         <textarea id="moment-text" class="w-full p-3 border rounded-xl" maxlength="280" placeholder="یک متن کوتاه بنویس... (حداکثر ۲۸۰ کاراکتر)"></textarea>
-                        <div id="moment-emoji-bar" class="mt-2 flex flex-wrap gap-1">
+                        <div id="moment-emoji-bar" class="mt-2 flex flex-wrap gap-1 overflow-x-auto">
                             ${['👍','❤️','😂','🎉','🔥','👏','😍','🤝','💯','🤩','🙏','💡','😮','😢','👀','👋','✨','🌟','🚀','🥳'].map(e=> `<button type="button" class="moment-emoji-btn text-sm px-2 py-1 rounded-full bg-slate-100 hover:bg-slate-200" data-emoji="${e}">${e}</button>`).join('')}
                         </div>
                         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-2 gap-2">
                             <div class="flex items-center gap-2">
                                 <input type="file" id="moment-image" accept="image/png,image/jpeg" class="hidden"/>
                                 <button type="button" id="moment-image-btn" class="text-xs px-2 py-1 rounded-lg border">افزودن عکس</button>
-                                <span id="moment-image-name" class="text-[11px] text-slate-500"></span>
+                                <span id="moment-image-name" class="text-[11px] text-slate-500 truncate max-w-[50vw]"></span>
                             </div>
                             <div class="flex items-center gap-3">
                                 <span id="moment-char" class="text-[11px] text-slate-500">0/280</span>
@@ -1229,7 +1229,7 @@ else if (pageName === 'documents') {
                         </div>
                         <div id="moment-image-preview" class="mt-2 hidden relative w-full max-w-lg">
                             <img id="moment-image-preview-img" class="w-full rounded-xl object-cover border bg-slate-50"/>
-                            <button id="moment-image-remove" type="button" class="absolute top-2 left-2 p-1.5 rounded-full bg-white/90 text-slate-700 hover:bg-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+                            <button id="moment-image-remove" type="button" class="absolute top-2 right-2 p-1.5 rounded-full bg-white/90 text-slate-700 hover:bg-white"><i data-lucide="x" class="w-4 h-4"></i></button>
                         </div>
                         <p class="text-[11px] text-slate-500 mt-1">فقط متن یا فقط عکس؛ همزمان هر دو مجاز نیست.</p>
                     </div>
@@ -1272,7 +1272,7 @@ window.renderMomentsList = () => {
         return `
             <div class="bg-white rounded-2xl border border-slate-200 p-0 overflow-hidden relative">
                 ${canDelete ? `
-                    <button class="moment-delete-btn absolute top-3 left-3 p-1.5 text-slate-100 hover:text-red-500 rounded-full hover:bg-red-50 transition-colors" data-id="${m.firestoreId}" title="حذف">
+                    <button class="moment-delete-btn absolute top-3 right-3 p-1.5 text-slate-100 hover:text-red-500 rounded-full hover:bg-red-50 transition-colors" data-id="${m.firestoreId}" title="حذف">
                         <i data-lucide="trash-2" class="w-4 h-4"></i>
                     </button>
                 ` : ''}
