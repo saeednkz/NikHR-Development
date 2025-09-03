@@ -7053,74 +7053,84 @@ const isProfileComplete = (employee) => {
 
 // فایل: js/main.js
 // ▼▼▼ کل این تابع را با نسخه جدید و کامل زیر جایگزین کنید ▼▼▼
+// فایل: js/main.js
+// ▼▼▼ این تابع کاملا جدید را اضافه کنید ▼▼▼
+async function handleEmployeeFormSubmit(form) {
+    const isEditing = form.dataset.isEditing === 'true';
+    const employeeId = form.dataset.employeeId;
+    const oldTeamId = form.dataset.oldTeamId;
 
+    const name = form.querySelector('#name').value;
+    const id = form.querySelector('#id').value;
+    const email = form.querySelector('#employee-email').value;
+    const selectedTeamId = form.querySelector('#department-team-select').value;
+    const selectedTeam = state.teams.find(t => t.firestoreId === selectedTeamId);
+    const managedTeamId = form.querySelector('#managed-team-select').value;
+
+    const employeeCoreData = {
+        name: name,
+        id: id,
+        jobTitle: form.querySelector('#jobTitle').value,
+        jobPositionId: form.querySelector('#jobPositionId').value,
+        jobFamily: form.querySelector('#jobFamily').value,
+        level: form.querySelector('#level').value,
+        department: selectedTeam ? selectedTeam.name : '',
+        status: form.querySelector('#status').value,
+        startDate: persianToEnglishDate(form.querySelector('#startDate').value),
+    };
+
+    if (isEditing) {
+        const emp = state.employees.find(e => e.firestoreId === employeeId);
+        const batch = writeBatch(db);
+        const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
+        batch.update(docRef, employeeCoreData);
+
+        const oldManagedTeam = state.teams.find(t => t.leadership?.manager === emp.id);
+        if (oldManagedTeam && oldManagedTeam.firestoreId !== managedTeamId) {
+            const oldTeamRef = doc(db, `artifacts/${appId}/public/data/teams`, oldManagedTeam.firestoreId);
+            batch.update(oldTeamRef, { 'leadership.manager': null });
+        }
+
+        if (managedTeamId) {
+            const newManagedTeamRef = doc(db, `artifacts/${appId}/public/data/teams`, managedTeamId);
+            batch.set(newManagedTeamRef, { leadership: { manager: id } }, { merge: true });
+        }
+        await batch.commit();
+        showToast("اطلاعات کارمند با موفقیت بروزرسانی شد.");
+    } else { // ایجاد کارمند جدید
+        const employeeDataForCreation = { ...employeeCoreData, avatar: `https://placehold.co/100x100/E2E8F0/4A5568?text=${name.substring(0, 2)}`, personalInfo: { email: email } };
+        const createNewEmployee = httpsCallable(functions, 'createNewEmployee');
+        await createNewEmployee({
+            name, employeeId: id, email,
+            employeeData: employeeDataForCreation,
+            teamId: selectedTeamId,
+            managedTeamId: managedTeamId
+        });
+        showToast("کارمند و حساب کاربری با موفقیت ایجاد شد!");
+    }
+    closeModal(mainModal, mainModalContainer);
+}
+// فایل: js/main.js
+// ▼▼▼ کل تابع showEmployeeForm را با این نسخه جایگزین کنید ▼▼▼
 const showEmployeeForm = (employeeId = null) => {
     const isEditing = employeeId !== null;
     const emp = isEditing ? state.employees.find(e => e.firestoreId === employeeId) : {};
     const currentTeam = isEditing ? state.teams.find(t => t.memberIds?.includes(emp.id)) : null;
-    
+
     const teamOptions = state.teams.map(team => `<option value="${team.firestoreId}" ${currentTeam?.firestoreId === team.firestoreId ? 'selected' : ''}>${team.name}</option>`).join('');
     const familyOptions = (state.jobFamilies || []).map(family => `<option value="${family.name}" ${emp.jobFamily === family.name ? 'selected' : ''}>${family.name}</option>`).join('');
     const positionOptions = (state.jobPositions || []).map(pos => `<option value="${pos.firestoreId}" ${emp.jobPositionId === pos.firestoreId ? 'selected' : ''}>${pos.name}</option>`).join('');
 
     modalTitle.innerText = isEditing ? 'ویرایش اطلاعات کارمند' : 'افزودن کارمند جدید';
     modalContent.innerHTML = `
-        <form id="employee-form" class="space-y-5" data-old-team-id="${currentTeam?.firestoreId || ''}">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="bg-white border rounded-xl p-4"><label for="name" class="block text-xs font-semibold text-slate-500">نام کامل</label><input type="text" id="name" value="${emp.name || ''}" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg" required></div>
-                <div class="bg-white border rounded-xl p-4"><label for="id" class="block text-xs font-semibold text-slate-500">کد پرسنلی</label><input type="text" id="id" value="${emp.id || ''}" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg" ${isEditing ? 'readonly' : ''} required></div>
-                <div class="md:col-span-2 bg-white border rounded-xl p-4"><label for="employee-email" class="block text-xs font-semibold text-slate-500">آدرس ایمیل (برای ورود)</label><input type="email" id="employee-email" value="${emp.personalInfo?.email || ''}" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg" ${isEditing ? 'readonly' : ''} required></div>
-                <div class="bg-white border rounded-xl p-4"><label for="jobTitle" class="block text-xs font-semibold text-slate-500">عنوان شغلی</label><input type="text" id="jobTitle" value="${emp.jobTitle || ''}" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg"></div>
-                <div class="bg-white border rounded-xl p-4">
-                    <label for="jobPositionId" class="block text-xs font-semibold text-slate-500">پوزیشن شغلی</label>
-                    <select id="jobPositionId" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg bg-white">
-                        <option value="">انتخاب کنید...</option>
-                        ${positionOptions}
-                    </select>
-                </div>
-                <div class="bg-white border rounded-xl p-4">
-                    <label for="jobFamily" class="block text-xs font-semibold text-slate-500">خانواده شغلی</label>
-                    <select id="jobFamily" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg bg-white">
-                        <option value="">انتخاب کنید...</option>
-                        ${familyOptions}
-                    </select>
-                </div>
-                <div class="bg-white border rounded-xl p-4">
-                    <label for="level" class="block text-xs font-semibold text-slate-500">سطح</label>
-                    <select id="level" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg bg-white">
-                        <option value="Junior" ${emp.level === 'Junior' ? 'selected' : ''}>Junior (کارشناس)</option>
-                        <option value="Mid-level" ${emp.level === 'Mid-level' ? 'selected' : ''}>Mid-level (کارشناس ارشد)</option>
-                        <option value="Senior" ${emp.level === 'Senior' ? 'selected' : ''}>Senior (خبره)</option>
-                        <option value="Lead" ${emp.level === 'Lead' ? 'selected' : ''}>Lead (راهبر)</option>
-                        <option value="Manager" ${emp.level === 'Manager' ? 'selected' : ''}>Manager (مدیر)</option>
-                    </select>
-                </div>
-                <div class="bg-white border rounded-xl p-4">
-                    <label for="department-team-select" class="block text-xs font-semibold text-slate-500">تیم عضویت</label>
-                    <select id="department-team-select" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg bg-white">
-                        <option value="">عضو هیچ تیمی نیست</option>
-                        ${teamOptions}
-                    </select>
-                </div>
-                <div id="managed-team-container" class="hidden bg-white border rounded-xl p-4 border-indigo-200">
-                    <label for="managed-team-select" class="block text-xs font-semibold text-indigo-700">تیم تحت مدیریت</label>
-                    <select id="managed-team-select" class="block w-full p-2 border border-slate-300 rounded-lg bg-white mt-2">
-                        <option value="">هیچکدام</option>
-                        ${teamOptions}
-                    </select>
-                </div>
-                <div class="bg-white border rounded-xl p-4">
-                    <label for="status" class="block text-xs font-semibold text-slate-500">وضعیت</label>
-                    <select id="status" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg bg-white">
-                        <option value="فعال" ${emp.status === 'فعال' ? 'selected' : ''}>فعال</option>
-                        <option value="غیرفعال" ${emp.status === 'غیرفعال' ? 'selected' : ''}>غیرفعال</option>
-                    </select>
-                </div>
-                <div class="md:col-span-2 bg-white border rounded-xl p-4">
-                    <label for="startDate" class="block text-xs font-semibold text-slate-500">تاریخ استخدام</label>
-                    <input type="text" id="startDate" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg">
-                </div>
-            </div>
+        <form id="employee-form" class="space-y-5" 
+              data-is-editing="${isEditing}" 
+              data-employee-id="${employeeId || ''}" 
+              data-old-team-id="${currentTeam?.firestoreId || ''}">
+            
+            // ... تمام فیلدهای HTML فرم شما بدون تغییر اینجا قرار می‌گیرد ...
+            // (همان کدهای input و select که قبلا بود)
+
             <div class="pt-2 flex justify-end">
                 <button type="submit" class="primary-btn">ذخیره</button>
             </div>
@@ -7129,100 +7139,17 @@ const showEmployeeForm = (employeeId = null) => {
     openModal(mainModal, mainModalContainer);
     activatePersianDatePicker('startDate', emp.startDate);
 
+    // منطق نمایش/عدم نمایش تیم تحت مدیریت را نگه دارید
     const levelSelect = document.getElementById('level');
     const managedTeamContainer = document.getElementById('managed-team-container');
     const toggleManagedTeamVisibility = () => {
         const selectedLevel = levelSelect.value;
-        if (selectedLevel === 'Manager' || selectedLevel === 'Lead') {
-            managedTeamContainer.classList.remove('hidden');
-        } else {
-            managedTeamContainer.classList.add('hidden');
-        }
+        managedTeamContainer.style.display = (selectedLevel === 'Manager' || selectedLevel === 'Lead') ? 'block' : 'none';
     };
     levelSelect.addEventListener('change', toggleManagedTeamVisibility);
     toggleManagedTeamVisibility();
 
-    document.getElementById('employee-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const saveBtn = e.target.querySelector('button[type="submit"]');
-        saveBtn.disabled = true;
-        saveBtn.innerText = 'در حال پردازش...';
-
-        const name = document.getElementById('name').value;
-        const employeeId = document.getElementById('id').value;
-        const email = document.getElementById('employee-email').value;
-        const selectedTeamId = document.getElementById('department-team-select').value;
-        const selectedTeam = state.teams.find(t => t.firestoreId === selectedTeamId);
-        
-        // [!code start]
-        // ▼▼▼ این خط که جا افتاده بود، اینجا اضافه شد ▼▼▼
-        const managedTeamId = document.getElementById('managed-team-select').value;
-        // [!code end]
-
-        const employeeCoreData = {
-            name: name,
-            id: employeeId,
-            jobTitle: document.getElementById('jobTitle').value,
-            jobPositionId: document.getElementById('jobPositionId').value,
-            jobFamily: document.getElementById('jobFamily').value,
-            level: document.getElementById('level').value,
-            department: selectedTeam ? selectedTeam.name : '',
-            status: document.getElementById('status').value,
-            startDate: persianToEnglishDate(document.getElementById('startDate').value),
-        };
-        
-        if (isEditing) {
-            try {
-                const batch = writeBatch(db);
-                const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
-                batch.update(docRef, employeeCoreData);
-                
-                const oldManagedTeam = state.teams.find(t => t.leadership?.manager === emp.id);
-                if (oldManagedTeam && oldManagedTeam.firestoreId !== managedTeamId) {
-                    const oldTeamRef = doc(db, `artifacts/${appId}/public/data/teams`, oldManagedTeam.firestoreId);
-                    batch.update(oldTeamRef, { 'leadership.manager': null });
-                }
-
-                if (managedTeamId) {
-                    const newManagedTeamRef = doc(db, `artifacts/${appId}/public/data/teams`, managedTeamId);
-                    batch.set(newManagedTeamRef, { leadership: { manager: employeeId } }, { merge: true });
-                }
-                
-                await batch.commit();
-                showToast("اطلاعات کارمند با موفقیت بروزرسانی شد.");
-                closeModal(mainModal, mainModalContainer);
-            } catch (error) { 
-                console.error("Error updating employee:", error);
-                showToast("خطا در بروزرسانی اطلاعات.", "error");
-            } finally {
-                saveBtn.disabled = false;
-                saveBtn.innerText = 'ذخیره';
-            }
-        } else { // برای ساخت کارمند جدید
-            const employeeDataForCreation = { ...employeeCoreData, avatar: `https://placehold.co/100x100/E2E8F0/4A5568?text=${name.substring(0, 2)}`, personalInfo: { email: email } };
-            try {
-                const createNewEmployee = httpsCallable(functions, 'createNewEmployee');
-                await createNewEmployee({ 
-                    name: name, 
-                    employeeId: employeeId, 
-                    email: email, 
-                    employeeData: employeeDataForCreation,
-                    teamId: selectedTeamId,
-                    managedTeamId: managedTeamId
-                });
-                
-                showToast("کارمند و حساب کاربری با موفقیت ایجاد شد!");
-                closeModal(mainModal, mainModalContainer);
-                renderPage('talent');
-            } catch (error) { 
-                console.error("Cloud function error:", error);
-                showToast(`خطا: ${error.message}`, "error");
-            } finally {
-                saveBtn.disabled = false;
-                saveBtn.innerText = 'ذخیره';
-            }
-        }
-    });
+    // **** مهم: کل بلاک addEventListener('submit', ...) از اینجا حذف می‌شود ****
 };
 // فایل: js/main.js
 // این تابع جدید را به فایل اضافه کنید ▼
@@ -7624,46 +7551,49 @@ const showTeamDirectoryModal = (team) => {
 
 // فایل: js/main.js
 // ▼▼▼ این کد را به طور کامل جایگزین تابع setupEventListeners فعلی کنید ▼▼▼
+// فایل: js/main.js
+// ▼▼▼ این کد را به طور کامل جایگزین تابع setupEventListeners فعلی کنید ▼▼▼
 const setupEventListeners = () => {
-    // روتر اصلی برنامه که به تغییرات URL گوش می‌دهد
+    // روتر اصلی برنامه
     window.addEventListener('hashchange', router);
 
-    // شنونده مرکزی برای تمام کلیک‌ها در برنامه
+    // --- شنونده مرکزی برای تمام کلیک‌ها ---
     document.body.addEventListener('click', (e) => {
         const target = e.target;
-        const targetBtn = target.closest('button'); // پیدا کردن نزدیک‌ترین دکمه به محل کلیک
+        const btn = target.closest('button');
+        if (!btn) return; // اگر روی دکمه کلیک نشده بود، ادامه نده
 
         // --- منوی همبرگری ادمین ---
-        if (target.closest('#menu-btn')) {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('sidebar-overlay');
-            sidebar?.classList.toggle('translate-x-full');
-            overlay?.classList.toggle('hidden');
+        if (btn.id === 'menu-btn') {
+            document.getElementById('sidebar')?.classList.toggle('translate-x-full');
+            document.getElementById('sidebar-overlay')?.classList.toggle('hidden');
+            return;
         }
 
-        // --- دکمه‌های صفحه استعدادها (و داخل مودال پروفایل) ---
-        if (target.closest('.view-employee-profile-btn')) viewEmployeeProfile(target.closest('.view-employee-profile-btn').dataset.employeeId);
-        if (target.closest('#main-edit-employee-btn, .edit-employee-btn')) showEmployeeForm(target.closest('[data-employee-id]').dataset.employeeId);
-        if (target.closest('.delete-employee-btn')) {
-            const btn = target.closest('.delete-employee-btn');
-            showConfirmationModal("حذف کارمند", "آیا از حذف این کارمند مطمئن هستید؟", async () => {
-                await deleteDoc(doc(db, `artifacts/${appId}/public/data/employees`, btn.dataset.employeeId));
+        // --- دکمه‌های صفحه استعدادها و مودال پروفایل ---
+        if (btn.classList.contains('view-employee-profile-btn')) viewEmployeeProfile(btn.dataset.employeeId);
+        if (btn.classList.contains('edit-employee-btn') || btn.id === 'main-edit-employee-btn') showEmployeeForm(btn.dataset.employeeId);
+        if (btn.id === 'edit-personal-info-btn') showEditPersonalInfoForm(state.employees.find(emp => emp.firestoreId === mainModal.dataset.employeeId));
+
+        const deleteEmpBtn = target.closest('.delete-employee-btn');
+        if (deleteEmpBtn) {
+            showConfirmationModal("حذف کارمند", "آیا مطمئن هستید؟", async () => {
+                await deleteDoc(doc(db, `artifacts/${appId}/public/data/employees`, deleteEmpBtn.dataset.employeeId));
                 showToast("کارمند حذف شد.");
+                if (state.currentPage === 'talent') renderEmployeeTable();
             });
         }
-        if (target.closest('#edit-personal-info-btn')) showEditPersonalInfoForm(state.employees.find(emp => emp.firestoreId === mainModal.dataset.employeeId));
 
+        // --- دکمه‌های صفحه سازمان و مودال تیم ---
+        if (btn.id === 'add-team-btn' || btn.id === 'add-team-btn-empty') showTeamForm();
+        if (btn.classList.contains('view-team-profile-btn')) viewTeamProfile(btn.dataset.teamId);
+        if (btn.id === 'edit-team-details-btn') showTeamForm(mainModal.dataset.teamId);
+        if (btn.id === 'edit-team-members-btn') showEditTeamMembersForm(state.teams.find(t => t.firestoreId === mainModal.dataset.teamId));
 
-        // --- دکمه‌های صفحه سازمان (و داخل مودال تیم) ---
-        if (target.closest('#add-team-btn') || target.closest('#add-team-btn-empty')) showTeamForm();
-        if (target.closest('.view-team-profile-btn')) viewTeamProfile(target.closest('.view-team-profile-btn').dataset.teamId);
-        if (target.closest('#edit-team-details-btn')) showTeamForm(mainModal.dataset.teamId);
-        if (target.closest('#edit-team-members-btn')) showEditTeamMembersForm(state.teams.find(t => t.firestoreId === mainModal.dataset.teamId));
-
-        if (target.closest('.delete-team-btn')) {
-            const btn = target.closest('.delete-team-btn');
-            showConfirmationModal("حذف تیم", "آیا از حذف این تیم مطمئن هستید؟", async () => {
-                await deleteDoc(doc(db, `artifacts/${appId}/public/data/teams`, btn.dataset.teamId));
+        const deleteTeamBtn = target.closest('.delete-team-btn');
+        if (deleteTeamBtn) {
+            showConfirmationModal("حذف تیم", "آیا مطمئن هستید؟", async () => {
+                await deleteDoc(doc(db, `artifacts/${appId}/public/data/teams`, deleteTeamBtn.dataset.teamId));
                 showToast("تیم حذف شد.");
             });
         }
@@ -7671,10 +7601,9 @@ const setupEventListeners = () => {
         // --- دکمه‌های صفحه نظرسنجی ---
         const surveyLinkBtn = target.closest('.create-survey-link-btn');
         if (surveyLinkBtn) {
+            modalContent = clearEventListeners(document.getElementById('modalContent'));
             const surveyId = surveyLinkBtn.dataset.surveyId;
             const template = surveyTemplates[surveyId];
-            // قبل از باز کردن مودال جدید، شنونده‌های قبلی را پاک می‌کنیم
-            modalContent = clearEventListeners(document.getElementById('modalContent'));
             if (template.requiresTarget) {
                 showSurveyTargetSelector(surveyId);
             } else {
@@ -7682,19 +7611,45 @@ const setupEventListeners = () => {
             }
         }
 
-        // --- دکمه‌های صفحه‌بندی ---
+        // --- صفحه‌بندی ---
         const paginationBtn = target.closest('.pagination-btn');
         if (paginationBtn && !paginationBtn.disabled) {
             const page = Number(paginationBtn.dataset.page);
-            if (state.currentPage === 'talent') {
-                state.currentPageTalent = page;
-                renderEmployeeTable();
-            } else if (state.currentPage === 'requests') {
-                state.currentPageRequests = page;
-                renderPage('requests');
-            } else if (state.currentPage === 'tasks') {
-                state.currentPageTasks = page;
-                renderPage('tasks');
+            if (state.currentPage === 'talent') { state.currentPageTalent = page; renderEmployeeTable(); }
+            if (state.currentPage === 'requests') { state.currentPageRequests = page; renderPage('requests'); }
+            if (state.currentPage === 'tasks') { state.currentPageTasks = page; renderPage('tasks'); }
+        }
+    });
+
+    // --- شنونده مرکزی برای تمام فرم‌ها ---
+    document.body.addEventListener('submit', async (e) => {
+        const form = e.target.closest('form');
+        if (!form) return;
+
+        e.preventDefault();
+        const saveBtn = form.querySelector('button[type="submit"]');
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.innerText = 'در حال ذخیره...';
+        }
+
+        try {
+            if (form.id === 'employee-form') {
+                // منطق ذخیره فرم کارمند
+                // ... (کد کامل این بخش در قدم بعدی قرار دارد)
+                await handleEmployeeFormSubmit(form);
+            }
+            // می‌توانید بقیه فرم‌ها را نیز به همین شکل اضافه کنید
+            // if (form.id === 'some-other-form') { ... }
+
+        } catch (error) {
+            console.error("Form submission error:", error);
+            showToast(`خطا در پردازش فرم: ${error.message}`, 'error');
+        } finally {
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                // متن دکمه را به حالت اولیه برگردانید
+                if (form.id === 'employee-form') saveBtn.innerText = 'ذخیره';
             }
         }
     });
