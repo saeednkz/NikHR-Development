@@ -514,6 +514,41 @@ function renderMyHireAnniversaryWishesWidget(employee) {
             </div>
         </div>`;
 }
+
+// کارت: آخرین لحظه‌های تیم (Top-level helper)
+function renderRecentTeamMomentsCard(employee) {
+    try {
+        const myTeam = state.teams.find(t => t.memberIds?.includes(employee.id));
+        if (!myTeam) return '';
+        const teamMemberUids = (state.employees||[]).filter(e => myTeam.memberIds.includes(e.id)).map(e=> e.uid);
+        const recent = (state.moments || [])
+            .filter(m => teamMemberUids.includes(m.ownerUid))
+            .sort((a,b)=> new Date(b.createdAt?.toDate?.()||0) - new Date(a.createdAt?.toDate?.()||0))
+            .slice(0,4);
+        if (!recent.length) return '';
+        const cards = recent.map(m => {
+            const owner = (state.employees||[]).find(e=> e.uid === m.ownerUid) || {};
+            return `
+                <div class=\"bg-white rounded-xl border p-4 flex items-start gap-3\">
+                    <img src=\"${owner.avatar || 'icons/icon-128x128.png'}\" class=\"w-10 h-10 rounded-full object-cover\"/>
+                    <div class=\"flex-1\">
+                        <div class=\"text-sm font-bold text-slate-800\">${owner.name || 'عضو تیم'}</div>
+                        <div class=\"text-xs text-slate-500\">${toPersianDate(m.createdAt)}</div>
+                        ${m.text ? `<div class=\\"mt-2 text-sm text-slate-700 whitespace-pre-wrap\\">${m.text}</div>` : ''}
+                        ${m.imageUrl ? `<img src=\\"${m.imageUrl}\\" class=\\"mt-2 w-full h-auto max-h-60 rounded-lg object-cover border bg-slate-50\\"/>` : ''}
+                    </div>
+                </div>`;
+        }).join('');
+        return `
+            <div class=\"bg-white rounded-2xl shadow-sm border border-slate-200 p-6\">
+                <div class=\"flex items-center justify-between mb-4\">
+                    <h3 class=\"font-semibold text-slate-800 flex items-center gap-2\"><i data-lucide=\"sparkles\" class=\"w-5 h-5 text-indigo-500\"></i>آخرین لحظه‌های تیم</h3>
+                    <a href=\"#moments\" class=\"text-xs font-semibold text-indigo-600 hover:underline\">همه</a>
+                </div>
+                <div class=\"grid grid-cols-1 md:grid-cols-2 gap-4\">${cards}</div>
+            </div>`;
+    } catch { return ''; }
+}
 // در فایل js/main.js
 // این تابع را جایگزین نسخه فعلی کنید
 // در فایل js/main.js
