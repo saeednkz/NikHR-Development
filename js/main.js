@@ -7986,7 +7986,7 @@ const showAddOrEditSkillForm = (employee, existingSkill = null, isManagerAdding 
         
         let currentSkills = employee.individualSkills || [];
         if (isEditing) {
-            currentSkills = currentSkills.map(s => s.skillId === existingSkill.skillId ? { ...s, level: level, status: 'approved' } : s); // Ensure editing also approves the skill
+            currentSkills = currentSkills.map(s => s.skillId === existingSkill.skillId ? { ...s, level: level, status: 'approved' } : s);
         } else {
             if (currentSkills.some(s => s.skillId === skillId)) {
                 showToast('این مهارت قبلاً اضافه شده است.', 'error');
@@ -8002,15 +8002,15 @@ const showAddOrEditSkillForm = (employee, existingSkill = null, isManagerAdding 
             showToast('مهارت با موفقیت ذخیره شد.');
             closeModal(mainModal, mainModalContainer);
 
-            // [FIX] This is the new, intelligent refresh logic
-            // If the person being edited is NOT the currently logged-in user (i.e., a manager is editing)
-            if (employee.uid !== state.currentUser.uid) {
-                // Use a brief timeout to allow the close animation to finish before re-opening the main profile modal
+            // [FIX] This is the new, intelligent refresh logic based on context
+            // It no longer relies on comparing UIDs.
+            if (isManagerAdding) {
+                // If a manager initiated this action, we always refresh the employee profile modal.
                 setTimeout(() => {
                     viewEmployeeProfile(employee.firestoreId);
-                }, 300);
+                }, 300); // Timeout allows the close animation to finish
             } else {
-                // If the person being edited IS the logged-in user (employee editing their own profile)
+                // If an employee initiated this, refresh their main profile page.
                 renderEmployeePortalPage('profile', employee);
             }
 
@@ -8019,6 +8019,7 @@ const showAddOrEditSkillForm = (employee, existingSkill = null, isManagerAdding 
         }
     });
 };
+// ▲▲▲ END: [REFACTOR - Phase 5 BUGFIX] Replace the entire function ▲▲▲
 // ▲▲▲ END: [REFACTOR - Phase 5 BUGFIX] Replace the entire function ▲▲▲
 // ▲▲▲ END: [NEW FUNCTION - Phase 5] ▲▲▲
 const showEmployeeForm = (employeeId = null) => {
