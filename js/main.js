@@ -3,7 +3,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { onAuthStateChanged, updatePassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
     getFirestore, doc, getDoc, setDoc, onSnapshot, collection,
-    addDoc, getDocs, writeBatch, deleteDoc, updateDoc, query, where, serverTimestamp, arrayUnion
+    addDoc, getDocs, writeBatch, deleteDoc, updateDoc, query, where, serverTimestamp, arrayUnion, arrayRemove
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
@@ -3275,8 +3275,69 @@ const updateNotificationBell = () => {
         const showAssignmentRuleForm = (...args) => window.showAssignmentRuleForm?.(...args);
         const showProcessReminderForm = (...args) => window.showProcessReminderForm?.(...args);
         if (typeof renderTeamHealthMetrics !== 'function') { window.renderTeamHealthMetrics = (team) => { const metrics = team.healthMetrics || []; if(!metrics.length) return '<p class=\"text-sm text-slate-500\">معیاری ثبت نشده است.</p>'; return metrics.map(m=>`<div class=\"flex justify-between text-sm\"><span>${m.name}</span><span class=\"font-medium\">${m.value}</span></div>`).join(''); }; }
-        if (typeof showTeamForm !== 'function') { window.showTeamForm = (teamId=null) => { const team=(state.teams||[]).find(t=>t.firestoreId===teamId)||{name:'',leaderId:'',missionLine:''}; const leaders=state.employees.map(e=>`<option value=\"${e.id}\" ${e.id===team.leaderId?'selected':''}>${e.name}</option>`).join(''); modalTitle.innerText=teamId?'ویرایش تیم':'افزودن تیم جدید'; modalContent.innerHTML = `<form id=\"team-form\" class=\"space-y-4\"><div><label class=\"block text-sm\">نام تیم</label><input id=\"team-name\" class=\"w-full p-2 border rounded-md\" value=\"${team.name}\" required></div><div><label class=\"block text-sm\">مدیر تیم</label><select id=\"team-leader\" class=\"w-full p-2 border rounded-md\">${leaders}</select></div><div><label class=\"block text-sm\">هدف یک‌خطی تیم</label><input id=\"team-mission\" class=\"w-full p-2 border rounded-md\" placeholder=\"یک جمله درباره هدف تیم...\" value=\"${team.missionLine || ''}\"></div><div class=\"flex justify-end\"><button type=\"submit\" class=\"bg-blue-600 text-white py-2 px-4 rounded-md\">ذخیره</button></div></form>`; openModal(mainModal, mainModalContainer); document.getElementById('team-form').addEventListener('submit', async (e)=>{ e.preventDefault(); const name=document.getElementById('team-name').value.trim(); const leader=document.getElementById('team-leader').value; const mission=document.getElementById('team-mission').value.trim(); try { if(teamId){ await updateDoc(doc(db, `artifacts/${appId}/public/data/teams`, teamId), { name, leaderId: leader, missionLine: mission }); } else { await addDoc(collection(db, `artifacts/${appId}/public/data/teams`), { name, leaderId: leader, missionLine: mission, memberIds: [] }); } showToast('تیم ذخیره شد.'); closeModal(mainModal, mainModalContainer); renderPage('organization'); } catch(err){ console.error(err); showToast('خطا در ذخیره تیم.', 'error'); } }); }; }
-       // فایل: js/main.js
+   // ▼▼▼ START: [REFACTOR & BUGFIX] Replace this entire code block for showTeamForm ▼▼▼
+if (typeof showTeamForm !== 'function') { 
+    window.showTeamForm = (teamId = null) => {
+        const team = (state.teams || []).find(t => t.firestoreId === teamId) || { name: '', leadership: { manager: null }, missionLine: '', memberIds: [] };
+        
+        // [FIX] Added a "No Manager" option and correctly check for the manager ID
+        const leaders = state.employees.map(e => `<option value="${e.id}" ${e.id === team.leadership?.manager ? 'selected' : ''}>${e.name}</option>`).join('');
+        const leaderOptions = '<option value="">مدیر ندارد</option>' + leaders;
+
+        modalTitle.innerText = teamId ? 'ویرایش تیم' : 'افزودن تیم جدید';
+        modalContent.innerHTML = `
+            <form id="team-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm">نام تیم</label>
+                    <input id="team-name" class="w-full p-2 border rounded-md" value="${team.name}" required>
+                </div>
+                <div>
+                    <label class="block text-sm">مدیر تیم</label>
+                    <select id="team-leader" class="w-full p-2 border rounded-md bg-white">${leaderOptions}</select>
+                </div>
+                <div>
+                    <label class="block text-sm">هدف یک‌خطی تیم</label>
+                    <input id="team-mission" class="w-full p-2 border rounded-md" placeholder="یک جمله درباره هدف تیم..." value="${team.missionLine || ''}">
+                </div>
+                <div class="flex justify-end">
+                    <button type="submit" class="primary-btn">ذخیره</button>
+                </div>
+            </form>
+        `;
+        openModal(mainModal, mainModalContainer);
+
+        document.getElementById('team-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('team-name').value.trim();
+            const leaderId = document.getElementById('team-leader').value || null; // [FIX] Use null if no manager is selected
+            const mission = document.getElementById('team-mission').value.trim();
+            
+            const teamData = {
+                name,
+                missionLine: mission,
+                leadership: {
+                    manager: leaderId
+                },
+                memberIds: team.memberIds || [] // Preserve memberIds on edit, initialize on create
+            };
+
+            try {
+                if (teamId) {
+                    await updateDoc(doc(db, `artifacts/${appId}/public/data/teams`, teamId), teamData);
+                } else {
+                    await addDoc(collection(db, `artifacts/${appId}/public/data/teams`), teamData);
+                }
+                showToast('تیم ذخیره شد.');
+                closeModal(mainModal, mainModalContainer);
+                renderPage('organization');
+            } catch (err) {
+                console.error(err);
+                showToast('خطا در ذخیره تیم.', 'error');
+            }
+        });
+    };
+}
+// ▲▲▲ END: [REFACTOR & BUGFIX] Replace this entire code block for showTeamForm ▲▲▲
 // تابع showPerformanceForm را به طور کامل با این نسخه جایگزین کنید ▼
 
 // فایل: js/main.js
