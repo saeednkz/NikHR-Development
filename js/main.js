@@ -2010,9 +2010,12 @@ function renderEmployeePortal() {
 
     // [NEW FEATURE - Phase 3] Conditionally create the manager dashboard link
     // Note: The link now points to '#team-dashboard'
-    const managerNavlink = isTeamManager(employee) 
-        ? `<a href="#team-dashboard" class="nav-item"><i data-lucide="layout-grid"></i><span>داشبورد تیم من</span></a>` 
-        : '';
+const managerNavlinks = isTeamManager(employee) 
+    ? `
+        <a href="#team-dashboard" class="nav-item"><i data-lucide="layout-grid"></i><span>داشبورد تیم من</span></a>
+        <a href="#team-performance" class="nav-item"><i data-lucide="users-2"></i><span>ارزیابی تیم</span></a>
+      ` 
+    : '';
 
     const employeeName = employee.name || state.currentUser.email;
 
