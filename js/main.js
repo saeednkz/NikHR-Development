@@ -1470,12 +1470,12 @@ window.renderMomentsList = () => {
         // [!code start]
     // بخش جدید برای داشبورد مدیر تیم
     else if (pageName === 'team-performance') {
-      const myTeam = state.teams.find(t => t.leadership?.manager === employee.id);
+      const myTeam = (state.teams || []).find(t => (t.leadership?.manager === employee.id) || (t.leaderId === employee.id));
         if (!myTeam) {
             contentContainer.innerHTML = `<p>شما مدیر هیچ تیمی نیستید.</p>`;
             return;
         }
-        const teamMembers = state.employees.filter(e => myTeam.memberIds.includes(e.id));
+        const teamMembers = (myTeam.memberIds || []).map(id => (state.employees || []).find(e => e.id === id)).filter(Boolean);
         const activeCycle = (state.evaluationCycles || []).find(c => c.status === 'active');
 
         if (!activeCycle) {
@@ -1484,6 +1484,8 @@ window.renderMomentsList = () => {
         }
 
 // فایل: js/main.js - داخل تابع renderEmployeePortalPage و بلوک 'team-performance'
+
+let summary = { total: teamMembers.length, notStarted: 0, pendingSelf: 0, pendingManager: 0, completed: 0 };
 
 const tableRows = teamMembers.map(member => {
     // [کد دیباگ] نمایش اطلاعاتی که برای جستجو استفاده می‌شود
@@ -1502,13 +1504,18 @@ const tableRows = teamMembers.map(member => {
     let statusText = "شروع نشده";
     let statusColor = "bg-slate-100 text-slate-800";
 
-    if (evaluation?.status === 'pending_self_assessment') {
+    if (!evaluation) {
+        summary.notStarted++;
+    } else if (evaluation?.status === 'pending_self_assessment') {
+        summary.pendingSelf++;
         statusText = "در انتظار خودارزیابی";
         statusColor = "bg-orange-100 text-orange-800";
     } else if (evaluation?.status === 'pending_manager_assessment') {
+        summary.pendingManager++;
         statusText = "آماده ارزیابی مدیر";
         statusColor = "bg-blue-100 text-blue-800";
     } else if (evaluation?.status === 'completed') {
+        summary.completed++;
         statusText = "تکمیل شده";
         statusColor = "bg-green-100 text-green-800";
     }
@@ -2132,7 +2139,7 @@ function renderEmployeePortal() {
         <div class="blob" style="top:-60px; right:-80px; width:240px; height:240px; background:#FF6A3D"></div>
         <div class="blob" style="bottom:-80px; left:-80px; width:220px; height:220px; background:#F72585"></div>
         
-        <header style="background:linear-gradient(90deg,#FF6A3D,#F72585)" class="shadow-sm relative z-20">
+        <header style="background:linear-gradient(90deg,#6366F1,#0EA5E9)" class="shadow-sm relative z-20">
             <div class="w-full py-4 px-0 sm:px-6 lg:px-8 flex justify-between items-center" style="padding-top: env(safe-area-inset-top);">
                 <div class="flex items-center gap-3">
                     <button id="portal-menu-btn" class="inline-flex sm:hidden items-center justify-center p-2 rounded-md bg-white/20 hover:bg-white/30 text-white" title="منو"><i data-lucide="menu" class="w-5 h-5"></i></button>
