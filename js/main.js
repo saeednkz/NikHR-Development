@@ -7781,24 +7781,7 @@ const isProfileComplete = (employee) => {
             return analysis;
         };
 
-// فایل: js/main.js
-// تابع showEmployeeForm را به طور کامل با این نسخه جایگزین کنید ▼
-
-// فایل: js/main.js
-// ▼▼▼ کل این تابع را با نسخه کامل و صحیح زیر جایگزین کنید ▼▼▼
-
-// فایل: js/main.js
-// ▼▼▼ کل این تابع را با نسخه کامل و صحیح زیر جایگزین کنید ▼▼▼
-
-// فایل: js/main.js
-// ▼▼▼ این کد را به طور کامل جایگزین تابع showEmployeeForm قبلی خود کنید ▼▼▼
-
-// فایل: js/main.js
-// ▼▼▼ کل این تابع را با نسخه جدید و کامل زیر جایگزین کنید ▼▼▼
-
-// فایل: js/main.js
-// ▼▼▼ کل این تابع را با نسخه جدید و کامل زیر جایگزین کنید ▼▼▼
-
+// ▼▼▼ START: [REFACTOR - Phase 1] Replace the entire showEmployeeForm function with this new version ▼▼▼
 const showEmployeeForm = (employeeId = null) => {
     const isEditing = employeeId !== null;
     const emp = isEditing ? state.employees.find(e => e.firestoreId === employeeId) : {};
@@ -7808,9 +7791,26 @@ const showEmployeeForm = (employeeId = null) => {
     const familyOptions = (state.jobFamilies || []).map(family => `<option value="${family.name}" ${emp.jobFamily === family.name ? 'selected' : ''}>${family.name}</option>`).join('');
     const positionOptions = (state.jobPositions || []).map(pos => `<option value="${pos.firestoreId}" ${emp.jobPositionId === pos.firestoreId ? 'selected' : ''}>${pos.name}</option>`).join('');
 
+    // [NEW FEATURE - Phase 1] Create granular level options for the dropdown
+    const levelGroups = [
+        { label: 'Junior', prefix: 'J', count: 3 },
+        { label: 'Mid-level', prefix: 'M', count: 3 },
+        { label: 'Senior', prefix: 'S', count: 3 },
+        { label: 'Lead', prefix: 'L', count: 2 },
+        { label: 'Manager', prefix: 'MAN', count: 2 }
+    ];
+    const levelOptions = levelGroups.map(group => {
+        let options = '';
+        for (let i = 1; i <= group.count; i++) {
+            const value = `${group.prefix}${i}`;
+            options += `<option value="${value}" ${emp.level === value ? 'selected' : ''}>${group.label} ${i}</option>`;
+        }
+        return `<optgroup label="${group.label}">${options}</optgroup>`;
+    }).join('');
+
     modalTitle.innerText = isEditing ? 'ویرایش اطلاعات کارمند' : 'افزودن کارمند جدید';
     modalContent.innerHTML = `
-        <form id="employee-form" class="space-y-5" data-old-team-id="${currentTeam?.firestoreId || ''}">
+        <form id="employee-form" class="space-y-5" data-old-team-id="${currentTeam?.firestoreId || ''}" data-old-level="${emp.level || ''}">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="bg-white border rounded-xl p-4"><label for="name" class="block text-xs font-semibold text-slate-500">نام کامل</label><input type="text" id="name" value="${emp.name || ''}" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg" required></div>
                 <div class="bg-white border rounded-xl p-4"><label for="id" class="block text-xs font-semibold text-slate-500">کد پرسنلی</label><input type="text" id="id" value="${emp.id || ''}" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg" ${isEditing ? 'readonly' : ''} required></div>
@@ -7833,11 +7833,7 @@ const showEmployeeForm = (employeeId = null) => {
                 <div class="bg-white border rounded-xl p-4">
                     <label for="level" class="block text-xs font-semibold text-slate-500">سطح</label>
                     <select id="level" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg bg-white">
-                        <option value="Junior" ${emp.level === 'Junior' ? 'selected' : ''}>Junior (کارشناس)</option>
-                        <option value="Mid-level" ${emp.level === 'Mid-level' ? 'selected' : ''}>Mid-level (کارشناس ارشد)</option>
-                        <option value="Senior" ${emp.level === 'Senior' ? 'selected' : ''}>Senior (خبره)</option>
-                        <option value="Lead" ${emp.level === 'Lead' ? 'selected' : ''}>Lead (راهبر)</option>
-                        <option value="Manager" ${emp.level === 'Manager' ? 'selected' : ''}>Manager (مدیر)</option>
+                        ${levelOptions}
                     </select>
                 </div>
                 <div class="bg-white border rounded-xl p-4">
@@ -7876,101 +7872,100 @@ const showEmployeeForm = (employeeId = null) => {
 
     const levelSelect = document.getElementById('level');
     const managedTeamContainer = document.getElementById('managed-team-container');
+    
+    // [REFACTOR - Phase 1] Updated logic to handle new level codes (e.g., 'MAN1', 'L1')
     const toggleManagedTeamVisibility = () => {
         const selectedLevel = levelSelect.value;
-        if (selectedLevel === 'Manager' || selectedLevel === 'Lead') {
+        if (selectedLevel.startsWith('MAN') || selectedLevel.startsWith('L')) {
             managedTeamContainer.classList.remove('hidden');
         } else {
             managedTeamContainer.classList.add('hidden');
         }
     };
     levelSelect.addEventListener('change', toggleManagedTeamVisibility);
-    toggleManagedTeamVisibility();
+    toggleManagedTeamVisibility(); // Run on form load as well
 
     document.getElementById('employee-form').addEventListener('submit', async (e) => {
         e.preventDefault();
+        // The submit logic will be updated in Phase 2 to handle automatic promotion logging.
+        // For now, it correctly saves the new granular level.
         const saveBtn = e.target.querySelector('button[type="submit"]');
-        saveBtn.disabled = true;
-        saveBtn.innerText = 'در حال پردازش...';
+        saveBtn.disabled = true;
+        saveBtn.innerText = 'در حال پردازش...';
 
-        const name = document.getElementById('name').value;
-        const employeeId = document.getElementById('id').value;
-        const email = document.getElementById('employee-email').value;
-        const selectedTeamId = document.getElementById('department-team-select').value;
-        const selectedTeam = state.teams.find(t => t.firestoreId === selectedTeamId);
-        
-        // [!code start]
-        // ▼▼▼ این خط که جا افتاده بود، اینجا اضافه شد ▼▼▼
-        const managedTeamId = document.getElementById('managed-team-select').value;
-        // [!code end]
+        const name = document.getElementById('name').value;
+        const employeeId = document.getElementById('id').value;
+        const email = document.getElementById('employee-email').value;
+        const selectedTeamId = document.getElementById('department-team-select').value;
+        const selectedTeam = state.teams.find(t => t.firestoreId === selectedTeamId);
+        const managedTeamId = document.getElementById('managed-team-select').value;
 
-        const employeeCoreData = {
-            name: name,
-            id: employeeId,
-            jobTitle: document.getElementById('jobTitle').value,
-            jobPositionId: document.getElementById('jobPositionId').value,
-            jobFamily: document.getElementById('jobFamily').value,
-            level: document.getElementById('level').value,
-            department: selectedTeam ? selectedTeam.name : '',
-            status: document.getElementById('status').value,
-            startDate: persianToEnglishDate(document.getElementById('startDate').value),
-        };
-        
-        if (isEditing) {
-            try {
-                const batch = writeBatch(db);
-                const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
-                batch.update(docRef, employeeCoreData);
-                
-                const oldManagedTeam = state.teams.find(t => t.leadership?.manager === emp.id);
-                if (oldManagedTeam && oldManagedTeam.firestoreId !== managedTeamId) {
-                    const oldTeamRef = doc(db, `artifacts/${appId}/public/data/teams`, oldManagedTeam.firestoreId);
-                    batch.update(oldTeamRef, { 'leadership.manager': null });
-                }
+        const employeeCoreData = {
+            name: name,
+            id: employeeId,
+            jobTitle: document.getElementById('jobTitle').value,
+            jobPositionId: document.getElementById('jobPositionId').value,
+            jobFamily: document.getElementById('jobFamily').value,
+            level: document.getElementById('level').value, // Now saves granular level like "J1"
+            department: selectedTeam ? selectedTeam.name : '',
+            status: document.getElementById('status').value,
+            startDate: persianToEnglishDate(document.getElementById('startDate').value),
+        };
+        
+        if (isEditing) {
+            try {
+                const batch = writeBatch(db);
+                const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
+                batch.update(docRef, employeeCoreData);
+                
+                const oldManagedTeam = state.teams.find(t => t.leadership?.manager === emp.id);
+                if (oldManagedTeam && oldManagedTeam.firestoreId !== managedTeamId) {
+                    const oldTeamRef = doc(db, `artifacts/${appId}/public/data/teams`, oldManagedTeam.firestoreId);
+                    batch.update(oldTeamRef, { 'leadership.manager': null });
+                }
 
-                if (managedTeamId) {
-                    const newManagedTeamRef = doc(db, `artifacts/${appId}/public/data/teams`, managedTeamId);
-                    batch.set(newManagedTeamRef, { leadership: { manager: employeeId } }, { merge: true });
-                }
-                
-                await batch.commit();
-                showToast("اطلاعات کارمند با موفقیت بروزرسانی شد.");
-                closeModal(mainModal, mainModalContainer);
-            } catch (error) { 
-                console.error("Error updating employee:", error);
-                showToast("خطا در بروزرسانی اطلاعات.", "error");
-            } finally {
-                saveBtn.disabled = false;
-                saveBtn.innerText = 'ذخیره';
-            }
-        } else { // برای ساخت کارمند جدید
-            const employeeDataForCreation = { ...employeeCoreData, avatar: `https://placehold.co/100x100/E2E8F0/4A5568?text=${name.substring(0, 2)}`, personalInfo: { email: email } };
-            try {
-                const createNewEmployee = httpsCallable(functions, 'createNewEmployee');
-                await createNewEmployee({ 
-                    name: name, 
-                    employeeId: employeeId, 
-                    email: email, 
-                    employeeData: employeeDataForCreation,
-                    teamId: selectedTeamId,
-                    managedTeamId: managedTeamId
-                });
-                
-                showToast("کارمند و حساب کاربری با موفقیت ایجاد شد!");
-                closeModal(mainModal, mainModalContainer);
-                renderPage('talent');
-            } catch (error) { 
-                console.error("Cloud function error:", error);
-                showToast(`خطا: ${error.message}`, "error");
-            } finally {
-                saveBtn.disabled = false;
-                saveBtn.innerText = 'ذخیره';
-            }
-        }
+                if (managedTeamId) {
+                    const newManagedTeamRef = doc(db, `artifacts/${appId}/public/data/teams`, managedTeamId);
+                    batch.set(newManagedTeamRef, { leadership: { manager: employeeId } }, { merge: true });
+                }
+                
+                await batch.commit();
+                showToast("اطلاعات کارمند با موفقیت بروزرسانی شد.");
+                closeModal(mainModal, mainModalContainer);
+            } catch (error) { 
+                console.error("Error updating employee:", error);
+                showToast("خطا در بروزرسانی اطلاعات.", "error");
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerText = 'ذخیره';
+            }
+        } else { // For new employee
+            const employeeDataForCreation = { ...employeeCoreData, avatar: `https://placehold.co/100x100/E2E8F0/4A5568?text=${name.substring(0, 2)}`, personalInfo: { email: email } };
+            try {
+                const createNewEmployee = httpsCallable(functions, 'createNewEmployee');
+                await createNewEmployee({ 
+                    name: name, 
+                    employeeId: employeeId, 
+                    email: email, 
+                    employeeData: employeeDataForCreation,
+                    teamId: selectedTeamId,
+                    managedTeamId: managedTeamId
+                });
+                
+                showToast("کارمند و حساب کاربری با موفقیت ایجاد شد!");
+                closeModal(mainModal, mainModalContainer);
+                renderPage('talent');
+            } catch (error) { 
+                console.error("Cloud function error:", error);
+                showToast(`خطا: ${error.message}`, "error");
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerText = 'ذخیره';
+            }
+        }
     });
 };
-// فایل: js/main.js
-// این تابع جدید را به فایل اضافه کنید ▼
+// ▲▲▲ END: [REFACTOR - Phase 1] Replace the entire showEmployeeForm function ▲▲▲
 
 const showSelfAssessmentForm = (evaluation) => {
     const employee = state.employees.find(e => e.id === evaluation.employeeId);
@@ -8051,66 +8046,196 @@ const showSelfAssessmentForm = (evaluation) => {
 // این دو تابع جدید را به انتهای بخش هلپرها اضافه کنید ▼
 
 // فرم افزودن/ویرایش پوزیشن شغلی
+// ▼▼▼ START: [REFACTOR - Phase 1] Replace the entire showJobPositionForm function ▼▼▼
 const showJobPositionForm = (positionId = null) => {
     const isEditing = positionId !== null;
     const position = isEditing ? state.jobPositions.find(p => p.firestoreId === positionId) : {};
+    const familyOptions = (state.jobFamilies || []).map(family => `<option value="${family.name}" ${position.jobFamily === family.name ? 'selected' : ''}>${family.name}</option>`).join('');
+
     modalTitle.innerText = isEditing ? 'ویرایش پوزیشن شغلی' : 'افزودن پوزیشن شغلی جدید';
     modalContent.innerHTML = `
-        <form id="position-form">
-            <label class="block font-medium">نام پوزیشن شغلی</label>
-            <input id="position-name" class="w-full p-2 border rounded-md mt-1" value="${position.name || ''}" required>
+        <form id="position-form" class="space-y-4">
+            <div>
+                <label class="block font-medium">نام پوزیشن شغلی</label>
+                <input id="position-name" class="w-full p-2 border rounded-md mt-1" value="${position.name || ''}" required>
+            </div>
+            <div>
+                <label class="block font-medium">خانواده شغلی</label>
+                <select id="position-family" class="w-full p-2 border rounded-md mt-1 bg-white">
+                    <option value="">انتخاب کنید...</option>
+                    ${familyOptions}
+                </select>
+            </div>
             <div class="flex justify-end mt-4">
                 <button type="submit" class="primary-btn">ذخیره</button>
             </div>
         </form>
     `;
     openModal(mainModal, mainModalContainer);
+
     document.getElementById('position-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         const name = document.getElementById('position-name').value.trim();
+        const jobFamily = document.getElementById('position-family').value;
         if (!name) return;
+
+        const positionData = { 
+            name, 
+            jobFamily,
+            levels: isEditing ? position.levels || {} : {} // Preserve existing levels on edit
+        };
+
         try {
             if (isEditing) {
-                await updateDoc(doc(db, `artifacts/${appId}/public/data/jobPositions`, positionId), { name });
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/jobPositions`, positionId), positionData);
             } else {
-                await addDoc(collection(db, `artifacts/${appId}/public/data/jobPositions`), { name, competencyIds: [] });
+                await addDoc(collection(db, `artifacts/${appId}/public/data/jobPositions`), positionData);
             }
             showToast('پوزیشن شغلی با موفقیت ذخیره شد.');
             closeModal(mainModal, mainModalContainer);
-        } catch (error) { showToast('خطا در ذخیره‌سازی.', 'error'); }
+        } catch (error) { 
+            console.error("Error saving job position:", error);
+            showToast('خطا در ذخیره‌سازی.', 'error'); 
+        }
     });
 };
-
-// مودال اتصال شایستگی‌ها به پوزیشن
-const showCompetencyMappingModal = (position) => {
-    modalTitle.innerText = `اتصال شایستگی به: ${position.name}`;
-    const currentCompetencies = new Set(position.competencyIds || []);
-    const checkboxesHtml = state.competencies.map(comp => `
+// ▲▲▲ END: [REFACTOR - Phase 1] Replace the entire showJobPositionForm function ▲▲▲
+// ▼▼▼ START: [NEW FUNCTION - Phase 1] Add this helper function to js/main.js ▼▼▼
+const showLevelCompetencyPicker = (position, levelKey, currentCompetencyIds) => {
+    const currentIds = new Set(currentCompetencyIds);
+    const checkboxesHtml = (state.skillsAndCompetencies || []).map(comp => `
         <label class="flex items-center gap-2 p-2 border rounded-lg hover:bg-slate-50">
-            <input type="checkbox" class="competency-checkbox" value="${comp.firestoreId}" ${currentCompetencies.has(comp.firestoreId) ? 'checked' : ''}>
+            <input type="checkbox" class="competency-checkbox" value="${comp.firestoreId}" ${currentIds.has(comp.firestoreId) ? 'checked' : ''}>
             <span>${comp.name}</span>
         </label>
     `).join('');
 
+    modalTitle.innerText = `انتخاب شایستگی برای سطح ${levelKey} - ${position.name}`;
     modalContent.innerHTML = `
-        <form id="mapping-form">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-80 overflow-y-auto pr-2">${checkboxesHtml}</div>
-            <div class="flex justify-end mt-4">
-                <button type="submit" class="primary-btn">ذخیره تغییرات</button>
+        <form id="level-mapping-form">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-80 overflow-y-auto pr-2">${checkboxesHtml || '<p>مخزن شایستگی‌ها خالی است.</p>'}</div>
+            <div class="flex justify-end gap-2 mt-4">
+                <button type="button" id="back-to-levels-btn" class="secondary-btn">بازگشت</button>
+                <button type="submit" class="primary-btn">ذخیره شایستگی‌ها</button>
             </div>
         </form>
     `;
     openModal(mainModal, mainModalContainer);
-    document.getElementById('mapping-form').addEventListener('submit', async (e) => {
+
+    document.getElementById('back-to-levels-btn').addEventListener('click', () => {
+        showCompetencyMappingModal(position);
+    });
+
+    document.getElementById('level-mapping-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         const selectedIds = Array.from(document.querySelectorAll('.competency-checkbox:checked')).map(cb => cb.value);
+
+        const updatedLevels = {
+            ...position.levels,
+            [levelKey]: {
+                ...position.levels[levelKey],
+                competencyIds: selectedIds
+            }
+        };
+
         try {
-            await updateDoc(doc(db, `artifacts/${appId}/public/data/jobPositions`, position.firestoreId), { competencyIds: selectedIds });
-            showToast('شایستگی‌ها با موفقیت متصل شدند.');
-            closeModal(mainModal, mainModalContainer);
-        } catch (error) { showToast('خطا در ذخیره‌سازی.', 'error'); }
+            await updateDoc(doc(db, `artifacts/${appId}/public/data/jobPositions`, position.firestoreId), { levels: updatedLevels });
+            showToast('شایستگی‌های سطح با موفقیت به‌روزرسانی شد.');
+            position.levels = updatedLevels; // Update local state
+            showCompetencyMappingModal(position); // Go back to the main level management view
+        } catch (error) {
+            showToast('خطا در ذخیره‌سازی.', 'error');
+        }
     });
 };
+// ▲▲▲ END: [NEW FUNCTION - Phase 1] Add this helper function to js/main.js ▲▲▲
+// ▼▼▼ START: [REFACTOR - Phase 1] Replace the entire showCompetencyMappingModal function ▼▼▼
+const showCompetencyMappingModal = (position) => {
+    modalTitle.innerText = `مدیریت سطوح و شایستگی‌ها برای: ${position.name}`;
+
+    const renderLevels = (levels) => {
+        if (!levels || Object.keys(levels).length === 0) {
+            return '<p class="text-sm text-center text-slate-500 p-4">هنوز سطحی تعریف نشده است.</p>';
+        }
+        return Object.entries(levels).map(([levelKey, levelData]) => `
+            <div class="p-3 bg-slate-100 rounded-lg flex justify-between items-center">
+                <div>
+                    <p class="font-bold text-indigo-700">${levelKey}</p>
+                    <p class="text-xs text-slate-500">${(levelData.competencyIds || []).length} شایستگی متصل شده</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button type="button" class="edit-level-competencies-btn text-blue-600 hover:underline text-xs" data-level-key="${levelKey}">ویرایش شایستگی‌ها</button>
+                    <button type="button" class="delete-level-btn text-rose-500 p-1" data-level-key="${levelKey}"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                </div>
+            </div>
+        `).join('');
+    };
+
+    modalContent.innerHTML = `
+        <div id="level-management-container" class="space-y-4">
+            <div id="levels-list" class="space-y-3 max-h-60 overflow-y-auto pr-2">${renderLevels(position.levels)}</div>
+            <div class="border-t pt-4">
+                <form id="add-level-form" class="flex items-end gap-2">
+                    <div class="flex-grow">
+                        <label class="block text-xs font-medium mb-1">کد سطح جدید (مثال: J1, M2, S3)</label>
+                        <input id="new-level-key" class="w-full p-2 border rounded-md" placeholder="J1" required>
+                    </div>
+                    <button type="submit" class="primary-btn shrink-0">افزودن سطح</button>
+                </form>
+            </div>
+        </div>
+    `;
+    openModal(mainModal, mainModalContainer);
+    lucide.createIcons();
+
+    const container = document.getElementById('level-management-container');
+
+    container.addEventListener('click', (e) => {
+        const editBtn = e.target.closest('.edit-level-competencies-btn');
+        const deleteBtn = e.target.closest('.delete-level-btn');
+
+        if (editBtn) {
+            const levelKey = editBtn.dataset.levelKey;
+            const currentCompetencies = position.levels[levelKey]?.competencyIds || [];
+            showLevelCompetencyPicker(position, levelKey, currentCompetencies);
+        }
+
+        if (deleteBtn) {
+            const levelKey = deleteBtn.dataset.levelKey;
+            showConfirmationModal(`حذف سطح ${levelKey}`, 'آیا مطمئن هستید؟ تمام شایستگی‌های متصل به این سطح حذف خواهند شد.', async () => {
+                delete position.levels[levelKey];
+                try {
+                    await updateDoc(doc(db, `artifacts/${appId}/public/data/jobPositions`, position.firestoreId), { levels: position.levels });
+                    showToast('سطح با موفقیت حذف شد.');
+                    showCompetencyMappingModal(position); // Refresh the modal
+                } catch (error) {
+                    showToast('خطا در حذف سطح.', 'error');
+                }
+            });
+        }
+    });
+
+    document.getElementById('add-level-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const levelKeyInput = document.getElementById('new-level-key');
+        const levelKey = levelKeyInput.value.trim().toUpperCase();
+        if (!levelKey || position.levels?.[levelKey]) {
+            showToast('کد سطح نامعتبر یا تکراری است.', 'error');
+            return;
+        }
+
+        const newLevels = { ...position.levels, [levelKey]: { description: `سطح ${levelKey}`, competencyIds: [] } };
+        try {
+            await updateDoc(doc(db, `artifacts/${appId}/public/data/jobPositions`, position.firestoreId), { levels: newLevels });
+            showToast('سطح جدید اضافه شد.');
+            position.levels = newLevels; // Update local state before refresh
+            showCompetencyMappingModal(position); // Refresh the modal
+        } catch (error) {
+            showToast('خطا در افزودن سطح.', 'error');
+        }
+    });
+};
+// ▲▲▲ END: [REFACTOR - Phase 1] Replace the entire showCompetencyMappingModal function ▲▲▲
 
         // --- ADMIN HELPERS ---
         // (rest of the code remains unchanged)
