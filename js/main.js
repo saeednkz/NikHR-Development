@@ -1485,6 +1485,8 @@ window.renderMomentsList = () => {
 
 // فایل: js/main.js - داخل تابع renderEmployeePortalPage و بلوک 'team-performance'
 
+let summary = { total: teamMembers.length, notStarted: 0, pendingSelf: 0, pendingManager: 0, completed: 0 };
+
 const tableRows = teamMembers.map(member => {
     // [کد دیباگ] نمایش اطلاعاتی که برای جستجو استفاده می‌شود
     console.log(`--- جستجو برای کارمند: ${member.name} (ID: ${member.id}) | در دوره ارزیابی با ID: ${activeCycle.firestoreId}`);
@@ -1502,13 +1504,18 @@ const tableRows = teamMembers.map(member => {
     let statusText = "شروع نشده";
     let statusColor = "bg-slate-100 text-slate-800";
 
-    if (evaluation?.status === 'pending_self_assessment') {
+    if (!evaluation) {
+        summary.notStarted++;
+    } else if (evaluation?.status === 'pending_self_assessment') {
+        summary.pendingSelf++;
         statusText = "در انتظار خودارزیابی";
         statusColor = "bg-orange-100 text-orange-800";
     } else if (evaluation?.status === 'pending_manager_assessment') {
+        summary.pendingManager++;
         statusText = "آماده ارزیابی مدیر";
         statusColor = "bg-blue-100 text-blue-800";
     } else if (evaluation?.status === 'completed') {
+        summary.completed++;
         statusText = "تکمیل شده";
         statusColor = "bg-green-100 text-green-800";
     }
