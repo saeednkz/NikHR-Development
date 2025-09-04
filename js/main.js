@@ -3394,7 +3394,7 @@ const showPerformanceForm = (emp, reviewIndex = null) => {
     const position = state.jobPositions.find(p => p.firestoreId === emp.jobPositionId);
     const relevantCompetencyIds = position ? (position.competencyIds || []) : [];
     const competenciesForReview = relevantCompetencyIds
-        .map(compId => state.competencies.find(c => c.firestoreId === compId))
+        .map(compId => state.skillsAndCompetencies.find(c => c.firestoreId === compId))
         .filter(Boolean); // حذف موارد null یا undefined
     
     const competenciesHtml = (competenciesForReview.length > 0) ? competenciesForReview.map(comp => `
@@ -4647,7 +4647,7 @@ settings: () => {
         `;
     }).join('');
 
-    const competenciesHtml = (state.competencies || []).map(c => `
+    const competenciesHtml = (state.skillsAndCompetencies || []).map(c => `
         <div class="inline-flex items-center bg-slate-100 text-slate-700 text-sm font-medium px-3 py-1.5 rounded-full">
             <span>${c.name}</span>
             <button class="delete-competency-btn text-slate-400 hover:text-red-500 mr-2" data-id="${c.firestoreId}"><i data-lucide="x" class="w-4 h-4"></i></button>
@@ -7254,7 +7254,7 @@ const showEvaluationForm = (employee, cycle, evaluation) => {
     // [اصلاح] بخش ۲: ساخت HTML برای شایستگی‌ها
     const position = state.jobPositions.find(p => p.firestoreId === employee.jobPositionId);
     const relevantCompetencyIds = new Set(position?.competencyIds || []);
-    const competenciesForReview = state.competencies.filter(c => relevantCompetencyIds.has(c.firestoreId));
+    const competenciesForReview = state.skillsAndCompetencies.filter(c => relevantCompetencyIds.has(c.firestoreId));
     
     const competenciesHtml = competenciesForReview.length > 0 ? competenciesForReview.map(comp => `
         <div class="mb-3 p-3 bg-slate-50 rounded-lg border">
@@ -7985,7 +7985,7 @@ const showSelfAssessmentForm = (evaluation) => {
     const position = state.jobPositions.find(p => p.firestoreId === employee.jobPositionId);
     const employeeLevel = employee.level || 1; 
     const relevantCompetencyIds = new Set(position?.levels?.[`Level ${employeeLevel}`]?.competencyIds || position?.competencyIds || []);
-    const competenciesForReview = state.competencies.filter(c => relevantCompetencyIds.has(c.firestoreId));
+    const competenciesForReview = state.skillsAndCompetencies.filter(c => relevantCompetencyIds.has(c.firestoreId));
 
     const competenciesHtml = competenciesForReview.length > 0 ? competenciesForReview.map(comp => `
         <div class="mb-3 p-3 bg-slate-50 rounded-lg">
@@ -9215,7 +9215,7 @@ const showAddUserForm = () => {
         const showEditCompetenciesForm = (emp) => {
             modalTitle.innerText = `ویرایش شایستگی‌ها برای ${emp.name}`;
             const empCompetencies = emp.competencies || {};
-            const competenciesHtml = state.competencies.map(comp => `
+            const competenciesHtml = state.skillsAndCompetencies.map(comp => `
                 <div class="competency-item grid grid-cols-12 gap-2 items-center">
                     <label class="col-span-8">${comp.name}</label>
                     <input type="number" value="${empCompetencies[comp.name] || 0}" data-name="${comp.name}" class="col-span-3 p-2 border rounded-md competency-level" placeholder="سطح (۱-۵)" min="0" max="5">
