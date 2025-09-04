@@ -1543,12 +1543,19 @@ function renderEmployeePortalPage(pageName, employee) {
         const rowsHtml = filteredEvals.map(ev => {
             const cycle = state.evaluationCycles.find(c => c.firestoreId === ev.cycleId) || { title: ev.cycleId };
             const status = statusMap[ev.status] || { text: ev.status, color: 'bg-slate-100' };
-            let actionButton = '';
-            if (ev.status === 'pending_self_assessment') {
-                actionButton = `<button class="start-self-assessment-btn primary-btn text-xs py-1.5 px-3" data-id="${ev.firestoreId}">شروع خودارزیابی</button>`;
-            } else {
-                actionButton = `<button class="view-completed-assessment-btn secondary-btn text-xs py-1.5 px-3" data-id="${ev.firestoreId}" disabled>مشاهده</button>`;
-            }
+let actionButton = '';
+if (ev.status === 'pending_self_assessment') {
+    actionButton = `<button class="start-self-assessment-btn primary-btn text-xs py-1.5 px-3" data-id="${ev.firestoreId}">شروع خودارزیابی</button>`;
+} else if (ev.status === 'completed' && !ev.isAcknowledgedByEmployee) {
+    // [NEW] This is the new button for acknowledging the result
+    actionButton = `<button class="view-and-acknowledge-btn primary-btn text-xs py-1.5 px-3" data-id="${ev.firestoreId}">مشاهده و تایید نتایج</button>`;
+} else if (ev.status === 'completed' && ev.isAcknowledgedByEmployee) {
+    // [NEW] This is the state after acknowledgment
+    actionButton = `<button class="secondary-btn text-xs py-1.5 px-3" disabled>تایید شده</button>`;
+} else {
+    // For 'pending_manager_assessment' status
+    actionButton = `<button class="secondary-btn text-xs py-1.5 px-3" disabled>در انتظار مدیر</button>`;
+}
             return `
             <tr class="border-b">
                 <td class="p-3 font-semibold">${cycle.title}</td>
@@ -1712,6 +1719,15 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
     const mainContent = document.getElementById('employee-main-content');
     if (mainContent) {
         mainContent.addEventListener('click', (e) => {
+                    const viewAndAckBtn = e.target.closest('.view-and-acknowledge-btn');
+        if (viewAndAckBtn) {
+            const evaluationId = viewAndAckBtn.dataset.id;
+            const evaluation = state.employeeEvaluations.find(ev => ev.firestoreId === evaluationId);
+            if (evaluation) {
+                showCompletedEvaluationForEmployee(evaluation);
+            }
+            return;
+        }
 
         const viewProfileBtn = e.target.closest('.view-employee-profile-btn');
         if (viewProfileBtn) {
@@ -8034,6 +8050,58 @@ const showSelfAssessmentForm = (evaluation) => {
         }
     });
 };
+// ▼▼▼ START: [NEW FUNCTION - Phase 4] Add this function to js/main.js ▼▼▼
+const showCompletedEvaluationForEmployee = (evaluation) => {
+    const managerAssessment = evaluation.managerAssessment;
+    if (!managerAssessment) {
+        showToast('هنوز ارزیابی توسط مدیر ثبت نشده است.', 'error');
+        return;
+    }
+
+    modalTitle.innerText = `نتایج نهایی ارزیابی دوره: ${evaluation.cycleId}`;
+    modalContent.innerHTML = `
+        <div class="space-y-4 text-sm">
+            <div class="p-4 bg-slate-50 rounded-lg border">
+                <p><strong>امتیاز نهایی (از دید مدیر):</strong> <span class="text-lg font-bold text-indigo-600">${managerAssessment.overallScore}/5</span></p>
+                <p class="text-xs text-slate-500 mt-1">ارزیاب: ${managerAssessment.reviewer}</p>
+            </div>
+            <div class="p-4 bg-white rounded-lg border">
+                <p class="font-semibold mb-1">نقاط قوت شما از دیدگاه مدیر:</p>
+                <p class="whitespace-pre-wrap text-slate-700">${managerAssessment.strengths || '-'}</p>
+            </div>
+            <div class="p-4 bg-white rounded-lg border">
+                <p class="font-semibold mb-1">زمینه‌های قابل بهبود از دیدگاه مدیر:</p>
+                <p class="whitespace-pre-wrap text-slate-700">${managerAssessment.areasForImprovement || '-'}</p>
+            </div>
+            <div class="pt-4 mt-4 border-t flex flex-col items-center">
+                <p class="text-xs text-center text-slate-500 mb-3">با کلیک روی دکمه زیر، شما تایید می‌کنید که نتایج ارزیابی را مشاهده کرده و جلسه بازخورد را با مدیر خود داشته‌اید.</p>
+                <button id="acknowledge-evaluation-btn" data-id="${evaluation.firestoreId}" class="primary-btn w-full md:w-auto">تایید و بستن چرخه ارزیابی</button>
+            </div>
+        </div>
+    `;
+    openModal(mainModal, mainModalContainer);
+
+    document.getElementById('acknowledge-evaluation-btn')?.addEventListener('click', async (e) => {
+        const btn = e.currentTarget;
+        btn.disabled = true;
+        btn.innerText = 'در حال ثبت...';
+        const evaluationId = btn.dataset.id;
+        try {
+            const evalRef = doc(db, `artifacts/${appId}/public/data/employeeEvaluations`, evaluationId);
+            await updateDoc(evalRef, {
+                isAcknowledgedByEmployee: true,
+                acknowledgedAt: serverTimestamp()
+            });
+            showToast('تایید شما با موفقیت ثبت شد.');
+            closeModal(mainModal, mainModalContainer);
+        } catch (error) {
+            showToast('خطا در ثبت تاییدیه.', 'error');
+            btn.disabled = false;
+            btn.innerText = 'تایید و بستن چرخه ارزیابی';
+        }
+    });
+};
+// ▲▲▲ END: [NEW FUNCTION - Phase 4] Add this new function ▲▲▲
 // ▲▲▲ END: [REFACTOR - Phase 2] Replace the entire showSelfAssessmentForm function ▲▲▲
             // فایل: js/main.js
 // این دو تابع جدید را به انتهای بخش هلپرها اضافه کنید ▼
