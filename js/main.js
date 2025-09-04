@@ -654,6 +654,9 @@ const renderMyTasks = (employee) => {
     container.innerHTML = tasksHtml;
 };
 // ▼▼▼ START: [REFACTOR - Phase 3] Replace the entire renderEmployeePortalPage function ▼▼▼
+// فایل: js/main.js
+// ▼▼▼ این تابع را به طور کامل با نسخه صحیح زیر جایگزین کنید ▼▼▼
+
 function renderEmployeePortalPage(pageName, employee) {
     const contentContainer = document.getElementById('employee-main-content');
     if (!contentContainer) return;
@@ -665,226 +668,212 @@ function renderEmployeePortalPage(pageName, employee) {
         } else {
             contentContainer.innerHTML = `<div class="card p-6 text-center"><p>شما دسترسی به این صفحه را ندارید.</p></div>`;
         }
-    }if (pageName === 'profile') {
-const team = state.teams.find(t => t.memberIds?.includes(employee.id));
-const manager = team ? state.employees.find(e => e.id === team.leadership?.manager) : null;
+    } else if (pageName === 'profile') { // [FIX]: Added 'else' here
+        const team = state.teams.find(t => t.memberIds?.includes(employee.id));
+        const manager = team ? state.employees.find(e => e.id === team.leadership?.manager) : null;
         
-// فایل: js/main.js -> داخل تابع viewEmployeeProfile
-// ▼▼▼ این بلوک کد را به طور کامل جایگزین نسخه فعلی performanceHistoryHtml کنید ▼▼▼
-
-// فایل: js/main.js -> داخل تابع viewEmployeeProfile
-// ▼▼▼ کل این متغیر را با نسخه جدید و کامل زیر جایگزین کنید ▼▼▼
-
-// فایل: js/main.js -> داخل تابع viewEmployeeProfile
-// ▼▼▼ کل این متغیر را با نسخه جدید و کامل زیر جایگزین کنید ▼▼▼
-
-const performanceHistoryHtml = (employee.performanceHistory || [])
-    .sort((a, b) => new Date(b.reviewDate) - new Date(a.reviewDate))
-    .map((review, index) => {
-        const selfAssessment = review.selfAssessment; // گرفتن داده‌های خودارزیابی
-
-        return `
-            <div class="bg-white rounded-xl border border-slate-200 p-4 space-y-3">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <p class="font-bold text-slate-800">امتیاز کلی: <span style="color:#6B69D6" class="text-lg">${review.overallScore}/5</span></p>
-                        <p class="text-xs text-slate-500 mt-1">تاریخ: ${toPersianDate(review.reviewDate)} | ارزیاب: ${review.reviewer}</p>
+        const performanceHistoryHtml = (employee.performanceHistory || [])
+            .sort((a, b) => new Date(b.reviewDate) - new Date(a.reviewDate))
+            .map((review, index) => {
+                const selfAssessment = review.selfAssessment;
+                return `
+                <div class="bg-white rounded-xl border border-slate-200 p-4 space-y-3">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="font-bold text-slate-800">امتیاز کلی: <span style="color:#6B69D6" class="text-lg">${review.overallScore}/5</span></p>
+                            <p class="text-xs text-slate-500 mt-1">تاریخ: ${toPersianDate(review.reviewDate)} | ارزیاب: ${review.reviewer}</p>
+                        </div>
+                        ${canEdit() ? `
+                            <div class="flex gap-2">
+                                <button class="view-performance-btn p-2 text-slate-400 hover:text-green-600" data-index="${index}" title="مشاهده"><i data-lucide="eye" class="w-4 h-4"></i></button>
+                                <button class="edit-performance-btn p-2 text-slate-400 hover:text-blue-600" data-index="${index}" title="ویرایش"><i data-lucide="edit" class="w-4 h-4"></i></button>
+                                <button class="delete-performance-btn p-2 text-slate-400 hover:text-red-600" data-index="${index}" title="حذف"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                            </div>
+                        ` : ''}
                     </div>
-                    ${canEdit() ? `
-                       <div class="flex gap-2">
-    <button class="view-performance-btn p-2 text-slate-400 hover:text-green-600" data-index="${index}" title="مشاهده"><i data-lucide="eye" class="w-4 h-4"></i></button>
-    <button class="edit-performance-btn p-2 text-slate-400 hover:text-blue-600" data-index="${index}" title="ویرایش"><i data-lucide="edit" class="w-4 h-4"></i></button>
-    <button class="delete-performance-btn p-2 text-slate-400 hover:text-red-600" data-index="${index}" title="حذف"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-</div>
+                    <div class="border-t pt-3 text-sm text-slate-700">
+                        <p><strong>نقاط قوت (دیدگاه مدیر):</strong> ${review.strengths || '-'}</p>
+                        <p class="mt-2"><strong>زمینه‌های قابل بهبود (دیدگاه مدیر):</strong> ${review.areasForImprovement || '-'}</p>
+                    </div>
+                    ${selfAssessment ? `
+                        <div class="border-t pt-3 text-sm">
+                            <div class="p-3 bg-indigo-50 rounded-lg space-y-2 text-slate-700">
+                                <p class="font-semibold text-indigo-800">خودارزیابی کارمند</p>
+                                <p class="whitespace-pre-wrap"><strong>نقاط قوت (دیدگاه کارمند):</strong> ${selfAssessment.strengths || selfAssessment.employeeStrengths || '-'}</p>
+                                <p class="mt-1 whitespace-pre-wrap"><strong>زمینه‌های قابل بهبود (دیدگاه کارمند):</strong> ${selfAssessment.areasForImprovement || selfAssessment.employeeAreasForImprovement || '-'}</p>
+                            </div>
+                        </div>
                     ` : ''}
-                </div>
-                
-                <div class="border-t pt-3 text-sm text-slate-700">
-                    <p><strong>نقاط قوت (دیدگاه مدیر):</strong> ${review.strengths || '-'}</p>
-                    <p class="mt-2"><strong>زمینه‌های قابل بهبود (دیدگاه مدیر):</strong> ${review.areasForImprovement || '-'}</p>
-                </div>
+                </div>`;
+            }).join('') || '<div class="text-center py-6"><i data-lucide="inbox" class="w-12 h-12 mx-auto text-slate-300"></i><p class="mt-2 text-sm text-slate-500">سابقه‌ای از ارزیابی عملکرد شما ثبت نشده است.</p></div>';
 
-                ${selfAssessment ? `
-                    <div class="border-t pt-3 text-sm">
-                        <div class="p-3 bg-indigo-50 rounded-lg space-y-2 text-slate-700">
-                            <p class="font-semibold text-indigo-800">خودارزیابی کارمند</p>
-                            <p class="whitespace-pre-wrap"><strong>نقاط قوت (دیدگاه کارمند):</strong> ${selfAssessment.strengths || selfAssessment.employeeStrengths || '-'}</p>
-                            <p class="mt-1 whitespace-pre-wrap"><strong>زمینه‌های قابل بهبود (دیدگاه کارمند):</strong> ${selfAssessment.areasForImprovement || selfAssessment.employeeAreasForImprovement || '-'}</p>
-                        </div>
+        const myTeam = state.teams.find(t => t.memberIds?.includes(employee.id));
+        const okrAvg = (myTeam?.okrs && myTeam.okrs.length > 0)
+            ? Math.round(myTeam.okrs.reduce((sum, okr) => sum + (okr.progress || 0), 0) / myTeam.okrs.length)
+            : 0;
+        const requestsOpen = (state.requests || []).filter(r => r.uid === employee.uid && (r.status === 'درحال بررسی' || r.status === 'در حال انجام')).length;
+        const readIds = new Set(employee.readAnnouncements || []);
+        const myTeamId = myTeam ? myTeam.firestoreId : null;
+        const unreadCount = (state.announcements || []).filter(msg => {
+            if (!msg.createdAt?.toDate) return false;
+            const targets = msg.targets || { type: 'public' };
+            const targeted = (targets?.type === 'public')
+                || (targets?.type === 'roles' && targets.roles?.includes('employee'))
+                || (targets?.type === 'users' && targets.userIds?.includes(employee.firestoreId))
+                || (targets?.type === 'teams' && targets.teamIds?.includes(myTeamId));
+            if (!targeted) return false;
+            return !readIds.has(msg.firestoreId);
+        }).length;
+
+        const infoBanner = (() => {
+            const key = `dismiss_info_${employee.uid}`;
+            const dismissed = localStorage.getItem(key);
+            const latestInfo = (state.announcements||[]).filter(a=> a.type==='info')
+                .filter(a=>{
+                    const t = a.targets || {type:'public'};
+                    if (t.type==='public') return true;
+                    if (t.type==='roles') return (t.roles||[]).includes('employee');
+                    if (t.type==='users') return (t.userIds||[]).includes(employee.firestoreId);
+                    if (t.type==='teams') return (t.teamIds||[]).includes(myTeamId);
+                    return false;
+                })
+                .sort((a,b)=> new Date(b.createdAt?.toDate?.()||0) - new Date(a.createdAt?.toDate?.()||0))[0];
+            if (!latestInfo || dismissed===latestInfo.firestoreId) return '';
+            return `<div id="info-bubble" data-info-id="${latestInfo.firestoreId}" class="glass rounded-2xl p-4 flex items-start gap-3 fade-up"><i data-lucide="megaphone" class="w-5 h-5" style="color:#6B69D6"></i><div class="flex-1"><div class="text-sm font-bold text-slate-800">اطلاعیه</div><div class="text-xs text-slate-700 mt-1">${latestInfo.content || latestInfo.title || ''}</div></div><button id="dismiss-info" class="text-slate-500 hover:text-slate-800"><i data-lucide="x" class="w-5 h-5"></i></button></div>`;
+        })();
+
+        contentContainer.innerHTML = `
+            ${infoBanner}
+            ${renderMyBirthdayWishesWidget(employee)}
+            ${renderMyHireAnniversaryWishesWidget(employee)}
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 ${renderMyBirthdayWishesWidget(employee) ? 'mt-8' : ''}">
+                <div class="lg:col-span-2 space-y-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div class="glass rounded-2xl p-4 flex items-center justify-between fade-up"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full flex items-center justify-center" style="background:rgba(107,105,214,.12)"><i data-lucide="send" style="color:#6B69D6" class="w-5 h-5"></i></div><div><div class="text-xl font-extrabold text-slate-800">${requestsOpen}</div><div class="text-xs text-slate-500">درخواست‌های باز</div></div></div></div>
+                        <div class="glass rounded-2xl p-4 flex items-center justify-between fade-up"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full flex items-center justify-center" style="background:rgba(107,105,214,.12)"><i data-lucide="mail" style="color:#6B69D6" class="w-5 h-5"></i></div><div><div class="text-xl font-extrabold text-slate-800">${unreadCount}</div><div class="text-xs text-slate-500">پیام‌های نخوانده</div></div></div></div>
+                        <div class="glass rounded-2xl p-4 flex items-center justify-between fade-up"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full flex items-center justify-center" style="background:rgba(107,105,214,.12)"><i data-lucide="target" style="color:#6B69D6" class="w-5 h-5"></i></div><div><div class="text-xl font-extrabold text-slate-800">${okrAvg}%</div><div class="text-xs text-slate-500">میانگین OKR تیم</div></div></div></div>
                     </div>
-                ` : ''}
-                </div>
-        `;
-    }).join('') || '<div class="text-center py-6"><i data-lucide="inbox" class="w-12 h-12 mx-auto text-slate-300"></i><p class="mt-2 text-sm text-slate-500">سابقه‌ای از ارزیابی عملکرد شما ثبت نشده است.</p></div>';
-
-    const myTeam = state.teams.find(t => t.memberIds?.includes(employee.id));
-    const okrAvg = (myTeam?.okrs && myTeam.okrs.length > 0)
-        ? Math.round(myTeam.okrs.reduce((sum, okr) => sum + (okr.progress || 0), 0) / myTeam.okrs.length)
-        : 0;
-    const requestsOpen = (state.requests || []).filter(r => r.uid === employee.uid && (r.status === 'درحال بررسی' || r.status === 'در حال انجام')).length;
-    const readIds = new Set(employee.readAnnouncements || []);
-    const myTeamId = myTeam ? myTeam.firestoreId : null;
-    const unreadCount = (state.announcements || []).filter(msg => {
-        if (!msg.createdAt?.toDate) return false;
-        const targets = msg.targets || { type: 'public' };
-        const targeted = (targets?.type === 'public')
-            || (targets?.type === 'roles' && targets.roles?.includes('employee'))
-            || (targets?.type === 'users' && targets.userIds?.includes(employee.firestoreId))
-            || (targets?.type === 'teams' && targets.teamIds?.includes(myTeamId));
-        if (!targeted) return false;
-        return !readIds.has(msg.firestoreId);
-    }).length;
-
-    const infoBanner = (() => {
-        const key = `dismiss_info_${employee.uid}`;
-        const dismissed = localStorage.getItem(key);
-        const latestInfo = (state.announcements||[]).filter(a=> a.type==='info')
-            .filter(a=>{
-                const t = a.targets || {type:'public'};
-                if (t.type==='public') return true;
-                if (t.type==='roles') return (t.roles||[]).includes('employee');
-                if (t.type==='users') return (t.userIds||[]).includes(employee.firestoreId);
-                if (t.type==='teams') return (t.teamIds||[]).includes(myTeamId);
-                return false;
-            })
-            .sort((a,b)=> new Date(b.createdAt?.toDate?.()||0) - new Date(a.createdAt?.toDate?.()||0))[0];
-        if (!latestInfo || dismissed===latestInfo.firestoreId) return '';
-        return `<div id="info-bubble" data-info-id="${latestInfo.firestoreId}" class="glass rounded-2xl p-4 flex items-start gap-3 fade-up"><i data-lucide="megaphone" class="w-5 h-5" style="color:#6B69D6"></i><div class="flex-1"><div class="text-sm font-bold text-slate-800">اطلاعیه</div><div class="text-xs text-slate-700 mt-1">${latestInfo.content || latestInfo.title || ''}</div></div><button id="dismiss-info" class="text-slate-500 hover:text-slate-800"><i data-lucide="x" class="w-5 h-5"></i></button></div>`;
-    })();
-
-    contentContainer.innerHTML = `
-        ${infoBanner}
-        ${renderMyBirthdayWishesWidget(employee)}
-        ${renderMyHireAnniversaryWishesWidget(employee)}
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 ${renderMyBirthdayWishesWidget(employee) ? 'mt-8' : ''}">
-            <div class="lg:col-span-2 space-y-6">
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <div class="glass rounded-2xl p-4 flex items-center justify-between fade-up"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full flex items-center justify-center" style="background:rgba(107,105,214,.12)"><i data-lucide="send" style="color:#6B69D6" class="w-5 h-5"></i></div><div><div class="text-xl font-extrabold text-slate-800">${requestsOpen}</div><div class="text-xs text-slate-500">درخواست‌های باز</div></div></div></div>
-                    <div class="glass rounded-2xl p-4 flex items-center justify-between fade-up"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full flex items-center justify-center" style="background:rgba(107,105,214,.12)"><i data-lucide="mail" style="color:#6B69D6" class="w-5 h-5"></i></div><div><div class="text-xl font-extrabold text-slate-800">${unreadCount}</div><div class="text-xs text-slate-500">پیام‌های نخوانده</div></div></div></div>
-                    <div class="glass rounded-2xl p-4 flex items-center justify-between fade-up"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full flex items-center justify-center" style="background:rgba(107,105,214,.12)"><i data-lucide="target" style="color:#6B69D6" class="w-5 h-5"></i></div><div><div class="text-xl font-extrabold text-slate-800">${okrAvg}%</div><div class="text-xs text-slate-500">میانگین OKR تیم</div></div></div></div>
-                </div>
-                
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                    <div class="flex items-center gap-5 mb-6">
-                        <div class="w-20 h-20 rounded-2xl overflow-hidden bg-slate-100 ring-4 ring-indigo-100"><img src="${employee.avatar}" alt="${employee.name}" class="w-full h-full object-cover"></div>
-                        <div class="space-y-1">
-                            <div class="text-2xl font-extrabold text-slate-900">${employee.name}</div>
-                            <div class="text-sm text-slate-500">${employee.jobTitle || 'بدون عنوان شغلی'}</div>
+                    
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                        <div class="flex items-center gap-5 mb-6">
+                            <div class="w-20 h-20 rounded-2xl overflow-hidden bg-slate-100 ring-4 ring-indigo-100"><img src="${employee.avatar}" alt="${employee.name}" class="w-full h-full object-cover"></div>
+                            <div class="space-y-1">
+                                <div class="text-2xl font-extrabold text-slate-900">${employee.name}</div>
+                                <div class="text-sm text-slate-500">${employee.jobTitle || 'بدون عنوان شغلی'}</div>
+                            </div>
+                            <div class="ml-auto hidden md:flex items-center gap-4 bg-slate-50 px-4 py-2 rounded-xl">
+                                <div class="text-xs text-slate-500">تیم</div><div class="text-xs font-bold text-slate-700">${(state.teams.find(t=>t.memberIds?.includes(employee.id))?.name) || '-'}</div>
+                                <div class="w-px h-4 bg-slate-200"></div>
+                                <div class="text-xs text-slate-500">مدیر</div><div class="text-xs font-bold text-slate-700">${manager?.name || '-'}</div>
+                            </div>
                         </div>
-                        <div class="ml-auto hidden md:flex items-center gap-4 bg-slate-50 px-4 py-2 rounded-xl">
-                            <div class="text-xs text-slate-500">تیم</div><div class="text-xs font-bold text-slate-700">${(state.teams.find(t=>t.memberIds?.includes(employee.id))?.name) || '-'}</div>
-                            <div class="w-px h-4 bg-slate-200"></div>
-                            <div class="text-xs text-slate-500">مدیر</div><div class="text-xs font-bold text-slate-700">${manager?.name || '-'}</div>
-                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm"><div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500 mb-1">ایمیل</div><div class="font-medium text-slate-700">${employee.personalInfo?.email || '-'}</div></div><div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500 mb-1">شماره موبایل</div><div class="font-medium text-slate-700">${employee.personalInfo?.phone || '-'}</div></div><div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500 mb-1">تیم</div><div class="font-medium text-slate-700">${(state.teams.find(t=>t.memberIds?.includes(employee.id))?.name) || '-'}</div></div><div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500 mb-1">مدیر</div><div class="font-medium text-slate-700">${manager?.name || '-'}</div></div></div>
                     </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm"><div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500 mb-1">ایمیل</div><div class="font-medium text-slate-700">${employee.personalInfo?.email || '-'}</div></div><div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500 mb-1">شماره موبایل</div><div class="font-medium text-slate-700">${employee.personalInfo?.phone || '-'}</div></div><div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500 mb-1">تیم</div><div class="font-medium text-slate-700">${(state.teams.find(t=>t.memberIds?.includes(employee.id))?.name) || '-'}</div></div><div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500 mb-1">مدیر</div><div class="font-medium text-slate-700">${manager?.name || '-'}</div></div></div>
-                </div>
 
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                    <h3 class="font-semibold text-slate-800 flex items-center gap-2 mb-4">
-                        <i data-lucide="history" class="w-5 h-5 text-indigo-500"></i>
-                        تاریخچه ارزیابی عملکرد
-                    </h3>
-                    <div class="space-y-4">${performanceHistoryHtml}</div>
-                </div>
-
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="font-semibold text-slate-800 flex items-center gap-2">
-                            <i data-lucide="activity" class="w-5 h-5 text-indigo-500"></i>
-                            روند عملکرد
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                        <h3 class="font-semibold text-slate-800 flex items-center gap-2 mb-4">
+                            <i data-lucide="history" class="w-5 h-5 text-indigo-500"></i>
+                            تاریخچه ارزیابی عملکرد
                         </h3>
+                        <div class="space-y-4">${performanceHistoryHtml}</div>
                     </div>
-                    <div class="relative h-48">
-                        <canvas id="empPerformanceChart"></canvas>
-                    </div>
-                </div>
-            </div>
-            <aside class="space-y-6 min-w-[260px] w-full lg:w-auto">
-                ${renderThisWeekEventsWidget(employee) || ''}
-                ${renderBirthdaysWidget(employee) || `
-                <div class=\"card p-0\">
-                    <div class=\"card-header flex items-center gap-2\"><i data-lucide=\"cake\" class=\"w-5 h-5 text-pink-500\"></i><h3 class=\"font-semibold text-slate-800\">تولدهای نزدیک</h3></div>
-                    <div class=\"card-content p-4 text-xs text-slate-500\">موردی در ۷ روز آینده نیست.</div>
-                </div>`}
-                <div class="card p-0">
-                    <div class="card-header flex items-center gap-2"><i data-lucide="send" class="w-5 h-5 text-indigo-500"></i><h3 class="font-semibold text-slate-800">درخواست‌های اخیر</h3></div>
-                    <div class="card-content divide-y divide-slate-100">
-                        ${(() => {
-                            const myRequests = (state.requests||[]).filter(r => r.uid === employee.uid).sort((a,b)=> (b.lastUpdatedAt?.toDate?.()||b.createdAt?.toDate?.()||0) - (a.lastUpdatedAt?.toDate?.()||a.createdAt?.toDate?.()||0)).slice(0,5);
-                            if (myRequests.length===0) return '<div class="p-3 text-xs text-slate-500">درخواستی ثبت نشده است.</div>';
-                            return myRequests.map(r=> { const title = (r.title && r.title.trim()) || r.requestType || 'درخواست'; return `<a href="#requests" class=\"flex items-center justify-between p-3 hover:bg-slate-50 transition\" data-link=\"#requests\"><div class=\"text-xs\"><div class=\"font-semibold text-slate-800\">${title}</div><div class=\"text-slate-500 mt-0.5\">${toPersianDate(r.createdAt?.toDate?.()||new Date())}</div></div><span class=\"text-[10px] px-2 py-1 rounded-full ${r.status==='تایید شده'?'bg-green-100 text-green-700':r.status==='رد شده'?'bg-rose-100 text-rose-700':'bg-slate-100 text-slate-700'}\">${r.status}</span></a>`; }).join('');
-                        })()}
-                    </div>
-                </div>
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                        <a href="#requests" class="flex items-center gap-2 p-3 rounded-xl border hover:bg-slate-50" data-link="#requests"><i data-lucide="send" class="w-4 h-4 text-indigo-500"></i><span class="text-xs font-semibold text-slate-700">ثبت/پیگیری درخواست</span></a>
-                        <a href="#documents" class="flex items-center gap-2 p-3 rounded-xl border hover:bg-slate-50" data-link="#documents"><i data-lucide="book-open" class="w-4 h-4 text-teal-500"></i><span class="text-xs font-semibold text-slate-700">دانش‌نامه</span></a>
-                        <a href="#directory" class="flex items-center gap-2 p-3 rounded-xl border hover:bg-slate-50" data-link="#directory"><i data-lucide="users" class="w-4 h-4 text-rose-500"></i><span class="text-xs font-semibold text-slate-700">تیم‌ها</span></a>
-                        <a href="#moments" class="flex items-center gap-2 p-3 rounded-xl border hover:bg-slate-50" data-link="#moments"><i data-lucide="sparkles" class="w-4 h-4 text-amber-500"></i><span class="text-xs font-semibold text-slate-700">لحظه‌های نیک‌اندیشی</span></a>
-                    </div>
-                </div>
-                <div class="card p-0">
-                    <div class="card-header flex items-center gap-2"><i data-lucide="inbox" class="w-5 h-5 text-teal-500"></i><h3 class="font-semibold text-slate-800">پیام‌های اخیر</h3></div>
-                    <div class="card-content divide-y divide-slate-100">
-                        ${(() => {
-                            const myTeam = state.teams.find(t=> t.memberIds?.includes(employee.id));
-                            const myTeamId = myTeam?.firestoreId;
-                            const unread = (state.announcements||[])
-                                .filter(msg => {
-                                    const targets = msg.targets || {type:'public'};
-                                    return (targets.type==='public') || (targets.type==='roles' && (targets.roles||[]).includes('employee')) || (targets.type==='users' && (targets.userIds||[]).includes(employee.firestoreId)) || (targets.type==='teams' && (targets.teamIds||[]).includes(myTeamId));
-                                })
-                                .sort((a,b)=> new Date(b.createdAt?.toDate?.()||0) - new Date(a.createdAt?.toDate?.()||0))
-                                .slice(0,5);
-                            if (unread.length===0) return '<div class="p-3 text-xs text-slate-500">پیامی وجود ندارد.</div>';
-                            return unread.map(m=> `<a href=\"#inbox\" class=\"block p-3 hover:bg-slate-50 transition\" data-link=\"#inbox\"><div class=\"text-xs font-semibold text-slate-800\">${m.title||'پیام جدید'}</div><div class=\"text-[11px] text-slate-500 mt-0.5\">${toPersianDate(m.createdAt?.toDate?.()||new Date())}</div></a>`).join('');
-                        })()}
-                    </div>
-                </div>
-                ${renderUpcomingHireAnniversariesWidget(employee) || ''}
-            </aside>
-        </div>`;
 
-    try {
-        setupChartTheme();
-        const ctx = document.getElementById('empPerformanceChart')?.getContext('2d');
-        if (ctx) {
-            const history = (employee.performanceHistory || []).slice().sort((a,b)=> new Date(a.reviewDate) - new Date(b.reviewDate));
-            const labels = history.map(h => toPersianDate(h.reviewDate));
-            const data = history.map(h => Number(h.overallScore) || 0);
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-semibold text-slate-800 flex items-center gap-2">
+                                <i data-lucide="activity" class="w-5 h-5 text-indigo-500"></i>
+                                روند عملکرد
+                            </h3>
+                        </div>
+                        <div class="relative h-48">
+                            <canvas id="empPerformanceChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <aside class="space-y-6 min-w-[260px] w-full lg:w-auto">
+                    ${renderThisWeekEventsWidget(employee) || ''}
+                    ${renderBirthdaysWidget(employee) || `
+                    <div class=\"card p-0\">
+                        <div class=\"card-header flex items-center gap-2\"><i data-lucide=\"cake\" class=\"w-5 h-5 text-pink-500\"></i><h3 class=\"font-semibold text-slate-800\">تولدهای نزدیک</h3></div>
+                        <div class=\"card-content p-4 text-xs text-slate-500\">موردی در ۷ روز آینده نیست.</div>
+                    </div>`}
+                    <div class="card p-0">
+                        <div class="card-header flex items-center gap-2"><i data-lucide="send" class="w-5 h-5 text-indigo-500"></i><h3 class="font-semibold text-slate-800">درخواست‌های اخیر</h3></div>
+                        <div class="card-content divide-y divide-slate-100">
+                            ${(() => {
+                                const myRequests = (state.requests||[]).filter(r => r.uid === employee.uid).sort((a,b)=> (b.lastUpdatedAt?.toDate?.()||b.createdAt?.toDate?.()||0) - (a.lastUpdatedAt?.toDate?.()||a.createdAt?.toDate?.()||0)).slice(0,5);
+                                if (myRequests.length===0) return '<div class="p-3 text-xs text-slate-500">درخواستی ثبت نشده است.</div>';
+                                return myRequests.map(r=> { const title = (r.title && r.title.trim()) || r.requestType || 'درخواست'; return `<a href="#requests" class=\"flex items-center justify-between p-3 hover:bg-slate-50 transition\" data-link=\"#requests\"><div class=\"text-xs\"><div class=\"font-semibold text-slate-800\">${title}</div><div class=\"text-slate-500 mt-0.5\">${toPersianDate(r.createdAt?.toDate?.()||new Date())}</div></div><span class=\"text-[10px] px-2 py-1 rounded-full ${r.status==='تایید شده'?'bg-green-100 text-green-700':r.status==='رد شده'?'bg-rose-100 text-rose-700':'bg-slate-100 text-slate-700'}\">${r.status}</span></a>`; }).join('');
+                            })()}
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            <a href="#requests" class="flex items-center gap-2 p-3 rounded-xl border hover:bg-slate-50" data-link="#requests"><i data-lucide="send" class="w-4 h-4 text-indigo-500"></i><span class="text-xs font-semibold text-slate-700">ثبت/پیگیری درخواست</span></a>
+                            <a href="#documents" class="flex items-center gap-2 p-3 rounded-xl border hover:bg-slate-50" data-link="#documents"><i data-lucide="book-open" class="w-4 h-4 text-teal-500"></i><span class="text-xs font-semibold text-slate-700">دانش‌نامه</span></a>
+                            <a href="#directory" class="flex items-center gap-2 p-3 rounded-xl border hover:bg-slate-50" data-link="#directory"><i data-lucide="users" class="w-4 h-4 text-rose-500"></i><span class="text-xs font-semibold text-slate-700">تیم‌ها</span></a>
+                            <a href="#moments" class="flex items-center gap-2 p-3 rounded-xl border hover:bg-slate-50" data-link="#moments"><i data-lucide="sparkles" class="w-4 h-4 text-amber-500"></i><span class="text-xs font-semibold text-slate-700">لحظه‌های نیک‌اندیشی</span></a>
+                        </div>
+                    </div>
+                    <div class="card p-0">
+                        <div class="card-header flex items-center gap-2"><i data-lucide="inbox" class="w-5 h-5 text-teal-500"></i><h3 class="font-semibold text-slate-800">پیام‌های اخیر</h3></div>
+                        <div class="card-content divide-y divide-slate-100">
+                            ${(() => {
+                                const myTeam = state.teams.find(t=> t.memberIds?.includes(employee.id));
+                                const myTeamId = myTeam?.firestoreId;
+                                const unread = (state.announcements||[])
+                                    .filter(msg => {
+                                        const targets = msg.targets || {type:'public'};
+                                        return (targets.type==='public') || (targets.type==='roles' && (targets.roles||[]).includes('employee')) || (targets.type==='users' && (targets.userIds||[]).includes(employee.firestoreId)) || (targets.type==='teams' && (targets.teamIds||[]).includes(myTeamId));
+                                    })
+                                    .sort((a,b)=> new Date(b.createdAt?.toDate?.()||0) - new Date(a.createdAt?.toDate?.()||0))
+                                    .slice(0,5);
+                                if (unread.length===0) return '<div class="p-3 text-xs text-slate-500">پیامی وجود ندارد.</div>';
+                                return unread.map(m=> `<a href=\"#inbox\" class=\"block p-3 hover:bg-slate-50 transition\" data-link=\"#inbox\"><div class=\"text-xs font-semibold text-slate-800\">${m.title||'پیام جدید'}</div><div class=\"text-[11px] text-slate-500 mt-0.5\">${toPersianDate(m.createdAt?.toDate?.()||new Date())}</div></a>`).join('');
+                            })()}
+                        </div>
+                    </div>
+                    ${renderUpcomingHireAnniversariesWidget(employee) || ''}
+                </aside>
+            </div>`;
+
+        try {
             setupChartTheme();
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels,
-                    datasets: [{
-                        label: 'امتیاز',
-                        data,
-                        borderColor: getBrandColor(0),
-                        backgroundColor: areaGradientBg(getBrandColor(0)),
-                        fill: true
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: { y: { suggestedMin: 0, suggestedMax: 5, ticks: { stepSize: 1 } } }
-                }
-            });
-        }
-    } catch (err) { console.error('Performance chart error', err); }
-    
-    function renderEmployeeSidebarMessages(emp) { /* ... */ }
-    function renderEmployeeSidebarTeam(emp) { /* ... */ }
-    function renderEmployeeSidebarRequests(emp) { /* ... */ }
+            const ctx = document.getElementById('empPerformanceChart')?.getContext('2d');
+            if (ctx) {
+                const history = (employee.performanceHistory || []).slice().sort((a,b)=> new Date(a.reviewDate) - new Date(b.reviewDate));
+                const labels = history.map(h => toPersianDate(h.reviewDate));
+                const data = history.map(h => Number(h.overallScore) || 0);
+                setupChartTheme();
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels,
+                        datasets: [{
+                            label: 'امتیاز',
+                            data,
+                            borderColor: getBrandColor(0),
+                            backgroundColor: areaGradientBg(getBrandColor(0)),
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: { y: { suggestedMin: 0, suggestedMax: 5, ticks: { stepSize: 1 } } }
+                    }
+                });
+            }
+        } catch (err) { console.error('Performance chart error', err); }
+        
+        function renderEmployeeSidebarMessages(emp) { /* ... */ }
+        function renderEmployeeSidebarTeam(emp) { /* ... */ }
+        function renderEmployeeSidebarRequests(emp) { /* ... */ }
 
-    // فراخوانی توابع مخصوص این صفحه (حذف ویجت تسک‌های قدیمی)
-    lucide.createIcons();
-}
-    // --- بخش دایرکتوری (تیمی) ---
+        lucide.createIcons();
+    }
+    // ... all other else if blocks for 'directory', 'requests', etc. ...
     else if (pageName === 'directory') {
         const colorsDir = ['#6B69D6','#FF6A3D','#10B981','#F59E0B','#0EA5E9','#F43F5E'];
         const teamCardsHtml = (state.teams || []).map((team, idx) => {
@@ -912,7 +901,6 @@ const performanceHistoryHtml = (employee.performanceHistory || [])
                     </div>
                 </div>`;
         }).join('');
-
         contentContainer.innerHTML = `
             <section class="rounded-2xl overflow-hidden border mb-6" style="background:linear-gradient(90deg,#6B69D6,#10B981)"><div class="p-6 sm:p-8"><h1 class="text-2xl sm:text-3xl font-extrabold text-white">تیم‌ها</h1><p class="text-white/90 text-xs mt-1">تیم‌ها، اعضا و اطلاعات مرتبط</p></div></section>
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 mb-4">
@@ -951,14 +939,11 @@ const performanceHistoryHtml = (employee.performanceHistory || [])
             document.getElementById('team-cards').innerHTML = html;
             lucide.createIcons();
         });
-    }
-    // --- بخش درخواست‌ها ---
-    else if (pageName === 'requests') {
+    } else if (pageName === 'requests') {
         let myRequests = (state.requests || []).filter(req => req.uid === employee.uid);
         const params = new URLSearchParams(window.location.hash.split('?')[1] || '');
         const qParam = params.get('q') || '';
         const statusParam = params.get('status') || 'all';
-        // مرتب‌سازی: ابتدا درخواست‌هایی که پاسخ جدید دارند (نسبت به lastSeenAt)، سپس بر اساس lastUpdatedAt/createdAt
         myRequests = myRequests.sort((a, b) => {
             const aHasNew = (a.thread || []).some(item => item.createdAt?.toDate && (!a.lastSeenAt || item.createdAt.toDate() > a.lastSeenAt.toDate()));
             const bHasNew = (b.thread || []).some(item => item.createdAt?.toDate && (!b.lastSeenAt || item.createdAt.toDate() > b.lastSeenAt.toDate()));
@@ -972,21 +957,8 @@ const performanceHistoryHtml = (employee.performanceHistory || [])
             const matchesStatus = statusParam==='all' ? true : req.status === statusParam;
             return matchesText && matchesStatus;
         });
-        const requestsHtml = filtered.map(req => {
-            const statusMap = {'درحال بررسی': { text: 'در حال بررسی', color: 'bg-yellow-100 text-yellow-800' },'در حال انجام': { text: 'در حال انجام', color: 'bg-blue-100 text-blue-800' },'تایید شده': { text: 'تایید شده', color: 'bg-green-100 text-green-800' },'رد شده': { text: 'رد شده', color: 'bg-red-100 text-red-800' }};
-            const status = statusMap[req.status] || { text: req.status, color: 'bg-slate-100' };
-            const hasNewReply = (req.thread || []).some(item => item.createdAt?.toDate && (!req.lastSeenAt || item.createdAt.toDate() > req.lastSeenAt.toDate()));
-            const borderClass = hasNewReply ? 'border-emerald-200' : 'border-slate-200';
-            const titleClass = hasNewReply ? 'font-bold text-slate-900' : 'font-medium text-slate-700';
-            const dot = hasNewReply ? '<span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>' : '';
-            return `<tr class="bg-white"><td class="p-4 border-b ${borderClass}"><div class="flex items-center gap-2 ${titleClass}">${dot}<span>${req.requestType}</span></div></td><td class="p-4 border-b ${borderClass}">${toPersianDate(req.createdAt)}</td><td class="p-4 border-b ${borderClass}"><span class="px-2 py-1 text-xs font-medium rounded-full ${status.color}">${status.text}</span></td><td class="p-4 border-b ${borderClass}"><button class="view-request-btn text-sm text-indigo-600 hover:underline" data-id="${req.firestoreId}">مشاهده جزئیات</button></td></tr>`;
-        }).join('');
         const byType = {
-            'گواهی اشتغال به کار': [],
-            'بیمه': [],
-            'بیمه تکمیلی': [],
-            'درخواست مرخصی': [],
-            'سایر': []
+            'گواهی اشتغال به کار': [], 'بیمه': [], 'بیمه تکمیلی': [], 'درخواست مرخصی': [], 'سایر': []
         };
         filtered.forEach(req => {
             const key = byType[req.requestType] ? req.requestType : (req.requestType?.includes('مرخصی') ? 'درخواست مرخصی' : 'سایر');
@@ -1041,97 +1013,86 @@ const performanceHistoryHtml = (employee.performanceHistory || [])
                 sectionTable('عمومی', byType['سایر'])
             ].join('') : `<div>${emptyState}</div>`}
             `;
-        // اتصال فیلترها
         const searchInput = document.getElementById('request-search');
         const statusSelect = document.getElementById('request-status');
         function updateFilters() {
             const q = (searchInput?.value || '').trim();
             const st = statusSelect?.value || 'all';
-            const base = '#requests';
-            const next = `${base}?q=${encodeURIComponent(q)}&status=${encodeURIComponent(st)}`;
-            history.replaceState(null, '', next);
+            history.replaceState(null, '', `#requests?q=${encodeURIComponent(q)}&status=${encodeURIComponent(st)}`);
             renderEmployeePortalPage('requests', employee);
         }
         searchInput?.addEventListener('input', () => { clearTimeout(window._rqDeb); window._rqDeb = setTimeout(updateFilters, 250); });
         statusSelect?.addEventListener('change', updateFilters);
-    }
-    // --- بخش اسناد ---
-else if (pageName === 'documents') {
-    // حالا از همان ثابت مرکزی استفاده می‌کنیم
-    const docSections = documentCategories; 
-    const colors = ['#6B69D6','#FF6A3D','#10B981','#F59E0B','#0EA5E9','#F43F5E'];
-    const cards = docSections.map((s, idx) => {
-        const color = colors[idx % colors.length];
-        const total = (state.companyDocuments || []).filter(d => d.categoryKey === s.key).length;
-        return `
-            <div class="bg-white rounded-2xl border border-slate-200 p-5 hover:shadow-lg transition-shadow fade-up">
-                <div class="flex items-center gap-3">
-                    <div class="w-12 h-12 rounded-xl flex items-center justify-center ring-4" style="ring-color:${color}33; background:${color}1a;">
-                        <i data-lucide="${s.icon}" class="w-6 h-6" style="color:${color}"></i>
-                    </div>
-                    <div class="flex-1">
-                        <h3 class="text-base font-bold text-slate-800">${s.id}</h3>
-                        <p class="text-xs text-slate-600 leading-6">${s.desc}</p>
-                    </div>
-                    <span class="text-[11px] px-2 py-1 rounded-full" style="background:${color}1a;color:${color}">${total} فایل</span>
-                </div>
-                <div class="mt-4 flex justify-between">
-                    <button class="doc-category-btn text-xs font-semibold px-3 py-1.5 rounded-lg" data-category="${s.key}" style="color:#fff;background:${color}">مشاهده</button>
-                    <a href="#" class="text-[11px] text-slate-500 hover:text-slate-700">راهنما</a>
-                </div>
-            </div>`;
-    }).join('');
-    contentContainer.innerHTML = `
-        <section class="rounded-2xl overflow-hidden border mb-6" style="background:linear-gradient(90deg,#0EA5E9,#6B69D6)"><div class="p-6 sm:p-8"><h1 class="text-2xl sm:text-3xl font-extrabold text-white">دانش‌نامه</h1><p class="text-white/90 text-xs mt-1">دسترسی سریع به منابع و مستندات کلیدی</p></div></section>
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 mb-4">
-            <input id="docs-search" class="w-full p-2 border rounded-lg text-sm" placeholder="جستجو در دسته/توضیحات"/>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6" id="docs-cards">${cards}</div>`;
-    const docsSearch = document.getElementById('docs-search');
-    docsSearch?.addEventListener('input', () => {
-        const q = (docsSearch.value || '').trim();
-        const filtered = documentCategories.filter(s => (s.id||'').includes(q) || (s.desc||'').includes(q));
+    } else if (pageName === 'documents') {
+        const docSections = documentCategories; 
         const colors = ['#6B69D6','#FF6A3D','#10B981','#F59E0B','#0EA5E9','#F43F5E'];
-        const html = filtered.map((s, idx) => {
+        const cards = docSections.map((s, idx) => {
             const color = colors[idx % colors.length];
             const total = (state.companyDocuments || []).filter(d => d.categoryKey === s.key).length;
             return `
-            <div class="bg-white rounded-2xl border border-slate-200 p-5 hover:shadow-lg transition-shadow fade-up">
-                <div class="flex items-center gap-3">
-                    <div class="w-12 h-12 rounded-xl flex items-center justify-center ring-4" style="ring-color:${color}33; background:${color}1a;">
-                        <i data-lucide="${s.icon}" class="w-6 h-6" style="color:${color}"></i>
+                <div class="bg-white rounded-2xl border border-slate-200 p-5 hover:shadow-lg transition-shadow fade-up">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-xl flex items-center justify-center ring-4" style="ring-color:${color}33; background:${color}1a;">
+                            <i data-lucide="${s.icon}" class="w-6 h-6" style="color:${color}"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-base font-bold text-slate-800">${s.id}</h3>
+                            <p class="text-xs text-slate-600 leading-6">${s.desc}</p>
+                        </div>
+                        <span class="text-[11px] px-2 py-1 rounded-full" style="background:${color}1a;color:${color}">${total} فایل</span>
                     </div>
-                    <div class="flex-1">
-                        <h3 class="text-base font-bold text-slate-800">${s.id}</h3>
-                        <p class="text-xs text-slate-600 leading-6">${s.desc}</p>
+                    <div class="mt-4 flex justify-between">
+                        <button class="doc-category-btn text-xs font-semibold px-3 py-1.5 rounded-lg" data-category="${s.key}" style="color:#fff;background:${color}">مشاهده</button>
+                        <a href="#" class="text-[11px] text-slate-500 hover:text-slate-700">راهنما</a>
                     </div>
-                    <span class="text-[11px] px-2 py-1 rounded-full" style="background:${color}1a;color:${color}">${total} فایل</span>
-                </div>
-                <div class="mt-4 flex justify-between">
-                    <button class="doc-category-btn text-xs font-semibold px-3 py-1.5 rounded-lg" data-category="${s.key}" style="color:#fff;background:${color}">مشاهده</button>
-                    <a href="#" class="text-[11px] text-slate-500 hover:text-slate-700">راهنما</a>
-                </div>
-            </div>`;
+                </div>`;
         }).join('');
-        document.getElementById('docs-cards').innerHTML = html;
-        lucide.createIcons();
-    });
-}
-
-    // --- بخش صندوق پیام ---
-    else if (pageName === 'inbox') {
+        contentContainer.innerHTML = `
+            <section class="rounded-2xl overflow-hidden border mb-6" style="background:linear-gradient(90deg,#0EA5E9,#6B69D6)"><div class="p-6 sm:p-8"><h1 class="text-2xl sm:text-3xl font-extrabold text-white">دانش‌نامه</h1><p class="text-white/90 text-xs mt-1">دسترسی سریع به منابع و مستندات کلیدی</p></div></section>
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 mb-4">
+                <input id="docs-search" class="w-full p-2 border rounded-lg text-sm" placeholder="جستجو در دسته/توضیحات"/>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6" id="docs-cards">${cards}</div>`;
+        const docsSearch = document.getElementById('docs-search');
+        docsSearch?.addEventListener('input', () => {
+            const q = (docsSearch.value || '').trim();
+            const filtered = documentCategories.filter(s => (s.id||'').includes(q) || (s.desc||'').includes(q));
+            const colors = ['#6B69D6','#FF6A3D','#10B981','#F59E0B','#0EA5E9','#F43F5E'];
+            const html = filtered.map((s, idx) => {
+                const color = colors[idx % colors.length];
+                const total = (state.companyDocuments || []).filter(d => d.categoryKey === s.key).length;
+                return `
+                <div class="bg-white rounded-2xl border border-slate-200 p-5 hover:shadow-lg transition-shadow fade-up">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-xl flex items-center justify-center ring-4" style="ring-color:${color}33; background:${color}1a;">
+                            <i data-lucide="${s.icon}" class="w-6 h-6" style="color:${color}"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-base font-bold text-slate-800">${s.id}</h3>
+                            <p class="text-xs text-slate-600 leading-6">${s.desc}</p>
+                        </div>
+                        <span class="text-[11px] px-2 py-1 rounded-full" style="background:${color}1a;color:${color}">${total} فایل</span>
+                    </div>
+                    <div class="mt-4 flex justify-between">
+                        <button class="doc-category-btn text-xs font-semibold px-3 py-1.5 rounded-lg" data-category="${s.key}" style="color:#fff;background:${color}">مشاهده</button>
+                        <a href="#" class="text-[11px] text-slate-500 hover:text-slate-700">راهنما</a>
+                    </div>
+                </div>`;
+            }).join('');
+            document.getElementById('docs-cards').innerHTML = html;
+            lucide.createIcons();
+        });
+    } else if (pageName === 'inbox') {
         const myTeam = state.teams.find(team => team.memberIds?.includes(employee.id));
         const myTeamId = myTeam ? myTeam.firestoreId : null;
-        const myMessages = (state.announcements || []).filter(msg => {
+        let myMessages = (state.announcements || []).filter(msg => {
             const targets = msg.targets; if (!msg.createdAt?.toDate) return false; if (targets.type === 'public') return true; if (targets.type === 'roles' && targets.roles?.includes('employee')) return true; if (targets.type === 'users' && targets.userIds?.includes(employee.firestoreId)) return true; if (targets.type === 'teams' && targets.teamIds?.includes(myTeamId)) return true; return false;
         }).sort((a, b) => new Date(b.createdAt?.toDate()) - new Date(a.createdAt?.toDate()));
-        // هایلایت پیام‌های خوانده‌نشده
         const readIds = new Set((employee.readAnnouncements || []));
-        // مرتب‌سازی: ابتدا نخوانده‌ها، سپس خوانده‌شده‌ها؛ هر گروه نزولی بر اساس تاریخ
         myMessages.sort((a, b) => {
             const aUnread = !readIds.has(a.firestoreId);
             const bUnread = !readIds.has(b.firestoreId);
-            if (aUnread !== bUnread) return aUnread ? -1 : 1; // نخوانده‌ها بالا
+            if (aUnread !== bUnread) return aUnread ? -1 : 1;
             return new Date(b.createdAt?.toDate()) - new Date(a.createdAt?.toDate());
         });
         const messagesHtml = myMessages.map(msg => {
@@ -1165,9 +1126,7 @@ else if (pageName === 'documents') {
             </div>
             <div class="space-y-3" id="inbox-list">${messagesHtml || '<div class="text-center p-10"><i data-lucide="inbox" class="mx-auto w-12 h-12 text-slate-300"></i><p class="mt-3 text-sm text-slate-500">پیامی ندارید.</p></div>'}</div>`;
         document.querySelectorAll('input[name="inbox-filter"]').forEach(el => {
-            el.addEventListener('change', () => {
-                applyInboxFilters();
-            });
+            el.addEventListener('change', () => { applyInboxFilters(); });
         });
         const searchEl = document.getElementById('inbox-search');
         const sortEl = document.getElementById('inbox-sort');
@@ -1206,9 +1165,7 @@ else if (pageName === 'documents') {
             lucide.createIcons();
         }
         applyInboxFilters();
-    }
-    // --- لحظه‌های نیک‌اندیشی ---
-    else if (pageName === 'moments') {
+    } else if (pageName === 'moments') {
         const composer = `
             <section class="rounded-2xl overflow-hidden border mb-4" style="background:linear-gradient(90deg,#FF6A3D,#F72585)"><div class="p-5 sm:p-6 flex items-center gap-3"><img src="${employee.avatar}" class="w-10 h-10 rounded-full object-cover ring-2 ring-white/40"/><div class="flex-1"><div class="text-white/80 text-xs">لحظه‌ای ثبت کن</div><div class="text-lg font-extrabold text-white">چه خبر خوبی داری؟</div></div></div></section>
             <div class="bg-white rounded-2xl p-4 border shadow-sm mb-4">
@@ -1245,7 +1202,6 @@ else if (pageName === 'documents') {
                     </div>
                 </div>
             </div>`;
-
         const listContainer = `
             <div class="bg-white rounded-2xl p-3 border shadow-sm mb-3 flex flex-wrap items-center gap-2 sticky top-2 z-10">
                 <div class="flex items-center gap-2 text-xs">
@@ -1273,119 +1229,106 @@ else if (pageName === 'documents') {
             ${listContainer}
             <button id="moment-fab" class="fixed bottom-6 right-6 z-20 rounded-full w-12 h-12 flex items-center justify-center shadow-lg" style="background:#6B69D6;color:#fff"><i data-lucide="plus" class="w-5 h-5"></i></button>
         `;
-
-        // نگه‌داری وضعیت صفحه‌بندی
         window._momentsPage = { pageSize: 10, lastTimestamp: null, loading: false, done: false };
-
-// فایل: js/main.js - داخل renderEmployeePortalPage
-// تابع window.renderMomentsList را با این نسخه جایگزین کنید ▼
-
-window.renderMomentsList = () => {
-    const container = document.getElementById('moments-list');
-    if (!container) return;
-    const itemsAll = (state.moments || []).slice();
-    const team = state.teams.find(t => t.memberIds?.includes(employee.id));
-    const myTeamIds = new Set(team?.memberIds || []);
-    const scopeSel = document.getElementById('moments-scope');
-    const sortSel = document.getElementById('moments-sort');
-    const searchInp = document.getElementById('moments-search');
-    const countEl = document.getElementById('moments-count');
-    const scope = scopeSel?.value || 'all';
-    const sort = sortSel?.value || 'new';
-    const q = (searchInp?.value || '').trim();
-    let items = itemsAll.filter(m => {
-        if (scope==='me') return m.ownerUid === employee.uid;
-        if (scope==='team') return myTeamIds.has((state.employees.find(e=> e.uid===m.ownerUid)||{}).id);
-        return true;
-    }).filter(m => q ? ((m.text||'').includes(q) || (m.ownerName||'').includes(q)) : true);
-    items = items.sort((a,b)=> {
-        if (sort==='top') return (b.reactions||[]).length - (a.reactions||[]).length;
-        return new Date(b.createdAt?.toDate?.()||0) - new Date(a.createdAt?.toDate?.()||0);
-    });
-    if (countEl) countEl.textContent = String(items.length);
-    
-    const page = window._momentsPage;
-    const slice = items.filter((it, idx) => idx < (page.pageSize + (page.extra || 0)));
-    container.innerHTML = slice.map(m => {
-        const owner = state.employees.find(e => e.uid === m.ownerUid) || {};
-        const meReact = (m.reactions || []).find(r => r.uid === employee.uid)?.emoji;
-        const reactionsHtml = (m.reactions || []).map(r => {
-            const user = state.employees.find(e => e.uid === r.uid) || {};
-            return `<div class="flex items-center gap-1 text-xs bg-slate-100 rounded-full px-2 py-1"><span>${r.emoji}</span><img src="${user.avatar || 'icons/icon-128x128.png'}" class="w-4 h-4 rounded-full object-cover"/><span class="text-slate-600">${user.name || ''}</span></div>`;
-        }).join('');
-        const reshareCount = (state.moments || []).filter(x => (x.resharedFrom || {}).sourceId === m.firestoreId).length;
-
-        // ▼▼▼ بخش جدید: شرط نمایش دکمه حذف ▼▼▼
-        const isOwner = m.ownerUid === employee.uid;
-        const canDelete = isOwner || isAdmin(); // تابع isAdmin از auth.js می‌آید
-        // ▲▲▲ پایان بخش جدید ▲▲▲
-
-        return `
-            <div class="bg-white rounded-2xl border border-slate-200 p-0 relative" style="overflow:visible;">
-                ${canDelete ? `
-                    <button class="moment-delete-btn absolute top-3 right-3 p-1.5 text-slate-100 hover:text-red-500 rounded-full hover:bg-red-50 transition-colors" data-id="${m.firestoreId}" title="حذف">
-                        <i data-lucide="trash-2" class="w-4 h-4"></i>
-                    </button>
-                ` : ''}
-                <div class="p-4">
-                    <div class="flex items-center gap-2 mb-3">
-                        <img src="${owner.avatar || 'icons/icon-128x128.png'}" class="w-10 h-10 rounded-full object-cover"/>
-                        <div>
-                            <div class="font-bold text-slate-800 text-sm">${owner.name || m.ownerName || 'کاربر'}</div>
-                            <div class="text-[11px] text-slate-500">${toPersianDate(m.createdAt)}</div>
+        window.renderMomentsList = () => {
+            const container = document.getElementById('moments-list');
+            if (!container) return;
+            const itemsAll = (state.moments || []).slice();
+            const team = state.teams.find(t => t.memberIds?.includes(employee.id));
+            const myTeamIds = new Set(team?.memberIds || []);
+            const scopeSel = document.getElementById('moments-scope');
+            const sortSel = document.getElementById('moments-sort');
+            const searchInp = document.getElementById('moments-search');
+            const countEl = document.getElementById('moments-count');
+            const scope = scopeSel?.value || 'all';
+            const sort = sortSel?.value || 'new';
+            const q = (searchInp?.value || '').trim();
+            let items = itemsAll.filter(m => {
+                if (scope==='me') return m.ownerUid === employee.uid;
+                if (scope==='team') return myTeamIds.has((state.employees.find(e=> e.uid===m.ownerUid)||{}).id);
+                return true;
+            }).filter(m => q ? ((m.text||'').includes(q) || (m.ownerName||'').includes(q)) : true);
+            items = items.sort((a,b)=> {
+                if (sort==='top') return (b.reactions||[]).length - (a.reactions||[]).length;
+                return new Date(b.createdAt?.toDate?.()||0) - new Date(a.createdAt?.toDate?.()||0);
+            });
+            if (countEl) countEl.textContent = String(items.length);
+            
+            const page = window._momentsPage;
+            const slice = items.filter((it, idx) => idx < (page.pageSize + (page.extra || 0)));
+            container.innerHTML = slice.map(m => {
+                const owner = state.employees.find(e => e.uid === m.ownerUid) || {};
+                const meReact = (m.reactions || []).find(r => r.uid === employee.uid)?.emoji;
+                const reactionsHtml = (m.reactions || []).map(r => {
+                    const user = state.employees.find(e => e.uid === r.uid) || {};
+                    return `<div class="flex items-center gap-1 text-xs bg-slate-100 rounded-full px-2 py-1"><span>${r.emoji}</span><img src="${user.avatar || 'icons/icon-128x128.png'}" class="w-4 h-4 rounded-full object-cover"/><span class="text-slate-600">${user.name || ''}</span></div>`;
+                }).join('');
+                const reshareCount = (state.moments || []).filter(x => (x.resharedFrom || {}).sourceId === m.firestoreId).length;
+                const isOwner = m.ownerUid === employee.uid;
+                const canDelete = isOwner || isAdmin();
+                return `
+                <div class="bg-white rounded-2xl border border-slate-200 p-0 relative" style="overflow:visible;">
+                    ${canDelete ? `
+                        <button class="moment-delete-btn absolute top-3 right-3 p-1.5 text-slate-100 hover:text-red-500 rounded-full hover:bg-red-50 transition-colors" data-id="${m.firestoreId}" title="حذف">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    ` : ''}
+                    <div class="p-4">
+                        <div class="flex items-center gap-2 mb-3">
+                            <img src="${owner.avatar || 'icons/icon-128x128.png'}" class="w-10 h-10 rounded-full object-cover"/>
+                            <div>
+                                <div class="font-bold text-slate-800 text-sm">${owner.name || m.ownerName || 'کاربر'}</div>
+                                <div class="text-[11px] text-slate-500">${toPersianDate(m.createdAt)}</div>
+                            </div>
+                        </div>
+                        ${m.text ? `<div class=\"text-sm text-slate-800 whitespace-pre-wrap mb-3 leading-7\">${m.text}</div>` : ''}
+                    </div>
+                    ${m.imageUrl ? `<img src="${m.imageUrl}" class="w-full h-auto max-h-[40rem] object-cover bg-slate-100"/>` : ''}
+                    <div class="p-4 border-t flex flex-wrap items-center gap-2">
+                        ${['👍','❤️','😂','🎉','🔥','👏','😍','🤝','💯','🤩','🙏','💡','😮','😢','👀','👋'].map(e=> `<button class=\"moment-react-btn text-sm px-2 py-1 rounded-full ${meReact===e ? 'bg-slate-800 text-white':'bg-slate-100 text-slate-700'}\" data-id=\"${m.firestoreId}\" data-emoji=\"${e}\">${e}</button>`).join('')}
+                        <div class="ml-auto flex items-center gap-2">
+                            <button class="moment-comment-toggle text-xs px-2 py-1 rounded-lg border" data-id="${m.firestoreId}"><i data-lucide="message-circle" class="w-4 h-4"></i><span class="mr-1">نظر</span><span class="text-[11px] text-slate-500 mr-1">(${(m.comments||[]).length})</span></button>
+                            <button class="moment-reshare-btn text-xs px-2 py-1 rounded-lg border" data-id="${m.firestoreId}"><i data-lucide="repeat" class="w-4 h-4"></i><span class="mr-1">بازنشر</span><span class="text-[11px] text-slate-500 mr-1">(${reshareCount})</span></button>
                         </div>
                     </div>
-                    ${m.text ? `<div class=\"text-sm text-slate-800 whitespace-pre-wrap mb-3 leading-7\">${m.text}</div>` : ''}
-                </div>
-                ${m.imageUrl ? `<img src="${m.imageUrl}" class="w-full h-auto max-h-[40rem] object-cover bg-slate-100"/>` : ''}
-                <div class="p-4 border-t flex flex-wrap items-center gap-2">
-                    ${['👍','❤️','😂','🎉','🔥','👏','😍','🤝','💯','🤩','🙏','💡','😮','😢','👀','👋'].map(e=> `<button class=\"moment-react-btn text-sm px-2 py-1 rounded-full ${meReact===e ? 'bg-slate-800 text-white':'bg-slate-100 text-slate-700'}\" data-id=\"${m.firestoreId}\" data-emoji=\"${e}\">${e}</button>`).join('')}
-                    <div class="ml-auto flex items-center gap-2">
-                        <button class="moment-comment-toggle text-xs px-2 py-1 rounded-lg border" data-id="${m.firestoreId}"><i data-lucide="message-circle" class="w-4 h-4"></i><span class="mr-1">نظر</span><span class="text-[11px] text-slate-500 mr-1">(${(m.comments||[]).length})</span></button>
-                        <button class="moment-reshare-btn text-xs px-2 py-1 rounded-lg border" data-id="${m.firestoreId}"><i data-lucide="repeat" class="w-4 h-4"></i><span class="mr-1">بازنشر</span><span class="text-[11px] text-slate-500 mr-1">(${reshareCount})</span></button>
+                    <div class="px-4 pb-3">
+                        <div class="flex flex-wrap gap-2">${reactionsHtml}</div>
                     </div>
-                </div>
-                <div class="px-4 pb-3">
-                    <div class="flex flex-wrap gap-2">${reactionsHtml}</div>
-                </div>
-                <div class="px-4 pb-4 hidden" id="moment-comments-${m.firestoreId}">
-                    <div id="moment-comments-list-${m.firestoreId}" class="space-y-2">
-                        ${(m.comments || []).slice(-3).map(c=> `<div class=\"p-2 rounded-lg bg-slate-50 border\"><div class=\"text-[11px] text-slate-500 mb-1\">${c.name || ''} • ${toPersianDate(c.createdAt)}</div><div class=\"text-sm text-slate-700\">${c.text}</div></div>`).join('')}
+                    <div class="px-4 pb-4 hidden" id="moment-comments-${m.firestoreId}">
+                        <div id="moment-comments-list-${m.firestoreId}" class="space-y-2">
+                            ${(m.comments || []).slice(-3).map(c=> `<div class=\"p-2 rounded-lg bg-slate-50 border\"><div class=\"text-[11px] text-slate-500 mb-1\">${c.name || ''} • ${toPersianDate(c.createdAt)}</div><div class=\"text-sm text-slate-700\">${c.text}</div></div>`).join('')}
+                        </div>
+                        <div class="mt-2 flex items-center gap-2">
+                            <input id="moment-comment-input-${m.firestoreId}" class="flex-1 p-2 border rounded-lg text-sm" placeholder="نوشتن نظر..."/>
+                            <button class="moment-comment-send text-xs px-3 py-1.5 rounded-lg primary-btn" data-id="${m.firestoreId}">ارسال</button>
+                        </div>
                     </div>
-                    <div class="mt-2 flex items-center gap-2">
-                        <input id="moment-comment-input-${m.firestoreId}" class="flex-1 p-2 border rounded-lg text-sm" placeholder="نوشتن نظر..."/>
-                        <button class="moment-comment-send text-xs px-3 py-1.5 rounded-lg primary-btn" data-id="${m.firestoreId}">ارسال</button>
-                    </div>
-                </div>
-            </div>`;
-    }).join('');
-    if (window.lucide?.createIcons) lucide.createIcons();
-    // اتصال مستقیم دکمه‌های واکنش (برای اطمینان از کارکرد روی موبایل)
-    document.querySelectorAll('.moment-react-btn').forEach(btn => {
-        btn.addEventListener('click', async (ev) => {
-            ev.stopPropagation();
-            const id = btn.getAttribute('data-id');
-            const emoji = btn.getAttribute('data-emoji');
-            try {
-                const docRef = doc(db, `artifacts/${appId}/public/data/moments`, id);
-                const snap = await getDoc(docRef);
-                const data = snap.data() || {}; const reactions = data.reactions || [];
-                const mineIdx = reactions.findIndex(r => r.uid === employee.uid);
-                if (mineIdx >= 0) { if (reactions[mineIdx].emoji === emoji) { reactions.splice(mineIdx,1); } else { reactions[mineIdx].emoji = emoji; } }
-                else { reactions.push({ uid: employee.uid, emoji }); }
-                await updateDoc(docRef, { reactions, lastUpdatedAt: serverTimestamp() });
-                const pop = document.getElementById(`moment-react-popover-${id}`);
-                if (pop) pop.classList.add('hidden');
-                window.renderMomentsList && window.renderMomentsList();
-            } catch (err) { showToast('خطا در ثبت واکنش.', 'error'); }
-        }, { passive: true });
-    });
-};
-        // فیلترهای لحظه‌ها
+                </div>`;
+            }).join('');
+            if (window.lucide?.createIcons) lucide.createIcons();
+            document.querySelectorAll('.moment-react-btn').forEach(btn => {
+                btn.addEventListener('click', async (ev) => {
+                    ev.stopPropagation();
+                    const id = btn.getAttribute('data-id');
+                    const emoji = btn.getAttribute('data-emoji');
+                    try {
+                        const docRef = doc(db, `artifacts/${appId}/public/data/moments`, id);
+                        const snap = await getDoc(docRef);
+                        const data = snap.data() || {}; const reactions = data.reactions || [];
+                        const mineIdx = reactions.findIndex(r => r.uid === employee.uid);
+                        if (mineIdx >= 0) { if (reactions[mineIdx].emoji === emoji) { reactions.splice(mineIdx,1); } else { reactions[mineIdx].emoji = emoji; } }
+                        else { reactions.push({ uid: employee.uid, emoji }); }
+                        await updateDoc(docRef, { reactions, lastUpdatedAt: serverTimestamp() });
+                        const pop = document.getElementById(`moment-react-popover-${id}`);
+                        if (pop) pop.classList.add('hidden');
+                        window.renderMomentsList && window.renderMomentsList();
+                    } catch (err) { showToast('خطا در ثبت واکنش.', 'error'); }
+                }, { passive: true });
+            });
+        };
         document.getElementById('moments-scope')?.addEventListener('change', () => { window.renderMomentsList(); });
         document.getElementById('moments-sort')?.addEventListener('change', () => { window.renderMomentsList(); });
         document.getElementById('moments-search')?.addEventListener('input', () => { clearTimeout(window._momDeb); window._momDeb = setTimeout(()=> window.renderMomentsList(), 250); });
-        // شمارشگر کاراکتر لحظه‌ها
         const momentText = document.getElementById('moment-text');
         const momentChar = document.getElementById('moment-char');
         const momentImage = document.getElementById('moment-image');
@@ -1434,7 +1377,6 @@ window.renderMomentsList = () => {
             if (e.target.closest && (e.target.closest('#moment-emoji-popover') || e.target.closest('#moment-emoji-toggle'))) return;
             emojiPopover.classList.add('hidden');
         });
-        // بستن پاپاور واکنش‌ها با کلیک بیرون
         document.addEventListener('click', (e)=>{
             document.querySelectorAll('.moment-react-popover').forEach(pop => {
                 if (e.target.closest && (e.target.closest('.moment-react-popover') || e.target.closest('.moment-react-toggle'))) return;
@@ -1455,10 +1397,7 @@ window.renderMomentsList = () => {
                 emojiPopover?.classList.add('hidden');
             });
         });
-
         window.renderMomentsList();
-
-        // اسکرول بی‌نهایت: با نزدیک شدن به انتهای صفحه، تعداد نمایش را افزایش بده
         try {
             const sentinel = document.getElementById('moments-sentinel');
             if (sentinel) {
@@ -1474,70 +1413,40 @@ window.renderMomentsList = () => {
             }
         } catch {}
         return;
-    }
-        // [!code start]
-    // بخش جدید برای داشبورد مدیر تیم
-    else if (pageName === 'team-performance') {
-      const myTeam = (state.teams || []).find(t => (t.leadership?.manager === employee.id) || (t.leaderId === employee.id));
+    } else if (pageName === 'team-performance') {
+        const myTeam = (state.teams || []).find(t => (t.leadership?.manager === employee.id) || (t.leaderId === employee.id));
         if (!myTeam) {
             contentContainer.innerHTML = `<p>شما مدیر هیچ تیمی نیستید.</p>`;
             return;
         }
         const teamMembers = (myTeam.memberIds || []).map(id => (state.employees || []).find(e => e.id === id)).filter(Boolean);
         const activeCycle = (state.evaluationCycles || []).find(c => c.status === 'active');
-
         if (!activeCycle) {
             contentContainer.innerHTML = `<div class="card p-6 text-center"><h3 class="font-bold text-lg">داشبورد ارزیابی تیم: ${myTeam.name}</h3><p class="mt-4 text-slate-500">در حال حاضر هیچ دوره ارزیابی فعالی وجود ندارد.</p></div>`;
             return;
         }
-
-// فایل: js/main.js - داخل تابع renderEmployeePortalPage و بلوک 'team-performance'
-
-let summary = { total: teamMembers.length, notStarted: 0, pendingSelf: 0, pendingManager: 0, completed: 0 };
-
-const tableRows = teamMembers.map(member => {
-    // [کد دیباگ] نمایش اطلاعاتی که برای جستجو استفاده می‌شود
-    console.log(`--- جستجو برای کارمند: ${member.name} (ID: ${member.id}) | در دوره ارزیابی با ID: ${activeCycle.firestoreId}`);
-
-    const evaluation = (state.employeeEvaluations || []).find(e => 
-        e.employeeId === member.id && e.cycleId === activeCycle.firestoreId
-    );
-
-    if (evaluation) {
-        console.log(`✅ برای ${member.name} ارزیابی پیدا شد:`, evaluation);
-    } else {
-        console.log(`❌ برای ${member.name} ارزیابی پیدا نشد. مقادیر در دیتابیس چک شود.`);
-    }
-    
-    let statusText = "شروع نشده";
-    let statusColor = "bg-slate-100 text-slate-800";
-
-    if (!evaluation) {
-        summary.notStarted++;
-    } else if (evaluation?.status === 'pending_self_assessment') {
-        summary.pendingSelf++;
-        statusText = "در انتظار خودارزیابی";
-        statusColor = "bg-orange-100 text-orange-800";
-    } else if (evaluation?.status === 'pending_manager_assessment') {
-        summary.pendingManager++;
-        statusText = "آماده ارزیابی مدیر";
-        statusColor = "bg-blue-100 text-blue-800";
-    } else if (evaluation?.status === 'completed') {
-        summary.completed++;
-        statusText = "تکمیل شده";
-        statusColor = "bg-green-100 text-green-800";
-    }
-
-    return `
-        <tr class="border-b">
-            <td class="p-3"><div class="flex items-center gap-3"><img src="${member.avatar}" class="w-8 h-8 rounded-full object-cover"><span>${member.name}</span></div></td>
-            <td class="p-3">${member.jobTitle || ''}</td>
-            <td class="p-3"><span class="px-2 py-1 text-xs font-medium rounded-full ${statusColor}">${statusText}</span></td>
-            <td class="p-3 text-left"><button class="view-evaluation-btn primary-btn text-xs py-1.5 px-3" data-employee-id="${member.firestoreId}" data-cycle-id="${activeCycle.firestoreId}">مشاهده / ارزیابی</button></td>
-        </tr>
-    `;
-}).join('');
-
+        let summary = { total: teamMembers.length, notStarted: 0, pendingSelf: 0, pendingManager: 0, completed: 0 };
+        const tableRows = teamMembers.map(member => {
+            const evaluation = (state.employeeEvaluations || []).find(e => e.employeeId === member.id && e.cycleId === activeCycle.firestoreId);
+            let statusText = "شروع نشده";
+            let statusColor = "bg-slate-100 text-slate-800";
+            if (!evaluation) {
+                summary.notStarted++;
+            } else if (evaluation?.status === 'pending_self_assessment') {
+                summary.pendingSelf++; statusText = "در انتظار خودارزیابی"; statusColor = "bg-orange-100 text-orange-800";
+            } else if (evaluation?.status === 'pending_manager_assessment') {
+                summary.pendingManager++; statusText = "آماده ارزیابی مدیر"; statusColor = "bg-blue-100 text-blue-800";
+            } else if (evaluation?.status === 'completed') {
+                summary.completed++; statusText = "تکمیل شده"; statusColor = "bg-green-100 text-green-800";
+            }
+            return `
+            <tr class="border-b">
+                <td class="p-3"><div class="flex items-center gap-3"><img src="${member.avatar}" class="w-8 h-8 rounded-full object-cover"><span>${member.name}</span></div></td>
+                <td class="p-3">${member.jobTitle || ''}</td>
+                <td class="p-3"><span class="px-2 py-1 text-xs font-medium rounded-full ${statusColor}">${statusText}</span></td>
+                <td class="p-3 text-left"><button class="view-evaluation-btn primary-btn text-xs py-1.5 px-3" data-employee-id="${member.firestoreId}" data-cycle-id="${activeCycle.firestoreId}">مشاهده / ارزیابی</button></td>
+            </tr>`;
+        }).join('');
         const summaryCards = `
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
                 <div class="glass rounded-2xl p-4 flex items-center justify-between"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full flex items-center justify-center" style="background:rgba(16,185,129,.12)"><i data-lucide=\"users\" class=\"w-5 h-5\" style=\"color:#10B981\"></i></div><div><div class=\"text-xl font-extrabold text-slate-800\">${summary.total}</div><div class=\"text-xs text-slate-500\">اعضای تیم</div></div></div></div>
@@ -1545,7 +1454,6 @@ const tableRows = teamMembers.map(member => {
                 <div class="glass rounded-2xl p-4 flex items-center justify-between"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full flex items-center justify-center" style="background:rgba(59,130,246,.12)"><i data-lucide=\"user-check\" class=\"w-5 h-5\" style=\"color:#3B82F6\"></i></div><div><div class=\"text-xl font-extrabold text-slate-800\">${summary.pendingManager}</div><div class=\"text-xs text-slate-500\">آماده ارزیابی مدیر</div></div></div></div>
                 <div class="glass rounded-2xl p-4 flex items-center justify-between"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full flex items-center justify-center" style="background:rgba(16,185,129,.12)"><i data-lucide=\"check-circle\" class=\"w-5 h-5\" style=\"color:#10B981\"></i></div><div><div class=\"text-xl font-extrabold text-slate-800\">${summary.completed}</div><div class=\"text-xs text-slate-500\">تکمیل شده</div></div></div></div>
             </div>`;
-
         contentContainer.innerHTML = `
             <section class="rounded-2xl overflow-hidden border mb-6" style="background:linear-gradient(90deg,#10B981,#6B69D6)"><div class="p-6 sm:p-8"><h1 class="text-2xl sm:text-3xl font-extrabولد text-white">مدیریت تیم: ${myTeam.name}</h1><p class="text-white/90 text-xs mt-1">وضعیت ارزیابی اعضا در دوره فعال</p></div></section>
             ${summaryCards}
@@ -1579,32 +1487,27 @@ const tableRows = teamMembers.map(member => {
                 new Chart(ctx, { type: 'doughnut', data: { labels: ['تکمیل شده','در جریان','شروع نشده'], datasets: [{ data, backgroundColor: ['#10B981','#3B82F6','#94A3B8'], borderWidth: 0 }] }, options: { responsive: true, cutout: '65%', plugins: { legend: { display: false } } } });
             }
         } catch (err) { console.warn('teamProgressChart error', err); }
-    }
-    // [!code end]
-    // [!code start]
-    // ▼▼▼ این بلوک کد جدید را به اینجا اضافه کنید ▼▼▼
-    else if (pageName === 'evaluations') {
+    } else if (pageName === 'evaluations') {
         contentContainer.innerHTML = `
-            <div class="flex justify-between items-center mb-6">
-                <h1 class="text-3xl font-bold text-slate-800">ارزیابی‌های من</h1>
-            </div>
-            <div class="card p-0">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                        <thead class="bg-slate-50">
-                            <tr>
-                                <th class="p-3 text-right">عنوان دوره</th>
-                                <th class="p-3 text-right">تاریخ ایجاد</th>
-                                <th class="p-3 text-right">وضعیت</th>
-                                <th class="p-3 text-right"></th>
-                            </tr>
-                        </thead>
-                        <tbody id="my-evaluations-tbody"></tbody>
-                    </table>
-                </div>
-            </div>
-        `;
-        // قهرمان بالای صفحه و فیلترها
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-3xl font-bold text-slate-800">ارزیابی‌های من</h1>
+            </div>
+            <div class="card p-0">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th class="p-3 text-right">عنوان دوره</th>
+                                <th class="p-3 text-right">تاریخ ایجاد</th>
+                                <th class="p-3 text-right">وضعیت</th>
+                                <th class="p-3 text-right"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="my-evaluations-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        `;
         const headerEl = contentContainer.firstElementChild;
         if (headerEl) {
             headerEl.outerHTML = `<section class="rounded-2xl overflow-hidden border mb-6" style="background:linear-gradient(90deg,#6B69D6,#0EA5E9)"><div class="p-6 sm:p-8"><h1 class="text-2xl sm:text-3xl font-extrabold text-white">ارزیابی‌های من</h1><p class="text-white/90 text-xs mt-1">پیگیری وضعیت ارزیابی‌ها و شروع خودارزیابی</p></div></section>`;
@@ -1617,23 +1520,17 @@ const tableRows = teamMembers.map(member => {
         filtersEl.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-3 gap-3"><input id="evals-search" class="p-2 border rounded-lg text-sm" placeholder="جستجو در عنوان دوره" value="${qParamEval}"/><select id="evals-status" class="p-2 border rounded-lg text-sm bg-white"><option value="all" ${statusParamEval==='all'?'selected':''}>همه وضعیت‌ها</option><option value="pending_self_assessment" ${statusParamEval==='pending_self_assessment'?'selected':''}>در انتظار خودارزیابی</option><option value="pending_manager_assessment" ${statusParamEval==='pending_manager_assessment'?'selected':''}>در انتظار ارزیابی مدیر</option><option value="completed" ${statusParamEval==='completed'?'selected':''}>تکمیل شده</option></select><div class="text-xs text-slate-500 self-center">نتایج: <span id="evals-results-count">0</span></div></div>`;
         const firstCard = contentContainer.querySelector('.card');
         if (firstCard) { contentContainer.insertBefore(filtersEl, firstCard); }
-
-        const myEvaluations = (state.employeeEvaluations || [])
-            .filter(ev => ev.employeeId === employee.id)
-            .sort((a, b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0));
-
+        const myEvaluations = (state.employeeEvaluations || []).filter(ev => ev.employeeId === employee.id).sort((a, b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0));
         const tbody = contentContainer.querySelector('#my-evaluations-tbody');
         if (myEvaluations.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" class="text-center p-6 text-slate-500">هیچ ارزیابی برای شما ثبت نشده است.</td></tr>`;
-            return;
-        }
-
-        const statusMap = {
-            'pending_self_assessment': { text: 'در انتظار خودارزیابی', color: 'bg-orange-100 text-orange-800' },
-            'pending_manager_assessment': { text: 'در انتظار ارزیابی مدیر', color: 'bg-blue-100 text-blue-800' },
-            'completed': { text: 'تکمیل شده', color: 'bg-green-100 text-green-800' }
-        };
-
+            tbody.innerHTML = `<tr><td colspan="4" class="text-center p-6 text-slate-500">هیچ ارزیابی برای شما ثبت نشده است.</td></tr>`;
+            return;
+        }
+        const statusMap = {
+            'pending_self_assessment': { text: 'در انتظار خودارزیابی', color: 'bg-orange-100 text-orange-800' },
+            'pending_manager_assessment': { text: 'در انتظار ارزیابی مدیر', color: 'bg-blue-100 text-blue-800' },
+            'completed': { text: 'تکمیل شده', color: 'bg-green-100 text-green-800' }
+        };
         const paramsNow = new URLSearchParams(window.location.hash.split('?')[1] || '');
         const qNow = paramsNow.get('q') || '';
         const sNow = paramsNow.get('status') || 'all';
@@ -1644,26 +1541,22 @@ const tableRows = teamMembers.map(member => {
             return matchesText && matchesStatus;
         });
         const rowsHtml = filteredEvals.map(ev => {
-            const cycle = state.evaluationCycles.find(c => c.firestoreId === ev.cycleId) || { title: ev.cycleId };
-            const status = statusMap[ev.status] || { text: ev.status, color: 'bg-slate-100' };
-
-            let actionButton = '';
-            if (ev.status === 'pending_self_assessment') {
-                actionButton = `<button class="start-self-assessment-btn primary-btn text-xs py-1.5 px-3" data-id="${ev.firestoreId}">شروع خودارزیابی</button>`;
-            } else {
-                actionButton = `<button class="view-completed-assessment-btn secondary-btn text-xs py-1.5 px-3" data-id="${ev.firestoreId}" disabled>مشاهده</button>`;
-            }
-
-            return `
-                <tr class="border-b">
-                    <td class="p-3 font-semibold">${cycle.title}</td>
-                    <td class="p-3">${toPersianDate(ev.createdAt)}</td>
-                    <td class="p-3"><span class="px-2 py-1 text-xs font-medium rounded-full ${status.color}">${status.text}</span></td>
-                    <td class="p-3 text-left">${actionButton}</td>
-                </tr>
-            `;
-        }).join('');
-
+            const cycle = state.evaluationCycles.find(c => c.firestoreId === ev.cycleId) || { title: ev.cycleId };
+            const status = statusMap[ev.status] || { text: ev.status, color: 'bg-slate-100' };
+            let actionButton = '';
+            if (ev.status === 'pending_self_assessment') {
+                actionButton = `<button class="start-self-assessment-btn primary-btn text-xs py-1.5 px-3" data-id="${ev.firestoreId}">شروع خودارزیابی</button>`;
+            } else {
+                actionButton = `<button class="view-completed-assessment-btn secondary-btn text-xs py-1.5 px-3" data-id="${ev.firestoreId}" disabled>مشاهده</button>`;
+            }
+            return `
+            <tr class="border-b">
+                <td class="p-3 font-semibold">${cycle.title}</td>
+                <td class="p-3">${toPersianDate(ev.createdAt)}</td>
+                <td class="p-3"><span class="px-2 py-1 text-xs font-medium rounded-full ${status.color}">${status.text}</span></td>
+                <td class="p-3 text-left">${actionButton}</td>
+            </tr>`;
+        }).join('');
         tbody.innerHTML = rowsHtml;
         const rc = document.getElementById('evals-results-count'); if (rc) rc.textContent = String(filteredEvals.length);
         const evalSearch = document.getElementById('evals-search');
@@ -1671,28 +1564,18 @@ const tableRows = teamMembers.map(member => {
         function updateEvalFilters() {
             const q = (evalSearch?.value || '').trim();
             const st = evalStatus?.value || 'all';
-            const base = '#evaluations';
-            const next = `${base}?q=${encodeURIComponent(q)}&status=${encodeURIComponent(st)}`;
-            history.replaceState(null, '', next);
+            history.replaceState(null, '', `#evaluations?q=${encodeURIComponent(q)}&status=${encodeURIComponent(st)}`);
             renderEmployeePortalPage('evaluations', employee);
         }
         evalSearch?.addEventListener('input', () => { clearTimeout(window._evDeb); window._evDeb = setTimeout(updateEvalFilters, 250); });
         evalStatus?.addEventListener('change', updateEvalFilters);
-    }
-    // [!code end]
+    } else {
+        contentContainer.innerHTML = `<div class="text-center p-10"><h1>صفحه مورد نظر یافت نشد</h1></div>`;
+    }
 
-    // --- بخش پیش‌فرض ---
-    else {
-        contentContainer.innerHTML = `<div class="text-center p-10"><h1>صفحه مورد نظر یافت نشد</h1></div>`;
-       
-    }
-
-        // [!code start]
-    // فراخوانی listener مخصوص هر صفحه
     if (pageName === 'team-performance') {
         setupTeamPerformanceListeners();
     }
-    // [!code end]
     
     lucide.createIcons();
 }
