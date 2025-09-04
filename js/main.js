@@ -7293,13 +7293,13 @@ const setupAnalyticsPage = () => {
 // فایل: js/main.js
 // ▼▼▼ این تابع جدید و کامل را به فایل خود اضافه کنید ▼▼▼
 
+// ▼▼▼ START: [REFACTOR - Phase 2] Replace the entire showEvaluationForm function ▼▼▼
 const showEvaluationForm = (employee, cycle, evaluation) => {
     modalTitle.innerText = `ارزیابی عملکرد: ${employee.name} (${cycle.title})`;
 
     const isCompleted = evaluation?.status === 'completed';
     const managerData = evaluation?.managerAssessment || {};
 
-    // بخش ۱: نمایش خودارزیابی کارمند (بدون تغییر)
     let selfAssessmentHtml = `<div class="p-4 bg-yellow-50 border-yellow-200 rounded-lg text-sm text-yellow-800"><p class="font-semibold">کارمند هنوز خودارزیابی را تکمیل نکرده است.</p></div>`;
     if (evaluation && evaluation.selfAssessment) {
         const selfData = evaluation.selfAssessment;
@@ -7316,11 +7316,16 @@ const showEvaluationForm = (employee, cycle, evaluation) => {
             </div>`;
     }
 
-    // [اصلاح] بخش ۲: ساخت HTML برای شایستگی‌ها
+    // [NEW LOGIC - Phase 2] Find competencies based on the employee's specific position and level
     const position = state.jobPositions.find(p => p.firestoreId === employee.jobPositionId);
-    const relevantCompetencyIds = new Set(position?.competencyIds || []);
-    const competenciesForReview = state.skillsAndCompetencies.filter(c => relevantCompetencyIds.has(c.firestoreId));
-    
+    const employeeLevel = employee.level; // e.g., "J1", "M2"
+    let competenciesForReview = [];
+
+    if (position && employeeLevel && position.levels?.[employeeLevel]) {
+        const relevantCompetencyIds = new Set(position.levels[employeeLevel].competencyIds || []);
+        competenciesForReview = (state.skillsAndCompetencies || []).filter(c => relevantCompetencyIds.has(c.firestoreId));
+    }
+
     const competenciesHtml = competenciesForReview.length > 0 ? competenciesForReview.map(comp => `
         <div class="mb-3 p-3 bg-slate-50 rounded-lg border">
             <label class="block text-sm font-medium text-slate-700">${comp.name}</label>
@@ -7330,9 +7335,8 @@ const showEvaluationForm = (employee, cycle, evaluation) => {
                    value="${managerData.competencyScores?.[comp.name] || 3}" 
                    ${isCompleted ? 'disabled' : ''} required>
         </div>
-    `).join('') : '<p class="text-sm text-slate-500">شایستگی‌ای برای این پوزیشن شغلی تعریف نشده است.</p>';
+    `).join('') : '<p class="text-sm text-slate-500">شایستگی‌ای برای این پوزیشن و سطح شغلی تعریف نشده است.</p>';
 
-    // [اصلاح] بخش ۳: ساخت HTML برای اهداف تیمی (OKRs)
     const team = state.teams.find(t => t.memberIds?.includes(employee.id));
     const teamOkrsHtml = (team?.okrs || []).length > 0 ? (team.okrs).map(okr => `
         <div class="mb-3 p-3 bg-slate-50 rounded-lg border">
@@ -7345,7 +7349,6 @@ const showEvaluationForm = (employee, cycle, evaluation) => {
         </div>
     `).join('') : '<p class="text-sm text-slate-500">تیم این کارمند هدفی (OKR) ثبت شده ندارد.</p>';
 
-    // بخش ۴: ساختار نهایی فرم
     modalContent.innerHTML = `
         <form id="manager-evaluation-form" class="space-y-6">
             <div>
@@ -7377,7 +7380,7 @@ const showEvaluationForm = (employee, cycle, evaluation) => {
                 ${isCompleted
                     ? `<button type="button" id="close-eval-modal" class="secondary-btn">بستن</button>`
                     : `<button type="submit" class="primary-btn" ${!evaluation?.selfAssessment ? 'disabled' : ''}>
-                        ${!evaluation?.selfAssessment ? 'در انتظار خودارزیابی' : 'ثبت نهایی ارزیابی'}
+                           ${!evaluation?.selfAssessment ? 'در انتظار خودارزیابی' : 'ثبت نهایی ارزیابی'}
                        </button>`
                 }
             </div>
@@ -7386,8 +7389,9 @@ const showEvaluationForm = (employee, cycle, evaluation) => {
     openModal(mainModal, mainModalContainer);
 
     document.getElementById('close-eval-modal')?.addEventListener('click', () => closeModal(mainModal, mainModalContainer));
-    
+
     document.getElementById('manager-evaluation-form')?.addEventListener('submit', async (e) => {
+        // ... The rest of the submit logic remains unchanged
         e.preventDefault();
         const saveBtn = e.target.querySelector('button[type="submit"]');
         saveBtn.disabled = true;
@@ -7415,24 +7419,21 @@ const showEvaluationForm = (employee, cycle, evaluation) => {
 
         try {
             const batch = writeBatch(db);
-            
-            // آپدیت داکیومنت اصلی ارزیابی
+
             const evalRef = doc(db, `artifacts/${appId}/public/data/employeeEvaluations`, evaluation.firestoreId);
             batch.update(evalRef, {
                 managerAssessment: managerAssessment,
                 status: 'completed'
             });
 
-            // آپدیت پروفایل کارمند برای بایگانی
-// کد اصلاح شده
-const empRef = doc(db, `artifacts/${appId}/public/data/employees`, employee.firestoreId);
-const newHistoryRecord = {
-    ...managerAssessment, // شامل تمام اطلاعات ارزیابی مدیر
-    selfAssessment: evaluation.selfAssessment || null // اضافه کردن بخش خودارزیابی
-};
-batch.update(empRef, {
-    performanceHistory: arrayUnion(newHistoryRecord)
-});
+            const empRef = doc(db, `artifacts/${appId}/public/data/employees`, employee.firestoreId);
+            const newHistoryRecord = {
+                ...managerAssessment,
+                selfAssessment: evaluation.selfAssessment || null
+            };
+            batch.update(empRef, {
+                performanceHistory: arrayUnion(newHistoryRecord)
+            });
 
             await batch.commit();
             showToast("ارزیابی عملکرد با موفقیت ثبت شد.");
@@ -7445,6 +7446,7 @@ batch.update(empRef, {
         }
     });
 };
+// ▲▲▲ END: [REFACTOR - Phase 2] Replace the entire showEvaluationForm function ▲▲▲
 // فایل: js/main.js - این تابع جدید را اضافه کنید
 
 // [!code start]
@@ -8065,6 +8067,7 @@ const showEmployeeForm = (employeeId = null) => {
 // ▲▲▲ END: [REFACTOR - Phase 2] Replace the entire showEmployeeForm function ▲▲▲
 // ▲▲▲ END: [REFACTOR - Phase 1] Replace the entire showEmployeeForm function ▲▲▲
 
+// ▼▼▼ START: [REFACTOR - Phase 2] Replace the entire showSelfAssessmentForm function ▼▼▼
 const showSelfAssessmentForm = (evaluation) => {
     const employee = state.employees.find(e => e.id === evaluation.employeeId);
     if (!employee) {
@@ -8072,13 +8075,18 @@ const showSelfAssessmentForm = (evaluation) => {
         return;
     }
 
-    modalTitle.innerText = `خودارزیابی دوره: ${evaluation.cycleId}`;
-    
-    // پیدا کردن شایستگی‌های مرتبط با پوزیشن و سطح کارمند
+    const cycle = state.evaluationCycles.find(c => c.firestoreId === evaluation.cycleId);
+    modalTitle.innerText = `خودارزیابی دوره: ${cycle?.title || evaluation.cycleId}`;
+
+    // [NEW LOGIC - Phase 2] Find competencies based on the employee's specific position and level
     const position = state.jobPositions.find(p => p.firestoreId === employee.jobPositionId);
-    const employeeLevel = employee.level || 1; 
-    const relevantCompetencyIds = new Set(position?.levels?.[`Level ${employeeLevel}`]?.competencyIds || position?.competencyIds || []);
-    const competenciesForReview = state.skillsAndCompetencies.filter(c => relevantCompetencyIds.has(c.firestoreId));
+    const employeeLevel = employee.level; // e.g., "J1", "M2"
+    let competenciesForReview = [];
+
+    if (position && employeeLevel && position.levels?.[employeeLevel]) {
+        const relevantCompetencyIds = new Set(position.levels[employeeLevel].competencyIds || []);
+        competenciesForReview = (state.skillsAndCompetencies || []).filter(c => relevantCompetencyIds.has(c.firestoreId));
+    }
 
     const competenciesHtml = competenciesForReview.length > 0 ? competenciesForReview.map(comp => `
         <div class="mb-3 p-3 bg-slate-50 rounded-lg">
@@ -8086,7 +8094,7 @@ const showSelfAssessmentForm = (evaluation) => {
             <p class="text-xs text-slate-500 mb-2">امتیاز شما به عملکرد خودتان در این شایستگی (۱ تا ۵):</p>
             <input type="number" class="competency-score w-full p-2 border rounded-md" data-name="${comp.name}" min="1" max="5" value="3" required>
         </div>
-    `).join('') : '<p class="text-sm text-slate-500">شایستگی‌ای برای پوزیشن شما تعریف نشده است.</p>';
+    `).join('') : '<p class="text-sm text-slate-500">شایستگی‌ای برای پوزیشن و سطح شغلی شما تعریف نشده است.</p>';
 
     modalContent.innerHTML = `
         <form id="self-assessment-form" class="space-y-4">
@@ -8114,7 +8122,7 @@ const showSelfAssessmentForm = (evaluation) => {
         const saveBtn = e.target.querySelector('button[type="submit"]');
         saveBtn.disabled = true;
         saveBtn.innerText = 'در حال ارسال...';
-        
+
         const competencyScores = {};
         document.querySelectorAll('.competency-score').forEach(input => {
             competencyScores[input.dataset.name] = parseInt(input.value);
@@ -8131,7 +8139,6 @@ const showSelfAssessmentForm = (evaluation) => {
             await submitFunction({ evaluationId: evaluation.firestoreId, selfAssessmentData });
             showToast('خودارزیابی شما با موفقیت ثبت و برای مدیر ارسال شد.');
             closeModal(mainModal, mainModalContainer);
-            // صفحه وظایف کارمند به طور خودکار توسط onSnapshot آپدیت خواهد شد
         } catch (error) {
             console.error("Error submitting self assessment:", error);
             showToast(`خطا: ${error.message}`, 'error');
@@ -8140,6 +8147,7 @@ const showSelfAssessmentForm = (evaluation) => {
         }
     });
 };
+// ▲▲▲ END: [REFACTOR - Phase 2] Replace the entire showSelfAssessmentForm function ▲▲▲
             // فایل: js/main.js
 // این دو تابع جدید را به انتهای بخش هلپرها اضافه کنید ▼
 
