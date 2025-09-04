@@ -2182,6 +2182,45 @@ const managerNavlinks = isTeamManager(employee)
         // --- UTILITY & HELPER FUNCTIONS ---
         // --- تابع جدید برای تبدیل تاریخ به شمسی ---
         // --- تابع جدید برای تبدیل اعداد فارسی به انگلیسی ---
+// ▼▼▼ START: [NEW FUNCTION - Analytics] Add this helper function to js/main.js ▼▼▼
+/**
+ * Calculates the top N most frequent skills from a list of employees and their average scores.
+ * @param {Array} employeeList - The list of employees to analyze.
+ * @param {number} topN - The number of top skills to return.
+ * @returns {Object} An object with 'labels' and 'data' arrays for the chart.
+ */
+const calculateTopSkills = (employeeList, topN = 8) => {
+    const skillFrequency = {}; // Counts how many people have a skill
+    const skillScores = {};     // Sums the scores for each skill to calculate average later
+
+    employeeList.forEach(emp => {
+        (emp.individualSkills || []).forEach(skill => {
+            if (skill.status === 'approved') {
+                if (!skillFrequency[skill.skillName]) {
+                    skillFrequency[skill.skillName] = 0;
+                    skillScores[skill.skillName] = { totalScore: 0, count: 0 };
+                }
+                skillFrequency[skill.skillName]++;
+                skillScores[skill.skillName].totalScore += skill.level;
+                skillScores[skill.skillName].count++;
+            }
+        });
+    });
+
+    const topSkills = Object.entries(skillFrequency)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, topN)
+        .map(entry => entry[0]);
+
+    const chartLabels = topSkills;
+    const chartData = topSkills.map(skillName => {
+        const scoreData = skillScores[skillName];
+        return (scoreData && scoreData.count > 0) ? (scoreData.totalScore / scoreData.count).toFixed(1) : 0;
+    });
+
+    return { labels: chartLabels, data: chartData };
+};
+// ▲▲▲ END: [NEW FUNCTION - Analytics] ▲▲▲
     const convertPersianNumbersToEnglish = (str) => {
         if (!str) return '';
         return str.toString()
@@ -4006,7 +4045,17 @@ dashboard: () => {
                     <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm"><h4 class="text-center text-xs font-medium text-slate-600 mb-2">توزیع دپارتمان‌ها</h4><div class="relative w-full h-56"><canvas id="departmentDistributionChart"></canvas></div></div>
                     <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm"><h4 class="text-center text-xs font-medium text-slate-600 mb-2">سابقه کار</h4><div class="relative w-full h-56"><canvas id="tenureDistributionChart"></canvas></div></div>
                     <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm"><h4 class="text-center text-xs font-medium text-slate-600 mb-2">توزیع سنی</h4><div class="relative w-full h-56"><canvas id="ageDistributionChart"></canvas></div></div>
-                    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm md:col-span-2 xl:col-span-1"><h4 class="text-center text-xs font-medium text-slate-600 mb-2">میانگین شایستگی</h4><div class="relative w-full h-56"><canvas id="teamCompetencyRadarChart"></canvas></div></div>
+<div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm md:col-span-2 xl:col-span-1">
+    <h4 class="text-center text-xs font-medium text-slate-600 mb-2">میانگین شایستگی‌های پرتکرار</h4>
+    <div class="mb-2">
+        <label for="family-filter" class="text-[11px] text-slate-500">فیلتر بر اساس خانواده شغلی:</label>
+        <select id="family-filter" class="w-full p-1.5 mt-1 border rounded-lg bg-white text-xs">
+            <option value="all">تمام خانواده‌ها</option>
+            ${(state.jobFamilies || []).map(f => `<option value="${f.name}">${f.name}</option>`).join('')}
+        </select>
+    </div>
+    <div class="relative w-full h-56"><canvas id="teamCompetencyRadarChart"></canvas></div>
+</div>
                 </div>
             </div>
 
@@ -6076,22 +6125,36 @@ const renderDashboardCharts = () => {
     }
 
     // New: Team Competency Radar Chart
-    const teamCompetencyCtx = document.getElementById('teamCompetencyRadarChart')?.getContext('2d');
-    const competencyScores = {};
-    state.teams.forEach(team => {
-        team.memberIds?.forEach(memberId => {
-            const member = state.employees.find(e => e.id === memberId);
-            if (member && member.competencies) {
-                Object.entries(member.competencies).forEach(([name, score]) => {
-                    if (!competencyScores[name]) {
-                        competencyScores[name] = { total: 0, count: 0 };
-                    }
-                    competencyScores[name].total += score;
-                    competencyScores[name].count++;
-                });
+// ▼▼▼ START: [REFACTOR - Analytics on Dashboard] Replace the teamCompetencyRadarChart logic in renderDashboardCharts ▼▼▼
+const teamCompetencyCtx = document.getElementById('teamCompetencyRadarChart')?.getContext('2d');
+if (teamCompetencyCtx) {
+    // By default, calculate top skills for ALL employees
+    const topSkillsData = calculateTopSkills(state.employees);
+
+    if (topSkillsData.labels.length > 0) {
+        setupChartTheme();
+        charts.teamCompetency = new Chart(teamCompetencyCtx, {
+            type: 'radar',
+            data: {
+                labels: topSkillsData.labels,
+                datasets: [{
+                    label: 'میانگین امتیاز',
+                    data: topSkillsData.data,
+                    fill: true,
+                    backgroundColor: hexToRgba(getBrandColor(0), 0.2),
+                    borderColor: getBrandColor(0),
+                    pointBackgroundColor: getBrandColor(0)
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: { r: { suggestedMin: 0, suggestedMax: 5, ticks: { stepSize: 1 } } },
+                plugins: { legend: { display: false } }
             }
         });
-    });
+    }
+}
+// ▲▲▲ END: [REFACTOR - Analytics on Dashboard] ▲▲▲
     const avgCompetencies = Object.entries(competencyScores).reduce((acc, [name, data]) => {
         acc[name] = data.count > 0 ? (data.total / data.count).toFixed(1) : 0;
         return acc;
@@ -6212,50 +6275,74 @@ const renderAllReminders = () => {
     // استفاده از تابع کمکی جدید برای ساخت HTML
     return renderReminderItems(remindersToShow);
 };
-        const setupDashboardListeners = () => {
-    // فعال کردن تقویم شمسی برای فیلد یادآور در داشبورد
+// ▼▼▼ START: [FINAL VERSION] Replace the entire setupDashboardListeners function with this complete version ▼▼▼
+const setupDashboardListeners = () => {
+    // --- بخش یادآورها (کد فعلی شما که حفظ شده است) ---
     activatePersianDatePicker('reminderDate');
 
-document.getElementById('addReminderBtn')?.addEventListener('click', async () => {
-    const textInput = document.getElementById('reminderText');
-    const dateInput = document.getElementById('reminderDate');
-    const daysBeforeInput = document.getElementById('reminderDaysBefore');
+    document.getElementById('addReminderBtn')?.addEventListener('click', async () => {
+        const textInput = document.getElementById('reminderText');
+        const dateInput = document.getElementById('reminderDate');
+        const daysBeforeInput = document.getElementById('reminderDaysBefore');
 
-    if (textInput.value && dateInput.value) {
-        try {
-            const gregorianDate = persianToEnglishDate(dateInput.value);
-            if (!gregorianDate) {
-                showToast("فرمت تاریخ شمسی صحیح نیست.", "error");
-                return;
+        if (textInput.value && dateInput.value) {
+            try {
+                const gregorianDate = persianToEnglishDate(dateInput.value);
+                if (!gregorianDate) {
+                    showToast("فرمت تاریخ شمسی صحیح نیست.", "error");
+                    return;
+                }
+                const daysBefore = parseInt(daysBeforeInput.value) || 7;
+
+                await addDoc(collection(db, `artifacts/${appId}/public/data/reminders`), {
+                    text: textInput.value,
+                    date: gregorianDate,
+                    daysBefore: daysBefore,
+                    icon: 'calendar-plus',
+                    status: 'جدید',
+                    assignedTo: (state.users.find(u => u.role === 'admin') || {}).firestoreId,
+                    createdAt: serverTimestamp()
+                });
+
+                textInput.value = '';
+                dateInput.value = '';
+                daysBeforeInput.value = '7';
+                showToast("یادآور با موفقیت اضافه شد.");
+            } catch (error) {
+                console.error("Error adding reminder:", error);
+                showToast("خطا در افزودن یادآور.", "error");
             }
-
-            // مقدار روز را از فیلد جدید می‌خوانیم
-            const daysBefore = parseInt(daysBeforeInput.value) || 7; // مقدار پیش‌فرض ۷ روز است
-
-            await addDoc(collection(db, `artifacts/${appId}/public/data/reminders`), {
-                text: textInput.value,
-                date: gregorianDate,
-                daysBefore: daysBefore,
-                icon: 'calendar-plus', // <<-- این خط جدید مشکل را حل می‌کند
-                status: 'جدید',
-                assignedTo: (state.users.find(u=>u.role==='admin')||{}).firestoreId, // واگذاری به ادمین پیش‌فرض
-                createdAt: serverTimestamp() // برای هماهنگی بیشتر
-            });
-
-            textInput.value = '';
-            dateInput.value = '';
-            daysBeforeInput.value = '7'; // ریست کردن به مقدار پیش‌فرض
-            showToast("یادآور با موفقیت اضافه شد.");
-        } catch (error) {
-            console.error("Error adding reminder:", error);
-            showToast("خطا در افزودن یادآور.", "error");
         }
-    }
-});
-                document.getElementById('view-all-reminders-btn')?.addEventListener('click', () => {
+    });
+
+    document.getElementById('view-all-reminders-btn')?.addEventListener('click', () => {
         showAllRemindersModal();
     });
+
+    // --- [NEW LOGIC] بخش جدید برای فیلتر نمودار ---
+    const familyFilter = document.getElementById('family-filter');
+    if (familyFilter) {
+        familyFilter.addEventListener('change', () => {
+            const selectedFamily = familyFilter.value;
+            
+            let filteredEmployees = state.employees;
+            if (selectedFamily !== 'all') {
+                filteredEmployees = state.employees.filter(emp => emp.jobFamily === selectedFamily);
+            }
+
+            // Recalculate top skills with the filtered list
+            const updatedData = calculateTopSkills(filteredEmployees);
+
+            // Update the chart
+            if (charts.teamCompetency) {
+                charts.teamCompetency.data.labels = updatedData.labels;
+                charts.teamCompetency.data.datasets[0].data = updatedData.data;
+                charts.teamCompetency.update();
+            }
+        });
+    }
 };
+// ▲▲▲ END: [FINAL VERSION] Replace the entire setupDashboardListeners function ▲▲▲
 const setupDashboardQuickActions = () => {
     document.getElementById('dash-quick-requests')?.addEventListener('click', () => navigateTo('requests'));
     document.getElementById('dash-quick-add-emp')?.addEventListener('click', () => navigateTo('talent'));
