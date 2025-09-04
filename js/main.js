@@ -2025,7 +2025,7 @@ const managerNavlinks = isTeamManager(employee)
             <div class="text-center"><img src="${employee.avatar}" alt="Avatar" class="profile-pic object-cover"><h2 class="employee-name">${employeeName}</h2><p class="employee-title">${employee.jobTitle || 'بدون عنوان شغلی'}</p></div><div class="my-6 border-t border-white/20"></div>
             <nav id="employee-portal-nav" class="flex flex-col gap-2">
                 <a href="#profile" class="nav-item"><i data-lucide="user"></i><span>مسیر من</span></a>
-                ${managerNavlink}
+               ${managerNavlinks}
                 <a href="#evaluations" class="nav-item"><i data-lucide="clipboard-check"></i><span>ارزیابی‌های من</span></a>
                 <a href="#requests" class="nav-item"><i data-lucide="send"></i><span>کارهای من</span></a>
                 <a href="#directory" class="nav-item"><i data-lucide="users"></i><span>تیم‌ها</span></a>
