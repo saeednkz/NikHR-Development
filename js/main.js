@@ -7935,6 +7935,7 @@ const renderIndividualSkills = (employee, isManagerView) => {
  * @param {object|null} existingSkill - The skill object if in edit mode.
  * @param {boolean} isManagerAdding - True if a manager is adding, false if an employee is suggesting.
  */
+// ▼▼▼ START: [REFACTOR - Phase 5 BUGFIX] Replace the entire showAddOrEditSkillForm function ▼▼▼
 const showAddOrEditSkillForm = (employee, existingSkill = null, isManagerAdding = false) => {
     const isEditing = existingSkill !== null;
     modalTitle.innerText = isEditing ? `ویرایش مهارت: ${existingSkill.skillName}` : (isManagerAdding ? 'افزودن مهارت جدید' : 'پیشنهاد مهارت جدید');
@@ -7985,7 +7986,7 @@ const showAddOrEditSkillForm = (employee, existingSkill = null, isManagerAdding 
         
         let currentSkills = employee.individualSkills || [];
         if (isEditing) {
-            currentSkills = currentSkills.map(s => s.skillId === existingSkill.skillId ? { ...s, level: level } : s);
+            currentSkills = currentSkills.map(s => s.skillId === existingSkill.skillId ? { ...s, level: level, status: 'approved' } : s); // Ensure editing also approves the skill
         } else {
             if (currentSkills.some(s => s.skillId === skillId)) {
                 showToast('این مهارت قبلاً اضافه شده است.', 'error');
@@ -8000,14 +8001,25 @@ const showAddOrEditSkillForm = (employee, existingSkill = null, isManagerAdding 
             });
             showToast('مهارت با موفقیت ذخیره شد.');
             closeModal(mainModal, mainModalContainer);
-            // Refresh relevant views if they are open
-            if (document.getElementById('employee-cards-container')) viewEmployeeProfile(employee.firestoreId); // Refresh admin/manager profile view
-            if (document.querySelector('.employee-sidebar')) renderEmployeePortalPage('profile', employee); // Refresh employee portal view
+
+            // [FIX] This is the new, intelligent refresh logic
+            // If the person being edited is NOT the currently logged-in user (i.e., a manager is editing)
+            if (employee.uid !== state.currentUser.uid) {
+                // Use a brief timeout to allow the close animation to finish before re-opening the main profile modal
+                setTimeout(() => {
+                    viewEmployeeProfile(employee.firestoreId);
+                }, 300);
+            } else {
+                // If the person being edited IS the logged-in user (employee editing their own profile)
+                renderEmployeePortalPage('profile', employee);
+            }
+
         } catch (error) {
             showToast('خطا در ذخیره مهارت.', 'error');
         }
     });
 };
+// ▲▲▲ END: [REFACTOR - Phase 5 BUGFIX] Replace the entire function ▲▲▲
 // ▲▲▲ END: [NEW FUNCTION - Phase 5] ▲▲▲
 const showEmployeeForm = (employeeId = null) => {
     const isEditing = employeeId !== null;
