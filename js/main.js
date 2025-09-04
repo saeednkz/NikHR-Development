@@ -1425,20 +1425,33 @@ function renderEmployeePortalPage(pageName, employee) {
             contentContainer.innerHTML = `<div class="card p-6 text-center"><h3 class="font-bold text-lg">داشبورد ارزیابی تیم: ${myTeam.name}</h3><p class="mt-4 text-slate-500">در حال حاضر هیچ دوره ارزیابی فعالی وجود ندارد.</p></div>`;
             return;
         }
-        let summary = { total: teamMembers.length, notStarted: 0, pendingSelf: 0, pendingManager: 0, completed: 0 };
+        let summary = { total: teamMembers.length, notStarted: 0, pendingSelf: 0, pendingManager: 0, completed: 0, acknowledged: 0 };
         const tableRows = teamMembers.map(member => {
             const evaluation = (state.employeeEvaluations || []).find(e => e.employeeId === member.id && e.cycleId === activeCycle.firestoreId);
             let statusText = "شروع نشده";
             let statusColor = "bg-slate-100 text-slate-800";
-            if (!evaluation) {
-                summary.notStarted++;
-            } else if (evaluation?.status === 'pending_self_assessment') {
-                summary.pendingSelf++; statusText = "در انتظار خودارزیابی"; statusColor = "bg-orange-100 text-orange-800";
-            } else if (evaluation?.status === 'pending_manager_assessment') {
-                summary.pendingManager++; statusText = "آماده ارزیابی مدیر"; statusColor = "bg-blue-100 text-blue-800";
-            } else if (evaluation?.status === 'completed') {
-                summary.completed++; statusText = "تکمیل شده"; statusColor = "bg-green-100 text-green-800";
-            }
+    if (!evaluation) {
+        summary.notStarted++;
+    } else if (evaluation.status === 'pending_self_assessment') {
+        summary.pendingSelf++;
+        statusText = "در انتظار خودارزیابی";
+        statusColor = "bg-orange-100 text-orange-800";
+    } else if (evaluation.status === 'pending_manager_assessment') {
+        summary.pendingManager++;
+        statusText = "آماده ارزیابی مدیر";
+        statusColor = "bg-blue-100 text-blue-800";
+    } else if (evaluation.status === 'completed') {
+        summary.completed++;
+        // Check if the employee has acknowledged the review
+        if (evaluation.isAcknowledgedByEmployee) {
+            summary.acknowledged++;
+            statusText = "تکمیل و تایید نهایی";
+            statusColor = "bg-emerald-200 text-emerald-900 font-semibold"; // Darker green
+        } else {
+            statusText = "در انتظار تایید کارمند";
+            statusColor = "bg-green-100 text-green-800";
+        }
+    }
             return `
             <tr class="border-b">
                 <td class="p-3"><div class="flex items-center gap-3"><img src="${member.avatar}" class="w-8 h-8 rounded-full object-cover"><span>${member.name}</span></div></td>
@@ -4660,18 +4673,20 @@ evaluation: () => {
         };
         const status = statusMap[cycle.status] || { text: cycle.status, color: 'bg-slate-100' };
         return `
-            <tr class="border-b">
-                <td class="p-3 font-semibold">${cycle.title}</td>
-                <td class="p-3 text-sm">${toPersianDate(cycle.startDate)}</td>
-                <td class="p-3 text-sm">${toPersianDate(cycle.endDate)}</td>
-                <td class="p-3"><span class="px-2 py-1 text-xs font-medium rounded-full ${status.color}">${status.text}</span></td>
-                <td class="p-3 text-left">
-                    ${cycle.status === 'planning' ? `<button class="start-cycle-btn text-green-600 hover:underline text-xs mr-2" data-id="${cycle.firestoreId}">شروع دوره</button>` : ''}
-                    <button class="edit-cycle-btn p-2 text-slate-500 hover:text-blue-600" data-id="${cycle.firestoreId}"><i data-lucide="edit" class="w-4 h-4"></i></button>
-                    <button class="delete-cycle-btn p-2 text-slate-500 hover:text-red-600" data-id="${cycle.firestoreId}"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                </td>
-            </tr>
-        `;
+    <tr class="border-b">
+        <td class="p-3 font-semibold">${cycle.title}</td>
+        <td class="p-3 text-sm">${toPersianDate(cycle.startDate)}</td>
+        <td class="p-3 text-sm">${toPersianDate(cycle.endDate)}</td>
+        <td class="p-3"><span class="px-2 py-1 text-xs font-medium rounded-full ${status.color}">${status.text}</span></td>
+        <td class="p-3 text-left">
+            <button class="view-cycle-details-btn text-indigo-600 hover:underline text-xs mr-2" data-id="${cycle.firestoreId}">جزئیات</button>
+            
+            ${cycle.status === 'planning' ? `<button class="start-cycle-btn text-green-600 hover:underline text-xs mr-2" data-id="${cycle.firestoreId}">شروع دوره</button>` : ''}
+            <button class="edit-cycle-btn p-2 text-slate-500 hover:text-blue-600" data-id="${cycle.firestoreId}"><i data-lucide="edit" class="w-4 h-4"></i></button>
+            <button class="delete-cycle-btn p-2 text-slate-500 hover:text-red-600" data-id="${cycle.firestoreId}"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+        </td>
+    </tr>
+`;
     }).join('') || '<tr><td colspan="5" class="text-center p-4 text-slate-500">هیچ دوره‌ای تعریف نشده است.</td></tr>';
 
     return `
@@ -5702,7 +5717,7 @@ const renderPage = (pageName) => {
         }
  if (pageName === 'evaluation') { // [!] این if را اضافه کنید
     if (isAdmin()) {
-      
+       setupEvaluationPageListeners();
     }
 }
         lucide.createIcons();
@@ -7359,6 +7374,50 @@ const showEvaluationForm = (employee, cycle, evaluation) => {
 
 // [!code end]
 // [!code end]
+            // ▼▼▼ START: [NEW FUNCTION - Phase 4] Add this function to js/main.js ▼▼▼
+const showCycleDetailsModal = (cycleId) => {
+    const cycle = state.evaluationCycles.find(c => c.firestoreId === cycleId);
+    if (!cycle) return;
+
+    modalTitle.innerText = `جزئیات دوره ارزیابی: ${cycle.title}`;
+    
+    const evaluations = state.employeeEvaluations.filter(ev => ev.cycleId === cycleId);
+
+    const rowsHtml = evaluations.map(ev => {
+        let ackStatus = '<i data-lucide="clock" class="w-4 h-4 text-yellow-500" title="در انتظار تایید کارمند"></i>';
+        if (ev.isAcknowledgedByEmployee) {
+            ackStatus = `<i data-lucide="check-circle-2" class="w-4 h-4 text-green-500" title="تایید شده در ${toPersianDate(ev.acknowledgedAt)}"></i>`;
+        } else if (ev.status !== 'completed') {
+            ackStatus = '<i data-lucide="minus" class="w-4 h-4 text-slate-400" title="هنوز به مرحله تایید نرسیده"></i>';
+        }
+        
+        return `
+            <tr class="border-b">
+                <td class="p-2">${ev.employeeName}</td>
+                <td class="p-2 text-xs">${ev.status}</td>
+                <td class="p-2 text-center">${ackStatus}</td>
+            </tr>
+        `;
+    }).join('');
+
+    modalContent.innerHTML = `
+        <div class="max-h-[70vh] overflow-y-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-slate-50">
+                    <tr>
+                        <th class="p-2 text-right">نام کارمند</th>
+                        <th class="p-2 text-right">وضعیت کلی</th>
+                        <th class="p-2 text-center">تایید کارمند</th>
+                    </tr>
+                </thead>
+                <tbody>${rowsHtml}</tbody>
+            </table>
+        </div>
+    `;
+    openModal(mainModal, mainModalContainer);
+    lucide.createIcons();
+};
+// ▲▲▲ END: [NEW FUNCTION - Phase 4] Add this function ▲▲▲
 const showExpenseForm = () => {
         modalTitle.innerText = 'افزودن هزینه جدید';
         const cardOptions = state.pettyCashCards.map(c => `<option value="${c.firestoreId}">${c.name}</option>`).join('');
@@ -9577,7 +9636,53 @@ const renderSurveyTakerPage = (surveyId) => {
         }
     });
 };
+// ▼▼▼ START: [NEW FUNCTION - Phase 4] Add this entire function to js/main.js ▼▼▼
+const setupEvaluationPageListeners = () => {
+    const main = document.getElementById('main-content');
+    if (!main) return;
 
+    // This uses event delegation so we only need to add one listener
+    main.addEventListener('click', e => {
+        const addBtn = e.target.closest('#add-cycle-btn');
+        const editBtn = e.target.closest('.edit-cycle-btn');
+        const deleteBtn = e.target.closest('.delete-cycle-btn');
+        const startBtn = e.target.closest('.start-cycle-btn');
+        const detailsBtn = e.target.closest('.view-cycle-details-btn'); // Listener for our new button
+
+        if (addBtn) {
+            showEvaluationCycleForm();
+            return;
+        }
+        if (editBtn) {
+            showEvaluationCycleForm(editBtn.dataset.id);
+            return;
+        }
+        if (startBtn) {
+            showConfirmationModal('شروع دوره ارزیابی', 'ارزیابی برای تمام کارمندان فعال ایجاد می‌شود. آیا ادامه می‌دهید؟', async () => {
+                try {
+                    const startCycleFunction = httpsCallable(functions, 'startEvaluationCycle');
+                    await startCycleFunction({ cycleId: startBtn.dataset.id });
+                    showToast("دوره ارزیابی با موفقیت آغاز شد.");
+                } catch (error) {
+                    showToast(`خطا: ${error.message}`, "error");
+                }
+            });
+            return;
+        }
+        if (deleteBtn) {
+            showConfirmationModal('حذف دوره ارزیابی', 'آیا مطمئن هستید؟', async () => {
+                await deleteDoc(doc(db, `artifacts/${appId}/public/data/evaluationCycles`, deleteBtn.dataset.id));
+                showToast('دوره ارزیابی حذف شد.');
+            });
+            return;
+        }
+        if (detailsBtn) {
+            showCycleDetailsModal(detailsBtn.dataset.id);
+            return;
+        }
+    });
+};
+// ▲▲▲ END: [NEW FUNCTION - Phase 4] Add this entire function ▲▲▲
 document.addEventListener('DOMContentLoaded', () => {
     initializeFirebase();
     setupEventListeners();
