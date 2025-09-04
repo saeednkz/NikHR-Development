@@ -288,12 +288,16 @@ async function fetchUserRole(user) {
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید و کامل جایگزین کنید
 
+// ▼▼▼ START: [FIX - Phase 1] Replace the entire listenToData function ▼▼▼
 function listenToData() {
     detachAllListeners(); 
     
+    // [FIX] Use the new collection name 'skillsAndCompetencies'
     const collectionsToListen = [
         'employees', 'teams', 'reminders', 'surveyResponses', 'users', 
-        'competencies', 'requests', 'assignmentRules', 'companyDocuments', 'announcements', 'birthdayWishes', 'anniversaryWishes', 'companyWishes', 'moments','jobPositions','evaluationCycles','jobFamilies','employeeEvaluations' 
+        'skillsAndCompetencies', 'requests', 'assignmentRules', 'companyDocuments', 
+        'announcements', 'birthdayWishes', 'anniversaryWishes', 'companyWishes', 
+        'moments','jobPositions','evaluationCycles','jobFamilies','employeeEvaluations' 
     ];
     let initialLoads = collectionsToListen.length;
 
@@ -301,14 +305,12 @@ function listenToData() {
         initialLoads--;
         if (initialLoads === 0) {
             calculateAndApplyAnalytics();
-            
-            // فراخوانی تابع نوتیفیکیشن بعد از بارگذاری کامل داده‌ها
             updateNotificationsForCurrentUser(); 
             
             if (state.currentUser.role === 'employee') {
                 renderEmployeePortal();
             } else {
-                showDashboard(state.currentUser, state); // [!code focus]
+                showDashboard(state.currentUser, state);
                 router();
             }
             document.getElementById('loading-overlay').style.display = 'none';
@@ -318,20 +320,21 @@ function listenToData() {
     collectionsToListen.forEach(colName => {
         const colRef = collection(db, `artifacts/${appId}/public/data/${colName}`);
         const unsubscribe = onSnapshot(colRef, (snapshot) => {
-            state[colName] = snapshot.docs.map(doc => ({ firestoreId: doc.id, ...doc.data() }));
+            
+            // [FIX] When data arrives, store it in state.skillsAndCompetencies
+            const stateKey = colName === 'skillsAndCompetencies' ? 'skillsAndCompetencies' : colName;
+            state[stateKey] = snapshot.docs.map(doc => ({ firestoreId: doc.id, ...doc.data() }));
             
             if (initialLoads > 0) {
                 onDataLoaded();
             } else {
-                // با هر تغییر در داده‌ها، تمام بخش‌ها را بروز می‌کنیم
                 calculateAndApplyAnalytics();
-                updateNotificationsForCurrentUser(); // بروزرسانی نوتیفیکیشن‌ها در لحظه
+                updateNotificationsForCurrentUser();
                 
                 if (state.currentUser.role !== 'employee' && !window.location.hash.startsWith('#survey-taker')) {
                     renderPage(state.currentPage);
                 }
 
-                // اگر کاربر کارمند است و روی تب لحظه‌هاست، لیست را تازه‌سازی کن
                 try {
                     if (state.currentUser.role === 'employee') {
                         const activeMoments = document.querySelector('#employee-portal-nav .nav-item[href="#moments"].active');
@@ -343,13 +346,15 @@ function listenToData() {
             }
         }, (error) => {
             console.error(`Error listening to ${colName}:`, error);
-            if (!state[colName]) state[colName] = [];
+            const stateKey = colName === 'skillsAndCompetencies' ? 'skillsAndCompetencies' : colName;
+            if (!state[stateKey]) state[stateKey] = [];
             if (initialLoads > 0) onDataLoaded();
         });
         
         activeListeners.push(unsubscribe);
     });
 }
+// ▲▲▲ END: [FIX - Phase 1] Replace the entire listenToData function ▲▲▲
 
 // --- ROUTER ---
 export const router = () => {
