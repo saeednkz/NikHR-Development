@@ -5963,99 +5963,102 @@ const renderPerformanceDistributionChart = () => {
     });
 };
 // [!code end]
+// ▼▼▼ START: [BUGFIX] Replace the entire renderDashboardCharts function to remove legacy code ▼▼▼
 const renderDashboardCharts = () => {
     destroyCharts();
     const metrics = state.dashboardMetrics;
     if (Object.keys(metrics).length === 0) return;
+
+    // Render Engagement Gauge
     renderEngagementGauge('engagementGaugeDashboard', metrics.engagementScore);
-    try { const label = document.getElementById('engagementGaugeLabel'); if (label) { label.querySelector('div').innerText = `${metrics.engagementScore}%`; } } catch {}
+    try {
+        const label = document.getElementById('engagementGaugeLabel');
+        if (label) {
+            label.querySelector('div').innerText = `${metrics.engagementScore}%`;
+        }
+    } catch {}
 
-    // Gender Composition (Doughnut Chart)
+    // Render Gender Composition (Doughnut Chart)
     const genderCtx = document.getElementById('genderCompositionChart')?.getContext('2d');
-    if (genderCtx && metrics.genderComposition) { 
+    if (genderCtx && metrics.genderComposition) {
         setupChartTheme();
-        charts.gender = new Chart(genderCtx, { 
-            type: 'doughnut', 
-            data: { 
-                labels: Object.keys(metrics.genderComposition), 
-                datasets: [{ 
-                    data: Object.values(metrics.genderComposition), 
-                    backgroundColor: [getBrandColor(0), getBrandColor(5), '#A1A1AA'].map(c=> hexToRgba(c,0.9)),
+        charts.gender = new Chart(genderCtx, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(metrics.genderComposition),
+                datasets: [{
+                    data: Object.values(metrics.genderComposition),
+                    backgroundColor: [getBrandColor(0), getBrandColor(5), '#A1A1AA'].map(c => hexToRgba(c, 0.9)),
                     hoverOffset: 6
-                }] 
-            }, 
-            options: { 
-                responsive: true, 
+                }]
+            },
+            options: {
+                responsive: true,
                 maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'bottom' }
-                }
-            } 
-        }); 
+                plugins: { legend: { position: 'bottom' } }
+            }
+        });
     }
 
-    // Department Distribution (Bar Chart)
+    // Render Department Distribution (Bar Chart)
     const departmentCtx = document.getElementById('departmentDistributionChart')?.getContext('2d');
-    if (departmentCtx) { 
+    if (departmentCtx) {
         setupChartTheme();
-        charts.department = new Chart(departmentCtx, { 
-            type: 'bar', 
-            data: { 
-                labels: Object.keys(metrics.departmentDistribution), 
-                datasets: [{ 
-                    label: 'تعداد', 
-                    data: Object.values(metrics.departmentDistribution), 
-                    backgroundColor: Object.keys(metrics.departmentDistribution).map((_,i)=> hexToRgba(getBrandColor(i),0.85)),
+        charts.department = new Chart(departmentCtx, {
+            type: 'bar',
+            data: {
+                labels: Object.keys(metrics.departmentDistribution),
+                datasets: [{
+                    label: 'تعداد',
+                    data: Object.values(metrics.departmentDistribution),
+                    backgroundColor: Object.keys(metrics.departmentDistribution).map((_, i) => hexToRgba(getBrandColor(i), 0.85)),
                     borderRadius: 10,
                     barPercentage: 0.55,
                     categoryPercentage: 0.6
-                }] 
-            }, 
-            options: { 
-                responsive: true, 
-                maintainAspectRatio: false, 
-                plugins: { 
-                    legend: { display: false } 
-                },
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
                 scales: {
                     y: { beginAtZero: true, grid: { display: false } },
                     x: { grid: { display: false } }
                 }
-            } 
-        }); 
+            }
+        });
     }
-    // Nine Box Distribution (Bar Chart)
+    
+    // Render Nine Box Distribution (Bar Chart)
     const nineBoxCtx = document.getElementById('nineBoxChart')?.getContext('2d');
-    if (nineBoxCtx && metrics.nineBoxDistribution) { 
+    if (nineBoxCtx && metrics.nineBoxDistribution) {
         setupChartTheme();
-        charts.nineBox = new Chart(nineBoxCtx, { 
-            type: 'bar', 
-            data: { 
-                labels: Object.keys(metrics.nineBoxDistribution), 
-                datasets: [{ 
-                    label: 'تعداد', 
-                    data: Object.values(metrics.nineBoxDistribution), 
-                    backgroundColor: Object.values(metrics.nineBoxDistribution).map((_,i)=> hexToRgba(getBrandColor(i+2),0.85)),
+        charts.nineBox = new Chart(nineBoxCtx, {
+            type: 'bar',
+            data: {
+                labels: Object.keys(metrics.nineBoxDistribution),
+                datasets: [{
+                    label: 'تعداد',
+                    data: Object.values(metrics.nineBoxDistribution),
+                    backgroundColor: Object.values(metrics.nineBoxDistribution).map((_, i) => hexToRgba(getBrandColor(i + 2), 0.85)),
                     borderRadius: 10,
                     barPercentage: 0.55,
                     categoryPercentage: 0.6
-                }] 
-            }, 
-            options: { 
-                responsive: true, 
-                maintainAspectRatio: false, 
-                plugins: { 
-                    legend: { display: false } 
-                },
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
                 scales: {
                     y: { beginAtZero: true, grid: { display: false } },
                     x: { grid: { display: false } }
                 }
-            } 
-        }); 
+            }
+        });
     }
 
-    // New: Tenure Distribution (Pie Chart)
+    // Render Tenure Distribution (Pie Chart)
     const tenureCtx = document.getElementById('tenureDistributionChart')?.getContext('2d');
     const tenureData = state.employees.reduce((acc, emp) => {
         if (!emp.startDate) return acc;
@@ -6073,21 +6076,19 @@ const renderDashboardCharts = () => {
                 labels: Object.keys(tenureData),
                 datasets: [{
                     data: Object.values(tenureData),
-                    backgroundColor: [getBrandColor(0), getBrandColor(5), getBrandColor(4)].map(c=> hexToRgba(c,0.9)),
+                    backgroundColor: [getBrandColor(0), getBrandColor(5), getBrandColor(4)].map(c => hexToRgba(c, 0.9)),
                     hoverOffset: 6
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'bottom' }
-                }
+                plugins: { legend: { position: 'bottom' } }
             }
         });
     }
 
-    // New: Age Distribution (Bar Chart)
+    // Render Age Distribution (Bar Chart)
     const ageCtx = document.getElementById('ageDistributionChart')?.getContext('2d');
     const ageData = state.employees.reduce((acc, emp) => {
         if (!emp.personalInfo?.birthDate) return acc;
@@ -6106,7 +6107,7 @@ const renderDashboardCharts = () => {
                 datasets: [{
                     label: 'تعداد',
                     data: Object.values(ageData),
-                    backgroundColor: Object.values(ageData).map((_,i)=> hexToRgba(getBrandColor(i),0.85)),
+                    backgroundColor: Object.values(ageData).map((_, i) => hexToRgba(getBrandColor(i), 0.85)),
                     borderRadius: 10,
                     barPercentage: 0.55,
                     categoryPercentage: 0.6
@@ -6124,77 +6125,35 @@ const renderDashboardCharts = () => {
         });
     }
 
-    // New: Team Competency Radar Chart
-// ▼▼▼ START: [REFACTOR - Analytics on Dashboard] Replace the teamCompetencyRadarChart logic in renderDashboardCharts ▼▼▼
-const teamCompetencyCtx = document.getElementById('teamCompetencyRadarChart')?.getContext('2d');
-if (teamCompetencyCtx) {
-    // By default, calculate top skills for ALL employees
-    const topSkillsData = calculateTopSkills(state.employees);
-
-    if (topSkillsData.labels.length > 0) {
-        setupChartTheme();
-        charts.teamCompetency = new Chart(teamCompetencyCtx, {
-            type: 'radar',
-            data: {
-                labels: topSkillsData.labels,
-                datasets: [{
-                    label: 'میانگین امتیاز',
-                    data: topSkillsData.data,
-                    fill: true,
-                    backgroundColor: hexToRgba(getBrandColor(0), 0.2),
-                    borderColor: getBrandColor(0),
-                    pointBackgroundColor: getBrandColor(0)
-                }]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                scales: { r: { suggestedMin: 0, suggestedMax: 5, ticks: { stepSize: 1 } } },
-                plugins: { legend: { display: false } }
-            }
-        });
-    }
-}
-// ▲▲▲ END: [REFACTOR - Analytics on Dashboard] ▲▲▲
-    const avgCompetencies = Object.entries(competencyScores).reduce((acc, [name, data]) => {
-        acc[name] = data.count > 0 ? (data.total / data.count).toFixed(1) : 0;
-        return acc;
-    }, {});
-    if (teamCompetencyCtx && Object.keys(avgCompetencies).length > 0) {
-        setupChartTheme();
-        charts.teamCompetency = new Chart(teamCompetencyCtx, {
-            type: 'radar',
-            data: {
-                labels: Object.keys(avgCompetencies),
-                datasets: [{
-                    label: 'میانگین امتیاز',
-                    data: Object.values(avgCompetencies),
-                    fill: true,
-                    backgroundColor: hexToRgba(getBrandColor(0), 0.2),
-                    borderColor: getBrandColor(0),
-                    pointBackgroundColor: getBrandColor(0),
-                    pointBorderColor: '#fff',
-                    pointHoverBackgroundColor: '#fff',
-                    pointHoverBorderColor: getBrandColor(0)
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    r: {
-                        angleLines: { color: '#e2e8f0' },
-                        grid: { color: '#e2e8f0' },
-                        pointLabels: { color: '#6b7280' },
-                        suggestedMin: 0,
-                        suggestedMax: 5,
-                        ticks: { stepSize: 1, display: false }
-                    }
+    // [CORRECTED] Render Team Competency Radar Chart
+    const teamCompetencyCtx = document.getElementById('teamCompetencyRadarChart')?.getContext('2d');
+    if (teamCompetencyCtx) {
+        const topSkillsData = calculateTopSkills(state.employees); // Use the new helper by default
+        if (topSkillsData.labels.length > 0) {
+            setupChartTheme();
+            charts.teamCompetency = new Chart(teamCompetencyCtx, {
+                type: 'radar',
+                data: {
+                    labels: topSkillsData.labels,
+                    datasets: [{
+                        label: 'میانگین امتیاز',
+                        data: topSkillsData.data,
+                        fill: true,
+                        backgroundColor: hexToRgba(getBrandColor(0), 0.2),
+                        borderColor: getBrandColor(0),
+                        pointBackgroundColor: getBrandColor(0)
+                    }]
                 },
-                plugins: { legend: { display: false } }
-            }
-        });
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: { r: { suggestedMin: 0, suggestedMax: 5, ticks: { stepSize: 1 } } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
     }
 };
+// ▲▲▲ END: [BUGFIX] Replace the entire renderDashboardCharts function ▼▼▼
 const renderEngagementGauge = (canvasId, score) => {
     const gaugeCtx = document.getElementById(canvasId)?.getContext('2d');
     if(gaugeCtx) { 
