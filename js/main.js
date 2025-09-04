@@ -5187,6 +5187,12 @@ const viewEmployeeProfile = (employeeId) => {
     if (!emp) return;
     const analysis = generateSmartAnalysis(emp);
     const team = state.teams.find(t => t.memberIds?.includes(emp.id));
+    // ▼▼▼ [کد جدید] تشخیص هوشمند دسترسی مدیر ▼▼▼
+const currentUserProfile = state.employees.find(e => e.uid === state.currentUser.uid);
+const isDirectManager = currentUserProfile && team && team.leadership?.manager === currentUserProfile.id;
+// اگر کاربر ادمین/ویرایشگر بود یا مدیر مستقیم کارمند بود، به او دسترسی مدیریتی می‌دهیم
+const isManagerView = canEdit() || isDirectManager;
+// ▲▲▲ [پایان کد جدید] ▲▲▲
     const manager = team ? state.employees.find(e => e.id === team.leadership?.manager) : null;
     const teamName = team ? team.name : 'بدون تیم';
     const managerName = manager?.name || 'نامشخص';
