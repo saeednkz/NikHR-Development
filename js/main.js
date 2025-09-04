@@ -1470,12 +1470,12 @@ window.renderMomentsList = () => {
         // [!code start]
     // بخش جدید برای داشبورد مدیر تیم
     else if (pageName === 'team-performance') {
-      const myTeam = state.teams.find(t => t.leadership?.manager === employee.id);
+      const myTeam = (state.teams || []).find(t => (t.leadership?.manager === employee.id) || (t.leaderId === employee.id));
         if (!myTeam) {
             contentContainer.innerHTML = `<p>شما مدیر هیچ تیمی نیستید.</p>`;
             return;
         }
-        const teamMembers = state.employees.filter(e => myTeam.memberIds.includes(e.id));
+        const teamMembers = (myTeam.memberIds || []).map(id => (state.employees || []).find(e => e.id === id)).filter(Boolean);
         const activeCycle = (state.evaluationCycles || []).find(c => c.status === 'active');
 
         if (!activeCycle) {
