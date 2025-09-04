@@ -4813,6 +4813,48 @@ function setupProfileModalListeners(emp) {
 
     // ۲. شنونده مرکزی برای تمام دکمه‌ها
     container.addEventListener('click', async (e) => {
+        // ▼▼▼ START: [NEW FEATURE - Phase 5] Add this logic inside setupProfileModalListeners's click handler ▼▼▼
+const addSkillBtn = e.target.closest('#add-individual-skill-btn');
+const approveSkillBtn = e.target.closest('.approve-skill-btn');
+const editSkillBtn = e.target.closest('.edit-skill-btn');
+const deleteSkillBtn = e.target.closest('.delete-skill-btn');
+
+if (addSkillBtn) {
+    showAddOrEditSkillForm(emp, null, true); // isManagerAdding is true
+    return;
+}
+
+if (approveSkillBtn) {
+    const skillId = approveSkillBtn.dataset.skillId;
+    const currentSkills = (emp.individualSkills || []).map(s => 
+        s.skillId === skillId ? { ...s, status: 'approved', notes: 'توسط مدیر تایید شد' } : s
+    );
+    await updateDoc(doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId), { individualSkills: currentSkills });
+    showToast('مهارت تایید شد.');
+    viewEmployeeProfile(emp.firestoreId); // Refresh modal
+    return;
+}
+
+if (editSkillBtn) {
+    const skillId = editSkillBtn.dataset.skillId;
+    const skillToEdit = (emp.individualSkills || []).find(s => s.skillId === skillId);
+    if (skillToEdit) {
+        showAddOrEditSkillForm(emp, skillToEdit, true); // isManagerAdding is true
+    }
+    return;
+}
+
+if (deleteSkillBtn) {
+    const skillId = deleteSkillBtn.dataset.skillId;
+    showConfirmationModal('حذف مهارت', 'آیا از حذف این مهارت مطمئن هستید؟', async () => {
+        const currentSkills = (emp.individualSkills || []).filter(s => s.skillId !== skillId);
+        await updateDoc(doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId), { individualSkills: currentSkills });
+        showToast('مهارت حذف شد.');
+        viewEmployeeProfile(emp.firestoreId); // Refresh modal
+    });
+    return;
+}
+// ▲▲▲ END: [NEW FEATURE - Phase 5] Add this logic ▲▲▲
         const btn = e.target.closest('button');
         if (!btn) return;
 
@@ -5271,14 +5313,15 @@ const viewEmployeeProfile = (employeeId) => {
                                             <p><strong>وضعیت:</strong> <span class="px-2 py-1 text-xs font-medium rounded-full ${emp.status === 'فعال' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${emp.status}</span></p>
                                         </div>
                                     </div>
-                                    <div class="bg-white rounded-xl border border-slate-200 p-4">
-                                        <div class="flex justify-between items-center mb-3">
-                                            <h4 class="font-semibold text-slate-700"><i data-lucide="star" class="ml-2 w-5 h-5 text-amber-500"></i>شایستگی‌های کلیدی</h4>
-                                            ${canEdit() ? `<button id="edit-competencies-btn" class="primary-btn text-xs">ویرایش</button>` : ''}
-                                        </div>
-                                        <div class="space-y-4">${renderCompetencyBars(emp.competencies)}</div>
-                                        <div class="mt-3 flex flex-wrap gap-2">${topSkillChips}</div>
-                                    </div>
+<div class="bg-white rounded-xl border border-slate-200 p-4">
+    <div class="flex justify-between items-center mb-3">
+        <h4 class="font-semibold text-slate-700"><i data-lucide="sparkles" class="ml-2 w-5 h-5 text-amber-500"></i>مهارت‌ها و تخصص‌ها</h4>
+        ${canEdit() ? `<button id="add-individual-skill-btn" class="primary-btn text-xs">افزودن مهارت</button>` : ''}
+    </div>
+    <div class="space-y-2">
+        ${renderIndividualSkills(emp, canEdit())}
+    </div>
+</div>
                                 </div>
                             </div>
                             <div id="tab-performance" class="profile-tab-content hidden">
@@ -7814,9 +7857,130 @@ const isProfileComplete = (employee) => {
             if (highRiskMembers > 0) { analysis.risk = { text: `${highRiskMembers} نفر از اعضا ریسک خروج بالا دارند.`, icon: 'shield-alert', color: 'text-red-600' }; }
             return analysis;
         };
+// ▼▼▼ START: [NEW FUNCTION - Phase 5] Add this function to js/main.js ▼▼▼
+/**
+ * Renders the list of individual skills for an employee, with different views for managers and employees.
+ * @param {object} employee - The employee object.
+ * @param {boolean} isManagerView - True if the viewer is a manager/admin.
+ * @returns {string} The generated HTML for the skills list.
+ */
+const renderIndividualSkills = (employee, isManagerView) => {
+    const skills = employee.individualSkills || [];
+    if (skills.length === 0) {
+        return '<p class="text-sm text-center py-4 text-slate-500">هنوز مهارتی ثبت نشده است.</p>';
+    }
 
-// ▼▼▼ START: [REFACTOR - Phase 1] Replace the entire showEmployeeForm function with this new version ▼▼▼
-// ▼▼▼ START: [REFACTOR - Phase 2] Replace the entire showEmployeeForm function to add automatic promotion logging ▼▼▼
+    return skills.map(skill => {
+        const isSuggested = skill.status === 'suggested';
+        return `
+            <div class="p-3 rounded-lg flex items-center justify-between ${isSuggested ? 'bg-yellow-50 border border-yellow-200' : 'bg-slate-50 border'}">
+                <div>
+                    <p class="font-semibold text-sm ${isSuggested ? 'text-yellow-800' : 'text-slate-800'}">
+                        ${skill.skillName}
+                        ${isSuggested ? '<span class="text-xs font-normal">(در انتظار تایید)</span>' : ''}
+                    </p>
+                    <div class="w-24 bg-slate-200 rounded-full h-1.5 mt-1">
+                        <div class="bg-indigo-500 h-1.5 rounded-full" style="width: ${skill.level * 20}%"></div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-1">
+                    <span class="font-bold text-indigo-600 text-lg">${skill.level}</span><span class="text-xs text-slate-500">/5</span>
+                    ${isManagerView ? `
+                        <div class="flex items-center gap-1 ml-2">
+                            ${isSuggested ? `<button class="approve-skill-btn primary-btn text-xs py-1 px-2" data-skill-id="${skill.skillId}">تایید</button>` : ''}
+                            <button class="edit-skill-btn p-1 text-slate-400 hover:text-blue-600" data-skill-id="${skill.skillId}"><i data-lucide="edit" class="w-4 h-4"></i></button>
+                            <button class="delete-skill-btn p-1 text-slate-400 hover:text-red-600" data-skill-id="${skill.skillId}"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    }).join('');
+};
+// ▲▲▲ END: [NEW FUNCTION - Phase 5] ▲▲▲
+
+
+// ▼▼▼ START: [NEW FUNCTION - Phase 5] Add this function to js/main.js ▼▼▼
+/**
+ * Shows a modal for adding or editing an individual skill.
+ * @param {object} employee - The employee to add/edit the skill for.
+ * @param {object|null} existingSkill - The skill object if in edit mode.
+ * @param {boolean} isManagerAdding - True if a manager is adding, false if an employee is suggesting.
+ */
+const showAddOrEditSkillForm = (employee, existingSkill = null, isManagerAdding = false) => {
+    const isEditing = existingSkill !== null;
+    modalTitle.innerText = isEditing ? `ویرایش مهارت: ${existingSkill.skillName}` : (isManagerAdding ? 'افزودن مهارت جدید' : 'پیشنهاد مهارت جدید');
+
+    const skillOptions = (state.skillsAndCompetencies || []).map(s => 
+        `<option value="${s.firestoreId}" data-name="${s.name}" ${isEditing && s.firestoreId === existingSkill.skillId ? 'selected' : ''}>${s.name}</option>`
+    ).join('');
+
+    modalContent.innerHTML = `
+        <form id="skill-form" class="space-y-4">
+            <div>
+                <label class="block font-medium">انتخاب مهارت</label>
+                <select id="skill-select" class="w-full p-2 border rounded-md bg-white mt-1" ${isEditing ? 'disabled' : ''}>
+                    <option value="">یک مورد را انتخاب کنید...</option>
+                    ${skillOptions}
+                </select>
+            </div>
+            <div>
+                <label class="block font-medium">سطح تسلط (۱ تا ۵)</label>
+                <input type="number" id="skill-level" min="1" max="5" value="${isEditing ? existingSkill.level : '3'}" class="w-full p-2 border rounded-md mt-1" required>
+            </div>
+            <div class="flex justify-end pt-4 border-t">
+                <button type="submit" class="primary-btn">ذخیره</button>
+            </div>
+        </form>
+    `;
+    openModal(mainModal, mainModalContainer);
+
+    document.getElementById('skill-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const select = document.getElementById('skill-select');
+        const skillId = select.value;
+        const skillName = select.options[select.selectedIndex].dataset.name;
+        const level = parseInt(document.getElementById('skill-level').value);
+
+        if (!skillId || !level) {
+            showToast('لطفاً تمام فیلدها را پر کنید.', 'error');
+            return;
+        }
+
+        const newSkill = { 
+            skillId, 
+            skillName, 
+            level, 
+            status: isManagerAdding ? 'approved' : 'suggested', 
+            notes: isManagerAdding ? 'توسط مدیر اضافه شد' : 'توسط کارمند پیشنهاد شد' 
+        };
+        
+        let currentSkills = employee.individualSkills || [];
+        if (isEditing) {
+            currentSkills = currentSkills.map(s => s.skillId === existingSkill.skillId ? { ...s, level: level } : s);
+        } else {
+            if (currentSkills.some(s => s.skillId === skillId)) {
+                showToast('این مهارت قبلاً اضافه شده است.', 'error');
+                return;
+            }
+            currentSkills.push(newSkill);
+        }
+
+        try {
+            await updateDoc(doc(db, `artifacts/${appId}/public/data/employees`, employee.firestoreId), {
+                individualSkills: currentSkills
+            });
+            showToast('مهارت با موفقیت ذخیره شد.');
+            closeModal(mainModal, mainModalContainer);
+            // Refresh relevant views if they are open
+            if (document.getElementById('employee-cards-container')) viewEmployeeProfile(employee.firestoreId); // Refresh admin/manager profile view
+            if (document.querySelector('.employee-sidebar')) renderEmployeePortalPage('profile', employee); // Refresh employee portal view
+        } catch (error) {
+            showToast('خطا در ذخیره مهارت.', 'error');
+        }
+    });
+};
+// ▲▲▲ END: [NEW FUNCTION - Phase 5] ▲▲▲
 const showEmployeeForm = (employeeId = null) => {
     const isEditing = employeeId !== null;
     const emp = isEditing ? state.employees.find(e => e.firestoreId === employeeId) : {};
