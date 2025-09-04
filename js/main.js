@@ -769,7 +769,18 @@ function renderEmployeePortalPage(pageName, employee) {
                         </div>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm"><div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500 mb-1">ایمیل</div><div class="font-medium text-slate-700">${employee.personalInfo?.email || '-'}</div></div><div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500 mb-1">شماره موبایل</div><div class="font-medium text-slate-700">${employee.personalInfo?.phone || '-'}</div></div><div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500 mb-1">تیم</div><div class="font-medium text-slate-700">${(state.teams.find(t=>t.memberIds?.includes(employee.id))?.name) || '-'}</div></div><div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500 mb-1">مدیر</div><div class="font-medium text-slate-700">${manager?.name || '-'}</div></div></div>
                     </div>
-
+<div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+    <div class="flex items-center justify-between mb-4">
+        <h3 class="font-semibold text-slate-800 flex items-center gap-2">
+            <i data-lucide="sparkles" class="w-5 h-5 text-amber-500"></i>
+            مهارت‌ها و تخصص‌ها
+        </h3>
+        <button id="suggest-skill-btn" class="secondary-btn text-xs">پیشنهاد مهارت جدید</button>
+    </div>
+    <div class="space-y-2">
+        ${renderIndividualSkills(employee, false)} 
+    </div>
+</div>
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
                         <h3 class="font-semibold text-slate-800 flex items-center gap-2 mb-4">
                             <i data-lucide="history" class="w-5 h-5 text-indigo-500"></i>
@@ -1732,6 +1743,14 @@ function setupEmployeePortalEventListeners(employee, auth, signOut) {
     const mainContent = document.getElementById('employee-main-content');
     if (mainContent) {
         mainContent.addEventListener('click', (e) => {
+            // ▼▼▼ START: [NEW FEATURE - Phase 5] Add this 'if' block to setupEmployeePortalEventListeners ▼▼▼
+const suggestSkillBtn = e.target.closest('#suggest-skill-btn');
+if (suggestSkillBtn) {
+    // Note: isManagerAdding is false here because the employee is suggesting
+    showAddOrEditSkillForm(employee, null, false); 
+    return;
+}
+// ▲▲▲ END: [NEW FEATURE - Phase 5] Add this 'if' block ▼▼▼
                     const viewAndAckBtn = e.target.closest('.view-and-acknowledge-btn');
         if (viewAndAckBtn) {
             const evaluationId = viewAndAckBtn.dataset.id;
