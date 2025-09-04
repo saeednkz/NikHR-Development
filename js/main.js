@@ -6881,6 +6881,7 @@ const setupSettingsPageListeners = () => {
     });
 
     // فعال‌سازی فرم افزودن شایستگی
+// ▼▼▼ START: [FIX - Phase 1] Update the Firestore path in the Add Competency form listener ▼▼▼
     const addCompetencyForm = document.getElementById('add-competency-form');
     if (addCompetencyForm) {
         addCompetencyForm.addEventListener('submit', async (e) => {
@@ -6889,7 +6890,9 @@ const setupSettingsPageListeners = () => {
             const name = (input?.value || '').trim();
             if (!name) return;
             try {
-                await addDoc(collection(db, `artifacts/${appId}/public/data/competencies`), { name, createdAt: serverTimestamp() });
+                // [FIX HERE] The collection name is corrected to 'skillsAndCompetencies'
+                await addDoc(collection(db, `artifacts/${appId}/public/data/skillsAndCompetencies`), { name, createdAt: serverTimestamp() });
+                
                 input.value = '';
                 showToast('شایستگی اضافه شد.');
             } catch (err) {
@@ -6897,6 +6900,7 @@ const setupSettingsPageListeners = () => {
             }
         });
     }
+// ▲▲▲ END: [FIX - Phase 1] Update the Firestore path in the Add Competency form listener ▲▲▲
 
     // [!code start]
     // ▼▼▼ منطق فرم افزودن خانواده شغلی اضافه شد ▼▼▼
