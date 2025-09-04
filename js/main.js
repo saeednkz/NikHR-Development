@@ -7894,85 +7894,121 @@ const showEmployeeForm = (employeeId = null) => {
     levelSelect.addEventListener('change', toggleManagedTeamVisibility);
     toggleManagedTeamVisibility(); // Run on form load as well
 
-    document.getElementById('employee-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        // The submit logic will be updated in Phase 2 to handle automatic promotion logging.
-        // For now, it correctly saves the new granular level.
-        const saveBtn = e.target.querySelector('button[type="submit"]');
-        saveBtn.disabled = true;
-        saveBtn.innerText = 'در حال پردازش...';
+// ▼▼▼ START: [REFACTOR - Phase 2 & Bugfix] Replace the entire 'submit' event listener inside showEmployeeForm ▼▼▼
+document.getElementById('employee-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const saveBtn = e.target.querySelector('button[type="submit"]');
+    saveBtn.disabled = true;
+    saveBtn.innerText = 'در حال پردازش...';
 
-        const name = document.getElementById('name').value;
-        const employeeId = document.getElementById('id').value;
-        const email = document.getElementById('employee-email').value;
-        const selectedTeamId = document.getElementById('department-team-select').value;
-        const selectedTeam = state.teams.find(t => t.firestoreId === selectedTeamId);
-        const managedTeamId = document.getElementById('managed-team-select').value;
+    // --- خواندن تمام مقادیر از فرم ---
+    const form = e.target;
+    const oldTeamId = form.dataset.oldTeamId; // خواندن تیم قبلی از data attribute
+    const oldLevel = form.dataset.oldLevel; // خواندن سطح قبلی از data attribute
 
-        const employeeCoreData = {
-            name: name,
-            id: employeeId,
-            jobTitle: document.getElementById('jobTitle').value,
-            jobPositionId: document.getElementById('jobPositionId').value,
-            jobFamily: document.getElementById('jobFamily').value,
-            level: document.getElementById('level').value, // Now saves granular level like "J1"
-            department: selectedTeam ? selectedTeam.name : '',
-            status: document.getElementById('status').value,
-            startDate: persianToEnglishDate(document.getElementById('startDate').value),
-        };
-        
-        if (isEditing) {
-            try {
-                const batch = writeBatch(db);
-                const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
-                batch.update(docRef, employeeCoreData);
-                
-                const oldManagedTeam = state.teams.find(t => t.leadership?.manager === emp.id);
-                if (oldManagedTeam && oldManagedTeam.firestoreId !== managedTeamId) {
-                    const oldTeamRef = doc(db, `artifacts/${appId}/public/data/teams`, oldManagedTeam.firestoreId);
-                    batch.update(oldTeamRef, { 'leadership.manager': null });
-                }
+    const name = document.getElementById('name').value;
+    const employeeId = document.getElementById('id').value;
+    const email = document.getElementById('employee-email').value;
+    const newTeamId = document.getElementById('department-team-select').value;
+    const newManagedTeamId = document.getElementById('managed-team-select').value;
+    const newLevel = document.getElementById('level').value;
 
-                if (managedTeamId) {
-                    const newManagedTeamRef = doc(db, `artifacts/${appId}/public/data/teams`, managedTeamId);
-                    batch.set(newManagedTeamRef, { leadership: { manager: employeeId } }, { merge: true });
-                }
-                
-                await batch.commit();
-                showToast("اطلاعات کارمند با موفقیت بروزرسانی شد.");
-                closeModal(mainModal, mainModalContainer);
-            } catch (error) { 
-                console.error("Error updating employee:", error);
-                showToast("خطا در بروزرسانی اطلاعات.", "error");
-            } finally {
-                saveBtn.disabled = false;
-                saveBtn.innerText = 'ذخیره';
-            }
-        } else { // For new employee
-            const employeeDataForCreation = { ...employeeCoreData, avatar: `https://placehold.co/100x100/E2E8F0/4A5568?text=${name.substring(0, 2)}`, personalInfo: { email: email } };
-            try {
-                const createNewEmployee = httpsCallable(functions, 'createNewEmployee');
-                await createNewEmployee({ 
-                    name: name, 
-                    employeeId: employeeId, 
-                    email: email, 
-                    employeeData: employeeDataForCreation,
-                    teamId: selectedTeamId,
-                    managedTeamId: managedTeamId
-                });
-                
-                showToast("کارمند و حساب کاربری با موفقیت ایجاد شد!");
-                closeModal(mainModal, mainModalContainer);
-                renderPage('talent');
-            } catch (error) { 
-                console.error("Cloud function error:", error);
-                showToast(`خطا: ${error.message}`, "error");
-            } finally {
-                saveBtn.disabled = false;
-                saveBtn.innerText = 'ذخیره';
-            }
-        }
-    });
+    const newTeam = state.teams.find(t => t.firestoreId === newTeamId);
+
+    const employeeCoreData = {
+        name: name,
+        id: employeeId,
+        jobTitle: document.getElementById('jobTitle').value,
+        jobPositionId: document.getElementById('jobPositionId').value,
+        jobFamily: document.getElementById('jobFamily').value,
+        level: newLevel,
+        department: newTeam ? newTeam.name : '',
+        status: document.getElementById('status').value,
+        startDate: persianToEnglishDate(document.getElementById('startDate').value),
+    };
+
+    if (isEditing) {
+        try {
+            const batch = writeBatch(db);
+            const employeeRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
+
+            // [NEW LOGIC - Phase 2] Automatic Career Path Logging for Promotion
+            if (newLevel !== oldLevel) {
+                const promotionRecord = {
+                    title: `ارتقا به سطح ${newLevel}`,
+                    date: new Date(),
+                    team: newTeam ? newTeam.name : emp.department
+                };
+                employeeCoreData.careerPath = arrayUnion(promotionRecord);
+            }
+            
+            batch.update(employeeRef, employeeCoreData);
+
+            // [FIX] Handle team transfer correctly
+            if (newTeamId !== oldTeamId) {
+                // Remove from old team if it exists
+                if (oldTeamId) {
+                    const oldTeamRef = doc(db, `artifacts/${appId}/public/data/teams`, oldTeamId);
+                    batch.update(oldTeamRef, { memberIds: arrayRemove(employeeId) });
+                }
+                // Add to new team if it exists
+                if (newTeamId) {
+                    const newTeamRef = doc(db, `artifacts/${appId}/public/data/teams`, newTeamId);
+                    batch.update(newTeamRef, { memberIds: arrayUnion(employeeId) });
+                }
+            }
+            
+            // [FIX] Handle management role change correctly
+            const oldManagedTeam = state.teams.find(t => t.leadership?.manager === emp.id);
+            if (oldManagedTeam && oldManagedTeam.firestoreId !== newManagedTeamId) {
+                // If they are no longer managing their old team, remove them.
+                const oldManagedTeamRef = doc(db, `artifacts/${appId}/public/data/teams`, oldManagedTeam.firestoreId);
+                batch.update(oldManagedTeamRef, { 'leadership.manager': null });
+            }
+            if (newManagedTeamId) {
+                // Assign them as manager to the new team.
+                const newManagedTeamRef = doc(db, `artifacts/${appId}/public/data/teams`, newManagedTeamId);
+                batch.set(newManagedTeamRef, { leadership: { manager: employeeId } }, { merge: true });
+
+                // [FIX] A manager should not be a regular member of the team they manage.
+                batch.update(newManagedTeamRef, { memberIds: arrayRemove(employeeId) });
+            }
+
+            await batch.commit();
+            showToast("اطلاعات کارمند با موفقیت بروزرسانی شد.");
+            closeModal(mainModal, mainModalContainer);
+        } catch (error) {
+            console.error("Error updating employee:", error);
+            showToast("خطا در بروزرسانی اطلاعات.", "error");
+        } finally {
+            saveBtn.disabled = false;
+            saveBtn.innerText = 'ذخیره';
+        }
+    } else { // For new employee (logic remains the same)
+        const employeeDataForCreation = { ...employeeCoreData, avatar: `https://placehold.co/100x100/E2E8F0/4A5568?text=${name.substring(0, 2)}`, personalInfo: { email: email } };
+        try {
+            const createNewEmployee = httpsCallable(functions, 'createNewEmployee');
+            await createNewEmployee({
+                name: name,
+                employeeId: employeeId,
+                email: email,
+                employeeData: employeeDataForCreation,
+                teamId: newTeamId,
+                managedTeamId: newManagedTeamId
+            });
+            showToast("کارمند و حساب کاربری با موفقیت ایجاد شد!");
+            closeModal(mainModal, mainModalContainer);
+            renderPage('talent');
+        } catch (error) {
+            console.error("Cloud function error:", error);
+            showToast(`خطا: ${error.message}`, "error");
+        } finally {
+            saveBtn.disabled = false;
+            saveBtn.innerText = 'ذخیره';
+        }
+    }
+});
+// ▲▲▲ END: [REFACTOR - Phase 2 & Bugfix] Replace the entire 'submit' event listener inside showEmployeeForm ▲▲▲
 };
 // ▲▲▲ END: [REFACTOR - Phase 1] Replace the entire showEmployeeForm function ▲▲▲
 
