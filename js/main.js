@@ -5341,10 +5341,10 @@ const isManagerView = canEdit() || isDirectManager;
 <div class="bg-white rounded-xl border border-slate-200 p-4">
     <div class="flex justify-between items-center mb-3">
         <h4 class="font-semibold text-slate-700"><i data-lucide="sparkles" class="ml-2 w-5 h-5 text-amber-500"></i>مهارت‌ها و تخصص‌ها</h4>
-        ${canEdit() ? `<button id="add-individual-skill-btn" class="primary-btn text-xs">افزودن مهارت</button>` : ''}
+        ${isManagerView ? `<button id="add-individual-skill-btn" class="primary-btn text-xs">افزودن مهارت</button>` : ''}
     </div>
     <div class="space-y-2">
-        ${renderIndividualSkills(emp, canEdit())}
+        ${renderIndividualSkills(emp, isManagerView)}
     </div>
 </div>
                                 </div>
@@ -7889,6 +7889,7 @@ const isProfileComplete = (employee) => {
  * @param {boolean} isManagerView - True if the viewer is a manager/admin.
  * @returns {string} The generated HTML for the skills list.
  */
+// ▼▼▼ START: [FIX - Phase 5] Replace the entire renderIndividualSkills function ▼▼▼
 const renderIndividualSkills = (employee, isManagerView) => {
     const skills = employee.individualSkills || [];
     if (skills.length === 0) {
@@ -7910,6 +7911,7 @@ const renderIndividualSkills = (employee, isManagerView) => {
                 </div>
                 <div class="flex items-center gap-1">
                     <span class="font-bold text-indigo-600 text-lg">${skill.level}</span><span class="text-xs text-slate-500">/5</span>
+                    
                     ${isManagerView ? `
                         <div class="flex items-center gap-1 ml-2">
                             ${isSuggested ? `<button class="approve-skill-btn primary-btn text-xs py-1 px-2" data-skill-id="${skill.skillId}">تایید</button>` : ''}
@@ -7922,6 +7924,7 @@ const renderIndividualSkills = (employee, isManagerView) => {
         `;
     }).join('');
 };
+// ▲▲▲ END: [FIX - Phase 5] Replace the entire renderIndividualSkills function ▲▲▲
 // ▲▲▲ END: [NEW FUNCTION - Phase 5] ▲▲▲
 
 
