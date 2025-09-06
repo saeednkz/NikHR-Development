@@ -4132,6 +4132,10 @@ talent: () => {
                     </select>
                     <select id="skillFilter" class="p-2 border border-slate-300 rounded-lg bg-white"><option value="">همه مهارت‌ها</option>${[...new Set([].concat(...(state.employees||[]).map(e => Object.keys(e.skills||{}))))].map(s => `<option value="${s}">${s}</option>`).join('')}</select>
                     <select id="statusFilter" class="p-2 border border-slate-300 rounded-lg bg-white"><option value="">همه وضعیت‌ها</option><option value="فعال">فعال</option><option value="غیرفعال">غیرفعال</option></select>
+                    <select id="teamFilter" class="p-2 border border-slate-300 rounded-lg bg-white">
+    <option value="">همه تیم‌ها</option>
+    ${state.teams.map(t => `<option value="${t.firestoreId}">${t.name}</option>`).join('')}
+</select>
                 </div>
             </div>
         </div>
