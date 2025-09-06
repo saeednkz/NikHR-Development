@@ -6474,6 +6474,38 @@ const renderPage = (pageName) => {
             });
         }
         const destroyCharts = () => { Object.values(charts).forEach(chart => chart?.destroy()); charts = {}; };
+        // --- Onboarding helpers ---
+        const MBTI_QUESTIONS = [
+            { id:'q1',  text:'از بودن در جمع انرژی می‌گیرم.', dim:'EI', a:'E', b:'I' },
+            { id:'q2',  text:'ترجیح می‌دهم موضوعات را عملی و ملموس ببینم تا انتزاعی.', dim:'SN', a:'S', b:'N' },
+            { id:'q3',  text:'در تصمیم‌گیری، منطق برایم مقدم بر احساس است.', dim:'TF', a:'T', b:'F' },
+            { id:'q4',  text:'برنامه‌ریزی و داشتن ساختار را به انعطاف‌پذیری لحظه‌ای ترجیح می‌دهم.', dim:'JP', a:'J', b:'P' },
+            { id:'q5',  text:'در مهمانی‌ها با افراد جدید زیاد صحبت می‌کنم.', dim:'EI', a:'E', b:'I' },
+            { id:'q6',  text:'جزئیات برایم مهم‌تر از ایده‌های بزرگ است.', dim:'SN', a:'S', b:'N' },
+            { id:'q7',  text:'عدالت بر همدلی ترجیح دارد.', dim:'TF', a:'T', b:'F' },
+            { id:'q8',  text:'کارها را زودتر از موعد تمام می‌کنم.', dim:'JP', a:'J', b:'P' },
+            { id:'q9',  text:'احساس راحتی با افراد زیاد دارم.', dim:'EI', a:'E', b:'I' },
+            { id:'q10', text:'به واقعیت‌های اثبات‌شده تکیه می‌کنم تا حدس و گمان.', dim:'SN', a:'S', b:'N' },
+            { id:'q11', text:'صداقت بی‌پرده را ترجیح می‌دهم حتی اگر سخت باشد.', dim:'TF', a:'T', b:'F' },
+            { id:'q12', text:'برای هر چیز چک‌لیست دارم.', dim:'JP', a:'J', b:'P' },
+            { id:'q13', text:'بعد از یک روز شلوغ، بودن در جمع به من انرژی می‌دهد.', dim:'EI', a:'E', b:'I' },
+            { id:'q14', text:'بیشتر «آنچه هست» را می‌بینم تا «آنچه می‌تواند باشد».', dim:'SN', a:'S', b:'N' },
+            { id:'q15', text:'وقتی تصمیم می‌گیرم، بیشتر به حقایق فکر می‌کنم تا احساسات افراد.', dim:'TF', a:'T', b:'F' },
+            { id:'q16', text:'دوست دارم همه چیز از قبل مشخص و قابل پیش‌بینی باشد.', dim:'JP', a:'J', b:'P' }
+        ];
+        function computeMbtiResult(answers) {
+            const score = { E:0, I:0, S:0, N:0, T:0, F:0, J:0, P:0 };
+            MBTI_QUESTIONS.forEach(q => {
+                const ans = answers[q.id];
+                if (ans && (ans === q.a || ans === q.b)) score[ans]++;
+            });
+            const ei = (score.E >= score.I) ? 'E' : 'I';
+            const sn = (score.S >= score.N) ? 'S' : 'N';
+            const tf = (score.T >= score.F) ? 'T' : 'F';
+            const jp = (score.J >= score.P) ? 'J' : 'P';
+            return `${ei}${sn}${tf}${jp}`;
+        }
+        if (!window._onboardingState) window._onboardingState = { answers:{} };
         // Onboarding flow renderer
         function renderOnboardingFlow(employee) {
             const container = document.getElementById('employee-portal-container');
@@ -6486,27 +6518,60 @@ const renderPage = (pageName) => {
             const progress = Math.round((stepIndex/ (steps.length-1)) * 100);
             let body = '';
             if (status.currentStep === 'welcome') {
-                body = `<div class=\"text-center p-6\"><h2 class=\"text-xl font-bold mb-2\">خوش آمدید!</h2><p class=\"text-sm text-slate-600 mb-4\">چند گام کوتاه تا تکمیل حساب کاربری</p><button id=\"ob-start\" class=\"primary-btn\">شروع</button></div>`;
+                body = `<div class=\"text-center p-8 relative overflow-hidden\">
+                    <div class=\"absolute -top-16 -left-16 w-72 h-72 rounded-full blur-3xl\" style=\"background:radial-gradient(circle,#6B69D6,transparent 60%)\"></div>
+                    <div class=\"absolute -bottom-16 -right-16 w-72 h-72 rounded-full blur-3xl\" style=\"background:radial-gradient(circle,#10B981,transparent 60%)\"></div>
+                    <h2 class=\"text-2xl sm:text-3xl font-extrabold mb-2\" style=\"color:#242A38\">به خانواده نیک‌اندیش خوش آمدید</h2>
+                    <p class=\"text-sm text-slate-600 mb-6\">چند گام کوتاه تا ساخت پروفایل حرفه‌ای شما</p>
+                    <button id=\"ob-start\" class=\"primary-btn text-sm px-5 py-2\">شروع فرآیند</button>
+                </div>`;
             } else if (status.currentStep === 'personalInfo') {
                 const pi = employee?.profile?.personalInfo || {};
-                body = `<form id=\"ob-personal\" class=\"space-y-3\"><div><label class=\"block text-xs\">شماره موبایل</label><input id=\"pi-phone\" class=\"w-full p-2 border rounded\" value=\"${pi.phone||''}\"></div><div><label class=\"block text-xs\">ایمیل شخصی</label><input id=\"pi-email\" class=\"w-full p-2 border rounded\" value=\"${pi.personalEmail||''}\"></div><div class=\"flex justify-end gap-2\"><button type=\"submit\" class=\"primary-btn\">بعدی</button></div></form>`;
+                body = `<form id=\"ob-personal\" class=\"space-y-4\">
+                    <div class=\"grid grid-cols-1 sm:grid-cols-2 gap-3\">
+                        <div><label class=\"block text-[11px] text-slate-600\">شماره موبایل</label><input id=\"pi-phone\" class=\"w-full p-2 border rounded-xl\" value=\"${pi.phone||''}\" placeholder=\"مثال: 09xxxxxxxxx\"></div>
+                        <div><label class=\"block text-[11px] text-slate-600\">ایمیل شخصی</label><input id=\"pi-email\" class=\"w-full p-2 border rounded-xl\" value=\"${pi.personalEmail||''}\" placeholder=\"example@email.com\"></div>
+                    </div>
+                    <div class=\"flex justify-end\"><button type=\"submit\" class=\"primary-btn px-5\">ذخیره و ادامه</button></div>
+                </form>`;
             } else if (status.currentStep === 'mbti') {
-                body = `<form id=\"ob-mbti\" class=\"space-y-3\"><p class=\"text-sm text-slate-600\">به هر پرسش یکی از گزینه‌ها را انتخاب کنید.</p><div><label class=\"block text-xs\">کار تیمی vs کار فردی</label><select id=\"q1\" class=\"p-2 border rounded bg-white w-full\"><option value=\"E\">تیمی</option><option value=\"I\">فردی</option></select></div><div><label class=\"block text-xs\">تصمیم‌گیری: منطق vs احساس</label><select id=\"q2\" class=\"p-2 border rounded bg-white w-full\"><option value=\"T\">منطق</option><option value=\"F\">احساس</option></select></div><div class=\"flex justify-end\"><button type=\"submit\" class=\"primary-btn\">بعدی</button></div></form>`;
+                const answers = window._onboardingState.answers || {};
+                const items = MBTI_QUESTIONS.map((q,idx) => `
+                    <div class=\"p-3 border rounded-xl bg-slate-50\">
+                        <div class=\"text-[13px] font-medium mb-2\">${idx+1}. ${q.text}</div>
+                        <div class=\"flex items-center gap-2\">
+                            <label class=\"inline-flex items-center gap-1 px-2 py-1 rounded-full border cursor-pointer ${answers[q.id]==q.a?'bg-indigo-50 border-indigo-300 text-indigo-700':'bg-white'}\"><input type=\"radio\" name=\"${q.id}\" value=\"${q.a}\" ${answers[q.id]==q.a?'checked':''}/><span>${q.a}</span></label>
+                            <label class=\"inline-flex items-center gap-1 px-2 py-1 rounded-full border cursor-pointer ${answers[q.id]==q.b?'bg-indigo-50 border-indigo-300 text-indigo-700':'bg-white'}\"><input type=\"radio\" name=\"${q.id}\" value=\"${q.b}\" ${answers[q.id]==q.b?'checked':''}/><span>${q.b}</span></label>
+                        </div>
+                    </div>`).join('');
+                const answered = Object.keys(answers).filter(k => !!answers[k]).length;
+                body = `<div>
+                    <div class=\"flex items-center justify-between mb-3\"><div class=\"text-xs text-slate-600\">پاسخ داده‌شده: ${answered}/${MBTI_QUESTIONS.length}</div><div class=\"text-[11px] text-slate-500\">ابعاد: E/I • S/N • T/F • J/P</div></div>
+                    <form id=\"ob-mbti\" class=\"space-y-2\">${items}<div class=\"flex justify-end pt-2\"><button type=\"submit\" class=\"primary-btn px-5\" ${answered<MBTI_QUESTIONS.length?'disabled':''}>ذخیره و ادامه</button></div></form>
+                </div>`;
             } else if (status.currentStep === 'documents') {
-                body = `<div class=\"space-y-3\"><p class=\"text-sm\">لطفاً اسناد فرهنگ و قوانین سازمان را مطالعه کنید.</p><ul class=\"list-disc pr-5 text-sm text-slate-600\"><li><a href=\"#documents\" class=\"text-indigo-600 hover:underline\">فرهنگ سازمان</a></li><li><a href=\"#documents\" class=\"text-indigo-600 hover:underline\">قوانین و مقررات</a></li></ul><label class=\"inline-flex items-center gap-2\"><input id=\"docs-ack\" type=\"checkbox\"><span class=\"text-sm\">تایید می‌کنم مطالعه کردم</span></label><div class=\"flex justify-end\"><button id=\"ob-complete\" class=\"primary-btn\" disabled>اتمام</button></div></div>`;
+                body = `<div class=\"space-y-4\">
+                    <div class=\"p-3 rounded-xl border bg-gradient-to-r from-indigo-50 to-emerald-50\">
+                        <div class=\"text-[13px] font-semibold text-slate-700 mb-2\">اسناد کلیدی سازمان</div>
+                        <ul class=\"list-disc pr-5 text-sm text-slate-700\"><li><a href=\"#documents\" class=\"text-indigo-600 hover:underline\">فرهنگ سازمان</a></li><li><a href=\"#documents\" class=\"text-indigo-600 hover:underline\">قوانین و مقررات</a></li></ul>
+                    </div>
+                    <label class=\"inline-flex items-center gap-2\"><input id=\"docs-ack\" type=\"checkbox\"><span class=\"text-sm\">تایید می‌کنم مطالعه کردم</span></label>
+                    <div class=\"flex justify-end\"><button id=\"ob-complete\" class=\"primary-btn\" disabled>اتمام</button></div>
+                </div>`;
             } else if (status.currentStep === 'complete') {
                 body = `<div class=\"text-center p-6\"><h2 class=\"text-xl font-bold mb-2\">تبریک!</h2><p class=\"text-sm text-slate-600 mb-4\">آنبوردینگ شما تکمیل شد.</p><button id=\"ob-go-dashboard\" class=\"primary-btn\">رفتن به داشبورد</button></div>`;
             }
             container.innerHTML = `
-                <div class=\"min-h-screen p-4\">
-                    <div class=\"max-w-3xl mx-auto\">
-                        <div class=\"bg-white rounded-2xl border p-4 mb-4\">
-                            <div class=\"text-xs text-slate-600 mb-2\">پیشرفت</div>
-                            <div class=\"w-full h-2 bg-slate-200 rounded-full overflow-hidden\">
-                                <div style=\"width:${progress}%\" class=\"h-2 bg-indigo-500\"></div>
-                            </div>
+                <div class=\"min-h-screen p-0\">
+                    <section class=\"rounded-none overflow-hidden border-b mb-4\" style=\"background:linear-gradient(135deg,#6B69D6,#10B981)\">
+                        <div class=\"max-w-4xl mx-auto p-6 sm:p-8\">
+                            <h1 class=\"text-2xl sm:text-3xl font-extrabold text-white\">آنبوردینگ کارمند</h1>
+                            <p class=\"text-white/90 text-xs mt-1\">گام ${stepIndex+1} از ${steps.length}</p>
+                            <div class=\"mt-3 w-full h-2 bg-white/25 rounded-full overflow-hidden\"><div style=\"width:${progress}%\" class=\"h-2 bg-white\"></div></div>
                         </div>
-                        <div class=\"bg-white rounded-2xl border p-6\">${body}</div>
+                    </section>
+                    <div class=\"max-w-4xl mx-auto p-4\">
+                        <div class=\"bg-white rounded-2xl border p-6 shadow-sm\">${body}</div>
                     </div>
                 </div>`;
             document.getElementById('ob-start')?.addEventListener('click', async () => {
@@ -6529,12 +6594,20 @@ const renderPage = (pageName) => {
             if (mbtiForm) {
                 mbtiForm.addEventListener('submit', async (e) => {
                     e.preventDefault();
-                    const a = document.getElementById('q1').value; const b = document.getElementById('q2').value;
-                    const result = `${a}${b}`;
+                    const result = computeMbtiResult(window._onboardingState.answers||{});
                     const ref = doc(db, `artifacts/${appId}/public/data/employees`, employee.firestoreId);
                     await updateDoc(ref, { profile: { ...(employee.profile||{}), mbtiResult: result }, onboardingStatus: { isComplete:false, currentStep:'documents' } });
                     const updated = { ...employee, profile: { ...(employee.profile||{}), mbtiResult: result }, onboardingStatus:{ isComplete:false, currentStep:'documents' } };
                     renderOnboardingFlow(updated);
+                });
+                // answer listeners
+                MBTI_QUESTIONS.forEach(q => {
+                    document.querySelectorAll(`input[name="${q.id}"]`).forEach(inp => {
+                        inp.addEventListener('change', () => {
+                            window._onboardingState.answers[q.id] = inp.value;
+                            renderOnboardingFlow({ ...employee, onboardingStatus: { isComplete:false, currentStep:'mbti' } });
+                        });
+                    });
                 });
             }
             const ack = document.getElementById('docs-ack');
