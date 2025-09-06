@@ -4103,43 +4103,43 @@ dashboard: () => {
         </div>
     `;
 },
-    talent: () => {
-        return `
-            <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-                <div>
-                    <h1 class="text-3xl font-bold text-slate-800">استعدادهای سازمان</h1>
-                    <p class="text-sm text-slate-500 mt-1">مدیریت و مشاهده پروفایل کارمندان</p>
+// ▼▼▼ START: [FINAL BUGFIX] Replace the entire pages.talent function ▼▼▼
+talent: () => {
+    // [CHANGE] Populate the team filter dropdown from the state.teams array
+    const teamFilterOptions = state.teams.map(team => `<option value="${team.firestoreId}">${team.name}</option>`).join('');
+
+    return `
+        <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-slate-800">استعدادهای سازمان</h1>
+                <p class="text-sm text-slate-500 mt-1">مدیریت و مشاهده پروفایل کارمندان</p>
+            </div>
+            <div class="flex items-center gap-2 w-full md:w-auto">
+                <button id="export-csv-btn" class="bg-green-600 text-white py-2 px-5 rounded-lg hover:bg-green-700 shadow-md transition flex items-center gap-2 w-full md:w-auto"><i data-lucide="file-down"></i> خروجی CSV</button>
+                ${canEdit() ? `<button id="add-employee-btn" class="bg-blue-600 text-white py-2 px-5 rounded-lg hover:bg-blue-700 shadow-md transition flex items-center gap-2 w-full md:w-auto"><i data-lucide="plus"></i> افزودن کارمند</button>` : ''}
+            </div>
+        </div>
+        <div class="card mb-6 p-4">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="w-full md:w-1/3 relative">
+                    <input type="text" id="searchInput" placeholder="جستجوی کارمند..." class="w-full p-2 pl-10 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    <i data-lucide="search" class="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
                 </div>
-                <div class="flex items-center gap-2 w-full md:w-auto">
-                    <button id="export-csv-btn" class="bg-green-600 text-white py-2 px-5 rounded-lg hover:bg-green-700 shadow-md transition flex items-center gap-2 w-full md:w-auto"><i data-lucide="file-down"></i> خروجی CSV</button>
-                    ${canEdit() ? `<button id="add-employee-btn" class="bg-blue-600 text-white py-2 px-5 rounded-lg hover:bg-blue-700 shadow-md transition flex items-center gap-2 w-full md:w-auto"><i data-lucide="plus"></i> افزودن کارمند</button>` : ''}
+                <div class="w-full md:w-auto flex flex-wrap gap-2 justify-end">
+                    <select id="teamFilter" class="p-2 border border-slate-300 rounded-lg bg-white">
+                        <option value="">همه تیم‌ها</option>
+                        ${teamFilterOptions}
+                    </select>
+                    <select id="skillFilter" class="p-2 border border-slate-300 rounded-lg bg-white"><option value="">همه مهارت‌ها</option>${[...new Set([].concat(...(state.employees||[]).map(e => Object.keys(e.skills||{}))))].map(s => `<option value="${s}">${s}</option>`).join('')}</select>
+                    <select id="statusFilter" class="p-2 border border-slate-300 rounded-lg bg-white"><option value="">همه وضعیت‌ها</option><option value="فعال">فعال</option><option value="غیرفعال">غیرفعال</option></select>
                 </div>
             </div>
-            <div class="card mb-6 p-4">
-                <div class="flex flex-col md:flex-row justify-between items-center gap-4">
-                    <div class="w-full md:w-1/3 relative">
-                        <input type="text" id="searchInput" placeholder="جستجوی کارمند..." class="w-full p-2 pl-10 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                        <i data-lucide="search" class="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
-                    </div>
-                    <div class="w-full md:w-auto flex flex-wrap gap-2 justify-end">
-                        <select id="departmentFilter" class="p-2 border border-slate-300 rounded-lg bg-white"><option value="">همه دپارتمان‌ها</option>${[...new Set(state.employees.map(e => e.department))].filter(Boolean).map(d => `<option value="${d}">${d}</option>`).join('')}</select>
-                        <select id="skillFilter" class="p-2 border border-slate-300 rounded-lg bg-white"><option value="">همه مهارت‌ها</option>${[...new Set([].concat(...(state.employees||[]).map(e => Object.keys(e.skills||{}))))].map(s => `<option value="${s}">${s}</option>`).join('')}</select>
-                        <select id="statusFilter" class="p-2 border border-slate-300 rounded-lg bg-white"><option value="">همه وضعیت‌ها</option><option value="فعال">فعال</option><option value="غیرفعال">غیرفعال</option></select>
-                    </div>
-                </div>
-            </div>
-            <div id="employee-cards-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
-            <div id="pagination-container" class="p-4 flex justify-center mt-6"></div>
-        `;
-        // dismiss handler for info bubble
-        try {
-            const latestInfo = (state.announcements||[]).filter(a=> a.type==='info').sort((a,b)=> new Date(b.createdAt?.toDate?.()||0) - new Date(a.createdAt?.toDate?.()||0))[0];
-            document.getElementById('dismiss-info')?.addEventListener('click', () => {
-                if (latestInfo) localStorage.setItem(`dismiss_info_${employee.uid}`, latestInfo.firestoreId);
-                document.getElementById('info-bubble')?.remove();
-            });
-        } catch {}
-    },
+        </div>
+        <div id="employee-cards-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
+        <div id="pagination-container" class="p-4 flex justify-center mt-6"></div>
+    `;
+},
+// ▲▲▲ END: [FINAL BUGFIX] Replace the entire pages.talent function ▲▲▲
     inbox: () => {
         const employee = state.employees.find(emp => emp.uid === state.currentUser?.uid);
         const content = employee ? renderEmployeePortalPage('inbox', employee) : `<div class="card p-6 text-sm text-slate-600">صندوق پیام در پورتال کارمند قابل دسترس است.</div>`;
