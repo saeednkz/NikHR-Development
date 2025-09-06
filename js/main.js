@@ -8105,6 +8105,9 @@ const renderIndividualSkills = (employee, isManagerView) => {
 // فایل: js/main.js
 // ▼▼▼ کل این تابع را با نسخه کامل و نهایی زیر جایگزین کنید ▼▼▼
 
+// فایل: js/main.js
+// ▼▼▼ کل این تابع را با نسخه کامل و نهایی زیر جایگزین کنید ▼▼▼
+
 const showAddOrEditSkillForm = (employee, existingSkill = null, isManagerAdding = false) => {
     const isEditing = existingSkill !== null;
     modalTitle.innerText = isEditing ? `ویرایش مهارت: ${existingSkill.skillName}` : (isManagerAdding ? 'افزودن مهارت جدید' : 'پیشنهاد مهارت جدید');
@@ -8167,7 +8170,28 @@ const showAddOrEditSkillForm = (employee, existingSkill = null, isManagerAdding 
             batch.update(employeeRef, { individualSkills: currentSkills });
 
             if (!isManagerAdding) {
-                const approverUid = findApproverUid(employee);
+                let approverUid = null;
+
+                // [NEW SIMPLIFIED LOGIC]
+                const managedTeam = state.teams.find(t => t.leadership?.manager === employee.id);
+                if (managedTeam) {
+                    // Employee IS a manager. Approver is their manager from the team they are a MEMBER of.
+                    const membershipTeam = state.teams.find(t => (t.memberIds || []).includes(employee.id));
+                    if (membershipTeam && membershipTeam.leadership?.manager) {
+                        const seniorManagerId = membershipTeam.leadership.manager;
+                        const seniorManagerEmployee = state.employees.find(e => e.id === seniorManagerId);
+                        approverUid = seniorManagerEmployee?.uid || null;
+                    }
+                } else {
+                    // Employee is NOT a manager. Approver is their direct manager.
+                    const primaryTeam = state.teams.find(t => t.firestoreId === employee.primaryTeamId);
+                    if (primaryTeam && primaryTeam.leadership?.manager) {
+                        const directManagerId = primaryTeam.leadership.manager;
+                        const directManagerEmployee = state.employees.find(e => e.id === directManagerId);
+                        approverUid = directManagerEmployee?.uid || null;
+                    }
+                }
+
                 if (approverUid) {
                     const reminderRef = doc(collection(db, `artifacts/${appId}/public/data/reminders`));
                     batch.set(reminderRef, {
@@ -8177,22 +8201,20 @@ const showAddOrEditSkillForm = (employee, existingSkill = null, isManagerAdding 
                         icon: 'user-check',
                         status: 'جدید',
                         assignedTo: approverUid,
-                        context: { 
-                            employeeId: employee.firestoreId, // Store firestoreId
-                            skillId: skillId 
-                        },
+                        context: { employeeId: employee.firestoreId, skillId: skillId },
                         createdAt: serverTimestamp()
                     });
                 } else {
-                    showToast('خطا: مدیر یا تاییدکننده شما در سیستم به درستی تعریف نشده است.', 'error');
+                    showToast('خطا: مدیر تاییدکننده برای این کارمند یافت نشد.', 'error');
                     return; 
                 }
             }
             
             await batch.commit();
-            showToast('مهارت با موفقیت ذخیره شد. درخواست تایید ارسال گردید.');
+            showToast('مهارت با موفقیت ذخیره شد و درخواست تایید ارسال گردید.');
             closeModal(mainModal, mainModalContainer);
 
+            // Refresh the view
             setTimeout(() => {
                 const onPortal = !document.getElementById('employee-portal-container').classList.contains('hidden');
                 if (onPortal) renderEmployeePortalPage('profile', employee);
