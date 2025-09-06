@@ -127,12 +127,13 @@
     .sidebar-item {
         display: flex;
         align-items: center;
-        gap: 0.75rem;
-        padding: 0.75rem 1rem;
+        gap: 0.5rem;
+        padding: 0.5rem 0.75rem;
         border-radius: 0.5rem;
         color: #475569; /* slate-600 */
         transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
         border: 1px solid transparent;
+        font-size: 13px;
     }
     .sidebar-item:hover {
         background-color: rgba(107,105,214,0.08);
@@ -148,6 +149,18 @@
         width: 1.25rem;
         height: 1.25rem;
     }
+
+    /* Colorful nav redesign */
+    .sidebar-item { position: relative; }
+    .sidebar-item i { padding: 5px; border-radius: 10px; background-color: rgba(99,102,241,0.08); }
+    .sidebar-item.nav-indigo i { background-color: rgba(99,102,241,0.12); color: #6366F1; }
+    .sidebar-item.nav-violet i { background-color: rgba(139,92,246,0.12); color: #8B5CF6; }
+    .sidebar-item.nav-sky i { background-color: rgba(14,165,233,0.12); color: #0EA5E9; }
+    .sidebar-item.nav-emerald i { background-color: rgba(16,185,129,0.12); color: #10B981; }
+    .sidebar-item.nav-amber i { background-color: rgba(245,158,11,0.12); color: #F59E0B; }
+    .sidebar-item.nav-rose i { background-color: rgba(244,63,94,0.12); color: #F43F5E; }
+    .sidebar-item.nav-slate i { background-color: rgba(100,116,139,0.12); color: #64748B; }
+    .sidebar-item.active { background: linear-gradient(90deg, rgba(107,105,214,0.12), rgba(16,185,129,0.12)); }
 
     /* سایر استایل‌ها */
     #loading-overlay { position: fixed; inset: 0; background-color: rgba(248, 250, 252, 0.8); display: flex; align-items: center; justify-content: center; z-index: 9999; }
@@ -308,19 +321,19 @@
                     <span>NikHR</span>
                 </a>
                 <nav id="sidebar-nav" class="mt-10">
-                    <a href="#dashboard" class="sidebar-item"><i data-lucide="layout-dashboard"></i><span>داشبورد</span></a>
-                    <a href="#talent" class="sidebar-item"><i data-lucide="users"></i><span>استعدادها</span></a>
-                    <a href="#organization" class="sidebar-item"><i data-lucide="building-2"></i><span>سازمان</span></a>
-                    <a href="#surveys" class="sidebar-item"><i data-lucide="clipboard-list"></i><span>نظرسنجی‌ها</span></a>
-                    <a href="#requests" class="sidebar-item"><i data-lucide="archive"></i><span>درخواست‌ها</span></a>
-                    <a href="#okrs" class="sidebar-item"><i data-lucide="target"></i><span>OKRهای سازمان</span></a>
-                    <a href="#orgchart" class="sidebar-item"><i data-lucide="hierarchy"></i><span>چارت سازمانی</span></a>
-                    <a href="#evaluation" class="sidebar-item"><i data-lucide="clipboard-check"></i><span>ارزیابی عملکرد</span></a>
-                    <a href="#tasks" class="sidebar-item"><i data-lucide="clipboard-check"></i><span>وظایف من</span></a>
-                    <a href="#analytics" class="sidebar-item"><i data-lucide="bar-chart-3"></i><span>تحلیل هوشمند</span></a>
-                    <a href="#documents" class="sidebar-item"><i data-lucide="folder-kanban"></i><span>اسناد سازمان</span></a>
-                    <a href="#announcements" class="sidebar-item"><i data-lucide="megaphone"></i><span>اعلانات</span></a>
-                    <a href="#settings" id="settings-nav-link" class="sidebar-item"><i data-lucide="settings"></i><span>تنظیمات</span></a>
+                    <a href="#dashboard" class="sidebar-item nav-indigo"><i data-lucide="layout-dashboard"></i><span>داشبورد</span></a>
+                    <a href="#talent" class="sidebar-item nav-violet"><i data-lucide="users"></i><span>استعدادها</span></a>
+                    <a href="#organization" class="sidebar-item nav-sky"><i data-lucide="building-2"></i><span>سازمان</span></a>
+                    <a href="#surveys" class="sidebar-item nav-emerald"><i data-lucide="clipboard-list"></i><span>نظرسنجی‌ها</span></a>
+                    <a href="#requests" class="sidebar-item nav-amber"><i data-lucide="archive"></i><span>درخواست‌ها</span></a>
+                    <a href="#okrs" class="sidebar-item nav-emerald"><i data-lucide="target"></i><span>OKRهای سازمان</span></a>
+                    <a href="#orgchart" class="sidebar-item nav-indigo"><i data-lucide="git-branch"></i><span>چارت سازمانی</span></a>
+                    <a href="#evaluation" class="sidebar-item nav-violet"><i data-lucide="clipboard-check"></i><span>ارزیابی عملکرد</span></a>
+                    <a href="#tasks" class="sidebar-item nav-rose"><i data-lucide="clipboard-check"></i><span>وظایف من</span></a>
+                    <a href="#analytics" class="sidebar-item nav-sky"><i data-lucide="bar-chart-3"></i><span>تحلیل هوشمند</span></a>
+                    <a href="#documents" class="sidebar-item nav-slate"><i data-lucide="folder-kanban"></i><span>اسناد سازمان</span></a>
+                    <a href="#announcements" class="sidebar-item nav-amber"><i data-lucide="megaphone"></i><span>اعلانات</span></a>
+                    <a href="#settings" id="settings-nav-link" class="sidebar-item nav-indigo"><i data-lucide="settings"></i><span>تنظیمات</span></a>
                 </nav>
             </div>
             <div class="mt-auto">
