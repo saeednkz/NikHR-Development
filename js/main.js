@@ -2389,6 +2389,48 @@ const toPersianDate = (dateInput) => {
         return 'نامشخص';
     }
 };
+// فایل: js/main.js
+// ▼▼▼ این تابع کاملاً جدید را به فایل خود اضافه کنید ▼▼▼
+
+/**
+ * Finds the correct approver's UID for a given employee.
+ * If the employee is a manager, it finds their manager from the leadership team.
+ * If the employee is not a manager, it finds their direct manager from their primary team.
+ * @param {object} employee - The employee object who is suggesting a skill.
+ * @returns {string|null} The UID of the approver, or null if not found.
+ */
+const findApproverUid = (employee) => {
+    if (!employee || !employee.id) return null;
+
+    // Check if the employee is a manager of any team
+    const managedTeam = state.teams.find(t => t.leadership?.manager === employee.id);
+    
+    let approverEmployeeId = null;
+
+    if (managedTeam) {
+        // This employee IS a manager. Their approver is the manager of the team they are a MEMBER of.
+        const membershipTeam = state.teams.find(t => (t.memberIds || []).includes(employee.id));
+        if (membershipTeam && membershipTeam.leadership?.manager) {
+            approverEmployeeId = membershipTeam.leadership.manager;
+        }
+    } else {
+        // This employee is NOT a manager. Their approver is their direct manager from their primary team.
+        const primaryTeam = state.teams.find(t => t.firestoreId === employee.primaryTeamId);
+        if (primaryTeam && primaryTeam.leadership?.manager) {
+            approverEmployeeId = primaryTeam.leadership.manager;
+        }
+    }
+
+    if (approverEmployeeId) {
+        const approverEmployee = state.employees.find(e => e.id === approverEmployeeId);
+        if (approverEmployee && approverEmployee.uid) {
+            return approverEmployee.uid; // Success!
+        }
+    }
+    
+    console.warn(`Could not find a valid approver for employee: ${employee.name} (${employee.id})`);
+    return null;
+};
 // --- تابع جدید برای تبدیل تاریخ شمسی ورودی به فرمت میلادی برای ذخیره ---
 // --- نسخه نهایی و بسیار قوی‌تر برای تبدیل تاریخ شمسی به میلادی ---
 const persianToEnglishDate = (persianDateStr) => {
@@ -3765,15 +3807,17 @@ async function showMyProfileEditForm(employee) {
 // فایل: js/main.js
 // ▼▼▼ کل این تابع را با نسخه کامل و نهایی زیر جایگزین کنید ▼▼▼
 
+// فایل: js/main.js
+// ▼▼▼ کل این تابع را با نسخه کامل و نهایی زیر جایگزین کنید ▼▼▼
+
 async function showRequestDetailsModal(requestId, employee) {
     const request = state.requests.find(r => r.firestoreId === requestId);
     if (!request) return;
 
     modalTitle.innerText = `جزئیات درخواست: ${request.requestType}`;
 
-    // [FIX] Check if this is a skill approval request
     if (request.requestType === 'تایید مهارت') {
-        const targetEmployee = state.employees.find(e => e.id === request.employeeId);
+        const targetEmployee = state.employees.find(e => e.firestoreId === request.context?.employeeId);
         modalContent.innerHTML = `
             <div class="space-y-4">
                 <div class="p-4 border rounded-lg bg-slate-50 text-sm">
@@ -3782,46 +3826,40 @@ async function showRequestDetailsModal(requestId, employee) {
                 </div>
                 <div class="pt-4 mt-4 border-t flex justify-end gap-2">
                     <button id="reject-skill-btn" data-request-id="${requestId}" class="secondary-btn">رد درخواست</button>
-                    <button id="approve-skill-btn" data-request-id="${requestId}" data-employee-id="${targetEmployee.firestoreId}" class="primary-btn">تایید مهارت</button>
+                    <button id="approve-skill-btn" class="primary-btn">تایید مهارت</button>
                 </div>
             </div>
         `;
         openModal(mainModal, mainModalContainer);
 
         document.getElementById('approve-skill-btn')?.addEventListener('click', async (e) => {
-            const btn = e.currentTarget;
-            btn.disabled = true;
-            const reqId = btn.dataset.requestId;
-            const empId = btn.dataset.employeeId;
-            const empToUpdate = state.employees.find(e => e.firestoreId === empId);
-            const skillName = request.details.match(/'(.*?)'/)[1]; // Extract skill name from details
-
-            if (empToUpdate && skillName) {
-                const updatedSkills = empToUpdate.individualSkills.map(s => 
-                    s.skillName === skillName ? { ...s, status: 'approved', notes: 'توسط مدیر تایید شد' } : s
-                );
-                try {
-                    const batch = writeBatch(db);
-                    batch.update(doc(db, `artifacts/${appId}/public/data/employees`, empId), { individualSkills: updatedSkills });
-                    batch.update(doc(db, `artifacts/${appId}/public/data/requests`, reqId), { status: 'تایید شده' });
-                    await batch.commit();
-                    showToast('مهارت تایید و درخواست بسته شد.');
-                    closeModal(mainModal, mainModalContainer);
-                } catch (err) { showToast('خطا در تایید مهارت.', 'error'); }
+            e.currentTarget.disabled = true;
+            if (!targetEmployee || !request.context?.skillId) {
+                showToast('خطا: اطلاعات کارمند یا مهارت ناقص است.', 'error'); return;
             }
+
+            const updatedSkills = targetEmployee.individualSkills.map(s => 
+                s.skillId === request.context.skillId ? { ...s, status: 'approved', notes: 'توسط مدیر تایید شد' } : s
+            );
+            try {
+                const batch = writeBatch(db);
+                batch.update(doc(db, `artifacts/${appId}/public/data/employees`, targetEmployee.firestoreId), { individualSkills: updatedSkills });
+                batch.update(doc(db, `artifacts/${appId}/public/data/requests`, requestId), { status: 'تایید شده' });
+                await batch.commit();
+                showToast('مهارت تایید و درخواست بسته شد.');
+                closeModal(mainModal, mainModalContainer);
+            } catch (err) { showToast('خطا در تایید مهارت.', 'error'); }
         });
 
         document.getElementById('reject-skill-btn')?.addEventListener('click', async (e) => {
-             const btn = e.currentTarget;
-             btn.disabled = true;
-             const reqId = btn.dataset.requestId;
-             await updateDoc(doc(db, `artifacts/${appId}/public/data/requests`, reqId), { status: 'رد شده' });
+             e.currentTarget.disabled = true;
+             await updateDoc(doc(db, `artifacts/${appId}/public/data/requests`, requestId), { status: 'رد شده' });
              showToast('درخواست رد شد.');
              closeModal(mainModal, mainModalContainer);
         });
 
     } else {
-        // Original logic for all other requests
+        // Original logic for all other requests (unchanged)
         const threadHtml = (request.thread || []).map(item => {
             const sender = state.users.find(u => u.firestoreId === item.senderUid)?.name || 'کاربر';
             const dateTxt = item.createdAt?.toDate ? toPersianDate(item.createdAt) : '';
@@ -3831,15 +3869,9 @@ async function showRequestDetailsModal(requestId, employee) {
         modalContent.innerHTML = `
             <div class="space-y-4">
                 <div class="p-4 border rounded-lg bg-slate-50 text-sm">
-                    <div class="flex justify-between items-center">
-                        <p><strong>موضوع:</strong> ${request.details}</p>
-                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-slate-100">${request.status}</span>
-                    </div>
+                    <div class="flex justify-between items-center"><p><strong>موضوع:</strong> ${request.details}</p><span class="px-2 py-1 text-xs font-medium rounded-full bg-slate-100">${request.status}</span></div>
                 </div>
-                <div>
-                    <strong class="text-slate-600">تاریخچه مکالمات:</strong>
-                    <div class="mt-2 max-h-60 overflow-y-auto pr-2">${threadHtml}</div>
-                </div>
+                <div><strong class="text-slate-600">تاریخچه مکالمات:</strong><div class="mt-2 max-h-60 overflow-y-auto pr-2">${threadHtml}</div></div>
                 <div class="pt-4 border-t">
                     <form id="employee-reply-form" class="flex items-center gap-2" data-id="${request.firestoreId}">
                         <input type="text" id="reply-input" placeholder="پاسخ خود را بنویسید..." class="flex-grow p-2 border rounded-md text-sm" required>
@@ -8034,6 +8066,9 @@ const renderIndividualSkills = (employee, isManagerView) => {
 // فایل: js/main.js
 // ▼▼▼ کل این تابع را با نسخه کامل و نهایی زیر جایگزین کنید ▼▼▼
 
+// فایل: js/main.js
+// ▼▼▼ کل این تابع را با نسخه کامل و نهایی زیر جایگزین کنید ▼▼▼
+
 const showAddOrEditSkillForm = (employee, existingSkill = null, isManagerAdding = false) => {
     const isEditing = existingSkill !== null;
     modalTitle.innerText = isEditing ? `ویرایش مهارت: ${existingSkill.skillName}` : (isManagerAdding ? 'افزودن مهارت جدید' : 'پیشنهاد مهارت جدید');
@@ -8093,25 +8128,22 @@ const showAddOrEditSkillForm = (employee, existingSkill = null, isManagerAdding 
 
         try {
             if (!isManagerAdding) {
-                const primaryTeam = state.teams.find(t => t.firestoreId === employee.primaryTeamId);
-                const managerEmployeeId = primaryTeam?.leadership?.manager;
-                const managerEmployee = state.employees.find(e => e.id === managerEmployeeId);
+                const approverUid = findApproverUid(employee); // Using the new helper function
 
-                if (managerEmployee && managerEmployee.uid) {
+                if (approverUid) {
                     await addDoc(collection(db, `artifacts/${appId}/public/data/requests`), {
                         uid: employee.uid, employeeId: employee.id, employeeName: employee.name,
                         requestType: 'تایید مهارت',
                         details: `درخواست تایید مهارت '${skillName}' با سطح ${level}`,
+                        context: { employeeId: employee.firestoreId, skillId: skillId }, // For easier processing
                         status: 'درحال بررسی',
                         createdAt: serverTimestamp(),
-                        assignedTo: managerEmployee.uid,
+                        assignedTo: approverUid,
                         isReadByAssignee: false
                     });
                 } else {
-                    // [FIX] Show an error if manager is not found
-                    showToast('خطا: مدیر تیم برای این کارمند یافت نشد. درخواست تایید ایجاد نشد.', 'error');
-                    console.warn("Manager not found for employee:", employee.name, "Cannot create approval request.");
-                    return; // Stop execution if manager is not found
+                    showToast('خطا: مدیر یا تاییدکننده شما در سیستم به درستی تعریف نشده است.', 'error');
+                    return; 
                 }
             }
             
@@ -8122,18 +8154,15 @@ const showAddOrEditSkillForm = (employee, existingSkill = null, isManagerAdding 
             showToast('مهارت با موفقیت ذخیره شد.');
             closeModal(mainModal, mainModalContainer);
 
-            // Refresh the view after a short delay for the modal to close
+            // Refresh view
             setTimeout(() => {
                 const onPortal = !document.getElementById('employee-portal-container').classList.contains('hidden');
-                if (onPortal) {
-                    renderEmployeePortalPage('profile', employee);
-                } else {
-                    viewEmployeeProfile(employee.firestoreId);
-                }
+                if (onPortal) renderEmployeePortalPage('profile', employee);
+                else viewEmployeeProfile(employee.firestoreId);
             }, 300);
 
         } catch (error) {
-            console.error("Error saving skill or creating request:", error)
+            console.error("Error saving skill or creating request:", error);
             showToast('خطا در ذخیره مهارت.', 'error');
         }
     });
