@@ -68,7 +68,7 @@ const documentCategories = [
     { id: 'مزایا و حقوق',     key: 'benefits', icon: 'coins',          desc: 'حقوق، مزایا، بیمه و سیاست‌های مالی.' },
     { id: 'مستندات پروژه‌ها', key: 'projects', icon: 'folder-kanban',  desc: 'مستندات فنی و اجرایی پروژه‌ها.' }
 ];
-        export const state = { employees: [], teams: [], reminders: [], surveyResponses: [], users: [], competencies: [], expenses: [], pettyCashCards: [], chargeHistory: [], dashboardMetrics: {}, orgAnalytics: {}, currentPage: 'dashboard', currentPageTalent: 1, currentUser: null,currentPageRequests: 1,currentPageTasks: 1,currentPageAnnouncements: 1, anniversaryWishes: [], companyWishes: [] };
+        export const state = { employees: [], teams: [], reminders: [], surveyResponses: [], users: [], competencies: [], expenses: [], pettyCashCards: [], chargeHistory: [], okrCycles: [], okrProposals: [], dashboardMetrics: {}, orgAnalytics: {}, currentPage: 'dashboard', currentPageTalent: 1, currentUser: null,currentPageRequests: 1,currentPageTasks: 1,currentPageAnnouncements: 1, anniversaryWishes: [], companyWishes: [] };
 window.state = state; // این خط را برای دیباگ اضافه کنید
         let charts = {};
 let activeListeners = []; // [!code ++] این خط را اضافه کنید
@@ -297,7 +297,8 @@ function listenToData() {
         'employees', 'teams', 'reminders', 'surveyResponses', 'users', 
         'skillsAndCompetencies', 'requests', 'assignmentRules', 'companyDocuments', 
         'announcements', 'birthdayWishes', 'anniversaryWishes', 'companyWishes', 
-        'moments','jobPositions','evaluationCycles','jobFamilies','employeeEvaluations' 
+        'moments','jobPositions','evaluationCycles','jobFamilies','employeeEvaluations',
+        'okrCycles','okrProposals'
     ];
     let initialLoads = collectionsToListen.length;
 
@@ -733,6 +734,37 @@ function renderEmployeePortalPage(pageName, employee) {
             });
         });
         
+        lucide.createIcons();
+    }
+    else if (pageName === 'team-okrs') {
+        if (!isTeamManager(employee)) {
+            contentContainer.innerHTML = `<div class="card p-6 text-center"><p>شما دسترسی به این صفحه را ندارید.</p></div>`;
+            return;
+        }
+        const managedTeam = (state.teams||[]).find(t => t.leadership?.manager === employee.id);
+        const currentCycle = (state.okrCycles||[]).find(c=> c.status==='open');
+        const proposals = (state.okrProposals||[]).filter(p=> p.teamId === managedTeam?.firestoreId && p.cycleId === (currentCycle?.firestoreId || currentCycle?.id)).sort((a,b)=> new Date(b.createdAt?.toDate?.()||0)-new Date(a.createdAt?.toDate?.()||0));
+        const corporate = (currentCycle?.corporateOKRs||[]).map(o=> `<li class="text-sm"><strong>${o.objective}</strong>${(o.keyResults||[]).length?'<ul class="list-disc pr-5 text-slate-600 text-xs mt-1">'+o.keyResults.map(kr=>`<li>${kr.name}${kr.target?` (هدف: ${kr.target})`:''}</li>`).join('')+'</ul>':''}</li>`).join('') || '<li class="text-sm text-slate-500">ثبت نشده</li>';
+        const proposalsHtml = proposals.map(p=> `<div class="border rounded-xl p-3"><div class="text-xs text-slate-500 mb-1">وضعیت: ${p.status||'pending'}</div>${(p.proposedOKRs||[]).map(o=> `<div class="mb-2"><div class="font-semibold text-sm">${o.objective}</div>${(o.keyResults||[]).map(kr=> `<div class="text-xs text-slate-600">- ${kr.name}${kr.target?` (${kr.target})`:''}</div>`).join('')}</div>`).join('') || '<div class="text-xs text-slate-500">خالی</div>'}</div>`).join('') || '<div class="text-sm text-slate-500">پیشنهادی ثبت نشده است.</div>';
+        contentContainer.innerHTML = `
+            <section class="rounded-2xl overflow-hidden border mb-6" style="background:linear-gradient(90deg,#6B69D6,#10B981)">
+                <div class="p-6 sm:p-8">
+                    <h1 class="text-2xl sm:text-3xl font-extrabold text-white">OKR تیم</h1>
+                    <p class="text-white/90 text-xs mt-1">هماهنگ با OKRهای سازمان (${currentCycle?.title||'—'})</p>
+                </div>
+            </section>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white p-5 rounded-2xl border">
+                    <h3 class="font-bold mb-2">OKRهای سازمان</h3>
+                    <ul class="space-y-2">${corporate}</ul>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border">
+                    <div class="flex items-center justify-between mb-2"><h3 class="font-bold">پیشنهادهای تیم</h3><button id="new-okr-proposal-btn" class="primary-btn text-xs" ${currentCycle?'':'disabled'}>ارسال پیشنهاد جدید</button></div>
+                    <div class="space-y-2" id="okr-proposals-list">${proposalsHtml}</div>
+                </div>
+            </div>
+        `;
+        document.getElementById('new-okr-proposal-btn')?.addEventListener('click', ()=> showOkrProposalForm(employee));
         lucide.createIcons();
     }
     // پایان بلوک جدید
@@ -2091,6 +2123,7 @@ const managerNavlinks = isTeamManager(employee)
         <a href="#team-dashboard" class="nav-item"><i data-lucide="layout-grid"></i><span>داشبورد تیم من</span></a>
         <a href="#team-performance" class="nav-item"><i data-lucide="users-2"></i><span>ارزیابی تیم</span></a>
         <a href="#tasks" class="nav-item"><i data-lucide="clipboard-check"></i><span>وظایف من</span></a>
+        <a href="#team-okrs" class="nav-item"><i data-lucide="target"></i><span>OKR تیم</span></a>
       ` 
     : '';
 
@@ -2798,6 +2831,40 @@ const generateSmartReminders = async () => {
         }
     }
 
+    // OKR-related reminders
+    try {
+        const openCycle = (state.okrCycles||[]).find(c=> c.status==='open');
+        if (openCycle) {
+            // Reminder for admin to review OKR proposals
+            const adminUid = (state.users.find(u=>u.role==='admin')||{}).firestoreId;
+            if (adminUid) {
+                const id = `okr-review-${openCycle.id||openCycle.firestoreId}`;
+                const reminderRef = doc(db, `artifacts/${appId}/public/data/reminders`, id);
+                const snap = await getDoc(reminderRef);
+                if (!snap.exists()) {
+                    await setDoc(reminderRef, { text: `بررسی پیشنهادهای OKR در چرخه ${openCycle.title}`, type: 'پیشنهاد OKR', date: new Date(), assignedTo: adminUid, status: 'جدید', isReadByAssignee: false, createdAt: serverTimestamp() });
+                    hasNewReminders = true;
+                }
+            }
+            // Monthly reminder for managers to update progress
+            const nowM = new Date();
+            if (nowM.getDate() === 1) {
+                const managers = (state.teams||[]).map(t=> t.leadership?.manager).filter(Boolean);
+                for (const mid of managers) {
+                    const mEmp = state.employees.find(e=> e.id===mid);
+                    if (!mEmp?.uid) continue;
+                    const id = `okr-progress-${openCycle.id||openCycle.firestoreId}-${mid}-${nowM.getFullYear()}-${nowM.getMonth()+1}`;
+                    const ref = doc(db, `artifacts/${appId}/public/data/reminders`, id);
+                    const ex = await getDoc(ref);
+                    if (!ex.exists()) {
+                        await setDoc(ref, { text: 'به‌روزرسانی پیشرفت OKR تیم', type: 'پیشنهاد OKR', date: nowM, assignedTo: mEmp.uid, status: 'جدید', isReadByAssignee: false, createdAt: serverTimestamp() });
+                        hasNewReminders = true;
+                    }
+                }
+            }
+        }
+    } catch (e) { console.debug('okr reminders check failed', e); }
+
     // Company anniversary: 1 Ordibehesht campaign and day-of postcard for all employees
     try {
         const thisYear = (new Date()).getFullYear();
@@ -2968,6 +3035,24 @@ const determineNineBoxCategory = (employee) => {
 
         return analysis;
     };
+// OKR progress helpers
+function computeKeyResultProgress(keyResult) {
+    const p = Number(keyResult?.progress);
+    if (Number.isFinite(p) && p >= 0 && p <= 100) return p;
+    return 0;
+}
+function computeObjectiveProgress(objectiveItem) {
+    const krs = objectiveItem?.keyResults || [];
+    if (!krs.length) return 0;
+    const sum = krs.reduce((s, kr) => s + computeKeyResultProgress(kr), 0);
+    return Math.round(sum / krs.length);
+}
+function computeCycleCorporateProgress(cycle) {
+    const objs = cycle?.corporateOKRs || [];
+    if (!objs.length) return 0;
+    const sum = objs.reduce((s, o) => s + computeObjectiveProgress(o), 0);
+    return Math.round(sum / objs.length);
+}
        // این تابع جدید را به js/main.js اضافه کنید
 
 const showChangePasswordForm = () => {
@@ -3046,7 +3131,8 @@ const updateNotificationBell = () => {
         notificationHtml += `<a href="#requests" data-filter="mine" class="notification-item block p-3 hover:bg-slate-50 border-b"><p class="font-semibold">درخواست جدید: ${req.requestType}</p><p class="text-xs text-slate-500">از طرف ${req.employeeName}</p></a>`;
     });
     unreadReminders.forEach(rem => {
-        notificationHtml += `<a href="#tasks" data-filter="mine" class="notification-item block p-3 hover:bg-slate-50 border-b"><p class="font-semibold">یادآور جدید: ${rem.type}</p><p class="text-xs text-slate-500">${rem.text}</p></a>`;
+        const target = rem.type === 'پیشنهاد OKR' ? '#okrs' : '#tasks';
+        notificationHtml += `<a href="${target}" data-filter="mine" class="notification-item block p-3 hover:bg-slate-50 border-b"><p class="font-semibold">یادآور جدید: ${rem.type}</p><p class="text-xs text-slate-500">${rem.text}</p></a>`;
     });
 
     if (totalUnread === 0) {
@@ -4166,6 +4252,10 @@ dashboard: () => {
                 <div class="p-3 rounded-xl" style="background:rgba(107,105,214,.12)"><i data-lucide="recycle" class="w-5 h-5" style="color:#6B69D6"></i></div>
                 <div><p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">جابجایی داخلی</p><p class="text-3xl font-extrabold text-slate-800 mt-1">${metrics.internalMobilityRate}%</p></div>
             </div>
+            <div class="glass p-5 rounded-2xl shadow-sm flex items-center gap-4 hover:shadow-md transition">
+                <div class="p-3 rounded-xl" style="background:rgba(16,185,129,.12)"><i data-lucide="target" class="w-5 h-5" style="color:#10B981"></i></div>
+                <div><p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">پیشرفت OKR سازمان</p><p class="text-3xl font-extrabold text-slate-800 mt-1">${(() => { const oc=(state.okrCycles||[]).find(c=>c.status==='open'); return oc? computeCycleCorporateProgress(oc) : 0; })()}%</p></div>
+            </div>
         </div>
         
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -4442,7 +4532,16 @@ requests: () => {
         console.log(`[DEBUG] Request for "${req.employeeName}" of type "${req.requestType}" is assigned to UID: ${req.assignedTo}`);
     });
     const REQUESTS_PAGE_SIZE = 10;
-    let filteredRequests = (state.requests || []);
+    // Include OKR proposals for admin review as a request-like list
+    const okrItems = (state.okrProposals||[]).map(p=> ({
+        firestoreId: p.firestoreId,
+        createdAt: p.createdAt,
+        employeeName: p.teamName || 'تیم',
+        requestType: 'پیشنهاد OKR',
+        status: p.status || 'pending',
+        assignedTo: (state.users.find(u=>u.role==='admin')||{}).firestoreId
+    }));
+    let filteredRequests = (state.requests || []).concat(okrItems);
     if (state.requestFilter === 'mine' && state.currentUser) {
         console.log(`[DEBUG] Filtering for 'mine'. Will only keep requests where assignedTo === ${state.currentUser.uid}`);
         filteredRequests = filteredRequests.filter(req => req.assignedTo === state.currentUser.uid);
@@ -4458,7 +4557,9 @@ requests: () => {
     const requestsHtml = paginatedRequests.map(req => {
         const statusColors = {'درحال بررسی':'bg-yellow-100 text-yellow-800','در حال انجام':'bg-blue-100 text-blue-800','تایید شده':'bg-green-100 text-green-800','رد شده':'bg-red-100 text-red-800'};
         const adminOptions = admins.map(admin => `<option value="${admin.firestoreId}" ${req.assignedTo === admin.firestoreId ? 'selected' : ''}>${admin.name || admin.email}</option>`).join('');
-        return `<tr class="border-b"><td class="px-4 py-3 whitespace-nowrap">${toPersianDate(req.createdAt)}</td><td class="px-4 py-3 font-semibold">${req.employeeName}</td><td class="px-4 py-3">${req.requestType}</td><td class="px-4 py-3"><span class="px-2 py-1 text-xs font-medium rounded-full ${statusColors[req.status] || 'bg-slate-100'}">${req.status}</span></td><td class="px-4 py-3 min-w-[150px]"><select data-id="${req.firestoreId}" class="assign-request-select w-full p-1.5 border border-slate-300 rounded-lg bg-white text-xs"><option value="">واگذار نشده</option>${adminOptions}</select></td><td class="px-4 py-3">${(req.status === 'درحال بررسی' || req.status === 'در حال انجام') ? `<button class="process-request-btn text-sm bg-slate-700 text-white py-1 px-3 rounded-md hover:bg-slate-800" data-id="${req.firestoreId}">پردازش</button>` : '<span class="text-xs text-slate-400">-</span>'}</td></tr>`;
+        const isOkr = req.requestType === 'پیشنهاد OKR';
+        const actionCell = isOkr ? `<button class="process-okr-prop-btn text-sm bg-slate-700 text-white py-1 px-3 rounded-md hover:bg-slate-800" data-id="${req.firestoreId}">بررسی</button>` : ((req.status === 'درحال بررسی' || req.status === 'در حال انجام') ? `<button class="process-request-btn text-sm bg-slate-700 text-white py-1 px-3 rounded-md hover:bg-slate-800" data-id="${req.firestoreId}">پردازش</button>` : '<span class="text-xs text-slate-400">-</span>');
+        return `<tr class="border-b"><td class="px-4 py-3 whitespace-nowrap">${toPersianDate(req.createdAt)}</td><td class="px-4 py-3 font-semibold">${req.employeeName}</td><td class="px-4 py-3">${req.requestType}</td><td class="px-4 py-3"><span class="px-2 py-1 text-xs font-medium rounded-full ${statusColors[req.status] || 'bg-slate-100'}">${req.status}</span></td><td class="px-4 py-3 min-w-[150px]"><select data-id="${req.firestoreId}" class="assign-request-select w-full p-1.5 border border-slate-300 rounded-lg bg-white text-xs"><option value="">واگذار نشده</option>${adminOptions}</select></td><td class="px-4 py-3">${actionCell}</td></tr>`;
     }).join('');
 
     return `
@@ -4651,6 +4752,50 @@ analytics: () => {
                     </div>
                 </div>
             </div>
+        </div>
+    `;
+},
+// --- Admin OKRs page ---
+okrs: () => {
+    if (!isAdmin()) {
+        return `<div class="p-6 card text-center"><p>دسترسی مجاز نیست.</p></div>`;
+    }
+    const cycles = (state.okrCycles || []).slice().sort((a,b)=> new Date(b.startDate?.toDate?.()||b.startDate||0) - new Date(a.startDate?.toDate?.()||a.startDate||0));
+    const cycleRows = cycles.map(c => `
+        <tr class="border-b">
+            <td class="px-4 py-3 font-semibold">${c.id || c.firestoreId || '-'}</td>
+            <td class="px-4 py-3">${c.title || '-'}</td>
+            <td class="px-4 py-3 text-xs">${toPersianDate(c.startDate)}</td>
+            <td class="px-4 py-3 text-xs">${toPersianDate(c.endDate)}</td>
+            <td class="px-4 py-3">${c.status || '-'}</td>
+            <td class="px-4 py-3 text-left"><button class="okrs-edit-cycle-btn text-xs secondary-btn" data-id="${c.firestoreId}">ویرایش</button></td>
+        </tr>
+    `).join('');
+
+    return `
+        <section class="rounded-2xl overflow-hidden border mb-6" style="background:linear-gradient(90deg,#10B981,#6B69D6)">
+            <div class="p-6 sm:p-8 flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl sm:text-3xl font-extrabold text-white">OKRهای سازمان</h1>
+                    <p class="text-white/90 text-xs mt-1">مدیریت چرخه‌ها، اهداف و نتایج کلیدی</p>
+                </div>
+                <button id="okrs-new-cycle-btn" class="bg.white/90 hover:bg-white text-slate-800 text-xs font-semibold px-3 py-2 rounded-lg">ایجاد چرخه جدید</button>
+            </div>
+        </section>
+        <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200">
+            <table class="w-full text-sm">
+                <thead style="background:#ECEEF3">
+                    <tr>
+                        <th class="px-4 py-2">شناسه</th>
+                        <th class="px-4 py-2">عنوان</th>
+                        <th class="px-4 py-2">شروع</th>
+                        <th class="px-4 py-2">پایان</th>
+                        <th class="px-4 py-2">وضعیت</th>
+                        <th class="px-4 py-2">عملیات</th>
+                    </tr>
+                </thead>
+                <tbody>${cycleRows || '<tr><td colspan="6" class="text-center py-8 text-slate-500">چرخه‌ای ثبت نشده است.</td></tr>'}</tbody>
+            </table>
         </div>
     `;
 },
@@ -5968,6 +6113,7 @@ const renderPage = (pageName) => {
         if (pageName === 'tasks') { setupTasksPageListeners(); }
         if (pageName === 'analytics') { setupAnalyticsPage(); }
         if (pageName === 'documents') { setupDocumentsPageListeners(); }
+        if (pageName === 'okrs') { setupOkrsAdminPageListeners?.(); }
         if (pageName === 'announcements') { setupAnnouncementsPageListeners(); } // [!code ++] این خط مشکل را حل می‌کند
         if (pageName === 'settings') {
             if(isAdmin()) {
@@ -5986,6 +6132,116 @@ const renderPage = (pageName) => {
     }
 };
         // --- CHART RENDERING FUNCTIONS ---
+        // Minimal listeners for OKR admin page
+        function setupOkrsAdminPageListeners() {
+            try {
+                document.getElementById('okrs-new-cycle-btn')?.addEventListener('click', () => {
+                    showOkrsNewCycleForm();
+                });
+                document.querySelectorAll('.okrs-edit-cycle-btn').forEach(btn => {
+                    btn.addEventListener('click', () => showOkrsEditCycleForm(btn.dataset.id));
+                });
+            } catch (e) { console.debug('OKR listeners init failed', e); }
+        }
+
+        function showOkrsNewCycleForm() {
+            modalTitle.innerText = 'ایجاد چرخه جدید OKR';
+            modalContent.innerHTML = `
+                <form id="okr-cycle-form" class="space-y-4">
+                    <div><label class="block text-sm">شناسه چرخه</label><input id="okr-id" class="w-full p-2 border rounded-md" placeholder="مثال: Q1-2025"></div>
+                    <div><label class="block text-sm">عنوان</label><input id="okr-title" class="w-full p-2 border rounded-md" placeholder="OKRهای سه‌ماهه اول ۱۴۰۴"></div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div><label class="block text-sm">تاریخ شروع</label><input id="okr-start" class="w-full p-2 border rounded-md" placeholder="YYYY/MM/DD"></div>
+                        <div><label class="block text-sm">تاریخ پایان</label><input id="okr-end" class="w-full p-2 border rounded-md" placeholder="YYYY/MM/DD"></div>
+                    </div>
+                    <div><label class="block text-sm">وضعیت</label><select id="okr-status" class="w-full p-2 border rounded-md bg-white"><option value="draft">draft</option><option value="open">open</option><option value="closed">closed</option></select></div>
+                    <div class="flex justify-end gap-2"><button type="button" class="secondary-btn" onclick="closeModal(mainModal, mainModalContainer)">انصراف</button><button type="submit" class="primary-btn">ذخیره</button></div>
+                </form>
+            `;
+            openModal(mainModal, mainModalContainer);
+            document.getElementById('okr-cycle-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                try {
+                    const id = (document.getElementById('okr-id').value||'').trim();
+                    const title = (document.getElementById('okr-title').value||'').trim();
+                    const start = persianToEnglishDate(document.getElementById('okr-start').value||'');
+                    const end = persianToEnglishDate(document.getElementById('okr-end').value||'');
+                    const status = document.getElementById('okr-status').value||'draft';
+                    if (!id || !title) { showToast('شناسه و عنوان الزامی است.', 'error'); return; }
+                    const ref = doc(db, `artifacts/${appId}/public/data/okrCycles`, id);
+                    await setDoc(ref, { id, title, startDate: start, endDate: end, status, corporateOKRs: [] });
+                    closeModal(mainModal, mainModalContainer);
+                    showToast('چرخه OKR ایجاد شد.');
+                    renderPage('okrs');
+                } catch (err) { console.error(err); showToast('خطا در ایجاد چرخه.', 'error'); }
+            });
+        }
+
+        function showOkrsEditCycleForm(docId) {
+            const cycle = (state.okrCycles||[]).find(c=> c.firestoreId===docId || c.id===docId);
+            if (!cycle) { showToast('چرخه یافت نشد.', 'error'); return; }
+            modalTitle.innerText = `ویرایش چرخه OKR: ${cycle.id||cycle.firestoreId}`;
+            const okrs = (cycle.corporateOKRs||[]).map((o,idx)=> `
+                <div class="okr-item border rounded-lg p-2 space-y-2" data-index="${idx}">
+                    <input class="okr-obj w-full p-2 border rounded-md" value="${o.objective||''}" placeholder="Objective">
+                    <div class="space-y-1">
+                        ${(o.keyResults||[]).map(kr=> `<input class=\"okr-kr w-full p-2 border rounded-md\" value=\"${kr.name||''}\" placeholder=\"Key Result: نام\"><input class=\"okr-kr-target w-full p-2 border rounded-md\" value=\"${kr.target||''}\" placeholder=\"Target\">`).join('')}
+                    </div>
+                    <button type="button" class="add-kr-btn text-xs secondary-btn">افزودن KR</button>
+                </div>`).join('');
+            modalContent.innerHTML = `
+                <form id="okr-edit-form" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div><label class="block text-sm">عنوان</label><input id="okr-title-edit" class="w-full p-2 border rounded-md" value="${cycle.title||''}"></div>
+                        <div><label class="block text-sm">وضعیت</label><select id="okr-status-edit" class="w-full p-2 border rounded-md bg-white"><option value="draft" ${cycle.status==='draft'?'selected':''}>draft</option><option value="open" ${cycle.status==='open'?'selected':''}>open</option><option value="closed" ${cycle.status==='closed'?'selected':''}>closed</option></select></div>
+                    </div>
+                    <div id="okr-items" class="space-y-3">${okrs || ''}</div>
+                    <button type="button" id="add-obj-btn" class="secondary-btn text-xs">افزودن Objective</button>
+                    <div class="flex justify-end gap-2"><button type="button" class="secondary-btn" onclick="closeModal(mainModal, mainModalContainer)">انصراف</button><button type="submit" class="primary-btn">ذخیره</button></div>
+                </form>
+            `;
+            openModal(mainModal, mainModalContainer);
+            const container = document.getElementById('okr-items');
+            document.getElementById('add-obj-btn').addEventListener('click', ()=> {
+                const wrap = document.createElement('div');
+                wrap.className = 'okr-item border rounded-lg p-2 space-y-2';
+                wrap.innerHTML = `<input class="okr-obj w-full p-2 border rounded-md" placeholder="Objective"><div class="space-y-1"></div><button type="button" class="add-kr-btn text-xs secondary-btn">افزودن KR</button>`;
+                container.appendChild(wrap);
+            });
+            container.addEventListener('click', (e)=> {
+                const btn = e.target.closest('.add-kr-btn');
+                if (!btn) return;
+                const wrap = btn.parentElement.querySelector('div');
+                const krRow = document.createElement('div');
+                krRow.innerHTML = `<input class="okr-kr w-full p-2 border rounded-md" placeholder="Key Result: نام"><input class="okr-kr-target w-full p-2 border rounded-md" placeholder="Target">`;
+                wrap.appendChild(krRow);
+            });
+            document.getElementById('okr-edit-form').addEventListener('submit', async (e)=> {
+                e.preventDefault();
+                try {
+                    const title = (document.getElementById('okr-title-edit').value||'').trim();
+                    const status = document.getElementById('okr-status-edit').value||'draft';
+                    const items = [];
+                    container.querySelectorAll('.okr-item').forEach(item => {
+                        const objective = (item.querySelector('.okr-obj')?.value||'').trim();
+                        const keyResults = [];
+                        const krs = item.querySelectorAll('.okr-kr');
+                        const tgts = item.querySelectorAll('.okr-kr-target');
+                        krs.forEach((krInput, idx) => {
+                            const name = (krInput.value||'').trim();
+                            const target = (tgts[idx]?.value||'').trim();
+                            if (name) keyResults.push({ name, target, progress: 0 });
+                        });
+                        if (objective) items.push({ objective, keyResults });
+                    });
+                    const ref = doc(db, `artifacts/${appId}/public/data/okrCycles`, cycle.firestoreId || cycle.id);
+                    await updateDoc(ref, { title, status, corporateOKRs: items });
+                    closeModal(mainModal, mainModalContainer);
+                    showToast('چرخه OKR به‌روزرسانی شد.');
+                    renderPage('okrs');
+                } catch (err) { console.error(err); showToast('خطا در ذخیره OKR.', 'error'); }
+            });
+        }
         const destroyCharts = () => { Object.values(charts).forEach(chart => chart?.destroy()); charts = {}; };
 // فایل: js/main.js - این تابع جدید را اضافه کنید
 // ▼▼▼ START: [NEW FUNCTION - Phase 3] Add this new function for rendering the manager dashboard ▼▼▼
@@ -6865,6 +7121,7 @@ const setupRequestsPageListeners = () => {
     mainContentArea.addEventListener('click', async (e) => {
         const filterBtn = e.target.closest('.request-filter-btn');
         const processBtn = e.target.closest('.process-request-btn');
+        const processOkrBtn = e.target.closest('.process-okr-prop-btn');
         const paginationBtn = e.target.closest('.pagination-btn');
 
         if (filterBtn) {
@@ -6874,6 +7131,9 @@ const setupRequestsPageListeners = () => {
         }
         if (processBtn) {
             (window.showProcessRequestForm || (()=>{}))(processBtn.dataset.id);
+        }
+        if (processOkrBtn) {
+            showOkrProposalReviewModal(processOkrBtn.dataset.id);
         }
         if (paginationBtn && !paginationBtn.disabled) {
             state.currentPageRequests = Number(paginationBtn.dataset.page);
@@ -6893,6 +7153,43 @@ const setupRequestsPageListeners = () => {
         });
     }
 };
+function showOkrProposalReviewModal(proposalId) {
+    const prop = (state.okrProposals||[]).find(p=> p.firestoreId===proposalId);
+    if (!prop) { showToast('پیشنهاد یافت نشد.', 'error'); return; }
+    modalTitle.innerText = `بررسی پیشنهاد OKR - ${prop.teamName}`;
+    const okrsHtml = (prop.proposedOKRs||[]).map(o=> `<div class="mb-2"><div class="font-semibold text-sm">${o.objective}</div>${(o.keyResults||[]).map(kr=> `<div class="text-xs text-slate-600">- ${kr.name}${kr.owner?` (${kr.owner})`:''}</div>`).join('')}</div>`).join('') || '<div class="text-xs text-slate-500">خالی</div>';
+    modalContent.innerHTML = `
+        <div class="space-y-3">
+            <div class="text-sm">چرخه: ${prop.cycleId}</div>
+            <div class="border rounded-xl p-3">${okrsHtml}</div>
+            <textarea id="okr-manager-feedback" class="w-full p-2 border rounded-md" rows="3" placeholder="بازخورد مدیر ارشد (اختیاری)"></textarea>
+            <div class="flex justify-end gap-2">
+                <button id="okr-reject-btn" class="secondary-btn">رد</button>
+                <button id="okr-approve-btn" class="primary-btn">تایید</button>
+            </div>
+        </div>`;
+    openModal(mainModal, mainModalContainer);
+    document.getElementById('okr-approve-btn').addEventListener('click', async ()=> {
+        try {
+            const feedback = (document.getElementById('okr-manager-feedback').value||'').trim();
+            await updateDoc(doc(db, `artifacts/${appId}/public/data/okrProposals`, prop.firestoreId), { status: 'approved', managerFeedback: feedback, reviewedAt: serverTimestamp() });
+            const teamRef = doc(db, `artifacts/${appId}/public/data/teams`, prop.teamId);
+            await updateDoc(teamRef, { activeOKRs: prop.proposedOKRs });
+            closeModal(mainModal, mainModalContainer);
+            showToast('پیشنهاد OKR تایید شد.');
+            renderPage('requests');
+        } catch (e) { console.error(e); showToast('خطا در تایید.', 'error'); }
+    });
+    document.getElementById('okr-reject-btn').addEventListener('click', async ()=> {
+        try {
+            const feedback = (document.getElementById('okr-manager-feedback').value||'').trim();
+            await updateDoc(doc(db, `artifacts/${appId}/public/data/okrProposals`, prop.firestoreId), { status: 'rejected', managerFeedback: feedback, reviewedAt: serverTimestamp() });
+            closeModal(mainModal, mainModalContainer);
+            showToast('پیشنهاد OKR رد شد.');
+            renderPage('requests');
+        } catch (e) { console.error(e); showToast('خطا در رد پیشنهاد.', 'error'); }
+    });
+}
 // فایل: js/main.js
 // این تابع را به طور کامل جایگزین نسخه فعلی کنید ▼
 
@@ -7036,6 +7333,67 @@ if (typeof window.showProcessReminderForm !== 'function') {
             });
         }
     };
+}
+// Team OKR proposal form (manager portal)
+function showOkrProposalForm(managerEmp) {
+    const managedTeam = (state.teams||[]).find(t => t.leadership?.manager === managerEmp.id);
+    const currentCycle = (state.okrCycles||[]).find(c=> c.status==='open');
+    if (!managedTeam || !currentCycle) { showToast('تیم یا چرخه فعال یافت نشد.', 'error'); return; }
+    modalTitle.innerText = `ارسال پیشنهاد OKR برای ${managedTeam.name}`;
+    modalContent.innerHTML = `
+        <form id="okr-proposal-form" class="space-y-3">
+            <div class="p-2 bg-indigo-50 text-[12px] rounded">چرخه جاری: ${currentCycle.title}</div>
+            <div id="proposal-items" class="space-y-3"></div>
+            <button type="button" id="add-prop-obj" class="secondary-btn text-xs">افزودن Objective</button>
+            <div class="flex justify-end gap-2"><button type="button" class="secondary-btn" onclick="closeModal(mainModal, mainModalContainer)">انصراف</button><button type="submit" class="primary-btn">ارسال</button></div>
+        </form>`;
+    openModal(mainModal, mainModalContainer);
+    const container = document.getElementById('proposal-items');
+    document.getElementById('add-prop-obj').addEventListener('click', () => {
+        const wrap = document.createElement('div');
+        wrap.className = 'border rounded-lg p-2 space-y-2';
+        wrap.innerHTML = `<input class="prop-obj w-full p-2 border rounded" placeholder="Objective تیم"><div class="space-y-1"></div><button type="button" class="add-prop-kr text-xs secondary-btn">افزودن KR</button>`;
+        container.appendChild(wrap);
+    });
+    container.addEventListener('click', (e)=> {
+        const btn = e.target.closest('.add-prop-kr');
+        if (!btn) return;
+        const krWrap = btn.previousElementSibling;
+        const row = document.createElement('div');
+        row.innerHTML = `<input class="prop-kr w-full p-2 border rounded" placeholder="Key Result"><input class="prop-kr-owner w-full p-2 border rounded" placeholder="مسئول (نام اختیاری)">`;
+        krWrap.appendChild(row);
+    });
+    document.getElementById('okr-proposal-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+            const proposedOKRs = [];
+            container.querySelectorAll('.border.rounded-lg.p-2').forEach(item => {
+                const objective = (item.querySelector('.prop-obj')?.value||'').trim();
+                const krs = [];
+                const krNames = item.querySelectorAll('.prop-kr');
+                const krOwners = item.querySelectorAll('.prop-kr-owner');
+                krNames.forEach((node, idx)=> {
+                    const name = (node.value||'').trim();
+                    const owner = (krOwners[idx]?.value||'').trim();
+                    if (name) krs.push({ name, owner, target: '', progress: 0 });
+                });
+                if (objective) proposedOKRs.push({ objective, keyResults: krs });
+            });
+            if (!proposedOKRs.length) { showToast('حداقل یک Objective وارد کنید.', 'error'); return; }
+            const ref = doc(collection(db, `artifacts/${appId}/public/data/okrProposals`));
+            await setDoc(ref, {
+                cycleId: currentCycle.firestoreId || currentCycle.id,
+                teamId: managedTeam.firestoreId,
+                teamName: managedTeam.name,
+                proposedOKRs,
+                status: 'pending',
+                createdAt: serverTimestamp()
+            });
+            closeModal(mainModal, mainModalContainer);
+            showToast('پیشنهاد OKR ارسال شد.');
+            renderEmployeePortalPage('team-okrs', managerEmp);
+        } catch (err) { console.error(err); showToast('خطا در ارسال پیشنهاد.', 'error'); }
+    });
 }
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید جایگزین کنید
