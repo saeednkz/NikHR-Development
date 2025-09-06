@@ -752,6 +752,7 @@ function renderEmployeePortalPage(pageName, employee) {
         const suggestList = mySuggestions.map(s=> (s.items||[]).map(o=> `<div class=\"text-xs\">• ${o.objective}</div>`).join('')).join('') || '<div class=\"text-xs text-slate-500\">پیشنهادی ثبت نکرده‌اید.</div>';
         // Team OKRs
         const teamEntry = (state.teamOKRs||[]).find(e=> e.teamId===team?.firestoreId && e.cycleId === (currentCycle?.firestoreId||currentCycle?.id));
+        const teamOverall = computeTeamProgress ? computeTeamProgress(teamEntry) : 0;
         const teamOkrsHtml = teamEntry ? (teamEntry.okrs||[]).map((o)=> `<div class=\"mb-2\"><div class=\"font-semibold text-sm\">${o.objective}</div>${(o.keyResults||[]).map(kr=> `<div class=\"text-[11px] text-slate-600\">• ${kr.name} — ${kr.progress||0}%</div>`).join('')}</div>`).join('') : '<div class=\"text-sm text-slate-500\">OKR تاییدشده‌ای ثبت نشده است.</div>';
         const editor = isMgr ? `<div class=\"mt-2\"><button id=\"open-team-okr-editor\" class=\"secondary-btn text-xs\">تجمیع/ویرایش OKR تیم</button></div>` : '';
         contentContainer.innerHTML = `
@@ -761,6 +762,12 @@ function renderEmployeePortalPage(pageName, employee) {
                     <p class="text-white/90 text-xs mt-1">هماهنگ با OKRهای سازمان (${currentCycle?.title||'—'})</p>
                 </div>
             </section>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div class="bg-white p-4 rounded-2xl border">
+                    <h4 class="text-xs font-semibold text-slate-600 mb-2">پیشرفت OKR تیم</h4>
+                    <div class="relative w-full h-36"><canvas id="teamOkrGauge"></canvas></div>
+                </div>
+            </div>
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="bg-white p-5 rounded-2xl border">
                     <h3 class="font-bold mb-2">OKRهای سازمان</h3>
@@ -779,6 +786,7 @@ function renderEmployeePortalPage(pageName, employee) {
         `;
         document.getElementById('new-okr-suggestion-btn')?.addEventListener('click', ()=> showOkrSuggestionForm(employee, team, currentCycle));
         document.getElementById('open-team-okr-editor')?.addEventListener('click', ()=> showTeamOKREditor(employee, team, currentCycle, teamEntry));
+        try { if (document.getElementById('teamOkrGauge')) { renderEngagementGauge('teamOkrGauge', teamOverall); } } catch {}
         // Append progress editor for approved team OKRs
         if (isMgr && teamEntry?.status === 'approved') {
             const panel = document.getElementById('team-okr-panel');
@@ -820,7 +828,8 @@ function renderEmployeePortalPage(pageName, employee) {
         const teamCards = teamsApproved.map(t=> {
             const team = (state.teams||[]).find(x=> x.firestoreId===t.teamId);
             const objHtml = (t.okrs||[]).map(o=> `<div class=\"mb-1\"><div class=\"font-semibold text-xs\">${o.objective}</div>${(o.keyResults||[]).map(kr=> `<div class=\"text-[11px] text-slate-600\">• ${kr.name} — ${kr.progress||0}%</div>`).join('')}</div>`).join('');
-            return `<div class=\"border rounded-2xl p-3\"><div class=\"font-bold mb-1\">${team?.name||'تیم'}</div>${objHtml||'<div class=\\"text-xs text-slate-500\\">بدون Objective</div>'}</div>`;
+            const teamProg = computeTeamProgress ? computeTeamProgress(t) : 0;
+            return `<div class=\"border rounded-2xl p-3\"><div class=\"flex items-center justify-between mb-1\"><div class=\"font-bold\">${team?.name||'تیم'}</div><div class=\"text-[11px] text-slate-600\">${teamProg}%</div></div>${objHtml||'<div class=\\"text-xs text-slate-500\\">بدون Objective</div>'}</div>`;
         }).join('') || '<div class="text-xs text-slate-500">OKR تاییدشده‌ای برای تیم‌ها نیست.</div>';
         contentContainer.innerHTML = `
             <section class="rounded-2xl overflow-hidden border mb-6" style="background:linear-gradient(90deg,#6B69D6,#10B981)">
@@ -829,7 +838,11 @@ function renderEmployeePortalPage(pageName, employee) {
                     <p class="text-white/90 text-xs mt-1">مشاهده OKRهای سازمان و تیم‌ها</p>
                 </div>
             </section>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="bg-white p-5 rounded-2xl border lg:col-span-1">
+                    <h3 class="font-bold mb-2">نمای کلی</h3>
+                    <div class="relative w-full h-44"><canvas id="okrCycleGauge"></canvas></div>
+                </div>
                 <div class="bg-white p-5 rounded-2xl border">
                     <h3 class="font-bold mb-2">OKRهای سازمان</h3>
                     ${corpHtml}
@@ -839,6 +852,7 @@ function renderEmployeePortalPage(pageName, employee) {
                     <div class="space-y-3">${teamCards}</div>
                 </div>
             </div>`;
+        try { if (document.getElementById('okrCycleGauge')) { const prog = computeCycleCorporateProgress(selected||{}); renderEngagementGauge('okrCycleGauge', prog); } } catch {}
         lucide.createIcons();
     }
     // پایان بلوک جدید
@@ -2212,7 +2226,7 @@ const managerNavlinks = isTeamManager(employee)
                ${managerNavlinks}
                 <a href="#evaluations" class="nav-item"><i data-lucide="clipboard-check"></i><span>ارزیابی‌های من</span></a>
                 <a href="#okrs-portal" class="nav-item"><i data-lucide="target"></i><span>OKRها</span></a>
-                <a href="#requests" class="nav-item"><i data-lucide="send"></i><span>درخواست های من</span></a>
+                <a href="#requests" class="nav-item"><i data-lucide="send"></i><span>کارهای من</span></a>
                 <a href="#directory" class="nav-item"><i data-lucide="users"></i><span>تیم‌ها</span></a>
                 <a href="#documents" class="nav-item"><i data-lucide="folder-kanban"></i><span>دانش‌نامه</span></a>
                 <a href="#inbox" class="nav-item"><i data-lucide="inbox"></i><span>پیام‌ها</span></a>
@@ -3095,6 +3109,15 @@ function computeCycleCorporateProgress(cycle) {
     if (!objs.length) return 0;
     const sum = objs.reduce((s, o) => s + computeObjectiveProgress(o), 0);
     return Math.round(sum / objs.length);
+}
+// Compute overall progress of a team's OKRs (average of objectives)
+function computeTeamProgress(teamOKRDoc) {
+    try {
+        const objectives = teamOKRDoc?.okrs || [];
+        if (!objectives.length) return 0;
+        const sum = objectives.reduce((acc, obj) => acc + computeObjectiveProgress(obj), 0);
+        return Math.round(sum / objectives.length);
+    } catch { return 0; }
 }
        // این تابع جدید را به js/main.js اضافه کنید
 
@@ -4650,7 +4673,7 @@ tasks: () => {
         // approvals: skill approvals assigned to this user (placeholder if exists in state.approvals)
         .concat(((state.approvals||[]).filter(a=> a.type==='skill' && a.assignedTo===state.currentUser.uid && a.status==='pending').map(a=> ({
             id: a.firestoreId, type: 'skill', date: a.createdAt, kind: 'تایید مهارت', text: a.subject||'', status: 'جدید'
-        }))))
+        })))))
         .sort((a, b) => {
             const ad = new Date(a.date?.toDate ? a.date.toDate() : a.date);
             const bd = new Date(b.date?.toDate ? b.date.toDate() : b.date);
@@ -4837,12 +4860,18 @@ okrs: () => {
     const cycleSelect = cycles.map(c=> `<option value="${c.firestoreId||c.id}" ${((c.firestoreId||c.id)===selectedCycleId)?'selected':''}>${c.title||c.id}</option>`).join('');
 
     // Corporate OKRs
-    const corpHtml = (selectedCycle?.corporateOKRs||[]).map(o=> `
-        <div class="mb-2">
-            <div class="font-semibold text-sm">${o.objective}</div>
-            ${(o.keyResults||[]).map(kr=> `<div class="text-[11px] text-slate-600">• ${kr.name}${kr.target?` (هدف: ${kr.target})`:''}</div>`).join('')}
-        </div>
-    `).join('') || '<div class="text-xs text-slate-500">ثبت نشده</div>';
+    const corpHtml = (selectedCycle?.corporateOKRs||[]).map(o=> {
+        const objProg = computeObjectiveProgress ? computeObjectiveProgress(o) : 0;
+        return `
+        <div class="mb-3 border rounded-xl p-3">
+            <div class="flex items-center justify-between mb-1">
+                <div class="font-semibold text-sm">${o.objective}</div>
+                <span class="text-[11px] text-slate-600">${objProg}%</span>
+            </div>
+            <div class="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden mb-2"><div class="h-1.5" style="background:#6B69D6;width:${objProg}%;"></div></div>
+            ${(o.keyResults||[]).map(kr=> `<div class="text-[11px] text-slate-600">• ${kr.name}${kr.target?` (هدف: ${kr.target})`:''} — ${kr.progress||0}%</div>`).join('')}
+        </div>`;
+    }).join('') || '<div class="text-xs text-slate-500">ثبت نشده</div>';
 
     // Team OKRs (approved)
     const approvedTeams = (state.teamOKRs||[]).filter(t=> t.cycleId===selectedCycleId && t.status==='approved');
@@ -4881,7 +4910,11 @@ okrs: () => {
                 <select id="okrs-cycle-select" class="p-1.5 border rounded-lg bg-white">${cycleSelect}</select>
             </div>
         </div>
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200">
+                <h3 class="font-bold mb-3">نمای کلی چرخه</h3>
+                <div class="relative w-full h-48"><canvas id="okrsAdminCycleGauge"></canvas></div>
+            </div>
             <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200">
                 <h3 class="font-bold mb-3">OKRهای سازمان</h3>
                 ${corpHtml}
@@ -6222,7 +6255,9 @@ const renderPage = (pageName) => {
         if (pageName === 'tasks') { setupTasksPageListeners(); }
         if (pageName === 'analytics') { setupAnalyticsPage(); }
         if (pageName === 'documents') { setupDocumentsPageListeners(); }
-        if (pageName === 'okrs') { setupOkrsAdminPageListeners?.(); }
+        if (pageName === 'okrs') { setupOkrsAdminPageListeners?.(); try { const el = document.getElementById('okrsAdminCycleGauge'); if (el) { const params = new URLSearchParams(window.location.hash.split('?')[1] || ''); const selId = params.get('cycle'); const cycles = (state.okrCycles||[]).slice().sort((a,b)=> new Date(b.startDate||0)-new Date(a.startDate||0)); const open = cycles.find(c=> c.status==='open'); const selected = cycles.find(c=> (c.firestoreId||c.id) === selId) || open || cycles[0]; const prog = computeCycleCorporateProgress(selected||{}); renderEngagementGauge('okrsAdminCycleGauge', prog); } } catch {}
+            try { document.getElementById('okrs-cycle-select')?.addEventListener('change', (e)=> { const v = e.target.value; const base = '#okrs?cycle=' + encodeURIComponent(v); history.replaceState(null, '', base); renderPage('okrs'); }); } catch {}
+        }
         if (pageName === 'announcements') { setupAnnouncementsPageListeners(); } // [!code ++] این خط مشکل را حل می‌کند
         if (pageName === 'settings') {
             if(isAdmin()) {
