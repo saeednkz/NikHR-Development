@@ -184,7 +184,7 @@ const teamVisualsPalette = [
     { icon: 'pen-tool', color: 'text-indigo-500', bg: 'bg-indigo-100' },
     { icon: 'settings-2', color: 'text-slate-500', bg: 'bg-slate-100' }
 ];
-        const appId = 'hr-nik-prod';
+        const appId = 'nikhr-development';
 const firebaseConfig = {
   apiKey: "AIzaSyCEvMeneEts83kYtqRRl3K_BQ8VnoVlqKA",
   authDomain: "nikhr-development.firebaseapp.com",
