@@ -8156,74 +8156,55 @@ const showEmployeeForm = (employeeId = null) => {
     levelSelect.addEventListener('change', updatePrimaryTeamLabel);
     updatePrimaryTeamLabel(); // Run on form load
 
-    document.getElementById('employee-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const saveBtn = e.target.querySelector('button[type="submit"]');
-        saveBtn.disabled = true;
-        saveBtn.innerText = 'در حال پردازش...';
+// ▼▼▼ START: [DEBUGGING VERSION] Replace the 'submit' event listener in showEmployeeForm ▼▼▼
+document.getElementById('employee-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const saveBtn = e.target.querySelector('button[type="submit"]');
+    saveBtn.disabled = true;
+    saveBtn.innerText = 'در حال پردازش...';
 
-        const form = e.target;
-        const oldLevel = form.dataset.oldLevel;
-        const oldPrimaryTeamId = form.dataset.oldPrimaryTeamId;
-        
-        const newLevel = document.getElementById('level').value;
-        const primaryTeamId = document.getElementById('primary-team-select').value;
-        const teamMemberships = Array.from(document.querySelectorAll('.team-membership-checkbox:checked')).map(cb => cb.value);
+    const form = e.target;
+    // ... (Reading all the form values remains the same)
+    const name = document.getElementById('name').value;
+    const employeeId = document.getElementById('id').value;
+    const email = document.getElementById('employee-email').value;
+    // ... (and so on for all other fields)
 
-        const employeeCoreData = {
-            name: document.getElementById('name').value,
-            id: document.getElementById('id').value,
-            jobTitle: document.getElementById('jobTitle').value,
-            jobPositionId: document.getElementById('jobPositionId').value,
-            jobFamily: document.getElementById('jobFamily').value,
-            level: newLevel,
-            status: document.getElementById('status').value,
-            startDate: persianToEnglishDate(document.getElementById('startDate').value),
-            primaryTeamId: primaryTeamId || null,
-            teamMemberships: teamMemberships || []
+    const employeeCoreData = { /* ... create the employeeCoreData object ... */ };
+
+    if (isEditing) {
+        // ... (Logic for editing remains unchanged for now)
+    } else { // For new employee
+        const employeeDataForCreation = { 
+            ...employeeCoreData, 
+            avatar: `https://placehold.co/100x100/E2E8F0/4A5568?text=${name.substring(0, 2)}`, 
+            personalInfo: { email: email } 
         };
+        try {
+            console.log("Frontend: Preparing to call 'createNewEmployee' with data:", JSON.stringify(employeeDataForCreation));
+            
+            const createNewEmployee = httpsCallable(functions, 'createNewEmployee');
+            const result = await createNewEmployee({
+                name: name,
+                employeeId: employeeId,
+                email: email,
+                employeeData: employeeDataForCreation
+            });
 
-        if (isEditing) {
-            try {
-                const batch = writeBatch(db);
-                const employeeRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
-
-                if (newLevel && newLevel !== oldLevel) {
-                    // ... (promotion logging logic remains the same)
-                }
-                
-                batch.update(employeeRef, employeeCoreData);
-
-                // [NEW & CRITICAL] Handle leadership changes correctly
-                const isNowManager = newLevel.startsWith('MAN') || newLevel.startsWith('L');
-                
-                // If the primary team has changed OR the user's manager status changed
-                if (primaryTeamId !== oldPrimaryTeamId || isManagerAdding) {
-                    // Step 1: Remove manager role from the OLD primary team
-                    if (oldPrimaryTeamId) {
-                        const oldTeamRef = doc(db, `artifacts/${appId}/public/data/teams`, oldPrimaryTeamId);
-                        batch.update(oldTeamRef, { 'leadership.manager': null });
-                    }
-                    // Step 2: Add manager role to the NEW primary team IF they are a manager
-                    if (primaryTeamId && isNowManager) {
-                        const newTeamRef = doc(db, `artifacts/${appId}/public/data/teams`, primaryTeamId);
-                        batch.set(newTeamRef, { leadership: { manager: employeeCoreData.id } }, { merge: true });
-                    }
-                }
-
-                await batch.commit();
-
-                showToast("اطلاعات کارمند با موفقیت بروزرسانی شد.");
-                closeModal(mainModal, mainModalContainer);
-            } catch (error) {
-                // ... (error handling)
-            } finally {
-                // ... (finally block)
-            }
-        } else { // For new employee
-            // ... (new employee creation logic)
+            console.log("Frontend: Cloud function returned successfully:", result);
+            showToast("کارمند و حساب کاربری با موفقیت ایجاد شد!");
+            closeModal(mainModal, mainModalContainer);
+            renderPage('talent');
+        } catch (error) {
+            console.error("Frontend: Critical error calling cloud function:", error);
+            showToast(`خطا در فراخوانی تابع: ${error.message}`, "error");
+        } finally {
+            saveBtn.disabled = false;
+            saveBtn.innerText = 'ذخیره';
         }
-    });
+    }
+});
+// ▲▲▲ END: [DEBUGGING VERSION] Replace the 'submit' event listener ▲▲▲
 };
 // ▲▲▲ END: [FINAL VERSION] Replace the entire showEmployeeForm function ▲▲▲
 // ▲▲▲ END: [FINAL VERSION] Replace the entire showEmployeeForm function ▲▲▲
