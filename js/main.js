@@ -7436,6 +7436,14 @@ if (typeof window.showProcessReminderForm !== 'function') {
                  closeModal(mainModal, mainModalContainer);
             });
 
+        } else if (reminder.type === 'پیشنهاد OKR' && reminder.context?.proposalId) {
+            // Open the OKR proposal review modal instead of generic status form
+            try {
+                showOkrProposalReviewModal(reminder.context.proposalId);
+            } catch (e) {
+                console.error('Failed to open OKR proposal review from reminder', e);
+                showToast('خطا در باز کردن پیشنهاد OKR.', 'error');
+            }
         } else {
             // Original logic for all other reminder types
             modalTitle.innerText = `پردازش یادآور: ${reminder.type || ''}`;
