@@ -6427,10 +6427,10 @@ const renderEmployeeTable = () => {
     
 // [FIX] Updated filtering logic to use new data structure
     const filteredEmployees = state.employees.filter(emp => {
-        if (!emp || !emp.name || !emp.id) return false; // Safeguard against incomplete data
+        if (!emp || !emp.name) return false; // Safeguard against incomplete data
 
-        const nameMatch = emp.name.toLowerCase().includes(searchInput);
-        const idMatch = emp.id.toLowerCase().includes(searchInput);
+        const nameMatch = (emp.name || '').toLowerCase().includes(searchInput);
+        const idMatch = ((emp.id || emp.firestoreId || '')).toLowerCase().includes(searchInput);
 
         // [CHANGED] Filter logic now uses primaryTeamId
 const teamMatch = !teamFilter || emp.primaryTeamId === teamFilter;
@@ -6617,7 +6617,7 @@ const setupTalentPageListeners = () => {
     };
 
     document.getElementById('searchInput')?.addEventListener('input', resetToFirstPage);
-    document.getElementById('departmentFilter')?.addEventListener('change', resetToFirstPage);
+    document.getElementById('teamFilter')?.addEventListener('change', resetToFirstPage);
     document.getElementById('skillFilter')?.addEventListener('change', resetToFirstPage);
     document.getElementById('statusFilter')?.addEventListener('change', resetToFirstPage);
     
