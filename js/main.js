@@ -4353,7 +4353,10 @@ dashboard: () => {
         
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                <h3 class="font-bold text-slate-800 text-lg">بینش‌های کلیدی</h3>
+                <div class="flex items-center justify-between">
+                    <h3 class="font-bold text-slate-800 text-lg">بینش‌های کلیدی</h3>
+                    <button id="toggle-analytics-btn" class="text-xs px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200">نمایش همه نمودارها</button>
+                </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pt-4">
                     <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
                         <h4 class="text-center text-xs font-medium text-slate-600 mb-2">نرخ مشارکت</h4>
@@ -4368,11 +4371,11 @@ dashboard: () => {
                         </div>
                     </div>
                     <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm"><h4 class="text-center text-xs font-medium text-slate-600 mb-2">توزیع استعدادها</h4><div class="relative w-full h-56"><canvas id="nineBoxChart"></canvas></div></div>
-                    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm"><h4 class="text-center text-xs font-medium text-slate-600 mb-2">ترکیب جنسیتی</h4><div class="relative w-full h-56"><canvas id="genderCompositionChart"></canvas></div></div>
-                    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm"><h4 class="text-center text-xs font-medium text-slate-600 mb-2">توزیع دپارتمان‌ها</h4><div class="relative w-full h-56"><canvas id="departmentDistributionChart"></canvas></div></div>
-                    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm"><h4 class="text-center text-xs font-medium text-slate-600 mb-2">سابقه کار</h4><div class="relative w-full h-56"><canvas id="tenureDistributionChart"></canvas></div></div>
-                    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm"><h4 class="text-center text-xs font-medium text-slate-600 mb-2">توزیع سنی</h4><div class="relative w-full h-56"><canvas id="ageDistributionChart"></canvas></div></div>
-<div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm md:col-span-2 xl:col-span-1">
+                    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm extra-analytics hidden"><h4 class="text-center text-xs font-medium text-slate-600 mb-2">ترکیب جنسیتی</h4><div class="relative w-full h-56"><canvas id="genderCompositionChart"></canvas></div></div>
+                    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm extra-analytics hidden"><h4 class="text-center text-xs font-medium text-slate-600 mb-2">توزیع دپارتمان‌ها</h4><div class="relative w-full h-56"><canvas id="departmentDistributionChart"></canvas></div></div>
+                    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm extra-analytics hidden"><h4 class="text-center text-xs font-medium text-slate-600 mb-2">سابقه کار</h4><div class="relative w-full h-56"><canvas id="tenureDistributionChart"></canvas></div></div>
+                    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm extra-analytics hidden"><h4 class="text-center text-xs font-medium text-slate-600 mb-2">توزیع سنی</h4><div class="relative w-full h-56"><canvas id="ageDistributionChart"></canvas></div></div>
+<div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm md:col-span-2 xl:col-span-1 extra-analytics hidden">
     <h4 class="text-center text-xs font-medium text-slate-600 mb-2">میانگین شایستگی‌های پرتکرار</h4>
     <div class="mb-2">
         <label for="family-filter" class="text-[11px] text-slate-500">فیلتر بر اساس خانواده شغلی:</label>
@@ -6516,6 +6519,16 @@ const renderTeamDashboardPage = (manager) => {
         return;
     }
 
+    // KPIs
+    const activeCycle = (state.evaluationCycles || []).find(c => c.status === 'active');
+    const pendingManagerAssessments = activeCycle ? teamMembers.filter(m => {
+        const ev = (state.employeeEvaluations || []).find(e => e.employeeId === m.id && e.cycleId === activeCycle.firestoreId);
+        return ev && ev.status === 'pending_manager_assessment';
+    }).length : 0;
+    const teamOKRDoc = (state.teamOKRs || []).find(t => t.teamId === managedTeam.firestoreId && (t.cycleId === (state.okrCycles.find(c=>c.status==='open')?.firestoreId || state.okrCycles.find(c=>c.status==='open')?.id)));
+    const teamOkrProgress = computeTeamProgress ? computeTeamProgress(teamOKRDoc) : 0;
+    const highRiskMembers = teamMembers.filter(m => (m.attritionRisk?.score || 0) > 60).length;
+
     const memberCardsHtml = teamMembers.map(emp => {
         const latestReview = (emp.performanceHistory || []).slice().sort((a,b)=> new Date(b.reviewDate) - new Date(a.reviewDate))[0];
         const latestScore = latestReview ? latestReview.overallScore : null;
@@ -6525,7 +6538,7 @@ const renderTeamDashboardPage = (manager) => {
         else if (riskScore > 40) riskColorClass = 'bg-yellow-500';
 
         return `
-            <div class="card bg-white p-4 flex flex-col text-center items-center rounded-2xl shadow-lg transform hover:-translate-y-1 transition-transform duration-300 relative overflow-hidden">
+            <div class="card bg-white p-4 flex flex-col text-center items-center rounded-2xl shadow hover:shadow-md transition relative overflow-hidden">
                 <div class="absolute top-3 right-3 w-3 h-3 rounded-full ${riskColorClass}" title="ریسک خروج: ${riskScore}%"></div>
 
                 <img src="${emp.avatar}" alt="${emp.name}" class="w-24 h-24 rounded-full object-cover border-4 border-slate-100 mt-4 shadow-sm">
@@ -6550,9 +6563,15 @@ const renderTeamDashboardPage = (manager) => {
         <section class="rounded-2xl overflow-hidden border mb-6" style="background:linear-gradient(90deg,#10B981,#6B69D6)">
             <div class="p-6 sm:p-8">
                 <h1 class="text-2xl sm:text-3xl font-extrabold text-white">داشبورد تیم: ${managedTeam.name}</h1>
-                <p class="text-white/90 text-xs mt-1">نمای کلی از اعضای تیم و شاخص‌های کلیدی عملکرد آن‌ها</p>
+                <p class="text-white/90 text-xs mt-1">نمای کلی از شاخص‌های کلیدی و اعضای تیم</p>
             </div>
         </section>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+            <div class="glass rounded-xl p-4 flex items-center justify-between"><div><div class="text-[11px] text-slate-500">تعداد اعضا</div><div class="text-xl font-extrabold text-slate-800">${teamMembers.length}</div></div><i data-lucide="users" class="w-5 h-5 text-indigo-500"></i></div>
+            <div class="glass rounded-xl p-4 flex items-center justify-between"><div><div class="text-[11px] text-slate-500">ارزیابی‌های منتظر مدیر</div><div class="text-xl font-extrabold text-slate-800">${pendingManagerAssessments}</div></div><i data-lucide="clipboard-check" class="w-5 h-5 text-blue-500"></i></div>
+            <div class="glass rounded-xl p-4 flex items-center justify-between"><div><div class="text-[11px] text-slate-500">پیشرفت OKR تیم</div><div class="text-xl font-extrabold text-slate-800">${teamOkrProgress}%</div></div><i data-lucide="target" class="w-5 h-5 text-emerald-500"></i></div>
+            <div class="glass rounded-xl p-4 flex items-center justify-between"><div><div class="text-[11px] text-slate-500">اعضای پرریسک</div><div class="text-xl font-extrabold text-slate-800">${highRiskMembers}</div></div><i data-lucide="alert-triangle" class="w-5 h-5 text-rose-500"></i></div>
+        </div>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             ${memberCardsHtml}
         </div>
@@ -6928,6 +6947,18 @@ const setupDashboardListeners = () => {
     document.getElementById('view-all-reminders-btn')?.addEventListener('click', () => {
         showAllRemindersModal();
     });
+
+    // Collapse/expand extra analytics
+    const toggleBtn = document.getElementById('toggle-analytics-btn');
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', () => {
+            const extra = document.querySelectorAll('.extra-analytics');
+            const isHidden = extra.length ? extra[0].classList.contains('hidden') : true;
+            extra.forEach(el => el.classList.toggle('hidden', !isHidden));
+            toggleBtn.textContent = isHidden ? 'پنهان کردن نمودارهای اضافی' : 'نمایش همه نمودارها';
+            setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
+        });
+    }
 
     // --- [NEW LOGIC] بخش جدید برای فیلتر نمودار ---
     const familyFilter = document.getElementById('family-filter');
