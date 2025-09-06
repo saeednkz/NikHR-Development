@@ -2845,39 +2845,7 @@ const generateSmartReminders = async () => {
         }
     }
 
-    // OKR-related reminders
-    try {
-        const openCycle = (state.okrCycles||[]).find(c=> c.status==='open');
-        if (openCycle) {
-            // Reminder for admin to review OKR proposals
-            const adminUid = (state.users.find(u=>u.role==='admin')||{}).firestoreId;
-            if (adminUid) {
-                const id = `okr-review-${openCycle.id||openCycle.firestoreId}`;
-                const reminderRef = doc(db, `artifacts/${appId}/public/data/reminders`, id);
-                const snap = await getDoc(reminderRef);
-                if (!snap.exists()) {
-                    await setDoc(reminderRef, { text: `بررسی پیشنهادهای OKR در چرخه ${openCycle.title}`, type: 'پیشنهاد OKR', date: new Date(), assignedTo: adminUid, status: 'جدید', isReadByAssignee: false, createdAt: serverTimestamp() });
-                    hasNewReminders = true;
-                }
-            }
-            // Monthly reminder for managers to update progress
-            const nowM = new Date();
-            if (nowM.getDate() === 1) {
-                const managers = (state.teams||[]).map(t=> t.leadership?.manager).filter(Boolean);
-                for (const mid of managers) {
-                    const mEmp = state.employees.find(e=> e.id===mid);
-                    if (!mEmp?.uid) continue;
-                    const id = `okr-progress-${openCycle.id||openCycle.firestoreId}-${mid}-${nowM.getFullYear()}-${nowM.getMonth()+1}`;
-                    const ref = doc(db, `artifacts/${appId}/public/data/reminders`, id);
-                    const ex = await getDoc(ref);
-                    if (!ex.exists()) {
-                        await setDoc(ref, { text: 'به‌روزرسانی پیشرفت OKR تیم', type: 'پیشنهاد OKR', date: nowM, assignedTo: mEmp.uid, status: 'جدید', isReadByAssignee: false, createdAt: serverTimestamp() });
-                        hasNewReminders = true;
-                    }
-                }
-            }
-        }
-    } catch (e) { console.debug('okr reminders check failed', e); }
+    // OKR-related reminders removed (moved to approvals flow)
 
     // Company anniversary: 1 Ordibehesht campaign and day-of postcard for all employees
     try {
