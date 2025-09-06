@@ -4778,7 +4778,11 @@ okrs: () => {
     if (!isAdmin()) {
         return `<div class="p-6 card text-center"><p>دسترسی مجاز نیست.</p></div>`;
     }
+    const params = new URLSearchParams(window.location.hash.split('?')[1] || '');
     const cycles = (state.okrCycles || []).slice().sort((a,b)=> new Date(b.startDate?.toDate?.()||b.startDate||0) - new Date(a.startDate?.toDate?.()||a.startDate||0));
+    const open = cycles.find(c=> c.status==='open');
+    const selectedCycleId = params.get('cycle') || (open?.firestoreId || open?.id) || (cycles[0]?.firestoreId || cycles[0]?.id) || '';
+    const selectedCycle = cycles.find(c=> (c.firestoreId||c.id) === selectedCycleId);
     const cycleRows = cycles.map(c => `
         <tr class="border-b">
             <td class="px-4 py-3 font-semibold">${c.id || c.firestoreId || '-'}</td>
@@ -4789,6 +4793,36 @@ okrs: () => {
             <td class="px-4 py-3 text-left"><button class="okrs-edit-cycle-btn text-xs secondary-btn" data-id="${c.firestoreId}">ویرایش</button></td>
         </tr>
     `).join('');
+    const cycleSelect = cycles.map(c=> `<option value="${c.firestoreId||c.id}" ${((c.firestoreId||c.id)===selectedCycleId)?'selected':''}>${c.title||c.id}</option>`).join('');
+
+    // Corporate OKRs
+    const corpHtml = (selectedCycle?.corporateOKRs||[]).map(o=> `
+        <div class="mb-2">
+            <div class="font-semibold text-sm">${o.objective}</div>
+            ${(o.keyResults||[]).map(kr=> `<div class="text-[11px] text-slate-600">• ${kr.name}${kr.target?` (هدف: ${kr.target})`:''}</div>`).join('')}
+        </div>
+    `).join('') || '<div class="text-xs text-slate-500">ثبت نشده</div>';
+
+    // Team OKRs (approved)
+    const approvedTeams = (state.teamOKRs||[]).filter(t=> t.cycleId===selectedCycleId && t.status==='approved');
+    const teamCards = approvedTeams.map(t => {
+        const team = (state.teams||[]).find(x=> x.firestoreId===t.teamId);
+        const teamName = team?.name || 'تیم';
+        const objectives = (t.okrs||[]);
+        const objHtml = objectives.map(o => {
+            const prog = computeObjectiveProgress ? computeObjectiveProgress(o) : Math.round(((o.keyResults||[]).reduce((s,kr)=> s+(Number(kr.progress)||0),0))/Math.max(1,(o.keyResults||[]).length));
+            return `<div class=\"mb-2\"><div class=\"font-semibold text-xs\">${o.objective} <span class=\"ml-1 text-[11px] text-slate-500\">${prog}%</span></div>${(o.keyResults||[]).map(kr=> `<div class=\"text-[11px] text-slate-600\">• ${kr.name} — ${kr.progress||0}%</div>`).join('')}</div>`;
+        }).join('');
+        const teamProg = objectives.length ? Math.round(objectives.map(o => (computeObjectiveProgress? computeObjectiveProgress(o) : 0)).reduce((a,b)=>a+b,0)/objectives.length) : 0;
+        return `
+            <div class="border rounded-2xl p-4">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="font-bold">${teamName}</div>
+                    <div class="text-xs text-slate-600">پیشرفت تیم: <span class="font-semibold">${teamProg}%</span></div>
+                </div>
+                ${objHtml || '<div class="text-xs text-slate-500">بدون Objective</div>'}
+            </div>`;
+    }).join('') || '<div class="text-xs text-slate-500">OKR تاییدشده‌ای برای هیچ تیمی ثبت نشده است.</div>';
 
     return `
         <section class="rounded-2xl overflow-hidden border mb-6" style="background:linear-gradient(90deg,#10B981,#6B69D6)">
@@ -4800,6 +4834,22 @@ okrs: () => {
                 <button id="okrs-new-cycle-btn" class="bg.white/90 hover:bg-white text-slate-800 text-xs font-semibold px-3 py-2 rounded-lg">ایجاد چرخه جدید</button>
             </div>
         </section>
+        <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 mb-6">
+            <div class="flex items-center gap-2 text-xs">
+                <span>چرخه:</span>
+                <select id="okrs-cycle-select" class="p-1.5 border rounded-lg bg-white">${cycleSelect}</select>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200">
+                <h3 class="font-bold mb-3">OKRهای سازمان</h3>
+                ${corpHtml}
+            </div>
+            <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200">
+                <h3 class="font-bold mb-3">OKR تیم‌ها (تایید شده)</h3>
+                <div class="space-y-3">${teamCards}</div>
+            </div>
+        </div>
         <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200">
             <table class="w-full text-sm">
                 <thead style="background:#ECEEF3">
