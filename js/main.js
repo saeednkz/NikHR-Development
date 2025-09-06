@@ -951,7 +951,12 @@ function renderEmployeePortalPage(pageName, employee) {
             lucide.createIcons();
         });
     } else if (pageName === 'requests') {
-        let myRequests = (state.requests || []).filter(req => req.uid === employee.uid);
+        // [FIX] Exclude skill approval requests from the employee's own view.
+        // An employee should only see requests they need to track, not tasks assigned to others.
+        let myRequests = (state.requests || [])
+            .filter(req => req.uid === employee.uid && req.requestType !== 'تایید مهارت');
+        
+        // ... (بقیه کدهای این بخش بدون تغییر باقی می‌ماند) ...
         const params = new URLSearchParams(window.location.hash.split('?')[1] || '');
         const qParam = params.get('q') || '';
         const statusParam = params.get('status') || 'all';
@@ -968,9 +973,7 @@ function renderEmployeePortalPage(pageName, employee) {
             const matchesStatus = statusParam==='all' ? true : req.status === statusParam;
             return matchesText && matchesStatus;
         });
-        const byType = {
-            'گواهی اشتغال به کار': [], 'بیمه': [], 'بیمه تکمیلی': [], 'درخواست مرخصی': [], 'سایر': []
-        };
+        const byType = { 'گواهی اشتغال به کار': [], 'بیمه': [], 'بیمه تکمیلی': [], 'درخواست مرخصی': [], 'سایر': [] };
         filtered.forEach(req => {
             const key = byType[req.requestType] ? req.requestType : (req.requestType?.includes('مرخصی') ? 'درخواست مرخصی' : 'سایر');
             byType[key].push(req);
@@ -980,61 +983,15 @@ function renderEmployeePortalPage(pageName, employee) {
             const rows = list.map(req => {
                 const statusMap = {'درحال بررسی': { text: 'در حال بررسی', color: 'bg-yellow-100 text-yellow-800' },'در حال انجام': { text: 'در حال انجام', color: 'bg-blue-100 text-blue-800' },'تایید شده': { text: 'تایید شده', color: 'bg-green-100 text-green-800' },'رد شده': { text: 'رد شده', color: 'bg-red-100 text-red-800' }};
                 const status = statusMap[req.status] || { text: req.status, color: 'bg-slate-100' };
-                return `<tr class=\"bg-white\"><td class=\"p-3 border-b\">${req.requestType}</td><td class=\"p-3 border-b\">${toPersianDate(req.createdAt)}</td><td class=\"p-3 border-b\"><span class=\"px-2 py-1 text-xs font-medium rounded-full ${status.color}\">${status.text}</span></td><td class=\"p-3 border-b\"><button class=\"view-request-btn text-xs text-indigo-600 hover:underline\" data-id=\"${req.firestoreId}\">مشاهده</button></td></tr>`;
+                return `<tr class="bg-white"><td class="p-3 border-b">${req.requestType}</td><td class="p-3 border-b">${toPersianDate(req.createdAt)}</td><td class="p-3 border-b"><span class="px-2 py-1 text-xs font-medium rounded-full ${status.color}">${status.text}</span></td><td class="p-3 border-b"><button class="view-request-btn text-xs text-indigo-600 hover:underline" data-id="${req.firestoreId}">مشاهده</button></td></tr>`;
             }).join('');
-            return `<div class=\"mb-6\"><div class=\"flex items-center gap-2 mb-2\"><i data-lucide=\"folder\" class=\"w-4 h-4\"></i><h3 class=\"font-bold text-slate-800\">${title}</h3></div><div class=\"bg-white rounded-xl border overflow-hidden\"><table class=\"w-full text-sm\"><thead style=\"background:#ECEEF3\"><tr><th class=\"p-2\">نوع</th><th class=\"p-2\">تاریخ</th><th class=\"p-2\">وضعیت</th><th class=\"p-2\"></th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+            return `<div class="mb-6"><div class="flex items-center gap-2 mb-2"><i data-lucide="folder" class="w-4 h-4"></i><h3 class="font-bold text-slate-800">${title}</h3></div><div class="bg-white rounded-xl border overflow-hidden"><table class="w-full text-sm"><thead style="background:#ECEEF3"><tr><th class="p-2">نوع</th><th class="p-2">تاریخ</th><th class="p-2">وضعیت</th><th class="p-2"></th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
         };
         const emptyState = '<div class="text-center p-10"><i data-lucide="inbox" class="mx-auto w-12 h-12 text-slate-300"></i><p class="mt-3 text-sm text-slate-500">شما هنوز درخواستی ثبت نکرده‌اید.</p><button id="add-new-request-btn" class="mt-4 inline-flex items-center gap-2 text-xs font-semibold" style="background:#6B69D6;color:#fff;padding:.6rem 1rem;border-radius:.75rem"><i data-lucide="plus-circle" class="w-4 h-4"></i><span>ثبت درخواست جدید</span></button></div>';
-        const counts = {
-            all: myRequests.length,
-            pending: myRequests.filter(r=> r.status==='درحال بررسی').length,
-            doing: myRequests.filter(r=> r.status==='در حال انجام').length,
-            approved: myRequests.filter(r=> r.status==='تایید شده').length,
-            rejected: myRequests.filter(r=> r.status==='رد شده').length,
-        };
-        contentContainer.innerHTML = `
-            <section class="rounded-2xl overflow-hidden border mb-6" style="background:linear-gradient(90deg,#6B69D6,#0EA5E9)"><div class="p-6 sm:p-8"><h1 class="text-2xl sm:text-3xl font-extrabold text-white">درخواست‌های من</h1><p class="text-white/90 text-xs mt-1">پیگیری و ثبت درخواست‌های سازمانی</p></div></section>
-            <div class="flex flex-wrap items-center gap-2 mb-4">
-                <span class="px-2 py-1 rounded-full text-xs ${statusParam==='all'?'bg-slate-800 text-white':'bg-slate-100 text-slate-700'} cursor-pointer" onclick="location.hash='#requests?q=${encodeURIComponent(qParam)}&status=all'">همه ${counts.all}</span>
-                <span class="px-2 py-1 rounded-full text-xs ${statusParam==='درحال بررسی'?'bg-amber-500 text-white':'bg-amber-100 text-amber-800'} cursor-pointer" onclick="location.hash='#requests?q=${encodeURIComponent(qParam)}&status=${encodeURIComponent('درحال بررسی')}'">در حال بررسی ${counts.pending}</span>
-                <span class="px-2 py-1 rounded-full text-xs ${statusParam==='در حال انجام'?'bg-blue-500 text-white':'bg-blue-100 text-blue-800'} cursor-pointer" onclick="location.hash='#requests?q=${encodeURIComponent(qParam)}&status=${encodeURIComponent('در حال انجام')}'">در حال انجام ${counts.doing}</span>
-                <span class="px-2 py-1 rounded-full text-xs ${statusParam==='تایید شده'?'bg-green-500 text-white':'bg-green-100 text-green-800'} cursor-pointer" onclick="location.hash='#requests?q=${encodeURIComponent(qParam)}&status=${encodeURIComponent('تایید شده')}'">تایید شده ${counts.approved}</span>
-                <span class="px-2 py-1 rounded-full text-xs ${statusParam==='رد شده'?'bg-rose-500 text-white':'bg-rose-100 text-rose-800'} cursor-pointer" onclick="location.hash='#requests?q=${encodeURIComponent(qParam)}&status=${encodeURIComponent('رد شده')}'">رد شده ${counts.rejected}</span>
-                <div class="ml-auto"></div>
-                <button id="add-new-request-btn" class="inline-flex items-center gap-2 text-xs font-semibold" style="background:#6B69D6;color:#fff;padding:.6rem 1rem;border-radius:.75rem"><i data-lucide="plus-circle" class="w-4 h-4"></i><span>ثبت درخواست جدید</span></button>
-            </div>
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 mb-4">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <input id="request-search" class="p-2 border rounded-lg text-sm" placeholder="جستجو در نوع/جزئیات" value="${qParam}"/>
-                    <select id="request-status" class="p-2 border rounded-lg text-sm bg-white">
-                        <option value="all" ${statusParam==='all'?'selected':''}>همه وضعیت‌ها</option>
-                        <option value="درحال بررسی" ${statusParam==='درحال بررسی'?'selected':''}>در حال بررسی</option>
-                        <option value="در حال انجام" ${statusParam==='در حال انجام'?'selected':''}>در حال انجام</option>
-                        <option value="تایید شده" ${statusParam==='تایید شده'?'selected':''}>تایید شده</option>
-                        <option value="رد شده" ${statusParam==='رد شده'?'selected':''}>رد شده</option>
-                    </select>
-                    <div class="text-xs text-slate-500 self-center">نتایج: <span id="request-results-count">${filtered.length}</span></div>
-                </div>
-            </div>
-            ${myRequests.length ? [
-                sectionTable('گواهی اشتغال به کار', byType['گواهی اشتغال به کار']),
-                sectionTable('بیمه', byType['بیمه']),
-                sectionTable('بیمه تکمیلی', byType['بیمه تکمیلی']),
-                sectionTable('مرخصی', byType['درخواست مرخصی']),
-                sectionTable('عمومی', byType['سایر'])
-            ].join('') : `<div>${emptyState}</div>`}
-            `;
-        const searchInput = document.getElementById('request-search');
-        const statusSelect = document.getElementById('request-status');
-        function updateFilters() {
-            const q = (searchInput?.value || '').trim();
-            const st = statusSelect?.value || 'all';
-            history.replaceState(null, '', `#requests?q=${encodeURIComponent(q)}&status=${encodeURIComponent(st)}`);
-            renderEmployeePortalPage('requests', employee);
-        }
-        searchInput?.addEventListener('input', () => { clearTimeout(window._rqDeb); window._rqDeb = setTimeout(updateFilters, 250); });
-        statusSelect?.addEventListener('change', updateFilters);
-    } else if (pageName === 'documents') {
+        const counts = { all: myRequests.length, pending: myRequests.filter(r=> r.status==='درحال بررسی').length, doing: myRequests.filter(r=> r.status==='در حال انجام').length, approved: myRequests.filter(r=> r.status==='تایید شده').length, rejected: myRequests.filter(r=> r.status==='رد شده').length, };
+        contentContainer.innerHTML = `<section class="rounded-2xl overflow-hidden border mb-6" style="background:linear-gradient(90deg,#6B69D6,#0EA5E9)"><div class="p-6 sm:p-8"><h1 class="text-2xl sm:text-3xl font-extrabold text-white">درخواست‌های من</h1><p class="text-white/90 text-xs mt-1">پیگیری و ثبت درخواست‌های سازمانی</p></div></section><div class="flex flex-wrap items-center gap-2 mb-4"><span class="px-2 py-1 rounded-full text-xs ${statusParam==='all'?'bg-slate-800 text-white':'bg-slate-100 text-slate-700'} cursor-pointer" onclick="location.hash='#requests?q=${encodeURIComponent(qParam)}&status=all'">همه ${counts.all}</span><span class="px-2 py-1 rounded-full text-xs ${statusParam==='درحال بررسی'?'bg-amber-500 text-white':'bg-amber-100 text-amber-800'} cursor-pointer" onclick="location.hash='#requests?q=${encodeURIComponent(qParam)}&status=${encodeURIComponent('درحال بررسی')}'">در حال بررسی ${counts.pending}</span><span class="px-2 py-1 rounded-full text-xs ${statusParam==='در حال انجام'?'bg-blue-500 text-white':'bg-blue-100 text-blue-800'} cursor-pointer" onclick="location.hash='#requests?q=${encodeURIComponent(qParam)}&status=${encodeURIComponent('در حال انجام')}'">در حال انجام ${counts.doing}</span><span class="px-2 py-1 rounded-full text-xs ${statusParam==='تایید شده'?'bg-green-500 text-white':'bg-green-100 text-green-800'} cursor-pointer" onclick="location.hash='#requests?q=${encodeURIComponent(qParam)}&status=${encodeURIComponent('تایید شده')}'">تایید شده ${counts.approved}</span><span class="px-2 py-1 rounded-full text-xs ${statusParam==='رد شده'?'bg-rose-500 text-white':'bg-rose-100 text-rose-800'} cursor-pointer" onclick="location.hash='#requests?q=${encodeURIComponent(qParam)}&status=${encodeURIComponent('رد شده')}'">رد شده ${counts.rejected}</span><div class="ml-auto"></div><button id="add-new-request-btn" class="inline-flex items-center gap-2 text-xs font-semibold" style="background:#6B69D6;color:#fff;padding:.6rem 1rem;border-radius:.75rem"><i data-lucide="plus-circle" class="w-4 h-4"></i><span>ثبت درخواست جدید</span></button></div><div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 mb-4"><div class="grid grid-cols-1 md:grid-cols-3 gap-3"><input id="request-search" class="p-2 border rounded-lg text-sm" placeholder="جستجو در نوع/جزئیات" value="${qParam}"/><select id="request-status" class="p-2 border rounded-lg text-sm bg-white"><option value="all" ${statusParam==='all'?'selected':''}>همه وضعیت‌ها</option><option value="درحال بررسی" ${statusParam==='درحال بررسی'?'selected':''}>در حال بررسی</option><option value="در حال انجام" ${statusParam==='در حال انجام'?'selected':''}>در حال انجام</option><option value="تایید شده" ${statusParam==='تایید شده'?'selected':''}>تایید شده</option><option value="رد شده" ${statusParam==='رد شده'?'selected':''}>رد شده</option></select><div class="text-xs text-slate-500 self-center">نتایج: <span id="request-results-count">${filtered.length}</span></div></div></div>${myRequests.length ? [ sectionTable('گواهی اشتغال به کار', byType['گواهی اشتغال به کار']), sectionTable('بیمه', byType['بیمه']), sectionTable('بیمه تکمیلی', byType['بیمه تکمیلی']), sectionTable('مرخصی', byType['درخواست مرخصی']), sectionTable('عمومی', byType['سایر']) ].join('') : `<div>${emptyState}</div>`}`;
+        const searchInput = document.getElementById('request-search'); const statusSelect = document.getElementById('request-status'); function updateFilters() { const q = (searchInput?.value || '').trim(); const st = statusSelect?.value || 'all'; history.replaceState(null, '', `#requests?q=${encodeURIComponent(q)}&status=${encodeURIComponent(st)}`); renderEmployeePortalPage('requests', employee); } searchInput?.addEventListener('input', () => { clearTimeout(window._rqDeb); window._rqDeb = setTimeout(updateFilters, 250); }); statusSelect?.addEventListener('change', updateFilters);
+    }  else if (pageName === 'documents') {
         const docSections = documentCategories; 
         const colors = ['#6B69D6','#FF6A3D','#10B981','#F59E0B','#0EA5E9','#F43F5E'];
         const cards = docSections.map((s, idx) => {
