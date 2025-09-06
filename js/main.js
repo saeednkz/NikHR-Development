@@ -7975,6 +7975,9 @@ const renderIndividualSkills = (employee, isManagerView) => {
 // فایل: js/main.js
 // ▼▼▼ کل این تابع را با نسخه کامل و نهایی زیر جایگزین کنید ▼▼▼
 
+// فایل: js/main.js
+// ▼▼▼ کل این تابع را با نسخه کامل و نهایی زیر جایگزین کنید ▼▼▼
+
 const showAddOrEditSkillForm = (employee, existingSkill = null, isManagerAdding = false) => {
     const isEditing = existingSkill !== null;
     modalTitle.innerText = isEditing ? `ویرایش مهارت: ${existingSkill.skillName}` : (isManagerAdding ? 'افزودن مهارت جدید' : 'پیشنهاد مهارت جدید');
