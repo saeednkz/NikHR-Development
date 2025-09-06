@@ -4126,10 +4126,6 @@ talent: () => {
                     <i data-lucide="search" class="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
                 </div>
                 <div class="w-full md:w-auto flex flex-wrap gap-2 justify-end">
-                    <select id="teamFilter" class="p-2 border border-slate-300 rounded-lg bg-white">
-                        <option value="">همه تیم‌ها</option>
-                        ${teamFilterOptions}
-                    </select>
                     <select id="skillFilter" class="p-2 border border-slate-300 rounded-lg bg-white"><option value="">همه مهارت‌ها</option>${[...new Set([].concat(...(state.employees||[]).map(e => Object.keys(e.skills||{}))))].map(s => `<option value="${s}">${s}</option>`).join('')}</select>
                     <select id="statusFilter" class="p-2 border border-slate-300 rounded-lg bg-white"><option value="">همه وضعیت‌ها</option><option value="فعال">فعال</option><option value="غیرفعال">غیرفعال</option></select>
                     <select id="teamFilter" class="p-2 border border-slate-300 rounded-lg bg-white">
