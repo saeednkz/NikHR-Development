@@ -2090,6 +2090,7 @@ const managerNavlinks = isTeamManager(employee)
     ? `
         <a href="#team-dashboard" class="nav-item"><i data-lucide="layout-grid"></i><span>داشبورد تیم من</span></a>
         <a href="#team-performance" class="nav-item"><i data-lucide="users-2"></i><span>ارزیابی تیم</span></a>
+        <a href="#tasks" class="nav-item"><i data-lucide="clipboard-check"></i><span>وظایف من</span></a>
       ` 
     : '';
 
