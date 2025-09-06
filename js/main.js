@@ -1430,7 +1430,10 @@ function renderEmployeePortalPage(pageName, employee) {
             contentContainer.innerHTML = `<p>شما مدیر هیچ تیمی نیستید.</p>`;
             return;
         }
-        const teamMembers = (myTeam.memberIds || []).map(id => (state.employees || []).find(e => e.id === id)).filter(Boolean);
+const teamMembers = (myTeam.memberIds || [])
+    .map(id => (state.employees || []).find(e => e.id === id))
+    .filter(Boolean)
+    .filter(member => member.id !== employee.id); // [FIX] This line removes the manager from their own evaluation list
         const activeCycle = (state.evaluationCycles || []).find(c => c.status === 'active');
         if (!activeCycle) {
             contentContainer.innerHTML = `<div class="card p-6 text-center"><h3 class="font-bold text-lg">داشبورد ارزیابی تیم: ${myTeam.name}</h3><p class="mt-4 text-slate-500">در حال حاضر هیچ دوره ارزیابی فعالی وجود ندارد.</p></div>`;
