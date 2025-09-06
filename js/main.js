@@ -91,8 +91,9 @@ const hexToRgba = (hex, alpha = 1) => {
 const setupChartTheme = () => {
     if (typeof Chart === 'undefined' || _chartThemeApplied) return;
     _chartThemeApplied = true;
+    const isDark = typeof document !== 'undefined' && document.body && document.body.classList.contains('theme-dark');
     Chart.defaults.font.family = 'Vazirmatn, system-ui, sans-serif';
-    Chart.defaults.color = '#475569';
+    Chart.defaults.color = isDark ? '#E5E7EB' : '#475569';
     Chart.defaults.responsive = true;
     Chart.defaults.maintainAspectRatio = false;
     Chart.defaults.elements = Chart.defaults.elements || {};
@@ -113,18 +114,18 @@ const setupChartTheme = () => {
     Chart.defaults.plugins.legend.labels = Chart.defaults.plugins.legend.labels || {};
     Chart.defaults.plugins.legend.labels.usePointStyle = true;
     Chart.defaults.plugins.tooltip = Chart.defaults.plugins.tooltip || {};
-    Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(15,23,42,0.92)';
-    Chart.defaults.plugins.tooltip.titleColor = '#E5E7EB';
-    Chart.defaults.plugins.tooltip.bodyColor = '#E5E7EB';
-    Chart.defaults.plugins.tooltip.borderColor = 'rgba(226,232,240,0.7)';
+    Chart.defaults.plugins.tooltip.backgroundColor = isDark ? 'rgba(17,24,39,0.92)' : 'rgba(15,23,42,0.92)';
+    Chart.defaults.plugins.tooltip.titleColor = isDark ? '#F3F4F6' : '#E5E7EB';
+    Chart.defaults.plugins.tooltip.bodyColor = isDark ? '#F3F4F6' : '#E5E7EB';
+    Chart.defaults.plugins.tooltip.borderColor = isDark ? 'rgba(31,41,55,0.7)' : 'rgba(226,232,240,0.7)';
     Chart.defaults.plugins.tooltip.borderWidth = 1;
     Chart.defaults.layout = Chart.defaults.layout || {};
     Chart.defaults.layout.padding = { top: 8, right: 8, bottom: 8, left: 8 };
     Chart.defaults.scale = Chart.defaults.scale || {};
     Chart.defaults.scale.grid = Chart.defaults.scale.grid || {};
-    Chart.defaults.scale.grid.color = 'rgba(226,232,240,0.6)';
+    Chart.defaults.scale.grid.color = isDark ? 'rgba(31,41,55,0.6)' : 'rgba(226,232,240,0.6)';
     Chart.defaults.scale.ticks = Chart.defaults.scale.ticks || {};
-    Chart.defaults.scale.ticks.color = '#64748b';
+    Chart.defaults.scale.ticks.color = isDark ? '#9CA3AF' : '#64748b';
 };
 const barGradientBg = (orientation = 'vertical') => (context) => {
     const { chart, dataIndex } = context;
@@ -4278,7 +4279,7 @@ dashboard: () => {
                 <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pt-4">
                     <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
                         <h4 class="text-center text-xs font-medium text-slate-600 mb-2">نرخ مشارکت</h4>
-                        <div class="relative w-full h-40">
+                        <div class="relative w-full h-44">
                             <canvas id="engagementGaugeDashboard"></canvas>
                             <div class="absolute inset-0 flex items-center justify-center">
                                 <div id="engagementGaugeLabel" class="text-center">
@@ -4288,11 +4289,11 @@ dashboard: () => {
                             </div>
                         </div>
                     </div>
-                    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm"><h4 class="text-center text-xs font-medium text-slate-600 mb-2">توزیع استعدادها</h4><div class="relative w-full h-56"><canvas id="nineBoxChart"></canvas></div></div>
-                    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm"><h4 class="text-center text-xs font-medium text-slate-600 mb-2">ترکیب جنسیتی</h4><div class="relative w-full h-56"><canvas id="genderCompositionChart"></canvas></div></div>
-                    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm"><h4 class="text-center text-xs font-medium text-slate-600 mb-2">توزیع دپارتمان‌ها</h4><div class="relative w-full h-56"><canvas id="departmentDistributionChart"></canvas></div></div>
-                    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm"><h4 class="text-center text-xs font-medium text-slate-600 mb-2">سابقه کار</h4><div class="relative w-full h-56"><canvas id="tenureDistributionChart"></canvas></div></div>
-                    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm"><h4 class="text-center text-xs font-medium text-slate-600 mb-2">توزیع سنی</h4><div class="relative w-full h-56"><canvas id="ageDistributionChart"></canvas></div></div>
+                    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm"><h4 class="text-center text-xs font-medium text-slate-600 mb-2">توزیع استعدادها</h4><div class="relative w-full h-64"><canvas id="nineBoxChart"></canvas></div></div>
+                    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm"><h4 class="text-center text-xs font-medium text-slate-600 mb-2">ترکیب جنسیتی</h4><div class="relative w-full h-64"><canvas id="genderCompositionChart"></canvas></div></div>
+                    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm"><h4 class="text-center text-xs font-medium text-slate-600 mb-2">توزیع دپارتمان‌ها</h4><div class="relative w-full h-64"><canvas id="departmentDistributionChart"></canvas></div></div>
+                    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm"><h4 class="text-center text-xs font-medium text-slate-600 mb-2">سابقه کار</h4><div class="relative w-full h-64"><canvas id="tenureDistributionChart"></canvas></div></div>
+                    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm"><h4 class="text-center text-xs font-medium text-slate-600 mb-2">توزیع سنی</h4><div class="relative w-full h-64"><canvas id="ageDistributionChart"></canvas></div></div>
 <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm md:col-span-2 xl:col-span-1">
     <h4 class="text-center text-xs font-medium text-slate-600 mb-2">میانگین شایستگی‌های پرتکرار</h4>
     <div class="mb-2">
@@ -4302,7 +4303,7 @@ dashboard: () => {
             ${(state.jobFamilies || []).map(f => `<option value="${f.name}">${f.name}</option>`).join('')}
         </select>
     </div>
-    <div class="relative w-full h-56"><canvas id="teamCompetencyRadarChart"></canvas></div>
+    <div class="relative w-full h-64"><canvas id="teamCompetencyRadarChart"></canvas></div>
 </div>
                 </div>
             </div>
@@ -6457,12 +6458,14 @@ const renderDashboardCharts = () => {
                 datasets: [{
                     data: Object.values(metrics.genderComposition),
                     backgroundColor: [getBrandColor(0), getBrandColor(5), '#A1A1AA'].map(c => hexToRgba(c, 0.9)),
-                    hoverOffset: 6
+                    hoverOffset: 6,
+                    borderWidth: 0
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                cutout: '65%',
                 plugins: { legend: { position: 'bottom' } }
             }
         });
@@ -6479,7 +6482,7 @@ const renderDashboardCharts = () => {
                 datasets: [{
                     label: 'تعداد',
                     data: Object.values(metrics.departmentDistribution),
-                    backgroundColor: Object.keys(metrics.departmentDistribution).map((_, i) => hexToRgba(getBrandColor(i), 0.85)),
+                    backgroundColor: barGradientBg('vertical'),
                     borderRadius: 10,
                     barPercentage: 0.55,
                     categoryPercentage: 0.6
@@ -6508,7 +6511,7 @@ const renderDashboardCharts = () => {
                 datasets: [{
                     label: 'تعداد',
                     data: Object.values(metrics.nineBoxDistribution),
-                    backgroundColor: Object.values(metrics.nineBoxDistribution).map((_, i) => hexToRgba(getBrandColor(i + 2), 0.85)),
+                    backgroundColor: barGradientBg('vertical'),
                     borderRadius: 10,
                     barPercentage: 0.55,
                     categoryPercentage: 0.6
@@ -6545,7 +6548,8 @@ const renderDashboardCharts = () => {
                 datasets: [{
                     data: Object.values(tenureData),
                     backgroundColor: [getBrandColor(0), getBrandColor(5), getBrandColor(4)].map(c => hexToRgba(c, 0.9)),
-                    hoverOffset: 6
+                    hoverOffset: 6,
+                    borderWidth: 0
                 }]
             },
             options: {
@@ -6575,7 +6579,7 @@ const renderDashboardCharts = () => {
                 datasets: [{
                     label: 'تعداد',
                     data: Object.values(ageData),
-                    backgroundColor: Object.values(ageData).map((_, i) => hexToRgba(getBrandColor(i), 0.85)),
+                    backgroundColor: barGradientBg('vertical'),
                     borderRadius: 10,
                     barPercentage: 0.55,
                     categoryPercentage: 0.6
