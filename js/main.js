@@ -6443,20 +6443,24 @@ const renderEmployeeTable = () => {
     const skillFilter = document.getElementById('skillFilter')?.value || '';
     const statusFilter = document.getElementById('statusFilter')?.value || '';
     
-    const filteredEmployees = state.employees.filter(emp => {
-        if (!emp || !emp.name || !emp.id) return false; // Safeguard against incomplete data
+// [FIX] Updated filtering logic to use new data structure
+const filteredEmployees = state.employees.filter(emp => {
+    // Safeguard against incomplete data from Firestore
+    if (!emp || !emp.name || !emp.id) return false;
 
-        const nameMatch = emp.name.toLowerCase().includes(searchInput);
-        const idMatch = emp.id.toLowerCase().includes(searchInput);
+    const nameMatch = emp.name.toLowerCase().includes(searchInput);
+    const idMatch = emp.id.toLowerCase().includes(searchInput);
 
-        // [CHANGED] Filter logic now uses primaryTeamId
-        const teamMatch = !teamFilter || emp.primaryTeamId === teamFilter;
-        
-        const statusMatch = !statusFilter || emp.status === statusFilter;
-        const skillMatch = !skillFilter || Object.keys(emp.skills || {}).includes(skillFilter);
+    // Use the new primaryTeamId for filtering
+    const teamMatch = !teamFilter || emp.primaryTeamId === teamFilter;
+    
+    const statusMatch = !statusFilter || emp.status === statusFilter;
 
-        return (nameMatch || idMatch) && teamMatch && statusMatch && skillMatch;
-    });
+    // Correctly search within the new individualSkills array
+    const skillMatch = !skillFilter || (emp.individualSkills || []).some(s => s.skillName === skillFilter && s.status === 'approved');
+
+    return (nameMatch || idMatch) && teamMatch && statusMatch && skillMatch;
+});
 
     const startIndex = (state.currentPageTalent - 1) * TALENT_PAGE_SIZE;
     const endIndex = startIndex + TALENT_PAGE_SIZE;
