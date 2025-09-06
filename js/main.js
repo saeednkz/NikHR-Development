@@ -68,7 +68,7 @@ const documentCategories = [
     { id: 'مزایا و حقوق',     key: 'benefits', icon: 'coins',          desc: 'حقوق، مزایا، بیمه و سیاست‌های مالی.' },
     { id: 'مستندات پروژه‌ها', key: 'projects', icon: 'folder-kanban',  desc: 'مستندات فنی و اجرایی پروژه‌ها.' }
 ];
-        export const state = { employees: [], teams: [], reminders: [], surveyResponses: [], users: [], skillsAndCompetencies: [], expenses: [], pettyCashCards: [], chargeHistory: [], dashboardMetrics: {}, orgAnalytics: {}, currentPage: 'dashboard', currentPageTalent: 1, currentUser: null,currentPageRequests: 1,currentPageTasks: 1,currentPageAnnouncements: 1, anniversaryWishes: [], companyWishes: [] };
+        export const state = { employees: [], teams: [], reminders: [], surveyResponses: [], users: [], competencies: [], expenses: [], pettyCashCards: [], chargeHistory: [], dashboardMetrics: {}, orgAnalytics: {}, currentPage: 'dashboard', currentPageTalent: 1, currentUser: null,currentPageRequests: 1,currentPageTasks: 1,currentPageAnnouncements: 1, anniversaryWishes: [], companyWishes: [] };
 window.state = state; // این خط را برای دیباگ اضافه کنید
         let charts = {};
 let activeListeners = []; // [!code ++] این خط را اضافه کنید
@@ -289,10 +289,10 @@ async function fetchUserRole(user) {
 // کل این تابع را با نسخه جدید و کامل جایگزین کنید
 
 // ▼▼▼ START: [FIX - Phase 1] Replace the entire listenToData function ▼▼▼
-// [FIX] Update listenToData to use the correct collection name and state key
 function listenToData() {
     detachAllListeners(); 
     
+    // [FIX] Use the new collection name 'skillsAndCompetencies'
     const collectionsToListen = [
         'employees', 'teams', 'reminders', 'surveyResponses', 'users', 
         'skillsAndCompetencies', 'requests', 'assignmentRules', 'companyDocuments', 
@@ -320,18 +320,37 @@ function listenToData() {
     collectionsToListen.forEach(colName => {
         const colRef = collection(db, `artifacts/${appId}/public/data/${colName}`);
         const unsubscribe = onSnapshot(colRef, (snapshot) => {
-            state[colName] = snapshot.docs.map(doc => ({ firestoreId: doc.id, ...doc.data() }));
+            
+            // [FIX] When data arrives, store it in state.skillsAndCompetencies
+            const stateKey = colName === 'skillsAndCompetencies' ? 'skillsAndCompetencies' : colName;
+            state[stateKey] = snapshot.docs.map(doc => ({ firestoreId: doc.id, ...doc.data() }));
             
             if (initialLoads > 0) {
                 onDataLoaded();
             } else {
                 calculateAndApplyAnalytics();
                 updateNotificationsForCurrentUser();
+                
                 if (state.currentUser.role !== 'employee' && !window.location.hash.startsWith('#survey-taker')) {
                     renderPage(state.currentPage);
                 }
+
+                try {
+                    if (state.currentUser.role === 'employee') {
+                        const activeMoments = document.querySelector('#employee-portal-nav .nav-item[href="#moments"].active');
+                        if (activeMoments && typeof window.renderMomentsList === 'function') {
+                            window.renderMomentsList();
+                        }
+                    }
+                } catch {}
             }
+        }, (error) => {
+            console.error(`Error listening to ${colName}:`, error);
+            const stateKey = colName === 'skillsAndCompetencies' ? 'skillsAndCompetencies' : colName;
+            if (!state[stateKey]) state[stateKey] = [];
+            if (initialLoads > 0) onDataLoaded();
         });
+        
         activeListeners.push(unsubscribe);
     });
 }
@@ -4084,35 +4103,43 @@ dashboard: () => {
         </div>
     `;
 },
-// ▼▼▼ START: [FINAL BUGFIX] Replace the entire pages.talent function ▼▼▼
     talent: () => {
-        // [FINAL FIX] Populates the filter from teams, with the correct ID
-        const teamFilterOptions = state.teams.map(team => `<option value="${team.firestoreId}">${team.name}</option>`).join('');
-        const skillFilterOptions = (state.skillsAndCompetencies || []).map(s => `<option value="${s.name}">${s.name}</option>`).join('');
-
         return `
-            <div class="flex ...">...</div>
-            <div class="card ...">
-                <div class="flex ...">
-                    <div class="w-full md:w-1/3 ..."><input type="text" id="searchInput" ...></div>
-                    <div class="w-full md:w-auto flex ...">
-<select id="teamFilter" class="p-2 border border-slate-300 rounded-lg bg-white">
-    <option value="">همه تیم‌ها</option>
-    ${state.teams.map(t => `<option value="${t.firestoreId}">${t.name}</option>`).join('')}
-</select>
-<select id="skillFilter" class="p-2 border border-slate-300 rounded-lg bg-white">
-    <option value="">همه مهارت‌ها</option>
-    ${(state.skillsAndCompetencies || []).map(s => `<option value="${s.name}">${s.name}</option>`).join('')}
-</select>
-                        <select id="statusFilter" class="p-2 ..."><option value="">همه وضعیت‌ها</option>...</select>
+            <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                <div>
+                    <h1 class="text-3xl font-bold text-slate-800">استعدادهای سازمان</h1>
+                    <p class="text-sm text-slate-500 mt-1">مدیریت و مشاهده پروفایل کارمندان</p>
+                </div>
+                <div class="flex items-center gap-2 w-full md:w-auto">
+                    <button id="export-csv-btn" class="bg-green-600 text-white py-2 px-5 rounded-lg hover:bg-green-700 shadow-md transition flex items-center gap-2 w-full md:w-auto"><i data-lucide="file-down"></i> خروجی CSV</button>
+                    ${canEdit() ? `<button id="add-employee-btn" class="bg-blue-600 text-white py-2 px-5 rounded-lg hover:bg-blue-700 shadow-md transition flex items-center gap-2 w-full md:w-auto"><i data-lucide="plus"></i> افزودن کارمند</button>` : ''}
+                </div>
+            </div>
+            <div class="card mb-6 p-4">
+                <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div class="w-full md:w-1/3 relative">
+                        <input type="text" id="searchInput" placeholder="جستجوی کارمند..." class="w-full p-2 pl-10 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <i data-lucide="search" class="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                    </div>
+                    <div class="w-full md:w-auto flex flex-wrap gap-2 justify-end">
+                        <select id="departmentFilter" class="p-2 border border-slate-300 rounded-lg bg-white"><option value="">همه دپارتمان‌ها</option>${[...new Set(state.employees.map(e => e.department))].filter(Boolean).map(d => `<option value="${d}">${d}</option>`).join('')}</select>
+                        <select id="skillFilter" class="p-2 border border-slate-300 rounded-lg bg-white"><option value="">همه مهارت‌ها</option>${[...new Set([].concat(...(state.employees||[]).map(e => Object.keys(e.skills||{}))))].map(s => `<option value="${s}">${s}</option>`).join('')}</select>
+                        <select id="statusFilter" class="p-2 border border-slate-300 rounded-lg bg-white"><option value="">همه وضعیت‌ها</option><option value="فعال">فعال</option><option value="غیرفعال">غیرفعال</option></select>
                     </div>
                 </div>
             </div>
-            <div id="employee-cards-container" ...></div>
-            <div id="pagination-container" ...></div>
+            <div id="employee-cards-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
+            <div id="pagination-container" class="p-4 flex justify-center mt-6"></div>
         `;
+        // dismiss handler for info bubble
+        try {
+            const latestInfo = (state.announcements||[]).filter(a=> a.type==='info').sort((a,b)=> new Date(b.createdAt?.toDate?.()||0) - new Date(a.createdAt?.toDate?.()||0))[0];
+            document.getElementById('dismiss-info')?.addEventListener('click', () => {
+                if (latestInfo) localStorage.setItem(`dismiss_info_${employee.uid}`, latestInfo.firestoreId);
+                document.getElementById('info-bubble')?.remove();
+            });
+        } catch {}
     },
-// ▲▲▲ END: [FINAL BUGFIX] Replace the entire pages.talent function ▲▲▲
     inbox: () => {
         const employee = state.employees.find(emp => emp.uid === state.currentUser?.uid);
         const content = employee ? renderEmployeePortalPage('inbox', employee) : `<div class="card p-6 text-sm text-slate-600">صندوق پیام در پورتال کارمند قابل دسترس است.</div>`;
@@ -6404,77 +6431,64 @@ const setupAnnouncementsPageListeners = () => {
 
     renderList();
 };
-// ▼▼▼ START: [FINAL BUGFIX] Replace the entire renderEmployeeTable function ▼▼▼
-// ▼▼▼ START: [FIX] Replace the entire renderEmployeeTable function ▼▼▼
 const renderEmployeeTable = () => {
-    const TALENT_PAGE_SIZE = 12;
-    const searchInput = document.getElementById('searchInput')?.value.toLowerCase() || '';
-    const teamFilter = document.getElementById('teamFilter')?.value || '';
-    const skillFilter = document.getElementById('skillFilter')?.value || '';
-    const statusFilter = document.getElementById('statusFilter')?.value || '';
-    
-    const filteredEmployees = state.employees.filter(emp => {
-        // [FIX] اضافه کردن این شرط از کرش کردن برنامه جلوگیری می‌کند
-        if (!emp || typeof emp.name !== 'string' || typeof emp.id !== 'string') {
-            return false; // از رکوردهای ناقص عبور می‌کند
-        }
+    const TALENT_PAGE_SIZE = 12;
+    const searchInput = document.getElementById('searchInput')?.value.toLowerCase() || '';
+    const departmentFilter = document.getElementById('departmentFilter')?.value || '';
+    const skillFilter = document.getElementById('skillFilter')?.value || '';
+    const statusFilter = document.getElementById('statusFilter')?.value || '';
+    
+    const filteredEmployees = state.employees.filter(emp =>
+        (emp.name.toLowerCase().includes(searchInput) || emp.id.toLowerCase().includes(searchInput)) &&
+        (!departmentFilter || emp.department === departmentFilter) &&
+        (!statusFilter || emp.status === statusFilter) &&
+        (!skillFilter || Object.keys(emp.skills || {}).includes(skillFilter))
+    );
+    const startIndex = (state.currentPageTalent - 1) * TALENT_PAGE_SIZE;
+    const endIndex = startIndex + TALENT_PAGE_SIZE;
+    const paginatedEmployees = filteredEmployees.slice(startIndex, endIndex);
+    
+    const container = document.getElementById('employee-cards-container');
+    if (container) {
+        if (paginatedEmployees.length === 0) {
+            container.innerHTML = `<div class="col-span-full text-center py-10"><i data-lucide="user-x" class="mx-auto w-12 h-12 text-slate-400"></i><p class="mt-2 text-slate-500">هیچ کارمندی با این مشخصات یافت نشد.</p></div>`;
+            lucide.createIcons();
+        } else {
+            container.innerHTML = paginatedEmployees.map(emp => {
+                const isComplete = isProfileComplete(emp);
+                const riskScore = emp.attritionRisk?.score || 0;
+                let riskColorClass = 'bg-green-500';
+                if (riskScore > 70) riskColorClass = 'bg-red-500';
+                else if (riskScore > 40) riskColorClass = 'bg-yellow-500';
 
-        const nameMatch = emp.name.toLowerCase().includes(searchInput);
-        const idMatch = emp.id.toLowerCase().includes(searchInput);
-        const teamMatch = !teamFilter || emp.primaryTeamId === teamFilter;
-        const statusMatch = !statusFilter || emp.status === statusFilter;
-        const skillMatch = !skillFilter || (emp.individualSkills || []).some(s => s.skillName === skillFilter && s.status === 'approved');
+                return `
+                    <div class=\"card bg-white p-4 flex flex-col text-center items-center rounded-2xl shadow-lg transform hover:-translate-y-1 transition-transform duration-300 relative overflow-hidden\">
+                        <div class=\"absolute top-3 right-3 w-3 h-3 rounded-full ${riskColorClass}\" title=\"ریسک خروج: ${riskScore}%\"></div>
 
-        return (nameMatch || idMatch) && teamMatch && statusMatch && skillMatch;
-    });
+                        <img src=\"${emp.avatar}\" alt=\"${emp.name}\" class=\"w-24 h-24 rounded-full object-cover border-4 border-slate-100 mt-4 shadow-sm\">
+                        
+                        <h3 class=\"font-bold text-base mt-3 text-slate-800\">${emp.name}</h3>
+                        <p class=\"text-xs text-slate-500\">${emp.jobTitle || 'بدون عنوان شغلی'}</p>
+                        <div class=\"mt-1 text-[11px] text-slate-500\">${(state.teams.find(t=>t.memberIds?.includes(emp.id))?.name) || 'بدون تیم'} ${(() => { const team = state.teams.find(t=>t.memberIds?.includes(emp.id)); const m = team ? state.employees.find(e => e.id === team.leadership?.manager) : null; return m ? `• مدیر: ${m.name}` : ''; })()}</div>
+                        
+                        <div class=\"mt-3 grid grid-cols-3 gap-2 text-[11px] w-full\">
+                            <div class=\"rounded-lg p-2 bg-slate-50 border\"><div class=\"text-slate-500\">وضعیت</div><div class=\"font-bold ${emp.status==='فعال'?'text-emerald-600':'text-rose-600'}\">${emp.status}</div></div>
+                            <div class=\"rounded-lg p-2 bg-slate-50 border\"><div class=\"text-slate-500\">ریسک</div><div class=\"font-bold\">${riskScore}%</div></div>
+                            <div class=\"rounded-lg p-2 bg-slate-50 border\"><div class=\"text-slate-500\">پروفایل</div><div class=\"font-bold ${isComplete?'text-indigo-600':'text-amber-600'}\">${isComplete?'کامل':'ناقص'}</div></div>
+                        </div>
 
-    const startIndex = (state.currentPageTalent - 1) * TALENT_PAGE_SIZE;
-    const endIndex = startIndex + TALENT_PAGE_SIZE;
-    const paginatedEmployees = filteredEmployees.slice(startIndex, endIndex);
-    
-    const container = document.getElementById('employee-cards-container');
-    if (container) {
-        if (paginatedEmployees.length === 0) {
-            container.innerHTML = `<div class="col-span-full text-center py-10"><i data-lucide="user-x" class="mx-auto w-12 h-12 text-slate-400"></i><p class="mt-2 text-slate-500">هیچ کارمندی با این مشخصات یافت نشد.</p></div>`;
-            lucide.createIcons();
-        } else {
-            container.innerHTML = paginatedEmployees.map(emp => {
-                const isComplete = isProfileComplete(emp);
-                const riskScore = emp.attritionRisk?.score || 0;
-                let riskColorClass = 'bg-green-500';
-                if (riskScore > 70) riskColorClass = 'bg-red-500';
-                else if (riskScore > 40) riskColorClass = 'bg-yellow-500';
-                
-                const teamName = state.teams.find(t => t.firestoreId === emp.primaryTeamId)?.name || 'بدون تیم';
-
-                return `
-                    <div class="card bg-white p-4 flex flex-col text-center items-center rounded-2xl shadow-lg transform hover:-translate-y-1 transition-transform duration-300 relative overflow-hidden">
-                        <div class="absolute top-3 right-3 w-3 h-3 rounded-full ${riskColorClass}" title="ریسک خروج: ${riskScore}%"></div>
-                        <img src="${emp.avatar}" alt="${emp.name}" class="w-24 h-24 rounded-full object-cover border-4 border-slate-100 mt-4 shadow-sm">
-                        <h3 class="font-bold text-base mt-3 text-slate-800">${emp.name}</h3>
-                        <p class="text-xs text-slate-500">${emp.jobTitle || 'بدون عنوان شغلی'}</p>
-                        <div class="mt-1 text-[11px] text-slate-500">${teamName}</div>
-                        
-                        <div class="mt-3 grid grid-cols-3 gap-2 text-[11px] w-full">
-                            <div class="rounded-lg p-2 bg-slate-50 border"><div class="text-slate-500">وضعیت</div><div class="font-bold ${emp.status==='فعال'?'text-emerald-600':'text-rose-600'}">${emp.status}</div></div>
-                            <div class="rounded-lg p-2 bg-slate-50 border"><div class="text-slate-500">ریسک</div><div class="font-bold">${riskScore}%</div></div>
-                            <div class="rounded-lg p-2 bg-slate-50 border"><div class="text-slate-500">پروفایل</div><div class="font-bold ${isComplete?'text-indigo-600':'text-amber-600'}">${isComplete?'کامل':'ناقص'}</div></div>
-                        </div>
-
-                        <div class="mt-auto pt-4 w-full flex items-center justify-end gap-2 border-t border-slate-100">
-                            <button class="view-employee-profile-btn flex-grow text-sm bg-slate-800 text-white py-2 px-4 rounded-lg hover:bg-slate-900 transition" data-employee-id="${emp.firestoreId}">مشاهده</button>
-                            ${canEdit() ? `<button class="edit-employee-btn p-2 text-slate-400 hover:text-blue-500 transition-colors" data-employee-id="${emp.firestoreId}" title="ویرایش"><i data-lucide="edit" class="w-5 h-5"></i></button>` : ''}
-                            ${isAdmin() ? `<button class="delete-employee-btn p-2 text-slate-400 hover:text-rose-500 transition-colors" data-employee-id="${emp.firestoreId}" title="حذف"><i data-lucide="trash-2" class="w-5 h-5"></i></button>` : ''}
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-    }
-    renderPagination('pagination-container', state.currentPageTalent, filteredEmployees.length, TALENT_PAGE_SIZE);
+                        <div class=\"mt-auto pt-4 w-full flex items-center justify-end gap-2 border-t border-slate-100\">
+                            <button class=\"view-employee-profile-btn flex-grow text-sm bg-slate-800 text-white py-2 px-4 rounded-lg hover:bg-slate-900 transition\" data-employee-id=\"${emp.firestoreId}\">مشاهده</button>
+                            ${canEdit() ? `<button class=\"edit-employee-btn p-2 text-slate-400 hover:text-blue-500 transition-colors\" data-employee-id=\"${emp.firestoreId}\" title=\"ویرایش\"><i data-lucide=\"edit\" class=\"w-5 h-5\"></i></button>` : ''}
+                            ${isAdmin() ? `<button class=\"delete-employee-btn p-2 text-slate-400 hover:text-rose-500 transition-colors\" data-employee-id=\"${emp.firestoreId}\" title=\"حذف\"><i data-lucide=\"trash-2\" class=\"w-5 h-5\"></i></button>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+    }
+    renderPagination('pagination-container', state.currentPageTalent, filteredEmployees.length, TALENT_PAGE_SIZE);
 };
-// ▲▲▲ END: [FIX] Replace the entire renderEmployeeTable function ▲▲▲
-// ▲▲▲ END: [FINAL BUGFIX] Replace the entire renderEmployeeTable function ▲▲▲
         const exportToCSV = () => {
     // ۱. همان منطق فیلتر کردن را اجرا می‌کنیم تا لیست فعلی را بگیریم
     const searchInput = document.getElementById('searchInput')?.value.toLowerCase() || '';
@@ -6602,7 +6616,7 @@ const setupTalentPageListeners = () => {
     };
 
     document.getElementById('searchInput')?.addEventListener('input', resetToFirstPage);
-    document.getElementById('teamFilter')?.addEventListener('change', resetToFirstPage);
+    document.getElementById('departmentFilter')?.addEventListener('change', resetToFirstPage);
     document.getElementById('skillFilter')?.addEventListener('change', resetToFirstPage);
     document.getElementById('statusFilter')?.addEventListener('change', resetToFirstPage);
     
@@ -8054,13 +8068,12 @@ const showAddOrEditSkillForm = (employee, existingSkill = null, isManagerAdding 
 // ▲▲▲ END: [REFACTOR - Phase 5 BUGFIX] Replace the entire function ▲▲▲
 // ▲▲▲ END: [REFACTOR - Phase 5 BUGFIX] Replace the entire function ▲▲▲
 // ▲▲▲ END: [NEW FUNCTION - Phase 5] ▲▲▲
-// ▼▼▼ START: [FINAL VERSION] Replace the entire showEmployeeForm function with this complete code ▼▼▼
-// ▼▼▼ START: [FINAL VERSION] Replace the entire showEmployeeForm function with this complete code ▼▼▼
 const showEmployeeForm = (employeeId = null) => {
     const isEditing = employeeId !== null;
     const emp = isEditing ? state.employees.find(e => e.firestoreId === employeeId) : {};
+    const currentTeam = isEditing ? state.teams.find(t => t.memberIds?.includes(emp.id)) : null;
     
-    // --- Dropdown Options Generation ---
+    const teamOptions = state.teams.map(team => `<option value="${team.firestoreId}" ${currentTeam?.firestoreId === team.firestoreId ? 'selected' : ''}>${team.name}</option>`).join('');
     const familyOptions = (state.jobFamilies || []).map(family => `<option value="${family.name}" ${emp.jobFamily === family.name ? 'selected' : ''}>${family.name}</option>`).join('');
     const positionOptions = (state.jobPositions || []).map(pos => `<option value="${pos.firestoreId}" ${emp.jobPositionId === pos.firestoreId ? 'selected' : ''}>${pos.name}</option>`).join('');
 
@@ -8080,45 +8093,62 @@ const showEmployeeForm = (employeeId = null) => {
         return `<optgroup label="${group.label}">${options}</optgroup>`;
     }).join('');
 
-    // Logic for multiple team memberships checkboxes
-    const currentMemberships = new Set(emp.teamMemberships || []);
-    const membershipCheckboxes = state.teams.map(team => `
-        <label class="flex items-center gap-2 p-2 border rounded-lg hover:bg-slate-50">
-            <input type="checkbox" class="team-membership-checkbox" value="${team.firestoreId}" ${currentMemberships.has(team.firestoreId) ? 'checked' : ''}>
-            <span class="text-sm">${team.name}</span>
-        </label>
-    `).join('');
-    
-    modalTitle.innerText = isEditing ? `ویرایش: ${emp.name}` : 'افزودن کارمند جدید';
+    modalTitle.innerText = isEditing ? 'ویرایش اطلاعات کارمند' : 'افزودن کارمند جدید';
     modalContent.innerHTML = `
-        <form id="employee-form" class="space-y-5" data-old-level="${emp.level || ''}" data-old-primary-team-id="${emp.primaryTeamId || ''}">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[70vh] overflow-y-auto pr-2">
-                <div class="bg-white border rounded-xl p-4"><label class="block text-xs font-semibold text-slate-500">نام کامل</label><input type="text" id="name" value="${emp.name || ''}" class="mt-2 block w-full p-2 border rounded-lg" required></div>
-                <div class="bg-white border rounded-xl p-4"><label class="block text-xs font-semibold text-slate-500">کد پرسنلی</label><input type="text" id="id" value="${emp.id || ''}" class="mt-2 block w-full p-2 border rounded-lg" ${isEditing ? 'readonly' : ''} required></div>
-                <div class="md:col-span-2 bg-white border rounded-xl p-4"><label class="block text-xs font-semibold text-slate-500">آدرس ایمیل (برای ورود)</label><input type="email" id="employee-email" value="${emp.personalInfo?.email || ''}" class="mt-2 block w-full p-2 border rounded-lg" ${isEditing ? 'readonly' : ''} required></div>
-                <div class="bg-white border rounded-xl p-4"><label class="block text-xs font-semibold text-slate-500">عنوان شغلی</label><input type="text" id="jobTitle" value="${emp.jobTitle || ''}" class="mt-2 block w-full p-2 border rounded-lg"></div>
-                <div class="bg-white border rounded-xl p-4"><label class="block text-xs font-semibold text-slate-500">پوزیشن شغلی</label><select id="jobPositionId" class="mt-2 block w-full p-2 border rounded-lg bg-white"><option value="">انتخاب کنید...</option>${positionOptions}</select></div>
-                <div class="bg-white border rounded-xl p-4"><label class="block text-xs font-semibold text-slate-500">خانواده شغلی</label><select id="jobFamily" class="mt-2 block w-full p-2 border rounded-lg bg-white"><option value="">انتخاب کنید...</option>${familyOptions}</select></div>
-                <div class="bg-white border rounded-xl p-4"><label class="block text-xs font-semibold text-slate-500">سطح</label><select id="level" class="mt-2 block w-full p-2 border rounded-lg bg-white">${levelOptions}</select></div>
-                
-                <div class="md:col-span-2 bg-white border rounded-xl p-4">
-                    <label id="primary-team-label" class="block text-xs font-semibold text-slate-500">تیم اصلی</label>
-                    <select id="primary-team-select" class="mt-2 block w-full p-2 border rounded-lg bg-white">
+       
+        <form id="employee-form" class="space-y-5" data-old-team-id="${currentTeam?.firestoreId || ''}" data-old-level="${emp.level || ''}">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-white border rounded-xl p-4"><label for="name" class="block text-xs font-semibold text-slate-500">نام کامل</label><input type="text" id="name" value="${emp.name || ''}" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg" required></div>
+                <div class="bg-white border rounded-xl p-4"><label for="id" class="block text-xs font-semibold text-slate-500">کد پرسنلی</label><input type="text" id="id" value="${emp.id || ''}" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg" ${isEditing ? 'readonly' : ''} required></div>
+                <div class="md:col-span-2 bg-white border rounded-xl p-4"><label for="employee-email" class="block text-xs font-semibold text-slate-500">آدرس ایمیل (برای ورود)</label><input type="email" id="employee-email" value="${emp.personalInfo?.email || ''}" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg" ${isEditing ? 'readonly' : ''} required></div>
+                <div class="bg-white border rounded-xl p-4"><label for="jobTitle" class="block text-xs font-semibold text-slate-500">عنوان شغلی</label><input type="text" id="jobTitle" value="${emp.jobTitle || ''}" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg"></div>
+                <div class="bg-white border rounded-xl p-4">
+                    <label for="jobPositionId" class="block text-xs font-semibold text-slate-500">پوزیشن شغلی</label>
+                    <select id="jobPositionId" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg bg-white">
                         <option value="">انتخاب کنید...</option>
-                        ${state.teams.map(t => `<option value="${t.firestoreId}" ${emp.primaryTeamId === t.firestoreId ? 'selected' : ''}>${t.name}</option>`).join('')}
+                        ${positionOptions}
+                    </select>
+                </div>
+                <div class="bg-white border rounded-xl p-4">
+                    <label for="jobFamily" class="block text-xs font-semibold text-slate-500">خانواده شغلی</label>
+                    <select id="jobFamily" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg bg-white">
+                        <option value="">انتخاب کنید...</option>
+                        ${familyOptions}
+                    </select>
+                </div>
+                <div class="bg-white border rounded-xl p-4">
+                    <label for="level" class="block text-xs font-semibold text-slate-500">سطح</label>
+                    <select id="level" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg bg-white">
+                        ${levelOptions}
+                    </select>
+                </div>
+                <div class="bg-white border rounded-xl p-4">
+                    <label for="department-team-select" class="block text-xs font-semibold text-slate-500">تیم عضویت</label>
+                    <select id="department-team-select" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg bg-white">
+                        <option value="">عضو هیچ تیمی نیست</option>
+                        ${teamOptions}
+                    </select>
+                </div>
+                <div id="managed-team-container" class="hidden bg-white border rounded-xl p-4 border-indigo-200">
+                    <label for="managed-team-select" class="block text-xs font-semibold text-indigo-700">تیم تحت مدیریت</label>
+                    <select id="managed-team-select" class="block w-full p-2 border border-slate-300 rounded-lg bg-white mt-2">
+                        <option value="">هیچکدام</option>
+                        ${teamOptions}
+                    </select>
+                </div>
+                <div class="bg-white border rounded-xl p-4">
+                    <label for="status" class="block text-xs font-semibold text-slate-500">وضعیت</label>
+                    <select id="status" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg bg-white">
+                        <option value="فعال" ${emp.status === 'فعال' ? 'selected' : ''}>فعال</option>
+                        <option value="غیرفعال" ${emp.status === 'غیرفعال' ? 'selected' : ''}>غیرفعال</option>
                     </select>
                 </div>
                 <div class="md:col-span-2 bg-white border rounded-xl p-4">
-                    <label class="block text-xs font-semibold text-slate-500">عضویت در تیم‌های دیگر (برای ارزیابی)</label>
-                    <div class="grid grid-cols-2 gap-2 mt-2 max-h-32 overflow-y-auto pr-2">
-                        ${membershipCheckboxes}
-                    </div>
+                    <label for="startDate" class="block text-xs font-semibold text-slate-500">تاریخ استخدام</label>
+                    <input type="text" id="startDate" class="mt-2 block w-full p-2 border border-slate-300 rounded-lg">
                 </div>
-
-                <div class="bg-white border rounded-xl p-4"><label class="block text-xs font-semibold text-slate-500">وضعیت</label><select id="status" class="mt-2 block w-full p-2 border rounded-lg bg-white"><option value="فعال" ${emp.status === 'فعال' ? 'selected' : ''}>فعال</option><option value="غیرفعال" ${emp.status === 'غیرفعال' ? 'selected' : ''}>غیرفعال</option></select></div>
-                <div class="md:col-span-2 bg-white border rounded-xl p-4"><label class="block text-xs font-semibold text-slate-500">تاریخ استخدام</label><input type="text" id="startDate" class="mt-2 block w-full p-2 border rounded-lg"></div>
             </div>
-            <div class="pt-4 flex justify-end">
+            <div class="pt-2 flex justify-end">
                 <button type="submit" class="primary-btn">ذخیره</button>
             </div>
         </form>
@@ -8126,73 +8156,127 @@ const showEmployeeForm = (employeeId = null) => {
     openModal(mainModal, mainModalContainer);
     activatePersianDatePicker('startDate', emp.startDate);
 
-    // [NEW] Logic to dynamically change the label for the primary team
     const levelSelect = document.getElementById('level');
-    const primaryTeamLabel = document.getElementById('primary-team-label');
-    const updatePrimaryTeamLabel = () => {
+    const managedTeamContainer = document.getElementById('managed-team-container');
+    
+    const toggleManagedTeamVisibility = () => {
         const selectedLevel = levelSelect.value;
         if (selectedLevel.startsWith('MAN') || selectedLevel.startsWith('L')) {
-            primaryTeamLabel.textContent = 'تیم تحت مدیریت (تیم اصلی)';
-            primaryTeamLabel.classList.add('text-indigo-700');
+            managedTeamContainer.classList.remove('hidden');
         } else {
-            primaryTeamLabel.textContent = 'تیم اصلی';
-            primaryTeamLabel.classList.remove('text-indigo-700');
+            managedTeamContainer.classList.add('hidden');
         }
     };
-    levelSelect.addEventListener('change', updatePrimaryTeamLabel);
-    updatePrimaryTeamLabel(); // Run on form load
+    levelSelect.addEventListener('change', toggleManagedTeamVisibility);
+    toggleManagedTeamVisibility();
 
-// ▼▼▼ START: [DEBUGGING VERSION] Replace the 'submit' event listener in showEmployeeForm ▼▼▼
-document.getElementById('employee-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const saveBtn = e.target.querySelector('button[type="submit"]');
-    saveBtn.disabled = true;
-    saveBtn.innerText = 'در حال پردازش...';
+    document.getElementById('employee-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const saveBtn = e.target.querySelector('button[type="submit"]');
+        saveBtn.disabled = true;
+        saveBtn.innerText = 'در حال پردازش...';
 
-    const form = e.target;
-    // ... (Reading all the form values remains the same)
-    const name = document.getElementById('name').value;
-    const employeeId = document.getElementById('id').value;
-    const email = document.getElementById('employee-email').value;
-    // ... (and so on for all other fields)
+        const form = e.target;
+        const oldTeamId = form.dataset.oldTeamId;
+        const oldLevel = form.dataset.oldLevel;
 
-    const employeeCoreData = { /* ... create the employeeCoreData object ... */ };
+        const name = document.getElementById('name').value;
+        const employeeId = document.getElementById('id').value;
+        const email = document.getElementById('employee-email').value;
+        const newTeamId = document.getElementById('department-team-select').value;
+        const newManagedTeamId = document.getElementById('managed-team-select').value;
+        const newLevel = document.getElementById('level').value;
 
-    if (isEditing) {
-        // ... (Logic for editing remains unchanged for now)
-    } else { // For new employee
-        const employeeDataForCreation = { 
-            ...employeeCoreData, 
-            avatar: `https://placehold.co/100x100/E2E8F0/4A5568?text=${name.substring(0, 2)}`, 
-            personalInfo: { email: email } 
+        const newTeam = state.teams.find(t => t.firestoreId === newTeamId);
+
+        const employeeCoreData = {
+            name: name,
+            id: employeeId,
+            jobTitle: document.getElementById('jobTitle').value,
+            jobPositionId: document.getElementById('jobPositionId').value,
+            jobFamily: document.getElementById('jobFamily').value,
+            level: newLevel,
+            department: newTeam ? newTeam.name : '',
+            status: document.getElementById('status').value,
+            startDate: persianToEnglishDate(document.getElementById('startDate').value),
         };
-        try {
-            console.log("Frontend: Preparing to call 'createNewEmployee' with data:", JSON.stringify(employeeDataForCreation));
-            
-            const createNewEmployee = httpsCallable(functions, 'createNewEmployee');
-            const result = await createNewEmployee({
-                name: name,
-                employeeId: employeeId,
-                email: email,
-                employeeData: employeeDataForCreation
-            });
 
-            console.log("Frontend: Cloud function returned successfully:", result);
-            showToast("کارمند و حساب کاربری با موفقیت ایجاد شد!");
-            closeModal(mainModal, mainModalContainer);
-        } catch (error) {
-            console.error("Frontend: Critical error calling cloud function:", error);
-            showToast(`خطا در فراخوانی تابع: ${error.message}`, "error");
-        } finally {
-            saveBtn.disabled = false;
-            saveBtn.innerText = 'ذخیره';
+        if (isEditing) {
+            try {
+                const batch = writeBatch(db);
+                const employeeRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
+
+                // [NEW FEATURE - Phase 2] Automatic Career Path Logging for Promotion
+                if (newLevel && newLevel !== oldLevel) {
+                    const levelText = document.getElementById('level').querySelector(`option[value="${newLevel}"]`).textContent;
+                    const promotionRecord = {
+                        title: `ارتقا به سطح ${levelText}`,
+                        date: new Date(),
+                        team: newTeam ? newTeam.name : (emp.department || 'نامشخص')
+                    };
+                    // Add the new record to the update payload using arrayUnion
+                    employeeCoreData.careerPath = arrayUnion(promotionRecord);
+                }
+                
+                batch.update(employeeRef, employeeCoreData);
+
+                if (newTeamId !== oldTeamId) {
+                    if (oldTeamId) {
+                        const oldTeamRef = doc(db, `artifacts/${appId}/public/data/teams`, oldTeamId);
+                        batch.update(oldTeamRef, { memberIds: arrayRemove(employeeId) });
+                    }
+                    if (newTeamId) {
+                        const newTeamRef = doc(db, `artifacts/${appId}/public/data/teams`, newTeamId);
+                        batch.update(newTeamRef, { memberIds: arrayUnion(employeeId) });
+                    }
+                }
+                
+                const oldManagedTeam = state.teams.find(t => t.leadership?.manager === emp.id);
+                if (oldManagedTeam && oldManagedTeam.firestoreId !== newManagedTeamId) {
+                    const oldManagedTeamRef = doc(db, `artifacts/${appId}/public/data/teams`, oldManagedTeam.firestoreId);
+                    batch.update(oldManagedTeamRef, { 'leadership.manager': null });
+                }
+                if (newManagedTeamId) {
+                    const newManagedTeamRef = doc(db, `artifacts/${appId}/public/data/teams`, newManagedTeamId);
+                    batch.set(newManagedTeamRef, { leadership: { manager: employeeId } }, { merge: true });
+                    batch.update(newManagedTeamRef, { memberIds: arrayRemove(employeeId) });
+                }
+
+                await batch.commit();
+                showToast("اطلاعات کارمند با موفقیت بروزرسانی شد.");
+                closeModal(mainModal, mainModalContainer);
+            } catch (error) {
+                console.error("Error updating employee:", error);
+                showToast("خطا در بروزرسانی اطلاعات.", "error");
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerText = 'ذخیره';
+            }
+        } else { // For new employee
+            const employeeDataForCreation = { ...employeeCoreData, avatar: `https://placehold.co/100x100/E2E8F0/4A5568?text=${name.substring(0, 2)}`, personalInfo: { email: email } };
+            try {
+                const createNewEmployee = httpsCallable(functions, 'createNewEmployee');
+                await createNewEmployee({
+                    name: name,
+                    employeeId: employeeId,
+                    email: email,
+                    employeeData: employeeDataForCreation,
+                    teamId: newTeamId,
+                    managedTeamId: newManagedTeamId
+                });
+                showToast("کارمند و حساب کاربری با موفقیت ایجاد شد!");
+                closeModal(mainModal, mainModalContainer);
+                renderPage('talent');
+            } catch (error) {
+                console.error("Cloud function error:", error);
+                showToast(`خطا: ${error.message}`, "error");
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerText = 'ذخیره';
+            }
         }
-    }
-});
-// ▲▲▲ END: [DEBUGGING VERSION] Replace the 'submit' event listener ▲▲▲
+    });
 };
-// ▲▲▲ END: [FINAL VERSION] Replace the entire showEmployeeForm function ▲▲▲
-// ▲▲▲ END: [FINAL VERSION] Replace the entire showEmployeeForm function ▲▲▲
 // ▲▲▲ END: [REFACTOR - Phase 2] Replace the entire showEmployeeForm function ▲▲▲
 // ▲▲▲ END: [REFACTOR - Phase 1] Replace the entire showEmployeeForm function ▲▲▲
 
