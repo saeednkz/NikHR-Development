@@ -2243,16 +2243,16 @@ const managerNavlinks = isTeamManager(employee)
         <aside class="w-72 employee-sidebar hidden md:flex z-30">
             <div class="text-center"><img src="${employee.avatar}" alt="Avatar" class="profile-pic object-cover"><h2 class="employee-name">${employeeName}</h2><p class="employee-title">${employee.jobTitle || 'بدون عنوان شغلی'}</p></div><div class="my-6 border-t border-white/20"></div>
             <nav id="employee-portal-nav" class="flex flex-col gap-2">
-                <a href="#profile" class="nav-item"><i data-lucide="user"></i><span>مسیر من</span></a>
+                <a href="#profile" class="nav-item nav-indigo"><i data-lucide="user"></i><span>مسیر من</span></a>
                ${managerNavlinks}
-                <a href="#evaluations" class="nav-item"><i data-lucide="clipboard-check"></i><span>ارزیابی‌های من</span></a>
-                <a href="#okrs-portal" class="nav-item"><i data-lucide="target"></i><span>OKRها</span></a>
-                <a href="#orgchart" class="nav-item"><i data-lucide="git-branch"></i><span>چارت سازمانی</span></a>
-                <a href="#requests" class="nav-item"><i data-lucide="send"></i><span>کارهای من</span></a>
-                <a href="#directory" class="nav-item"><i data-lucide="users"></i><span>تیم‌ها</span></a>
-                <a href="#documents" class="nav-item"><i data-lucide="folder-kanban"></i><span>دانش‌نامه</span></a>
-                <a href="#inbox" class="nav-item"><i data-lucide="inbox"></i><span>پیام‌ها</span></a>
-                <a href="#moments" class="nav-item"><i data-lucide="sparkles"></i><span>لحظه‌های نیک‌اندیشی</span></a>
+                <a href="#evaluations" class="nav-item nav-violet"><i data-lucide="clipboard-check"></i><span>ارزیابی‌های من</span></a>
+                <a href="#okrs-portal" class="nav-item nav-emerald"><i data-lucide="target"></i><span>OKRها</span></a>
+                <a href="#orgchart" class="nav-item nav-indigo"><i data-lucide="git-branch"></i><span>چارت سازمانی</span></a>
+                <a href="#requests" class="nav-item nav-rose"><i data-lucide="send"></i><span>کارهای من</span></a>
+                <a href="#directory" class="nav-item nav-sky"><i data-lucide="users"></i><span>تیم‌ها</span></a>
+                <a href="#documents" class="nav-item nav-slate"><i data-lucide="folder-kanban"></i><span>دانش‌نامه</span></a>
+                <a href="#inbox" class="nav-item nav-amber"><i data-lucide="inbox"></i><span>پیام‌ها</span></a>
+                <a href="#moments" class="nav-item nav-emerald"><i data-lucide="sparkles"></i><span>لحظه‌های نیک‌اندیشی</span></a>
             </nav>
             <div class="mt-auto space-y-4"><button id="portal-logout-btn" class="w-full flex items-center justify-center gap-3 px-4 py-2 rounded-lg logout-btn"><i data-lucide="log-out"></i><span>خروج از حساب</span></button></div>
         </aside>

@@ -89,28 +89,32 @@
     .employee-sidebar .nav-item {
         display: flex;
         align-items: center;
-        gap: 0.75rem;
-        padding: 12px 16px;
+        gap: 0.5rem;
+        padding: 10px 12px;
         border-radius: 10px;
         color: #475569; /* Slate 600 */
         transition: all 0.2s ease;
         font-weight: 500;
+        font-size: 13px;
     }
     .employee-sidebar .nav-item:hover {
         background-color: rgba(107,105,214,0.10);
         color: #1f2937; /* slate-800 */
     }
     .employee-sidebar .nav-item.active {
-        background-color: rgba(107,105,214,0.18); /* #6B69D6 tint */
+        background: linear-gradient(90deg, rgba(107,105,214,0.18), rgba(16,185,129,0.12));
         color: #6B69D6;
         font-weight: 700;
     }
-    .employee-sidebar .nav-item i {
-        color: #64748b;
-    }
-    .employee-sidebar .nav-item.active i {
-        color: #6B69D6;
-    }
+    .employee-sidebar .nav-item i { padding: 5px; border-radius: 10px; background-color: rgba(99,102,241,0.08); color: #64748b; }
+    .employee-sidebar .nav-item.active i { color: #6B69D6; }
+    .employee-sidebar .nav-item.nav-indigo i { background-color: rgba(99,102,241,0.12); color: #6366F1; }
+    .employee-sidebar .nav-item.nav-violet i { background-color: rgba(139,92,246,0.12); color: #8B5CF6; }
+    .employee-sidebar .nav-item.nav-sky i { background-color: rgba(14,165,233,0.12); color: #0EA5E9; }
+    .employee-sidebar .nav-item.nav-emerald i { background-color: rgba(16,185,129,0.12); color: #10B981; }
+    .employee-sidebar .nav-item.nav-amber i { background-color: rgba(245,158,11,0.12); color: #F59E0B; }
+    .employee-sidebar .nav-item.nav-rose i { background-color: rgba(244,63,94,0.12); color: #F43F5E; }
+    .employee-sidebar .nav-item.nav-slate i { background-color: rgba(100,116,139,0.12); color: #64748B; }
     .employee-sidebar .logout-btn {
         color: #64748b;
     }
