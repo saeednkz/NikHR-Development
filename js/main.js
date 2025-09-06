@@ -7730,16 +7730,28 @@ function showTeamOKREditor(manager, team, cycle, teamEntry) {
         const okrs = [];
         container.querySelectorAll('.okr-blk').forEach(wrap => {
             const objective = (wrap.querySelector('.t-obj')?.value||'').trim();
-            const krs = Array.from(wrap.querySelectorAll('.t-kr')).map(inp=> ({ name: (inp.value||'').trim(), progress: 0 })).filter(x=> x.name);
+            const krNames = Array.from(wrap.querySelectorAll('.t-kr'));
+            const krTargets = Array.from(wrap.querySelectorAll('.t-kr-target'));
+            const krs = krNames.map((inp, idx)=> ({ name: (inp.value||'').trim(), target: Number(krTargets[idx]?.value)||null, progress: 0 })).filter(x=> x.name);
             if (objective) okrs.push({ objective, keyResults: krs });
         });
         if (!okrs.length) { showToast('حداقل یک Objective وارد کنید.', 'error'); return false; }
         const col = collection(db, `artifacts/${appId}/public/data/teamOKRs`);
         const existing = (state.teamOKRs||[]).find(e=> e.teamId===team.firestoreId && e.cycleId===(cycle.firestoreId||cycle.id));
+        // determine senior manager when sending for approval
+        let payload = { okrs, status };
+        if (status === 'pending_senior') {
+            const membershipTeam = (state.teams||[]).find(t => (t.memberIds||[]).includes(manager.id));
+            const seniorId = membershipTeam?.leadership?.manager;
+            const seniorEmp = (state.employees||[]).find(e => e.id === seniorId);
+            const assignedTo = seniorEmp?.uid || null;
+            if (!assignedTo) { showToast('مدیر ارشد یافت نشد.', 'error'); return false; }
+            payload.assignedTo = assignedTo;
+        }
         if (existing) {
-            await updateDoc(doc(db, `artifacts/${appId}/public/data/teamOKRs`, existing.firestoreId), { okrs, status, updatedAt: serverTimestamp() });
+            await updateDoc(doc(db, `artifacts/${appId}/public/data/teamOKRs`, existing.firestoreId), { ...payload, updatedAt: serverTimestamp() });
         } else {
-            await addDoc(col, { cycleId: cycle.firestoreId||cycle.id, teamId: team.firestoreId, okrs, status, createdAt: serverTimestamp() });
+            await addDoc(col, { cycleId: cycle.firestoreId||cycle.id, teamId: team.firestoreId, ...payload, createdAt: serverTimestamp() });
         }
         return true;
     }
