@@ -4618,7 +4618,7 @@ tasks: () => {
         // approvals: skill approvals assigned to this user (placeholder if exists in state.approvals)
         .concat(((state.approvals||[]).filter(a=> a.type==='skill' && a.assignedTo===state.currentUser.uid && a.status==='pending').map(a=> ({
             id: a.firestoreId, type: 'skill', date: a.createdAt, kind: 'تایید مهارت', text: a.subject||'', status: 'جدید'
-        })))))
+        }))))
         .sort((a, b) => {
             const ad = new Date(a.date?.toDate ? a.date.toDate() : a.date);
             const bd = new Date(b.date?.toDate ? b.date.toDate() : b.date);
