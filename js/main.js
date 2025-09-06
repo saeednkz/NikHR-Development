@@ -2399,37 +2399,72 @@ const toPersianDate = (dateInput) => {
  * @param {object} employee - The employee object who is suggesting a skill.
  * @returns {string|null} The UID of the approver, or null if not found.
  */
-const findApproverUid = (employee) => {
-    if (!employee || !employee.id) return null;
+// فایل: js/main.js
+// ▼▼▼ این تابع را با نسخه اشکال‌زدایی زیر جایگزین کنید ▼▼▼
 
-    // Check if the employee is a manager of any team
+const findApproverUid = (employee) => {
+    console.log(`[DEBUG] --- START: Finding approver for: ${employee.name} ---`);
+    if (!employee || !employee.id) {
+        console.error("[DEBUG] ERROR: Input employee object is invalid.");
+        return null;
+    }
+
     const managedTeam = state.teams.find(t => t.leadership?.manager === employee.id);
-    
+    const isManager = !!managedTeam;
+    console.log(`[DEBUG] Is this employee a manager? ${isManager}`);
+
     let approverEmployeeId = null;
 
-    if (managedTeam) {
-        // This employee IS a manager. Their approver is the manager of the team they are a MEMBER of.
+    if (isManager) {
+        console.log(`[DEBUG] Yes, ${employee.name} manages team: ${managedTeam.name}. Now finding their membership team...`);
         const membershipTeam = state.teams.find(t => (t.memberIds || []).includes(employee.id));
-        if (membershipTeam && membershipTeam.leadership?.manager) {
-            approverEmployeeId = membershipTeam.leadership.manager;
+        
+        if (!membershipTeam) {
+            console.error(`[DEBUG] FATAL ERROR: Manager "${employee.name}" is not a member of any team (e.g., a leadership team). Cannot find their manager.`);
+            return null;
         }
+        console.log(`[DEBUG] Found membership team: "${membershipTeam.name}". Now finding this team's manager.`);
+        approverEmployeeId = membershipTeam.leadership?.manager;
+
     } else {
-        // This employee is NOT a manager. Their approver is their direct manager from their primary team.
-        const primaryTeam = state.teams.find(t => t.firestoreId === employee.primaryTeamId);
-        if (primaryTeam && primaryTeam.leadership?.manager) {
-            approverEmployeeId = primaryTeam.leadership.manager;
+        console.log(`[DEBUG] No, ${employee.name} is a regular employee. Looking for their primary team...`);
+        if (!employee.primaryTeamId) {
+            console.error(`[DEBUG] FATAL ERROR: Employee "${employee.name}" is missing the 'primaryTeamId' field.`);
+            return null;
         }
+        console.log(`[DEBUG] Employee's primaryTeamId is: ${employee.primaryTeamId}`);
+        const primaryTeam = state.teams.find(t => t.firestoreId === employee.primaryTeamId);
+        
+        if (!primaryTeam) {
+            console.error(`[DEBUG] FATAL ERROR: Could not find a team with ID: ${employee.primaryTeamId}`);
+            return null;
+        }
+        console.log(`[DEBUG] Found primary team: "${primaryTeam.name}". Now finding this team's manager.`);
+        approverEmployeeId = primaryTeam.leadership?.manager;
     }
 
-    if (approverEmployeeId) {
-        const approverEmployee = state.employees.find(e => e.id === approverEmployeeId);
-        if (approverEmployee && approverEmployee.uid) {
-            return approverEmployee.uid; // Success!
-        }
+    if (!approverEmployeeId) {
+        console.error("[DEBUG] FATAL ERROR: Could not determine an approver's ID for this team.");
+        return null;
     }
-    
-    console.warn(`Could not find a valid approver for employee: ${employee.name} (${employee.id})`);
-    return null;
+
+    console.log(`[DEBUG] Approver's Employee ID is determined to be: "${approverEmployeeId}"`);
+    const approverEmployee = state.employees.find(e => e.id === approverEmployeeId);
+
+    if (!approverEmployee) {
+        console.error(`[DEBUG] FATAL ERROR: Could not find an employee document for manager with ID: "${approverEmployeeId}"`);
+        return null;
+    }
+
+    console.log(`[DEBUG] Found approver's employee document: ${approverEmployee.name}`);
+
+    if (!approverEmployee.uid) {
+        console.error(`[DEBUG] FATAL ERROR: Approver employee "${approverEmployee.name}" is MISSING the 'uid' field!`);
+        return null;
+    }
+
+    console.log(`[DEBUG] --- SUCCESS: Approver is "${approverEmployee.name}" with UID: ${approverEmployee.uid} ---`);
+    return approverEmployee.uid;
 };
 // --- تابع جدید برای تبدیل تاریخ شمسی ورودی به فرمت میلادی برای ذخیره ---
 // --- نسخه نهایی و بسیار قوی‌تر برای تبدیل تاریخ شمسی به میلادی ---
