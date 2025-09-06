@@ -4542,7 +4542,8 @@ requests: () => {
         employeeName: p.teamName || 'تیم',
         requestType: 'پیشنهاد OKR',
         status: p.status || 'pending',
-        assignedTo: p.assignedTo || (state.users.find(u=>u.role==='admin')||{}).firestoreId
+        assignedTo: p.assignedTo || (state.users.find(u=>u.role==='admin')||{}).firestoreId,
+        text: `بررسی پیشنهاد OKR تیم ${p.teamName || ''}`
     }));
     let filteredRequests = (state.requests || []).concat(okrItems);
     if (state.requestFilter === 'mine' && state.currentUser) {
@@ -7163,15 +7164,17 @@ function showOkrProposalReviewModal(proposalId) {
     if (!prop) { showToast('پیشنهاد یافت نشد.', 'error'); return; }
     modalTitle.innerText = `بررسی پیشنهاد OKR - ${prop.teamName}`;
     const okrsHtml = (prop.proposedOKRs||[]).map(o=> `<div class="mb-2"><div class="font-semibold text-sm">${o.objective}</div>${(o.keyResults||[]).map(kr=> `<div class="text-xs text-slate-600">- ${kr.name}${kr.owner?` (${kr.owner})`:''}</div>`).join('')}</div>`).join('') || '<div class="text-xs text-slate-500">خالی</div>';
+    const cycle = (state.okrCycles||[]).find(c=> (c.firestoreId||c.id) === prop.cycleId);
+    const corpHtml = (cycle?.corporateOKRs||[]).map(o=> `<div class=\"mb-2\"><div class=\"font-semibold text-xs\">${o.objective}</div>${(o.keyResults||[]).map(kr=> `<div class=\"text-[11px] text-slate-600\">• ${kr.name}${kr.target?` (${kr.target})`:''}</div>`).join('')}</div>`).join('') || '<div class="text-xs text-slate-500">ثبت نشده</div>';
     modalContent.innerHTML = `
-        <div class="space-y-3">
-            <div class="text-sm">چرخه: ${prop.cycleId}</div>
-            <div class="border rounded-xl p-3">${okrsHtml}</div>
-            <textarea id="okr-manager-feedback" class="w-full p-2 border rounded-md" rows="3" placeholder="بازخورد مدیر ارشد (اختیاری)"></textarea>
-            <div class="flex justify-end gap-2">
-                <button id="okr-reject-btn" class="secondary-btn">رد</button>
-                <button id="okr-approve-btn" class="primary-btn">تایید</button>
-            </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div class="border rounded-2xl p-3"><div class="font-bold text-sm mb-2">OKRهای سازمان (${cycle?.title||''})</div>${corpHtml}</div>
+            <div class="border rounded-2xl p-3"><div class="font-bold text-sm mb-2">پیشنهاد تیم ${prop.teamName}</div>${okrsHtml}</div>
+        </div>
+        <div class="mt-3"><textarea id="okr-manager-feedback" class="w-full p-2 border rounded-md" rows="3" placeholder="بازخورد (اختیاری)"></textarea></div>
+        <div class="flex justify-end gap-2 mt-2">
+            <button id="okr-reject-btn" class="secondary-btn">رد</button>
+            <button id="okr-approve-btn" class="primary-btn">تایید</button>
         </div>`;
     openModal(mainModal, mainModalContainer);
     document.getElementById('okr-approve-btn').addEventListener('click', async ()=> {
@@ -7206,6 +7209,17 @@ function showOkrProposalReviewModal(proposalId) {
                 await updateDoc(doc(db, `artifacts/${appId}/public/data/okrProposals`, prop.firestoreId), { status: nextStatus, managerFeedback: feedback, reviewedAt: serverTimestamp(), assignedTo: null });
                 const teamRef = doc(db, `artifacts/${appId}/public/data/teams`, prop.teamId);
                 await updateDoc(teamRef, { activeOKRs: prop.proposedOKRs });
+                // اتصال OKRهای تیم به چرخه سازمان
+                try {
+                    const cycleRef = doc(db, `artifacts/${appId}/public/data/okrCycles`, prop.cycleId);
+                    const cycleSnap = await getDoc(cycleRef);
+                    const cdata = cycleSnap.exists() ? cycleSnap.data() : {};
+                    const teamOKRs = Array.isArray(cdata.teamOKRs) ? cdata.teamOKRs.slice() : [];
+                    const idx = teamOKRs.findIndex(x=> x.teamId === prop.teamId);
+                    const entry = { teamId: prop.teamId, teamName: prop.teamName, okrs: prop.proposedOKRs };
+                    if (idx >= 0) teamOKRs[idx] = entry; else teamOKRs.push(entry);
+                    await updateDoc(cycleRef, { teamOKRs });
+                } catch {}
             } else {
                 await updateDoc(doc(db, `artifacts/${appId}/public/data/okrProposals`, prop.firestoreId), { status: nextStatus, managerFeedback: feedback, reviewedAt: serverTimestamp(), assignedTo: nextAssignedTo });
                 // یادآور برای مرحله بعد
