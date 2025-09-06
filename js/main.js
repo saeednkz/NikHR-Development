@@ -6158,10 +6158,11 @@ const renderPage = (pageName) => {
                         <div><label class="block text-sm">تاریخ پایان</label><input id="okr-end" class="w-full p-2 border rounded-md" placeholder="YYYY/MM/DD"></div>
                     </div>
                     <div><label class="block text-sm">وضعیت</label><select id="okr-status" class="w-full p-2 border rounded-md bg-white"><option value="draft">draft</option><option value="open">open</option><option value="closed">closed</option></select></div>
-                    <div class="flex justify-end gap-2"><button type="button" class="secondary-btn" onclick="closeModal(mainModal, mainModalContainer)">انصراف</button><button type="submit" class="primary-btn">ذخیره</button></div>
+                    <div class="flex justify-end gap-2"><button type="button" class="secondary-btn" id="okr-new-cancel-btn">انصراف</button><button type="submit" class="primary-btn">ذخیره</button></div>
                 </form>
             `;
             openModal(mainModal, mainModalContainer);
+            document.getElementById('okr-new-cancel-btn')?.addEventListener('click', () => closeModal(mainModal, mainModalContainer));
             document.getElementById('okr-cycle-form').addEventListener('submit', async (e) => {
                 e.preventDefault();
                 try {
@@ -6200,10 +6201,11 @@ const renderPage = (pageName) => {
                     </div>
                     <div id="okr-items" class="space-y-3">${okrs || ''}</div>
                     <button type="button" id="add-obj-btn" class="secondary-btn text-xs">افزودن Objective</button>
-                    <div class="flex justify-end gap-2"><button type="button" class="secondary-btn" onclick="closeModal(mainModal, mainModalContainer)">انصراف</button><button type="submit" class="primary-btn">ذخیره</button></div>
+                    <div class="flex justify-end gap-2"><button type="button" class="secondary-btn" id="okr-edit-cancel-btn">انصراف</button><button type="submit" class="primary-btn">ذخیره</button></div>
                 </form>
             `;
             openModal(mainModal, mainModalContainer);
+            document.getElementById('okr-edit-cancel-btn')?.addEventListener('click', () => closeModal(mainModal, mainModalContainer));
             const container = document.getElementById('okr-items');
             document.getElementById('add-obj-btn').addEventListener('click', ()=> {
                 const wrap = document.createElement('div');
