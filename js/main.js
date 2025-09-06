@@ -68,7 +68,7 @@ const documentCategories = [
     { id: 'مزایا و حقوق',     key: 'benefits', icon: 'coins',          desc: 'حقوق، مزایا، بیمه و سیاست‌های مالی.' },
     { id: 'مستندات پروژه‌ها', key: 'projects', icon: 'folder-kanban',  desc: 'مستندات فنی و اجرایی پروژه‌ها.' }
 ];
-        export const state = { employees: [], teams: [], reminders: [], surveyResponses: [], users: [], competencies: [], expenses: [], pettyCashCards: [], chargeHistory: [], dashboardMetrics: {}, orgAnalytics: {}, currentPage: 'dashboard', currentPageTalent: 1, currentUser: null,currentPageRequests: 1,currentPageTasks: 1,currentPageAnnouncements: 1, anniversaryWishes: [], companyWishes: [] };
+        export const state = { employees: [], teams: [], reminders: [], surveyResponses: [], users: [], skillsAndCompetencies: [], expenses: [], pettyCashCards: [], chargeHistory: [], dashboardMetrics: {}, orgAnalytics: {}, currentPage: 'dashboard', currentPageTalent: 1, currentUser: null,currentPageRequests: 1,currentPageTasks: 1,currentPageAnnouncements: 1, anniversaryWishes: [], companyWishes: [] };
 window.state = state; // این خط را برای دیباگ اضافه کنید
         let charts = {};
 let activeListeners = []; // [!code ++] این خط را اضافه کنید
@@ -289,10 +289,10 @@ async function fetchUserRole(user) {
 // کل این تابع را با نسخه جدید و کامل جایگزین کنید
 
 // ▼▼▼ START: [FIX - Phase 1] Replace the entire listenToData function ▼▼▼
+// [FIX] Update listenToData to use the correct collection name and state key
 function listenToData() {
     detachAllListeners(); 
     
-    // [FIX] Use the new collection name 'skillsAndCompetencies'
     const collectionsToListen = [
         'employees', 'teams', 'reminders', 'surveyResponses', 'users', 
         'skillsAndCompetencies', 'requests', 'assignmentRules', 'companyDocuments', 
@@ -320,37 +320,18 @@ function listenToData() {
     collectionsToListen.forEach(colName => {
         const colRef = collection(db, `artifacts/${appId}/public/data/${colName}`);
         const unsubscribe = onSnapshot(colRef, (snapshot) => {
-            
-            // [FIX] When data arrives, store it in state.skillsAndCompetencies
-            const stateKey = colName === 'skillsAndCompetencies' ? 'skillsAndCompetencies' : colName;
-            state[stateKey] = snapshot.docs.map(doc => ({ firestoreId: doc.id, ...doc.data() }));
+            state[colName] = snapshot.docs.map(doc => ({ firestoreId: doc.id, ...doc.data() }));
             
             if (initialLoads > 0) {
                 onDataLoaded();
             } else {
                 calculateAndApplyAnalytics();
                 updateNotificationsForCurrentUser();
-                
                 if (state.currentUser.role !== 'employee' && !window.location.hash.startsWith('#survey-taker')) {
                     renderPage(state.currentPage);
                 }
-
-                try {
-                    if (state.currentUser.role === 'employee') {
-                        const activeMoments = document.querySelector('#employee-portal-nav .nav-item[href="#moments"].active');
-                        if (activeMoments && typeof window.renderMomentsList === 'function') {
-                            window.renderMomentsList();
-                        }
-                    }
-                } catch {}
             }
-        }, (error) => {
-            console.error(`Error listening to ${colName}:`, error);
-            const stateKey = colName === 'skillsAndCompetencies' ? 'skillsAndCompetencies' : colName;
-            if (!state[stateKey]) state[stateKey] = [];
-            if (initialLoads > 0) onDataLoaded();
         });
-        
         activeListeners.push(unsubscribe);
     });
 }
@@ -4115,8 +4096,14 @@ dashboard: () => {
                 <div class="flex ...">
                     <div class="w-full md:w-1/3 ..."><input type="text" id="searchInput" ...></div>
                     <div class="w-full md:w-auto flex ...">
-                        <select id="teamFilter" class="p-2 ..."><option value="">همه تیم‌ها</option>${teamFilterOptions}</select>
-                        <select id="skillFilter" class="p-2 ..."><option value="">همه مهارت‌ها</option>${skillFilterOptions}</select>
+<select id="teamFilter" class="p-2 border border-slate-300 rounded-lg bg-white">
+    <option value="">همه تیم‌ها</option>
+    ${state.teams.map(t => `<option value="${t.firestoreId}">${t.name}</option>`).join('')}
+</select>
+<select id="skillFilter" class="p-2 border border-slate-300 rounded-lg bg-white">
+    <option value="">همه مهارت‌ها</option>
+    ${(state.skillsAndCompetencies || []).map(s => `<option value="${s.name}">${s.name}</option>`).join('')}
+</select>
                         <select id="statusFilter" class="p-2 ..."><option value="">همه وضعیت‌ها</option>...</select>
                     </div>
                 </div>
@@ -6426,22 +6413,18 @@ const renderEmployeeTable = () => {
     const statusFilter = document.getElementById('statusFilter')?.value || '';
     
 // [FIX] Updated filtering logic to use new data structure
-    const filteredEmployees = state.employees.filter(emp => {
-        if (!emp || !emp.name) return false; // Safeguard against incomplete data
+// [FIX] Use new fields (primaryTeamId, individualSkills) for filtering
+const filteredEmployees = state.employees.filter(emp => {
+    if (!emp || !emp.name || !emp.id) return false;
 
-        const nameMatch = (emp.name || '').toLowerCase().includes(searchInput);
-        const idMatch = ((emp.id || emp.firestoreId || '')).toLowerCase().includes(searchInput);
+    const nameMatch = emp.name.toLowerCase().includes(searchInput);
+    const idMatch = emp.id.toLowerCase().includes(searchInput);
+    const teamMatch = !teamFilter || emp.primaryTeamId === teamFilter;
+    const statusMatch = !statusFilter || emp.status === statusFilter;
+    const skillMatch = !skillFilter || (emp.individualSkills || []).some(s => s.skillName === skillFilter && s.status === 'approved');
 
-        // [CHANGED] Filter logic now uses primaryTeamId
-const teamMatch = !teamFilter || emp.primaryTeamId === teamFilter;
-        
-        const statusMatch = !statusFilter || emp.status === statusFilter;
-        
-        // [FINAL FIX] The filter now correctly checks the new 'individualSkills' array
-        const skillMatch = !skillFilter || (emp.individualSkills || []).some(s => s.skillName === skillFilter && s.status === 'approved');
-
-        return (nameMatch || idMatch) && teamMatch && statusMatch && skillMatch;
-    });
+    return (nameMatch || idMatch) && teamMatch && statusMatch && skillMatch;
+});
 
     const startIndex = (state.currentPageTalent - 1) * TALENT_PAGE_SIZE;
     const endIndex = startIndex + TALENT_PAGE_SIZE;
@@ -8195,7 +8178,6 @@ document.getElementById('employee-form').addEventListener('submit', async (e) =>
             console.log("Frontend: Cloud function returned successfully:", result);
             showToast("کارمند و حساب کاربری با موفقیت ایجاد شد!");
             closeModal(mainModal, mainModalContainer);
-            renderPage('talent');
         } catch (error) {
             console.error("Frontend: Critical error calling cloud function:", error);
             showToast(`خطا در فراخوانی تابع: ${error.message}`, "error");
