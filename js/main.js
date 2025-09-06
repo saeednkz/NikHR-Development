@@ -737,13 +737,16 @@ function renderEmployeePortalPage(pageName, employee) {
         lucide.createIcons();
     }
     else if (pageName === 'team-okrs') {
-        if (!isTeamManager(employee)) {
-            contentContainer.innerHTML = `<div class="card p-6 text-center"><p>شما دسترسی به این صفحه را ندارید.</p></div>`;
+        const isMgr = isTeamManager(employee);
+        const team = isMgr
+            ? (state.teams||[]).find(t => t.leadership?.manager === employee.id)
+            : (state.teams||[]).find(t => t.firestoreId === employee.primaryTeamId) || (state.teams||[]).find(t => (t.memberIds||[]).includes(employee.id));
+        if (!team) {
+            contentContainer.innerHTML = `<div class="card p-6 text-center"><p>تیم شما شناسایی نشد.</p></div>`;
             return;
         }
-        const managedTeam = (state.teams||[]).find(t => t.leadership?.manager === employee.id);
         const currentCycle = (state.okrCycles||[]).find(c=> c.status==='open');
-        const proposals = (state.okrProposals||[]).filter(p=> p.teamId === managedTeam?.firestoreId && p.cycleId === (currentCycle?.firestoreId || currentCycle?.id)).sort((a,b)=> new Date(b.createdAt?.toDate?.()||0)-new Date(a.createdAt?.toDate?.()||0));
+        const proposals = (state.okrProposals||[]).filter(p=> p.teamId === team?.firestoreId && p.cycleId === (currentCycle?.firestoreId || currentCycle?.id)).sort((a,b)=> new Date(b.createdAt?.toDate?.()||0)-new Date(a.createdAt?.toDate?.()||0));
         const corporate = (currentCycle?.corporateOKRs||[]).map(o=> `<li class="text-sm"><strong>${o.objective}</strong>${(o.keyResults||[]).length?'<ul class="list-disc pr-5 text-slate-600 text-xs mt-1">'+o.keyResults.map(kr=>`<li>${kr.name}${kr.target?` (هدف: ${kr.target})`:''}</li>`).join('')+'</ul>':''}</li>`).join('') || '<li class="text-sm text-slate-500">ثبت نشده</li>';
         const proposalsHtml = proposals.map(p=> `<div class="border rounded-xl p-3"><div class="text-xs text-slate-500 mb-1">وضعیت: ${p.status||'pending'}</div>${(p.proposedOKRs||[]).map(o=> `<div class="mb-2"><div class="font-semibold text-sm">${o.objective}</div>${(o.keyResults||[]).map(kr=> `<div class="text-xs text-slate-600">- ${kr.name}${kr.target?` (${kr.target})`:''}</div>`).join('')}</div>`).join('') || '<div class="text-xs text-slate-500">خالی</div>'}</div>`).join('') || '<div class="text-sm text-slate-500">پیشنهادی ثبت نشده است.</div>';
         contentContainer.innerHTML = `
@@ -759,12 +762,12 @@ function renderEmployeePortalPage(pageName, employee) {
                     <ul class="space-y-2">${corporate}</ul>
                 </div>
                 <div class="bg-white p-5 rounded-2xl border">
-                    <div class="flex items-center justify-between mb-2"><h3 class="font-bold">پیشنهادهای تیم</h3><button id="new-okr-proposal-btn" class="primary-btn text-xs" ${currentCycle?'':'disabled'}>ارسال پیشنهاد جدید</button></div>
-                    <div class="space-y-2" id="okr-proposals-list">${proposalsHtml}</div>
+                    <div class="flex items-center justify-between mb-2"><h3 class="font-bold">پیشنهادهای تیم</h3>${isMgr ? `<button id="new-okr-proposal-btn" class="primary-btn text-xs" ${currentCycle?'':'disabled'}>ارسال پیشنهاد جدید</button>` : ''}</div>
+                    <div class="space-y-2" id="okr-proposals-list">${proposalsHtml || (isMgr?'' : '<div class="text-sm text-slate-500">پیشنهاد توسط مدیر تیم ثبت می‌شود.</div>')}</div>
                 </div>
             </div>
         `;
-        document.getElementById('new-okr-proposal-btn')?.addEventListener('click', ()=> showOkrProposalForm(employee));
+        if (isMgr) document.getElementById('new-okr-proposal-btn')?.addEventListener('click', ()=> showOkrProposalForm(employee));
         lucide.createIcons();
     }
     // پایان بلوک جدید
