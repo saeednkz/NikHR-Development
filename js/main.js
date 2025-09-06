@@ -4856,11 +4856,14 @@ const showEditUserForm = (user) => {
 // فایل: js/main.js
 // ▼▼▼ کل این تابع را با نسخه جدید و کامل زیر جایگزین کنید ▼▼▼
 
+// فایل: js/main.js
+// ▼▼▼ کل این تابع را با نسخه کامل و نهایی زیر جایگزین کنید ▼▼▼
+
 function setupProfileModalListeners(emp) {
     const container = document.getElementById('modalContent');
     if (!container) return;
 
-    // ۱. منطق صحیح فعال‌سازی تب‌ها
+    // ... (بخش مدیریت تب‌ها بدون تغییر باقی می‌ماند) ...
     const tabs = container.querySelectorAll('#profile-tabs .profile-tab');
     const contents = container.querySelectorAll('.profile-tab-content');
     tabs.forEach(tab => {
@@ -4882,60 +4885,54 @@ function setupProfileModalListeners(emp) {
         });
     });
 
-    // ۲. شنونده مرکزی برای تمام دکمه‌ها
+    // شنونده مرکزی برای تمام دکمه‌ها
     container.addEventListener('click', async (e) => {
-        // ▼▼▼ START: [NEW FEATURE - Phase 5] Add this logic inside setupProfileModalListeners's click handler ▼▼▼
-const addSkillBtn = e.target.closest('#add-individual-skill-btn');
-const approveSkillBtn = e.target.closest('.approve-skill-btn');
-const editSkillBtn = e.target.closest('.edit-skill-btn');
-const deleteSkillBtn = e.target.closest('.delete-skill-btn');
+        const addSkillBtn = e.target.closest('#add-individual-skill-btn');
+        const approveSkillBtn = e.target.closest('.approve-skill-btn');
+        const editSkillBtn = e.target.closest('.edit-skill-btn');
+        const deleteSkillBtn = e.target.closest('.delete-skill-btn');
 
-if (addSkillBtn) {
-    showAddOrEditSkillForm(emp, null, true); // isManagerAdding is true
-    return;
-}
-
-if (approveSkillBtn) {
-    const skillId = approveSkillBtn.dataset.skillId;
-    const currentSkills = (emp.individualSkills || []).map(s => 
-        s.skillId === skillId ? { ...s, status: 'approved', notes: 'توسط مدیر تایید شد' } : s
-    );
-    await updateDoc(doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId), { individualSkills: currentSkills });
-    showToast('مهارت تایید شد.');
-    viewEmployeeProfile(emp.firestoreId); // Refresh modal
-    return;
-}
-
-if (editSkillBtn) {
-    const skillId = editSkillBtn.dataset.skillId;
-    const skillToEdit = (emp.individualSkills || []).find(s => s.skillId === skillId);
-    if (skillToEdit) {
-        showAddOrEditSkillForm(emp, skillToEdit, true); // isManagerAdding is true
-    }
-    return;
-}
-
-if (deleteSkillBtn) {
-    const skillId = deleteSkillBtn.dataset.skillId;
-    showConfirmationModal('حذف مهارت', 'آیا از حذف این مهارت مطمئن هستید؟', async () => {
-        const currentSkills = (emp.individualSkills || []).filter(s => s.skillId !== skillId);
-        await updateDoc(doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId), { individualSkills: currentSkills });
-        showToast('مهارت حذف شد.');
-        viewEmployeeProfile(emp.firestoreId); // Refresh modal
-    });
-    return;
-}
-// ▲▲▲ END: [NEW FEATURE - Phase 5] Add this logic ▲▲▲
-        const btn = e.target.closest('button');
-        if (!btn) return;
-
-        // دکمه افزودن سابقه عملکرد (کارکرد صحیح)
-        if (btn.id === 'add-performance-btn') {
-            showPerformanceForm(emp);
+        if (addSkillBtn) {
+            showAddOrEditSkillForm(emp, null, true); // isManagerAdding is true
             return;
         }
 
-        // دکمه مشاهده سابقه عملکرد
+        if (approveSkillBtn) {
+            const skillId = approveSkillBtn.dataset.skillId;
+            const currentSkills = (emp.individualSkills || []).map(s =>
+                s.skillId === skillId ? { ...s, status: 'approved', notes: 'توسط مدیر تایید شد' } : s
+            );
+            await updateDoc(doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId), { individualSkills: currentSkills });
+            showToast('مهارت تایید شد.');
+            viewEmployeeProfile(emp.firestoreId); // Refresh modal
+            return;
+        }
+
+        if (editSkillBtn) {
+            const skillId = editSkillBtn.dataset.skillId;
+            const skillToEdit = (emp.individualSkills || []).find(s => s.skillId === skillId);
+            if (skillToEdit) {
+                showAddOrEditSkillForm(emp, skillToEdit, true); // isManagerAdding is true
+            }
+            return;
+        }
+
+        if (deleteSkillBtn) {
+            const skillId = deleteSkillBtn.dataset.skillId;
+            showConfirmationModal('حذف مهارت', 'آیا از حذف این مهارت مطمئن هستید؟', async () => {
+                const currentSkills = (emp.individualSkills || []).filter(s => s.skillId !== skillId);
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId), { individualSkills: currentSkills });
+                showToast('مهارت حذف شد.');
+                viewEmployeeProfile(emp.firestoreId); // Refresh modal
+            });
+            return;
+        }
+
+        // ... (بقیه event listener های دکمه‌ها بدون تغییر باقی می‌مانند) ...
+        const btn = e.target.closest('button');
+        if (!btn) return;
+
+        if (btn.id === 'add-performance-btn') { showPerformanceForm(emp); return; }
         const viewPerfBtn = e.target.closest('.view-performance-btn');
         if (viewPerfBtn) {
             const reviewIndex = parseInt(viewPerfBtn.dataset.index);
@@ -4944,37 +4941,24 @@ if (deleteSkillBtn) {
             }
             return;
         }
-
-        // دکمه ویرایش سابقه عملکرد
-        if (btn.classList.contains('edit-performance-btn')) {
-            showPerformanceForm(emp, parseInt(btn.dataset.index));
-            return;
-        }
-
-        // دکمه حذف سابقه عملکرد
+        if (btn.classList.contains('edit-performance-btn')) { showPerformanceForm(emp, parseInt(btn.dataset.index)); return; }
         if (btn.classList.contains('delete-performance-btn')) {
             const reviewIndex = parseInt(btn.dataset.index);
             showConfirmationModal('حذف سابقه عملکرد', 'آیا از حذف این آیتم مطمئن هستید؟', async () => {
                 const currentHistory = emp.performanceHistory || [];
                 currentHistory.splice(reviewIndex, 1);
-                const docRef = doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId);
-                await updateDoc(docRef, { performanceHistory: currentHistory });
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId), { performanceHistory: currentHistory });
                 showToast('سابقه ارزیابی حذف شد.');
                 viewEmployeeProfile(emp.firestoreId);
             });
             return;
         }
-        
-        // بقیه دکمه‌های پروفایل
         if (btn.id === 'main-edit-employee-btn') { showEmployeeForm(emp.firestoreId); return; }
         if (btn.id === 'edit-competencies-btn') { showEditCompetenciesForm(emp); return; }
         if (btn.id === 'edit-personal-info-btn') { showEditPersonalInfoForm(emp); return; }
         if (btn.id === 'add-contract-btn') { showContractForm(emp); return; }
         if (btn.id === 'edit-career-path-btn') { showEditCareerPathForm(emp); return; }
-                if (btn.id === 'change-avatar-btn') {
-            handleAvatarChange(emp);
-            return;
-        }
+        if (btn.id === 'change-avatar-btn') { handleAvatarChange(emp); return; }
         if (btn.id === 'delete-avatar-btn') {
             showConfirmationModal('حذف عکس پروفایل', 'آیا مطمئن هستید؟', async () => {
                 const defaultAvatar = `https://placehold.co/100x100/E2E8F0/4A5568?text=${(emp.name||'NA').substring(0,2)}`;
@@ -7939,6 +7923,9 @@ const isProfileComplete = (employee) => {
  * @returns {string} The generated HTML for the skills list.
  */
 // ▼▼▼ START: [FIX - Phase 5] Replace the entire renderIndividualSkills function ▼▼▼
+// فایل: js/main.js
+// ▼▼▼ کل این تابع را با نسخه کامل و نهایی زیر جایگزین کنید ▼▼▼
+
 const renderIndividualSkills = (employee, isManagerView) => {
     const skills = employee.individualSkills || [];
     if (skills.length === 0) {
