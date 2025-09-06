@@ -68,7 +68,7 @@ const documentCategories = [
     { id: 'مزایا و حقوق',     key: 'benefits', icon: 'coins',          desc: 'حقوق، مزایا، بیمه و سیاست‌های مالی.' },
     { id: 'مستندات پروژه‌ها', key: 'projects', icon: 'folder-kanban',  desc: 'مستندات فنی و اجرایی پروژه‌ها.' }
 ];
-        export const state = { employees: [], teams: [], reminders: [], surveyResponses: [], users: [], competencies: [], expenses: [], pettyCashCards: [], chargeHistory: [], okrCycles: [], okrProposals: [], dashboardMetrics: {}, orgAnalytics: {}, currentPage: 'dashboard', currentPageTalent: 1, currentUser: null,currentPageRequests: 1,currentPageTasks: 1,currentPageAnnouncements: 1, anniversaryWishes: [], companyWishes: [] };
+        export const state = { employees: [], teams: [], reminders: [], surveyResponses: [], users: [], competencies: [], expenses: [], pettyCashCards: [], chargeHistory: [], okrCycles: [], okrSuggestions: [], teamOKRs: [], dashboardMetrics: {}, orgAnalytics: {}, currentPage: 'dashboard', currentPageTalent: 1, currentUser: null,currentPageRequests: 1,currentPageTasks: 1,currentPageAnnouncements: 1, anniversaryWishes: [], companyWishes: [] };
 window.state = state; // این خط را برای دیباگ اضافه کنید
         let charts = {};
 let activeListeners = []; // [!code ++] این خط را اضافه کنید
@@ -298,7 +298,7 @@ function listenToData() {
         'skillsAndCompetencies', 'requests', 'assignmentRules', 'companyDocuments', 
         'announcements', 'birthdayWishes', 'anniversaryWishes', 'companyWishes', 
         'moments','jobPositions','evaluationCycles','jobFamilies','employeeEvaluations',
-        'okrCycles','okrProposals'
+        'okrCycles','okrSuggestions','teamOKRs'
     ];
     let initialLoads = collectionsToListen.length;
 
@@ -746,19 +746,14 @@ function renderEmployeePortalPage(pageName, employee) {
             return;
         }
         const currentCycle = (state.okrCycles||[]).find(c=> c.status==='open');
-        const proposals = (state.okrProposals||[]).filter(p=> p.teamId === team?.firestoreId && p.cycleId === (currentCycle?.firestoreId || currentCycle?.id)).sort((a,b)=> new Date(b.createdAt?.toDate?.()||0)-new Date(a.createdAt?.toDate?.()||0));
         const corporate = (currentCycle?.corporateOKRs||[]).map(o=> `<li class="text-sm"><strong>${o.objective}</strong>${(o.keyResults||[]).length?'<ul class="list-disc pr-5 text-slate-600 text-xs mt-1">'+o.keyResults.map(kr=>`<li>${kr.name}${kr.target?` (هدف: ${kr.target})`:''}</li>`).join('')+'</ul>':''}</li>`).join('') || '<li class="text-sm text-slate-500">ثبت نشده</li>';
-        const proposalsHtml = proposals.map(p=> `<div class="border rounded-xl p-3"><div class="text-xs text-slate-500 mb-1">وضعیت: ${p.status||'pending'}</div>${(p.proposedOKRs||[]).map(o=> `<div class="mb-2"><div class="font-semibold text-sm">${o.objective}</div>${(o.keyResults||[]).map(kr=> `<div class="text-xs text-slate-600">- ${kr.name}${kr.target?` (${kr.target})`:''}</div>`).join('')}</div>`).join('') || '<div class="text-xs text-slate-500">خالی</div>'}</div>`).join('') || '<div class="text-sm text-slate-500">پیشنهادی ثبت نشده است.</div>';
-        // Team OKRs (approved) and other teams
-        const teamEntry = (currentCycle?.teamOKRs||[]).find(e=> e.teamId === team?.firestoreId);
-        const teamOkrsHtml = teamEntry ? (teamEntry.okrs||[]).map((o,oi)=> `<div class=\"mb-3\"><div class=\"font-semibold text-sm\">${o.objective} ${isMgr?'' : ''}</div>${(o.keyResults||[]).map((kr,ki)=> `<div class=\"flex items-center justify-between text-xs text-slate-700 gap-2 py-0.5\"><div>- ${kr.name}</div><div>${typeof kr.progress==='number'? kr.progress:0}%</div></div>`).join('')}</div>`).join('') : '<div class=\"text-sm text-slate-500\">برای این تیم تایید نشده است.</div>';
-        const otherTeams = (currentCycle?.teamOKRs||[]).filter(e=> e.teamId !== team?.firestoreId);
-        const otherTeamsHtml = otherTeams.length ? otherTeams.map(e=> `<details class=\"border rounded-xl p-2\"><summary class=\"text-sm font-semibold\">${e.teamName||''}</summary>${(e.okrs||[]).map(o=> `<div class=\"mt-2\"><div class=\"font-medium text-xs\">${o.objective}</div>${(o.keyResults||[]).map(kr=> `<div class=\"text-[11px] text-slate-600\">• ${kr.name} — ${kr.progress||0}%</div>`).join('')}</div>`).join('')}</details>`).join('') : '<div class=\"text-sm text-slate-500\">OKR تاییدشده‌ای برای تیم‌های دیگر ثبت نشده است.</div>';
-        // Member proposals (for manager stage)
-        const memberProposals = (state.okrProposals||[]).filter(p=> p.teamId===team?.firestoreId && (p.status||'').includes('مدیر') && p.assignedTo === employee.uid);
-        const memberPropsHtml = memberProposals.length ? memberProposals.map(mp=> `<div class=\"border rounded-lg p-2 flex items-start gap-2\"><input type=\"checkbox\" class=\"member-prop-chk mt-1\" value=\"${mp.firestoreId}\"><div class=\"flex-1\">${(mp.proposedOKRs||[]).map(o=> `<div class=\"mb-1\"><div class=\"font-semibold text-xs\">${o.objective}</div>${(o.keyResults||[]).map(kr=> `<div class=\"text-[11px] text-slate-600\">• ${kr.name}</div>`).join('')}</div>`).join('')}</div></div>`).join('') : '<div class=\"text-xs text-slate-500\">پیشنهاد معوقی برای بررسی مدیر یافت نشد.</div>';
-        // Manager progress editor
-        const teamOkrsEditor = isMgr && teamEntry ? `<div class=\"mt-2 space-y-2\">${(teamEntry.okrs||[]).map((o,oi)=> `<div class=\"border rounded-xl p-2\"><div class=\"font-semibold text-xs mb-1\">${o.objective}</div>${(o.keyResults||[]).map((kr,ki)=> `<div class=\"grid grid-cols-12 items-center gap-2 text-[11px]\"><div class=\"col-span-7\">• ${kr.name}</div><div class=\"col-span-3\"><input type=\"number\" min=\"0\" max=\"100\" class=\"kr-progress-input w-full p-1 border rounded\" data-oi=\"${oi}\" data-ki=\"${ki}\" value=\"${kr.progress||0}\"></div><div class=\"col-span-2\">%</div></div>`).join('')}</div>`).join('')}<div class=\"mt-2\"><textarea id=\"okr-progress-note\" class=\"w-full p-2 border rounded\" rows=\"2\" placeholder=\"توضیح به‌روزرسانی (هفتگی)\"></textarea></div><div class=\"flex justify-end\"><button id=\"save-team-okr-progress\" class=\"secondary-btn text-xs\">ذخیره پیشرفت</button></div>` : '';
+        // Suggestions (employee)
+        const mySuggestions = (state.okrSuggestions||[]).filter(s=> s.teamId===team?.firestoreId && s.cycleId === (currentCycle?.firestoreId||currentCycle?.id) && s.employeeUid===employee.uid);
+        const suggestList = mySuggestions.map(s=> (s.items||[]).map(o=> `<div class=\"text-xs\">• ${o.objective}</div>`).join('')).join('') || '<div class=\"text-xs text-slate-500\">پیشنهادی ثبت نکرده‌اید.</div>';
+        // Team OKRs
+        const teamEntry = (state.teamOKRs||[]).find(e=> e.teamId===team?.firestoreId && e.cycleId === (currentCycle?.firestoreId||currentCycle?.id));
+        const teamOkrsHtml = teamEntry ? (teamEntry.okrs||[]).map((o)=> `<div class=\"mb-2\"><div class=\"font-semibold text-sm\">${o.objective}</div>${(o.keyResults||[]).map(kr=> `<div class=\"text-[11px] text-slate-600\">• ${kr.name} — ${kr.progress||0}%</div>`).join('')}</div>`).join('') : '<div class=\"text-sm text-slate-500\">OKR تاییدشده‌ای ثبت نشده است.</div>';
+        const editor = isMgr ? `<div class=\"mt-2\"><button id=\"open-team-okr-editor\" class=\"secondary-btn text-xs\">تجمیع/ویرایش OKR تیم</button></div>` : '';
         contentContainer.innerHTML = `
             <section class="rounded-2xl overflow-hidden border mb-6" style="background:linear-gradient(90deg,#6B69D6,#10B981)">
                 <div class="p-6 sm:p-8">
@@ -772,73 +767,18 @@ function renderEmployeePortalPage(pageName, employee) {
                     <ul class="space-y-2">${corporate}</ul>
                 </div>
                 <div class="bg-white p-5 rounded-2xl border">
-                    <div class="flex items-center justify-between mb-2"><h3 class="font-bold">پیشنهادهای تیم</h3><button id="new-okr-proposal-btn" class="primary-btn text-xs" ${currentCycle?'':'disabled'}>ارسال پیشنهاد جدید</button></div>
-                    <div class="space-y-2" id="okr-proposals-list">${proposalsHtml}</div>
+                    <div class="flex items-center justify-between mb-2"><h3 class="font-bold">پیشنهادهای من</h3><button id="new-okr-suggestion-btn" class="primary-btn text-xs" ${currentCycle?'':'disabled'}>ثبت پیشنهاد</button></div>
+                    <div class="space-y-1">${suggestList}</div>
                 </div>
             </div>
-            <div class=\"grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6\">
-                <div class=\"bg-white p-5 rounded-2xl border\">
-                    <h3 class=\"font-bold mb-2\">OKRهای تاییدشده تیم</h3>
-                    <div>${teamOkrsHtml}</div>
-                    ${teamOkrsEditor}
-                </div>
-                <div class=\"bg-white p-5 rounded-2xl border\">
-                    <h3 class=\"font-bold mb-2\">OKR تیم‌های دیگر (نمایش برای آگاهی)</h3>
-                    <div class=\"space-y-2\">${otherTeamsHtml}</div>
-                </div>
+            <div class="bg-white p-5 rounded-2xl border mt-6">
+                <h3 class="font-bold mb-2">OKR تیم</h3>
+                <div>${teamOkrsHtml}</div>
+                ${editor}
             </div>
-            ${isMgr ? `<div class=\"bg-white p-5 rounded-2xl border mt-6\"><div class=\"flex items-center justify-between mb-2\"><h3 class=\"font-bold\">پیشنهادهای اعضا (برای تجمیع)</h3><button id=\"send-selected-props-to-senior\" class=\"secondary-btn text-xs\">ارسال برای تایید مدیر ارشد</button></div><div class=\"space-y-2\">${memberPropsHtml}</div></div>` : ''}
         `;
-        document.getElementById('new-okr-proposal-btn')?.addEventListener('click', ()=> showOkrProposalForm(employee));
-        // Save team progress (manager only)
-        if (isMgr && teamEntry) {
-            document.getElementById('save-team-okr-progress')?.addEventListener('click', async ()=> {
-                try {
-                    const inputs = Array.from(document.querySelectorAll('.kr-progress-input'));
-                    const updated = JSON.parse(JSON.stringify(teamEntry.okrs || []));
-                    inputs.forEach(inp => { const oi = Number(inp.getAttribute('data-oi')); const ki = Number(inp.getAttribute('data-ki')); const val = Math.max(0, Math.min(100, Number(inp.value)||0)); if (updated[oi] && updated[oi].keyResults && updated[oi].keyResults[ki]) updated[oi].keyResults[ki].progress = val; });
-                    const note = (document.getElementById('okr-progress-note')?.value||'').trim();
-                    const logItem = { at: serverTimestamp(), by: state.currentUser.uid, note };
-                    // update team.activeOKRs
-                    await updateDoc(doc(db, `artifacts/${appId}/public/data/teams`, team.firestoreId), { activeOKRs: updated, okrUpdateLogs: arrayUnion(logItem) });
-                    // update cycle.teamOKRs entry
-                    const cycleRef = doc(db, `artifacts/${appId}/public/data/okrCycles`, currentCycle.firestoreId || currentCycle.id);
-                    const snap = await getDoc(cycleRef);
-                    const data = snap.exists() ? snap.data() : {};
-                    const list = Array.isArray(data.teamOKRs) ? data.teamOKRs : [];
-                    const idx = list.findIndex(e => e.teamId === team.firestoreId);
-                    if (idx >= 0) list[idx] = { ...list[idx], okrs: updated };
-                    else list.push({ teamId: team.firestoreId, teamName: team.name, okrs: updated });
-                    await updateDoc(cycleRef, { teamOKRs: list });
-                    showToast('پیشرفت OKR تیم ذخیره شد.');
-                } catch (e) { console.error(e); showToast('خطا در ذخیره پیشرفت.', 'error'); }
-            });
-        }
-        // Send selected member proposals to senior manager
-        if (isMgr) {
-            document.getElementById('send-selected-props-to-senior')?.addEventListener('click', async ()=> {
-                try {
-                    const selected = Array.from(document.querySelectorAll('.member-prop-chk:checked')).map(el=> el.value);
-                    if (!selected.length) { showToast('هیچ پیشنهادی انتخاب نشده است.', 'error'); return; }
-                    const chosen = memberProposals.filter(mp=> selected.includes(mp.firestoreId));
-                    const merged = [];
-                    chosen.forEach(mp => { (mp.proposedOKRs||[]).forEach(o => merged.push(o)); });
-                    // determine senior
-                    const membershipTeam = (state.teams||[]).find(t => (t.memberIds||[]).includes(employee.id));
-                    const seniorId = membershipTeam?.leadership?.manager;
-                    const seniorEmp = (state.employees||[]).find(e => e.id === seniorId);
-                    const assignedTo = seniorEmp?.uid || null;
-                    if (!assignedTo) { showToast('مدیر ارشد یافت نشد.', 'error'); return; }
-                    const ref = doc(collection(db, `artifacts/${appId}/public/data/okrProposals`));
-                    await setDoc(ref, { cycleId: currentCycle.firestoreId || currentCycle.id, teamId: team.firestoreId, teamName: team.name, createdBy: employee.uid, proposedOKRs: merged, assignedTo, status: 'در انتظار مدیر ارشد', createdAt: serverTimestamp() });
-                    // reminder
-                    const r = doc(collection(db, `artifacts/${appId}/public/data/reminders`));
-                    await setDoc(r, { text: `بررسی پیش‌نویس OKR تیم ${team.name}`, type: 'پیشنهاد OKR', date: new Date(), assignedTo, status: 'جدید', isReadByAssignee: false, createdAt: serverTimestamp() });
-                    showToast('پیش‌نویس تیم برای تایید مدیر ارشد ارسال شد.');
-                    renderEmployeePortalPage('team-okrs', employee);
-                } catch (e) { console.error(e); showToast('خطا در ارسال پیش‌نویس.', 'error'); }
-            });
-        }
+        document.getElementById('new-okr-suggestion-btn')?.addEventListener('click', ()=> showOkrSuggestionForm(employee, team, currentCycle));
+        document.getElementById('open-team-okr-editor')?.addEventListener('click', ()=> showTeamOKREditor(employee, team, currentCycle, teamEntry));
         lucide.createIcons();
     }
     // پایان بلوک جدید
@@ -4607,15 +4547,18 @@ requests: () => {
     });
     const REQUESTS_PAGE_SIZE = 10;
     // Include OKR proposals for admin review as a request-like list
-    const okrItems = (state.okrProposals||[]).map(p=> ({
-        firestoreId: p.firestoreId,
-        createdAt: p.createdAt,
-        employeeName: p.teamName || 'تیم',
-        requestType: 'پیشنهاد OKR',
-        status: p.status || 'pending',
-        assignedTo: p.assignedTo || (state.users.find(u=>u.role==='admin')||{}).firestoreId,
-        text: `بررسی پیشنهاد OKR تیم ${p.teamName || ''}`
-    }));
+    const okrItems = (state.teamOKRs||[]).filter(t=> t.status==='pending_senior').map(t=> {
+        const team = (state.teams||[]).find(x=> x.firestoreId===t.teamId);
+        return {
+            firestoreId: t.firestoreId,
+            createdAt: t.createdAt,
+            employeeName: team?.name || 'تیم',
+            requestType: 'تایید OKR تیم',
+            status: 'در انتظار مدیر ارشد',
+            assignedTo: (state.users.find(u=>u.role==='admin')||{}).firestoreId,
+            text: `بررسی OKR تیم ${team?.name || ''}`
+        };
+    });
     let filteredRequests = (state.requests || []).concat(okrItems);
     if (state.requestFilter === 'mine' && state.currentUser) {
         console.log(`[DEBUG] Filtering for 'mine'. Will only keep requests where assignedTo === ${state.currentUser.uid}`);
@@ -4632,8 +4575,8 @@ requests: () => {
     const requestsHtml = paginatedRequests.map(req => {
         const statusColors = {'درحال بررسی':'bg-yellow-100 text-yellow-800','در حال انجام':'bg-blue-100 text-blue-800','تایید شده':'bg-green-100 text-green-800','رد شده':'bg-red-100 text-red-800'};
         const adminOptions = admins.map(admin => `<option value="${admin.firestoreId}" ${req.assignedTo === admin.firestoreId ? 'selected' : ''}>${admin.name || admin.email}</option>`).join('');
-        const isOkr = req.requestType === 'پیشنهاد OKR';
-        const actionCell = isOkr ? `<button class="process-okr-prop-btn text-sm bg-slate-700 text-white py-1 px-3 rounded-md hover:bg-slate-800" data-id="${req.firestoreId}">بررسی</button>` : ((req.status === 'درحال بررسی' || req.status === 'در حال انجام') ? `<button class="process-request-btn text-sm bg-slate-700 text-white py-1 px-3 rounded-md hover:bg-slate-800" data-id="${req.firestoreId}">پردازش</button>` : '<span class="text-xs text-slate-400">-</span>');
+        const isOkr = req.requestType === 'تایید OKR تیم';
+        const actionCell = isOkr ? `<button class="process-teamokr-btn text-sm bg-slate-700 text-white py-1 px-3 rounded-md hover:bg-slate-800" data-id="${req.firestoreId}">بررسی</button>` : ((req.status === 'درحال بررسی' || req.status === 'در حال انجام') ? `<button class="process-request-btn text-sm bg-slate-700 text-white py-1 px-3 rounded-md hover:bg-slate-800" data-id="${req.firestoreId}">پردازش</button>` : '<span class="text-xs text-slate-400">-</span>');
         return `<tr class="border-b"><td class="px-4 py-3 whitespace-nowrap">${toPersianDate(req.createdAt)}</td><td class="px-4 py-3 font-semibold">${req.employeeName}</td><td class="px-4 py-3">${req.requestType}</td><td class="px-4 py-3"><span class="px-2 py-1 text-xs font-medium rounded-full ${statusColors[req.status] || 'bg-slate-100'}">${req.status}</span></td><td class="px-4 py-3 min-w-[150px]"><select data-id="${req.firestoreId}" class="assign-request-select w-full p-1.5 border border-slate-300 rounded-lg bg-white text-xs"><option value="">واگذار نشده</option>${adminOptions}</select></td><td class="px-4 py-3">${actionCell}</td></tr>`;
     }).join('');
 
@@ -7198,7 +7141,7 @@ const setupRequestsPageListeners = () => {
     mainContentArea.addEventListener('click', async (e) => {
         const filterBtn = e.target.closest('.request-filter-btn');
         const processBtn = e.target.closest('.process-request-btn');
-        const processOkrBtn = e.target.closest('.process-okr-prop-btn');
+        const processOkrBtn = e.target.closest('.process-teamokr-btn');
         const paginationBtn = e.target.closest('.pagination-btn');
 
         if (filterBtn) {
@@ -7210,7 +7153,7 @@ const setupRequestsPageListeners = () => {
             (window.showProcessRequestForm || (()=>{}))(processBtn.dataset.id);
         }
         if (processOkrBtn) {
-            showOkrProposalReviewModal(processOkrBtn.dataset.id);
+            showTeamOKRReviewModal(processOkrBtn.dataset.id);
         }
         if (paginationBtn && !paginationBtn.disabled) {
             state.currentPageRequests = Number(paginationBtn.dataset.page);
@@ -7312,6 +7255,42 @@ function showOkrProposalReviewModal(proposalId) {
             showToast('پیشنهاد OKR رد شد.');
             renderPage('requests');
         } catch (e) { console.error(e); showToast('خطا در رد پیشنهاد.', 'error'); }
+    });
+}
+function showTeamOKRReviewModal(teamOKRId) {
+    const tok = (state.teamOKRs||[]).find(t=> t.firestoreId===teamOKRId);
+    if (!tok) { showToast('OKR تیم یافت نشد.', 'error'); return; }
+    const team = (state.teams||[]).find(x=> x.firestoreId===tok.teamId);
+    const cycle = (state.okrCycles||[]).find(c=> (c.firestoreId||c.id)===tok.cycleId);
+    modalTitle.innerText = `بررسی OKR تیم - ${team?.name||''}`;
+    const okrsHtml = (tok.okrs||[]).map(o=> `<div class=\"mb-2\"><div class=\"font-semibold text-sm\">${o.objective}</div>${(o.keyResults||[]).map(kr=> `<div class=\"text-xs text-slate-600\">- ${kr.name}</div>`).join('')}</div>`).join('') || '<div class="text-xs text-slate-500">خالی</div>';
+    const corpHtml = (cycle?.corporateOKRs||[]).map(o=> `<div class=\"mb-2\"><div class=\"font-semibold text-xs\">${o.objective}</div>${(o.keyResults||[]).map(kr=> `<div class=\"text-[11px] text-slate-600\">• ${kr.name}${kr.target?` (${kr.target})`:''}</div>`).join('')}</div>`).join('') || '<div class="text-xs text-slate-500">ثبت نشده</div>';
+    modalContent.innerHTML = `
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div class="border rounded-2xl p-3"><div class="font-bold text-sm mb-2">OKRهای سازمان (${cycle?.title||''})</div>${corpHtml}</div>
+            <div class="border rounded-2xl p-3"><div class="font-bold text-sm mb-2">OKR تیم ${team?.name||''}</div>${okrsHtml}</div>
+        </div>
+        <div class="mt-3"><textarea id="senior-feedback" class="w-full p-2 border rounded-md" rows="3" placeholder="بازخورد (اختیاری)"></textarea></div>
+        <div class="flex justify-end gap-2 mt-2">
+            <button id="tok-reject-btn" class="secondary-btn">رد</button>
+            <button id="tok-approve-btn" class="primary-btn">تایید</button>
+        </div>`;
+    openModal(mainModal, mainModalContainer);
+    document.getElementById('tok-approve-btn').addEventListener('click', async ()=> {
+        try {
+            await updateDoc(doc(db, `artifacts/${appId}/public/data/teamOKRs`, tok.firestoreId), { status: 'approved', reviewedAt: serverTimestamp(), seniorFeedback: (document.getElementById('senior-feedback')?.value||'').trim() });
+            showToast('OKR تیم تایید شد.');
+            closeModal(mainModal, mainModalContainer);
+            renderPage('requests');
+        } catch (e) { console.error(e); showToast('خطا در تایید.', 'error'); }
+    });
+    document.getElementById('tok-reject-btn').addEventListener('click', async ()=> {
+        try {
+            await updateDoc(doc(db, `artifacts/${appId}/public/data/teamOKRs`, tok.firestoreId), { status: 'rejected', reviewedAt: serverTimestamp(), seniorFeedback: (document.getElementById('senior-feedback')?.value||'').trim() });
+            showToast('OKR تیم رد شد.');
+            closeModal(mainModal, mainModalContainer);
+            renderPage('requests');
+        } catch (e) { console.error(e); showToast('خطا در رد.', 'error'); }
     });
 }
 // فایل: js/main.js
@@ -7555,6 +7534,110 @@ function showOkrProposalForm(emp) {
             showToast('پیشنهاد OKR ارسال شد.');
             renderEmployeePortalPage('team-okrs', emp);
         } catch (err) { console.error(err); showToast('خطا در ارسال پیشنهاد.', 'error'); }
+    });
+}
+
+// Employee suggestion form
+function showOkrSuggestionForm(employee, team, cycle) {
+    modalTitle.innerText = `ثبت پیشنهاد OKR (${team.name})`;
+    modalContent.innerHTML = `
+        <form id="okr-suggestion-form" class="space-y-3">
+            <div class="text-[12px] bg-indigo-50 p-2 rounded">چرخه: ${cycle?.title||''}</div>
+            <div id="sugg-items" class="space-y-2"></div>
+            <button type="button" id="add-sugg-obj" class="secondary-btn text-xs">افزودن Objective</button>
+            <div class="flex justify-end gap-2"><button type="button" class="secondary-btn" id="sugg-cancel">انصراف</button><button type="submit" class="primary-btn">ثبت</button></div>
+        </form>`;
+    openModal(mainModal, mainModalContainer);
+    const container = document.getElementById('sugg-items');
+    document.getElementById('add-sugg-obj').addEventListener('click', ()=> {
+        const wrap = document.createElement('div');
+        wrap.className = 'border rounded p-2 space-y-1';
+        wrap.innerHTML = `<input class="s-obj w-full p-2 border rounded" placeholder="Objective"><div class="space-y-1"></div><button type="button" class="add-s-kr secondary-btn text-[11px]">افزودن KR</button>`;
+        container.appendChild(wrap);
+    });
+    container.addEventListener('click', (e)=> {
+        const btn = e.target.closest('.add-s-kr');
+        if (!btn) return;
+        const holder = btn.previousElementSibling;
+        const row = document.createElement('div');
+        row.innerHTML = `<input class="s-kr w-full p-2 border rounded" placeholder="Key Result">`;
+        holder.appendChild(row);
+    });
+    document.getElementById('sugg-cancel').addEventListener('click', ()=> closeModal(mainModal, mainModalContainer));
+    document.getElementById('okr-suggestion-form').addEventListener('submit', async (e)=> {
+        e.preventDefault();
+        try {
+            const items = [];
+            container.querySelectorAll('.border.rounded.p-2').forEach(wrap => {
+                const objective = (wrap.querySelector('.s-obj')?.value||'').trim();
+                const keyResults = Array.from(wrap.querySelectorAll('.s-kr')).map(inp=> ({ name: (inp.value||'').trim() })).filter(x=> x.name);
+                if (objective) items.push({ objective, keyResults });
+            });
+            if (!items.length) { showToast('حداقل یک Objective وارد کنید.', 'error'); return; }
+            await addDoc(collection(db, `artifacts/${appId}/public/data/okrSuggestions`), { cycleId: cycle.firestoreId||cycle.id, teamId: team.firestoreId, employeeUid: employee.uid, items, createdAt: serverTimestamp() });
+            showToast('پیشنهاد ثبت شد.');
+            closeModal(mainModal, mainModalContainer);
+            renderEmployeePortalPage('team-okrs', employee);
+        } catch (e) { console.error(e); showToast('خطا در ثبت پیشنهاد.', 'error'); }
+    });
+}
+
+// Manager: build/update team OKRs and send for approval
+function showTeamOKREditor(manager, team, cycle, teamEntry) {
+    if (!isTeamManager(manager)) { showToast('دسترسی ندارید.', 'error'); return; }
+    const base = teamEntry?.okrs || [];
+    // Merge suggestions (optional: can be enhanced)
+    const suggestions = (state.okrSuggestions||[]).filter(s=> s.cycleId===(cycle.firestoreId||cycle.id) && s.teamId===team.firestoreId);
+    modalTitle.innerText = `ویرایش OKR تیم (${team.name})`;
+    const okrBlocks = base.length ? base : suggestions.flatMap(s=> s.items||[]);
+    const body = okrBlocks.map((o,oi)=> `<div class=\"okr-blk border rounded-xl p-2 space-y-1\"><input class=\"t-obj w-full p-2 border rounded\" value=\"${o.objective||''}\" placeholder=\"Objective\">${(o.keyResults||[]).map((kr)=> `<input class=\"t-kr w-full p-2 border rounded\" value=\"${kr.name||''}\" placeholder=\"Key Result\">`).join('')}<button type=\"button\" class=\"add-t-kr secondary-btn text-[11px]\">افزودن KR</button></div>`).join('') || '<div class="text-xs text-slate-500">از پیشنهادهای اعضا لیست خالی است؛ دستی وارد کنید.</div>';
+    modalContent.innerHTML = `
+        <form id="team-okr-form" class="space-y-3">
+            <div id="team-okr-items" class="space-y-2">${body}</div>
+            <div class="flex justify-between">
+                <button type="button" id="add-okr-obj" class="secondary-btn text-xs">افزودن Objective</button>
+                <div class="flex gap-2">
+                    <button type="button" id="save-draft" class="secondary-btn text-xs">ذخیره پیش‌نویس</button>
+                    <button type="submit" class="primary-btn text-xs">ارسال برای تایید مدیر ارشد</button>
+                </div>
+            </div>
+        </form>`;
+    openModal(mainModal, mainModalContainer);
+    const container = document.getElementById('team-okr-items');
+    document.getElementById('add-okr-obj').addEventListener('click', ()=> {
+        const wrap = document.createElement('div');
+        wrap.className = 'okr-blk border rounded-xl p-2 space-y-1';
+        wrap.innerHTML = `<input class="t-obj w-full p-2 border rounded" placeholder="Objective"><button type="button" class="add-t-kr secondary-btn text-[11px]">افزودن KR</button>`;
+        container.appendChild(wrap);
+    });
+    container.addEventListener('click', (e)=> {
+        const btn = e.target.closest('.add-t-kr');
+        if (!btn) return;
+        const row = document.createElement('div');
+        row.innerHTML = `<input class="t-kr w-full p-2 border rounded" placeholder="Key Result">`;
+        btn.before(row);
+    });
+    async function persist(status) {
+        const okrs = [];
+        container.querySelectorAll('.okr-blk').forEach(wrap => {
+            const objective = (wrap.querySelector('.t-obj')?.value||'').trim();
+            const krs = Array.from(wrap.querySelectorAll('.t-kr')).map(inp=> ({ name: (inp.value||'').trim(), progress: 0 })).filter(x=> x.name);
+            if (objective) okrs.push({ objective, keyResults: krs });
+        });
+        if (!okrs.length) { showToast('حداقل یک Objective وارد کنید.', 'error'); return false; }
+        const col = collection(db, `artifacts/${appId}/public/data/teamOKRs`);
+        const existing = (state.teamOKRs||[]).find(e=> e.teamId===team.firestoreId && e.cycleId===(cycle.firestoreId||cycle.id));
+        if (existing) {
+            await updateDoc(doc(db, `artifacts/${appId}/public/data/teamOKRs`, existing.firestoreId), { okrs, status, updatedAt: serverTimestamp() });
+        } else {
+            await addDoc(col, { cycleId: cycle.firestoreId||cycle.id, teamId: team.firestoreId, okrs, status, createdAt: serverTimestamp() });
+        }
+        return true;
+    }
+    document.getElementById('save-draft').addEventListener('click', async ()=> { if (await persist('draft')) { showToast('پیش‌نویس ذخیره شد.'); closeModal(mainModal, mainModalContainer); renderEmployeePortalPage('team-okrs', manager); } });
+    document.getElementById('team-okr-form').addEventListener('submit', async (e)=> {
+        e.preventDefault();
+        if (await persist('pending_senior')) { showToast('برای تایید مدیر ارشد ارسال شد.'); closeModal(mainModal, mainModalContainer); renderEmployeePortalPage('team-okrs', manager); }
     });
 }
 // در فایل js/main.js
