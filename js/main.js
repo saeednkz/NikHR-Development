@@ -4408,11 +4408,25 @@ surveys: () => {
 // تابع pages.requests را با این نسخه جایگزین کنید ▼
 
 requests: () => {
+    console.log("[DEBUG] --- Rendering Requests Page ---");
+    if (!state.currentUser) {
+        console.error("[DEBUG] No current user is logged in.");
+        return `<div>Error: Not logged in.</div>`;
+    }
+    console.log(`[DEBUG] Current logged-in user UID: ${state.currentUser.uid}`);
+    console.log(`[DEBUG] Current request filter is: ${state.requestFilter || 'all'}`);
+
+    console.log(`[DEBUG] Total requests in state before filtering: ${(state.requests || []).length}`);
+    (state.requests || []).forEach(req => {
+        console.log(`[DEBUG] Request for "${req.employeeName}" of type "${req.requestType}" is assigned to UID: ${req.assignedTo}`);
+    });
     const REQUESTS_PAGE_SIZE = 10;
     let filteredRequests = (state.requests || []);
     if (state.requestFilter === 'mine' && state.currentUser) {
+        console.log(`[DEBUG] Filtering for 'mine'. Will only keep requests where assignedTo === ${state.currentUser.uid}`);
         filteredRequests = filteredRequests.filter(req => req.assignedTo === state.currentUser.uid);
     }
+    console.log(`[DEBUG] Found ${filteredRequests.length} requests after filtering.`);
     const allRequests = filteredRequests.sort((a, b) => new Date(b.createdAt?.toDate()) - new Date(a.createdAt?.toDate()));
     
     const startIndex = (state.currentPageRequests - 1) * REQUESTS_PAGE_SIZE;
