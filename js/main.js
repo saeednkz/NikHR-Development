@@ -1387,6 +1387,59 @@ function renderEmployeePortalPage(pageName, employee) {
             contentContainer.innerHTML = `<p>شما مدیر هیچ تیمی نیستید.</p>`;
             return;
         }
+         if (pageName === 'tasks') {
+        if (!isTeamManager(employee)) {
+            contentContainer.innerHTML = `<div class="card p-6 text-center"><p>شما دسترسی به این صفحه را ندارید.</p></div>`;
+            return;
+        }
+
+        const myTasks = (state.reminders || [])
+            .filter(r => r.assignedTo === employee.uid)
+            .sort((a, b) => new Date(a.date?.toDate ? a.date.toDate() : a.date) - new Date(b.date?.toDate ? b.date.toDate()));
+
+        const tasksHtml = myTasks.length > 0 ? myTasks.map(task => {
+            const statusColors = {'جدید':'bg-yellow-100 text-yellow-800','در حال انجام':'bg-blue-100 text-blue-800','انجام شده':'bg-green-100 text-green-800', 'رد شده': 'bg-red-100 text-red-800'};
+            const status = statusColors[task.status] || 'bg-slate-100';
+            return `
+                <tr class="border-b">
+                    <td class="p-3">${task.type}</td>
+                    <td class="p-3 text-sm">${task.text}</td>
+                    <td class="p-3 text-xs">${toPersianDate(task.date)}</td>
+                    <td class="p-3"><span class="px-2 py-1 text-xs font-medium rounded-full ${status}">${task.status}</span></td>
+                    <td class="p-3 text-left">
+                        ${task.status !== 'انجام شده' && task.status !== 'رد شده' ?
+                            `<button class="process-reminder-btn primary-btn text-xs py-1.5 px-3" data-id="${task.firestoreId}">پردازش</button>` :
+                            `<span class="text-xs text-slate-400">پایان یافته</span>`
+                        }
+                    </td>
+                </tr>
+            `;
+        }).join('') : '<tr><td colspan="5" class="text-center p-6 text-slate-500">هیچ وظیفه‌ای به شما واگذار نشده است.</td></tr>';
+
+        contentContainer.innerHTML = `
+            <section class="rounded-2xl overflow-hidden border mb-6" style="background:linear-gradient(90deg,#6B69D6,#FF6A3D)">
+                <div class="p-6 sm:p-8">
+                    <h1 class="text-2xl sm:text-3xl font-extrabold text-white">وظایف من</h1>
+                    <p class="text-white/90 text-xs mt-1">درخواست‌ها و وظایفی که برای پردازش به شما ارجاع داده شده‌اند.</p>
+                </div>
+            </section>
+            <div class="card p-0">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th class="p-3 text-right">نوع وظیفه</th>
+                                <th class="p-3 text-right">شرح</th>
+                                <th class="p-3 text-right">تاریخ</th>
+                                <th class="p-3 text-right">وضعیت</th>
+                                <th class="p-3 text-right"></th>
+                            </tr>
+                        </thead>
+                        <tbody>${tasksHtml}</tbody>
+                    </table>
+                </div>
+            </div>
+        `;
 const teamMembers = (myTeam.memberIds || [])
     .map(id => (state.employees || []).find(e => e.id === id))
     .filter(Boolean)
@@ -2003,6 +2056,9 @@ if (suggestSkillBtn) {
 // ▼▼▼ این تابع را با نسخه اشکال‌زدایی زیر جایگزین کنید ▼▼▼
 
 // ▼▼▼ START: [REFACTOR - Phase 3 FINAL] Replace the entire renderEmployeePortal function with this complete version ▼▼▼
+// فایل: js/main.js
+// ▼▼▼ کل این تابع را با نسخه کامل و نهایی زیر جایگزین کنید ▼▼▼
+
 function renderEmployeePortal() {
     document.getElementById('login-container').classList.add('hidden');
     document.getElementById('dashboard-container').classList.add('hidden');
@@ -2016,12 +2072,11 @@ function renderEmployeePortal() {
         return;
     }
 
-    // [NEW FEATURE - Phase 3] Conditionally create the manager dashboard link
-    // Note: The link now points to '#team-dashboard'
-const managerNavlinks = isTeamManager(employee) 
+    const managerNavlinks = isTeamManager(employee) 
     ? `
         <a href="#team-dashboard" class="nav-item"><i data-lucide="layout-grid"></i><span>داشبورد تیم من</span></a>
         <a href="#team-performance" class="nav-item"><i data-lucide="users-2"></i><span>ارزیابی تیم</span></a>
+        <a href="#tasks" class="nav-item"><i data-lucide="check-square"></i><span>وظایف من</span></a> 
       ` 
     : '';
 
@@ -2033,9 +2088,9 @@ const managerNavlinks = isTeamManager(employee)
             <div class="text-center"><img src="${employee.avatar}" alt="Avatar" class="profile-pic object-cover"><h2 class="employee-name">${employeeName}</h2><p class="employee-title">${employee.jobTitle || 'بدون عنوان شغلی'}</p></div><div class="my-6 border-t border-white/20"></div>
             <nav id="employee-portal-nav" class="flex flex-col gap-2">
                 <a href="#profile" class="nav-item"><i data-lucide="user"></i><span>مسیر من</span></a>
-               ${managerNavlinks}
+                ${managerNavlinks}
                 <a href="#evaluations" class="nav-item"><i data-lucide="clipboard-check"></i><span>ارزیابی‌های من</span></a>
-                <a href="#requests" class="nav-item"><i data-lucide="send"></i><span>کارهای من</span></a>
+                <a href="#requests" class="nav-item"><i data-lucide="send"></i><span>درخواست‌های من</span></a>
                 <a href="#directory" class="nav-item"><i data-lucide="users"></i><span>تیم‌ها</span></a>
                 <a href="#documents" class="nav-item"><i data-lucide="folder-kanban"></i><span>دانش‌نامه</span></a>
                 <a href="#inbox" class="nav-item"><i data-lucide="inbox"></i><span>پیام‌ها</span></a>
@@ -2043,49 +2098,19 @@ const managerNavlinks = isTeamManager(employee)
             </nav>
             <div class="mt-auto space-y-4"><button id="portal-logout-btn" class="w-full flex items-center justify-center gap-3 px-4 py-2 rounded-lg logout-btn"><i data-lucide="log-out"></i><span>خروج از حساب</span></button></div>
         </aside>
-
         <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
-            <div id="portal-sidebar-overlay" class="hidden fixed inset-0 bg-black/40 z-20 sm:hidden"></div>
-            <div class="blob" style="top:-60px; right:-80px; width:240px; height:240px; background:#FF6A3D"></div>
-            <div class="blob" style="bottom:-80px; left:-80px; width:220px; height:220px; background:#F72585"></div>
-            
             <header style="background:linear-gradient(90deg,#FF6A3D,#F72585)" class="shadow-sm relative z-20">
-                <div class="w-full py-4 px-0 sm:px-6 lg:px-8 flex justify-between items-center" style="padding-top: env(safe-area-inset-top);">
-                    <div class="flex items-center gap-3">
-                        <button id="portal-menu-btn" class="inline-flex sm:hidden items-center justify-center p-2 rounded-md bg-white/20 hover:bg-white/30 text-white" title="منو"><i data-lucide="menu" class="w-5 h-5"></i></button>
-                        <img src="logo.png" alt="Logo" class="w-8 h-8 rounded-md ring-2 ring-white/30">
-                        <div class="w-10 h-10 rounded-full overflow-hidden ring-2 ring-white/30"><img src="${employee.avatar}" alt="${employeeName}" class="w-full h-full object-cover"></div>
-                        <div><div class="text-white/80 text-xs">خوش آمدید</div><h1 class="text-2xl font-bold text-white">${employeeName}</h1></div>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <div id="okr-pill" class="hidden sm:flex items-center gap-2 text-xs font-bold bg-white/20 text-white px-3 py-2 rounded-full"><i data-lucide="target" class="w-4 h-4"></i><span id="okr-pill-text">OKR: 0%</span></div>
-                        <button id="quick-new-request-btn" class="hidden sm:inline-flex items-center gap-2 text-xs font-semibold bg-white/15 hover:bg-white/20 text-white px-3 py-2 rounded-lg transition"><i data-lucide="plus" class="w-4 h-4"></i><span>ثبت درخواست</span></button>
-                        <button id="quick-edit-profile-btn" class="hidden sm:inline-flex items-center gap-2 text-xs font-semibold bg-white/80 hover:bg-white text-slate-800 px-3 py-2 rounded-lg transition"><i data-lucide="user-cog" class="w-4 h-4"></i><span>ویرایش پروفایل</span></button>
-                        <button id="quick-change-password-btn" class="hidden sm:inline-flex items-center gap-2 text-xs font-semibold bg-white/80 hover:bg-white text-slate-800 px-3 py-2 rounded-lg transition"><i data-lucide="key-round" class="w-4 h-4"></i><span>رمز عبور</span></button>
-                        <button id="theme-toggle-btn" class="hidden sm:inline-flex items-center gap-2 text-xs font-semibold bg-white/15 hover:bg-white/20 text-white px-3 py-2 rounded-lg transition" title="حالت تیره/روشن"><i data-lucide="moon" class="w-4 h-4"></i><span>حالت تیره</span></button>
-                        <div class="relative sm:hidden">
-                            <button id="mobile-options-btn" class="p-2 rounded-full text-white hover:bg-white/20 transition-colors"><i data-lucide="more-vertical" class="w-5 h-5"></i></button>
-                            <div id="mobile-options-dropdown" class="hidden absolute left-0 mt-2 w-48 bg-white rounded-lg shadow-xl z-30 text-slate-700">
-                                <a href="#" id="mobile-edit-profile" class="flex items-center gap-3 px-4 py-2 hover:bg-slate-100 text-sm"><i data-lucide="user-cog" class="w-4 h-4"></i><span>ویرایش پروفایل</span></a>
-                                <a href="#" id="mobile-change-password" class="flex items-center gap-3 px-4 py-2 hover:bg-slate-100 text-sm"><i data-lucide="key-round" class="w-4 h-4"></i><span>رمز عبور</span></a>
-                                <a href="#" id="mobile-theme-toggle" class="flex items-center gap-3 px-4 py-2 hover:bg-slate-100 text-sm"><i data-lucide="moon" class="w-4 h-4"></i><span>تغییر تم</span></a>
-                                <a href="#" id="mobile-new-request" class="flex items-center gap-3 px-4 py-2 border-t hover:bg-slate-100 text-sm"><i data-lucide="plus" class="w-4 h-4"></i><span>ثبت درخواست</span></a>
-                            </div>
-                        </div>
-                        <div id="portal-notification-bell-wrapper" class="relative">
-                            <button id="portal-notification-bell-btn" class="relative cursor-pointer p-2 rounded-full hover:bg-white/10"><i data-lucide="bell" class="text-white"></i><span id="portal-notification-count" class="hidden absolute -top-1 -right-1 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full border-2 border-white" style="background:#FF2E63"></span></button>
-                        </div>
-                    </div>
-                </div>
-            </header>
+                </header>
             <main id="employee-main-content" class="flex-1 p-0 sm:p-6 lg:p-10 overflow-y-auto relative z-10"></main>
         </div>
     </div>
     `;
     
+    // Replace the simple header with the full detailed header
+    portalContainer.querySelector('header').innerHTML = `<div class="w-full py-4 px-0 sm:px-6 lg:px-8 flex justify-between items-center" style="padding-top: env(safe-area-inset-top);"><div class="flex items-center gap-3"><button id="portal-menu-btn" class="inline-flex sm:hidden items-center justify-center p-2 rounded-md bg-white/20 hover:bg-white/30 text-white" title="منو"><i data-lucide="menu" class="w-5 h-5"></i></button><img src="logo.png" alt="Logo" class="w-8 h-8 rounded-md ring-2 ring-white/30"><div class="w-10 h-10 rounded-full overflow-hidden ring-2 ring-white/30"><img src="${employee.avatar}" alt="${employeeName}" class="w-full h-full object-cover"></div><div><div class="text-white/80 text-xs">خوش آمدید</div><h1 class="text-2xl font-bold text-white">${employeeName}</h1></div></div><div class="flex items-center gap-2"><button id="quick-new-request-btn" class="hidden sm:inline-flex items-center gap-2 text-xs font-semibold bg-white/15 hover:bg-white/20 text-white px-3 py-2 rounded-lg transition"><i data-lucide="plus" class="w-4 h-4"></i><span>ثبت درخواست</span></button><div class="relative sm:hidden"><button id="mobile-options-btn" class="p-2 rounded-full text-white hover:bg-white/20 transition-colors"><i data-lucide="more-vertical" class="w-5 h-5"></i></button><div id="mobile-options-dropdown" class="hidden absolute left-0 mt-2 w-48 bg-white rounded-lg shadow-xl z-30 text-slate-700"><a href="#" id="mobile-new-request" class="flex items-center gap-3 px-4 py-2 border-t hover:bg-slate-100 text-sm"><i data-lucide="plus" class="w-4 h-4"></i><span>ثبت درخواست</span></a></div></div><div id="portal-notification-bell-wrapper" class="relative"><button id="portal-notification-bell-btn" class="relative cursor-pointer p-2 rounded-full hover:bg-white/10"><i data-lucide="bell" class="text-white"></i><span id="portal-notification-count" class="hidden absolute -top-1 -right-1 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full border-2 border-white" style="background:#FF2E63"></span></button></div></div></div>`;
+
     lucide.createIcons();
 
-    // [NEW LOGIC - Phase 3] Set default page for managers to their dashboard
     const startPage = isTeamManager(employee) ? 'team-dashboard' : 'profile';
     document.querySelectorAll('#employee-portal-nav .nav-item').forEach(nav => nav.classList.remove('active'));
     document.querySelector(`#employee-portal-nav .nav-item[href="#${startPage}"]`)?.classList.add('active');
@@ -2093,50 +2118,6 @@ const managerNavlinks = isTeamManager(employee)
     renderEmployeePortalPage(startPage, employee);
     setupEmployeePortalEventListeners(employee, auth, signOut);
     updateEmployeeNotificationBell(employee);
-
-    // [PRESERVED FEATURE] OKR pill logic
-    try {
-        const okrs = employee.okrs || [];
-        const okrAvg = okrs.length ? Math.round(okrs.reduce((s, o)=> s + (o.progress||0), 0) / okrs.length) : 0;
-        const okrPill = document.getElementById('okr-pill');
-        const okrText = document.getElementById('okr-pill-text');
-        if (okrPill && okrText) {
-            okrText.textContent = `OKR: ${okrAvg}%`;
-            okrPill.classList.remove('hidden');
-        }
-    } catch {}
-
-    // [PRESERVED FEATURE] Birthday & Anniversary postcard logic
-    try {
-        const bd = employee.personalInfo?.birthDate ? new Date(employee.personalInfo.birthDate) : null;
-        const start = employee.startDate ? new Date(employee.startDate) : null;
-        const now = new Date();
-        if (bd && bd.getMonth() === now.getMonth() && bd.getDate() === now.getDate() && !localStorage.getItem('birthdayPostcardShown')) {
-            // ... (Confetti and postcard logic for birthday)
-            const confetti = document.createElement('div');
-            confetti.className = 'confetti';
-            for (let i=0; i<150; i++) {
-                const piece = document.createElement('i');
-                piece.style.left = Math.random()*100 + 'vw';
-                piece.style.background = ['#6B69D6','#8B5CF6','#22D3EE','#F59E0B','#10B981','#F72585'][Math.floor(Math.random()*6)];
-                piece.style.animationDelay = (Math.random()*1.2)+'s';
-                confetti.appendChild(piece);
-            }
-            document.body.appendChild(confetti);
-            // ... (rest of the birthday modal logic)
-        }
-        if (start && start.getMonth() === now.getMonth() && start.getDate() === now.getDate() && !localStorage.getItem('hireAnnivPostcardShown')) {
-            // ... (Confetti and postcard logic for hire anniversary)
-             const confetti2 = document.createElement('div');
-             confetti2.className = 'confetti';
-             for (let i=0; i<120; i++) { const piece = document.createElement('i'); piece.style.left = Math.random()*100 + 'vw'; piece.style.background = ['#60A5FA','#A78BFA','#34D399','#F59E0B','#F472B6'][Math.floor(Math.random()*5)]; piece.style.animationDelay = (Math.random()*1.2)+'s'; confetti2.appendChild(piece); }
-             document.body.appendChild(confetti2);
-            // ... (rest of the anniversary modal logic)
-        }
-        try {
-            // ... (company anniversary logic remains the same)
-        } catch {}
-    } catch {}
 }
 // ▲▲▲ END: [REFACTOR - Phase 3 FINAL] Replace the entire renderEmployeePortal function with this complete version ▲▲▲
         // --- UTILITY & HELPER FUNCTIONS ---
