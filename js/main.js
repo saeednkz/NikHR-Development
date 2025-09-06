@@ -855,6 +855,20 @@ function renderEmployeePortalPage(pageName, employee) {
         try { if (document.getElementById('okrCycleGauge')) { const prog = computeCycleCorporateProgress(selected||{}); renderEngagementGauge('okrCycleGauge', prog); } } catch {}
         lucide.createIcons();
     }
+    else if (pageName === 'orgchart') {
+        const contentContainer = document.getElementById('employee-main-content');
+        contentContainer.innerHTML = `
+            <section class="rounded-2xl overflow-hidden border mb-6" style="background:linear-gradient(90deg,#0EA5E9,#6B69D6)"><div class="p-6 sm:p-8"><h1 class="text-2xl sm:text-3xl font-extrabold text-white">چارت سازمانی</h1><p class="text-white/90 text-xs mt-1">نمای کلی ساختار سازمان</p></div></section>
+            <div class="bg-white rounded-2xl border p-4">
+                <div class="flex items-center gap-2 text-xs mb-3">
+                    <input id="org-search" class="p-1.5 border rounded-lg bg-white" placeholder="جستجوی نام کارمند/تیم"/>
+                    <button id="org-locate-me" class="secondary-btn text-xs">موقعیت من</button>
+                </div>
+                <div id="orgchart-container" class="relative w-full h-[70vh] bg-slate-50 rounded-xl border overflow-hidden"></div>
+            </div>`;
+        try { setupOrgChartPage?.(); } catch {}
+        lucide.createIcons();
+    }
     // پایان بلوک جدید
     else if (pageName === 'profile') { // [FIX]: Added 'else' here
         const team = state.teams.find(t => t.memberIds?.includes(employee.id));
@@ -2226,6 +2240,7 @@ const managerNavlinks = isTeamManager(employee)
                ${managerNavlinks}
                 <a href="#evaluations" class="nav-item"><i data-lucide="clipboard-check"></i><span>ارزیابی‌های من</span></a>
                 <a href="#okrs-portal" class="nav-item"><i data-lucide="target"></i><span>OKRها</span></a>
+                <a href="#orgchart" class="nav-item"><i data-lucide="hierarchy"></i><span>چارت سازمانی</span></a>
                 <a href="#requests" class="nav-item"><i data-lucide="send"></i><span>درخواست های من</span></a>
                 <a href="#directory" class="nav-item"><i data-lucide="users"></i><span>تیم‌ها</span></a>
                 <a href="#documents" class="nav-item"><i data-lucide="folder-kanban"></i><span>دانش‌نامه</span></a>
