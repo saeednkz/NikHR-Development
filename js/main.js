@@ -6438,12 +6438,22 @@ const renderEmployeeTable = () => {
     const skillFilter = document.getElementById('skillFilter')?.value || '';
     const statusFilter = document.getElementById('statusFilter')?.value || '';
     
-    const filteredEmployees = state.employees.filter(emp =>
-        (emp.name.toLowerCase().includes(searchInput) || emp.id.toLowerCase().includes(searchInput)) &&
-        (!departmentFilter || emp.department === departmentFilter) &&
-        (!statusFilter || emp.status === statusFilter) &&
-        (!skillFilter || Object.keys(emp.skills || {}).includes(skillFilter))
-    );
+// ▼▼▼ START: [BUGFIX] Make filtering logic resilient to missing data ▼▼▼
+const filteredEmployees = state.employees.filter(emp => {
+    // First, check if the employee object itself is valid
+    if (!emp) return false;
+
+    // Safely check name and id fields before calling toLowerCase
+    const nameMatch = emp.name ? emp.name.toLowerCase().includes(searchInput) : false;
+    const idMatch = emp.id ? emp.id.toLowerCase().includes(searchInput) : false;
+
+    const departmentMatch = !departmentFilter || emp.department === departmentFilter;
+    const statusMatch = !statusFilter || emp.status === statusFilter;
+    const skillMatch = !skillFilter || Object.keys(emp.skills || {}).includes(skillFilter);
+
+    return (nameMatch || idMatch) && departmentMatch && statusMatch && skillMatch;
+});
+// ▲▲▲ END: [BUGFIX] Make filtering logic resilient to missing data ▲▲▲
     const startIndex = (state.currentPageTalent - 1) * TALENT_PAGE_SIZE;
     const endIndex = startIndex + TALENT_PAGE_SIZE;
     const paginatedEmployees = filteredEmployees.slice(startIndex, endIndex);
