@@ -4353,7 +4353,10 @@ dashboard: () => {
         
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                <h3 class="font-bold text-slate-800 text-lg">بینش‌های کلیدی</h3>
+                <div class="flex items-center justify-between">
+                    <h3 class="font-bold text-slate-800 text-lg">بینش‌های کلیدی</h3>
+                    <button id="toggle-analytics-btn" class="text-xs px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200">نمایش همه نمودارها</button>
+                </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pt-4">
                     <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
                         <h4 class="text-center text-xs font-medium text-slate-600 mb-2">نرخ مشارکت</h4>
@@ -4368,11 +4371,11 @@ dashboard: () => {
                         </div>
                     </div>
                     <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm"><h4 class="text-center text-xs font-medium text-slate-600 mb-2">توزیع استعدادها</h4><div class="relative w-full h-56"><canvas id="nineBoxChart"></canvas></div></div>
-                    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm"><h4 class="text-center text-xs font-medium text-slate-600 mb-2">ترکیب جنسیتی</h4><div class="relative w-full h-56"><canvas id="genderCompositionChart"></canvas></div></div>
-                    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm"><h4 class="text-center text-xs font-medium text-slate-600 mb-2">توزیع دپارتمان‌ها</h4><div class="relative w-full h-56"><canvas id="departmentDistributionChart"></canvas></div></div>
-                    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm"><h4 class="text-center text-xs font-medium text-slate-600 mb-2">سابقه کار</h4><div class="relative w-full h-56"><canvas id="tenureDistributionChart"></canvas></div></div>
-                    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm"><h4 class="text-center text-xs font-medium text-slate-600 mb-2">توزیع سنی</h4><div class="relative w-full h-56"><canvas id="ageDistributionChart"></canvas></div></div>
-<div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm md:col-span-2 xl:col-span-1">
+                    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm extra-analytics hidden"><h4 class="text-center text-xs font-medium text-slate-600 mb-2">ترکیب جنسیتی</h4><div class="relative w-full h-56"><canvas id="genderCompositionChart"></canvas></div></div>
+                    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm extra-analytics hidden"><h4 class="text-center text-xs font-medium text-slate-600 mb-2">توزیع دپارتمان‌ها</h4><div class="relative w-full h-56"><canvas id="departmentDistributionChart"></canvas></div></div>
+                    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm extra-analytics hidden"><h4 class="text-center text-xs font-medium text-slate-600 mb-2">سابقه کار</h4><div class="relative w-full h-56"><canvas id="tenureDistributionChart"></canvas></div></div>
+                    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm extra-analytics hidden"><h4 class="text-center text-xs font-medium text-slate-600 mb-2">توزیع سنی</h4><div class="relative w-full h-56"><canvas id="ageDistributionChart"></canvas></div></div>
+<div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm md:col-span-2 xl:col-span-1 extra-analytics hidden">
     <h4 class="text-center text-xs font-medium text-slate-600 mb-2">میانگین شایستگی‌های پرتکرار</h4>
     <div class="mb-2">
         <label for="family-filter" class="text-[11px] text-slate-500">فیلتر بر اساس خانواده شغلی:</label>
@@ -6928,6 +6931,18 @@ const setupDashboardListeners = () => {
     document.getElementById('view-all-reminders-btn')?.addEventListener('click', () => {
         showAllRemindersModal();
     });
+
+    // Collapse/expand extra analytics
+    const toggleBtn = document.getElementById('toggle-analytics-btn');
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', () => {
+            const extra = document.querySelectorAll('.extra-analytics');
+            const isHidden = extra.length ? extra[0].classList.contains('hidden') : true;
+            extra.forEach(el => el.classList.toggle('hidden', !isHidden));
+            toggleBtn.textContent = isHidden ? 'پنهان کردن نمودارهای اضافی' : 'نمایش همه نمودارها';
+            setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
+        });
+    }
 
     // --- [NEW LOGIC] بخش جدید برای فیلتر نمودار ---
     const familyFilter = document.getElementById('family-filter');
