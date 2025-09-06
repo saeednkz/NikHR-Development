@@ -4239,6 +4239,18 @@ const updateNotificationsForCurrentUser = () => {
     }
 };
 const pages = {
+orgchart: () => {
+    const content = `
+        <section class="rounded-2xl overflow-hidden border mb-6" style="background:linear-gradient(90deg,#0EA5E9,#6B69D6)"><div class="p-6 sm:p-8"><h1 class="text-2xl sm:text-3xl font-extrabold text-white">چارت سازمانی</h1><p class="text-white/90 text-xs mt-1">نمای کلی ساختار سازمان</p></div></section>
+        <div class="bg-white rounded-2xl border p-4">
+            <div class="flex items-center gap-2 text-xs mb-3">
+                <input id="org-search" class="p-1.5 border rounded-lg bg-white" placeholder="جستجوی نام کارمند/تیم"/>
+                <button id="org-locate-me" class="secondary-btn text-xs">موقعیت من</button>
+            </div>
+            <div id="orgchart-container" class="relative w-full h-[70vh] bg-slate-50 rounded-xl border overflow-hidden"></div>
+        </div>`;
+    return content;
+},
 // در فایل js/main.js
 // کل این تابع را با نسخه جدید و کامل جایگزین کنید
 // در فایل js/main.js
@@ -4673,7 +4685,7 @@ tasks: () => {
         // approvals: skill approvals assigned to this user (placeholder if exists in state.approvals)
         .concat(((state.approvals||[]).filter(a=> a.type==='skill' && a.assignedTo===state.currentUser.uid && a.status==='pending').map(a=> ({
             id: a.firestoreId, type: 'skill', date: a.createdAt, kind: 'تایید مهارت', text: a.subject||'', status: 'جدید'
-        }))))
+        })))))
         .sort((a, b) => {
             const ad = new Date(a.date?.toDate ? a.date.toDate() : a.date);
             const bd = new Date(b.date?.toDate ? b.date.toDate() : b.date);
@@ -4696,11 +4708,13 @@ tasks: () => {
     const paginatedTasks = allMyTasks.slice(startIndex, endIndex);
 
     const tasksHtml = paginatedTasks.map(task => {
-        const statusColors = {'جدید':'bg-yellow-100 text-yellow-800','در حال انجام':'bg-blue-100 text-blue-800','انجام شده':'bg-green-100 text-green-800'};
+        const overdue = (new Date(task.date) < new Date()) && (task.status !== 'انجام شده');
+        const statusColors = {'جدید':'bg-yellow-100 text-yellow-800','در حال انجام':'bg-blue-100 text-blue-800','انجام شده':'bg-green-100 text-green-800','انجام نشده':'bg-rose-100 text-rose-800'};
+        const statusBadge = overdue ? 'انجام نشده' : task.status;
         const action = task.type==='teamokr' ? `<button class="process-teamokr-btn text-sm bg-slate-700 text-white py-1 px-3 rounded-md hover:bg-slate-800" data-id="${task.id}">بررسی OKR</button>`
                       : (task.type==='skill' ? `<button class="process-skill-btn text-sm bg-slate-700 text-white py-1 px-3 rounded-md hover:bg-slate-800" data-id="${task.id}">بررسی مهارت</button>`
                       : `<button class="process-reminder-btn text-sm bg-slate-700 text-white py-1 px-3 rounded-md hover:bg-slate-800" data-id="${task.id}">پردازش</button>`);
-        return `<tr class="border-b"><td class="px-4 py-3 whitespace-nowrap">${toPersianDate(task.date)}</td><td class="px-4 py-3">${task.kind}</td><td class="px-4 py-3 text-sm min-w-[200px]">${task.text}</td><td class="px-4 py-3"><span class="px-2 py-1 text-xs font-medium rounded-full ${statusColors[task.status] || 'bg-slate-100'}">${task.status}</span></td><td class="px-4 py-3">-</td><td class="px-4 py-3">${action}</td></tr>`;
+        return `<tr class="border-b ${overdue?'bg-rose-50/40':''}"><td class="px-4 py-3 whitespace-nowrap">${toPersianDate(task.date)}</td><td class="px-4 py-3">${task.kind}</td><td class="px-4 py-3 text-sm min-w-[200px]">${task.text}</td><td class="px-4 py-3"><span class="px-2 py-1 text-xs font-medium rounded-full ${statusColors[statusBadge] || 'bg-slate-100'}">${statusBadge}</span></td><td class="px-4 py-3">${overdue?'<span class="text-[11px] text-rose-600">-1 امتیاز</span>':'-'}</td><td class="px-4 py-3">${action}</td></tr>`;
     }).join('');
 
     return `
@@ -5333,6 +5347,8 @@ function setupProfileModalListeners(emp) {
         const approveSkillBtn = e.target.closest('.approve-skill-btn');
         const editSkillBtn = e.target.closest('.edit-skill-btn');
         const deleteSkillBtn = e.target.closest('.delete-skill-btn');
+        const uploadDocBtn = e.target.closest('#emp-doc-upload-btn');
+        const deleteDocBtn = e.target.closest('.delete-emp-doc-btn');
 
         if (addSkillBtn) {
             showAddOrEditSkillForm(emp, null, true); // isManagerAdding is true
@@ -5367,6 +5383,39 @@ function setupProfileModalListeners(emp) {
                 showToast('مهارت حذف شد.');
                 viewEmployeeProfile(emp.firestoreId); // Refresh modal
             });
+            return;
+        }
+
+        if (uploadDocBtn) {
+            const input = document.getElementById('emp-doc-file');
+            input.onchange = async () => {
+                const file = input.files[0]; if (!file) return;
+                try {
+                    const sRef = ref(storage, `personnelDocs/${emp.firestoreId}/${Date.now()}_${file.name}`);
+                    const snap = await uploadBytes(sRef, file);
+                    const url = await getDownloadURL(snap.ref);
+                    const docs = Array.isArray(emp.personnelDocuments) ? emp.personnelDocuments.slice() : [];
+                    docs.push({ name: file.name, url, uploadedBy: state.currentUser.uid, at: new Date() });
+                    await updateDoc(doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId), { personnelDocuments: docs });
+                    showToast('مدرک آپلود شد.');
+                    viewEmployeeProfile(emp.firestoreId);
+                } catch (err) { showToast('خطا در آپلود مدرک.', 'error'); }
+            };
+            input.click();
+            return;
+        }
+        if (deleteDocBtn) {
+            if (!canEdit()) return; // فقط ادمین/ویرایشگر
+            const idx = parseInt(deleteDocBtn.dataset.idx);
+            const docs = Array.isArray(emp.personnelDocuments) ? emp.personnelDocuments.slice() : [];
+            if (idx>=0 && idx<docs.length) {
+                showConfirmationModal('حذف مدرک', 'حذف این فایل قطعی است. ادامه می‌دهید؟', async () => {
+                    docs.splice(idx,1);
+                    await updateDoc(doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId), { personnelDocuments: docs });
+                    showToast('مدرک حذف شد.');
+                    viewEmployeeProfile(emp.firestoreId);
+                });
+            }
             return;
         }
 
@@ -5816,6 +5865,16 @@ const isManagerView = canEdit() || isDirectManager;
                                             <p><strong>وضعیت:</strong> <span class="px-2 py-1 text-xs font-medium rounded-full ${emp.status === 'فعال' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${emp.status}</span></p>
                                         </div>
                                     </div>
+                                    <div class="bg-white rounded-xl border border-slate-200 p-4">
+                                        <h4 class="font-semibold mb-3 text-slate-700 flex items-center"><i data-lucide="paperclip" class="ml-2 w-5 h-5 text-slate-500"></i>مدارک پرسنلی</h4>
+                                        <div id="emp-docs-list" class="space-y-2">
+                                            ${(() => { const docs = emp.personnelDocuments || []; return docs.length? docs.map((d,idx)=> `<div class=\"flex items-center justify-between p-2 border rounded-lg\"><div class=\"text-xs truncate\"><a href=\"${d.url}\" target=\"_blank\" class=\"text-indigo-600 hover:underline\">${d.name||('فایل '+(idx+1))}</a></div><div class=\"flex items-center gap-2\">${canEdit()? `<button class=\"delete-emp-doc-btn text-rose-500\" data-idx=\"${idx}\"><i data-lucide=\"trash-2\" class=\"w-4 h-4\"></i></button>` : ''}</div></div>`).join('') : '<div class="text-xs text-slate-500">مدرکی ثبت نشده است.</div>'; })()}
+                                        </div>
+                                        <div class="mt-3 flex items-center gap-2">
+                                            <input id="emp-doc-file" type="file" class="hidden"/>
+                                            <button id="emp-doc-upload-btn" class="secondary-btn text-xs">آپلود مدرک</button>
+                                        </div>
+                                    </div>
 <div class="bg-white rounded-xl border border-slate-200 p-4">
     <div class="flex justify-between items-center mb-3">
         <h4 class="font-semibold text-slate-700"><i data-lucide="sparkles" class="ml-2 w-5 h-5 text-amber-500"></i>مهارت‌ها و تخصص‌ها</h4>
@@ -6259,6 +6318,7 @@ const renderPage = (pageName) => {
             try { document.getElementById('okrs-cycle-select')?.addEventListener('change', (e)=> { const v = e.target.value; const base = '#okrs?cycle=' + encodeURIComponent(v); history.replaceState(null, '', base); renderPage('okrs'); }); } catch {}
         }
         if (pageName === 'announcements') { setupAnnouncementsPageListeners(); } // [!code ++] این خط مشکل را حل می‌کند
+        if (pageName === 'orgchart') { setupOrgChartPage?.(); }
         if (pageName === 'settings') {
             if(isAdmin()) {
                 setupSettingsPageListeners();
@@ -6389,6 +6449,38 @@ const renderPage = (pageName) => {
             });
         }
         const destroyCharts = () => { Object.values(charts).forEach(chart => chart?.destroy()); charts = {}; };
+        // ▼▼▼ START: Org Chart page setup ▼▼▼
+        function setupOrgChartPage() {
+            const container = document.getElementById('orgchart-container');
+            if (!container) return;
+            const employeesById = Object.fromEntries((state.employees||[]).map(e => [e.id, e]));
+            const teams = state.teams || [];
+            const nodes = (state.employees||[]).map(e => ({ id: e.id, name: e.name, title: e.jobTitle || '', avatar: e.avatar }));
+            const edges = [];
+            teams.forEach(team => {
+                const managerId = team.leadership?.manager;
+                (team.memberIds||[]).forEach(memberId => { if (managerId && memberId && managerId !== memberId) edges.push([managerId, memberId]); });
+            });
+            container.innerHTML = `<svg id="orgchart-svg" class="w-full h-full"></svg>`;
+            const svg = document.getElementById('orgchart-svg');
+            const W = container.clientWidth; const H = container.clientHeight;
+            svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+            const levelOf = {}; const roots = new Set(nodes.map(n => n.id));
+            edges.forEach(([m, mem]) => { if (roots.has(mem)) roots.delete(mem); });
+            const queue = Array.from(roots).map(id => ({ id, lvl: 0 }));
+            while (queue.length) { const { id, lvl } = queue.shift(); if (levelOf[id] != null) continue; levelOf[id] = lvl; edges.filter(([m, mem]) => m === id).forEach(([_, mem]) => queue.push({ id: mem, lvl: lvl + 1 })); }
+            const maxLvl = Math.max(0, ...Object.values(levelOf));
+            const byLevel = Array.from({ length: maxLvl + 1 }, () => []);
+            Object.entries(levelOf).forEach(([id, lvl]) => byLevel[lvl].push(id));
+            byLevel.forEach(arr => arr.sort((a,b)=> (employeesById[a]?.name||'').localeCompare(employeesById[b]?.name||'')));
+            const pos = {}; const vMargin = 110, hMargin = 120;
+            byLevel.forEach((ids, lvl) => { const y = 40 + lvl * vMargin; const count = Math.max(1, ids.length); ids.forEach((id, idx) => { const x = (W/(count+1)) * (idx+1); pos[id] = { x, y }; }); });
+            edges.forEach(([m, mem]) => { if (!pos[m] || !pos[mem]) return; const l = document.createElementNS('http://www.w3.org/2000/svg','path'); l.setAttribute('d', `M ${pos[m].x} ${pos[m].y+28} C ${pos[m].x} ${(pos[m].y+pos[mem].y)/2}, ${pos[mem].x} ${(pos[m].y+pos[mem].y)/2}, ${pos[mem].x} ${pos[mem].y-28}`); l.setAttribute('stroke', '#CBD5E1'); l.setAttribute('fill', 'none'); l.setAttribute('stroke-width', '2'); svg.appendChild(l); });
+            Object.entries(pos).forEach(([id, p]) => { const emp = employeesById[id]; if (!emp) return; const g = document.createElementNS('http://www.w3.org/2000/svg','foreignObject'); g.setAttribute('x', p.x - 60); g.setAttribute('y', p.y - 30); g.setAttribute('width', 120); g.setAttribute('height', 70); g.innerHTML = `<div xmlns="http://www.w3.org/1999/xhtml" class="shadow-sm border border-slate-200 bg-white rounded-xl px-2 py-2 text-center"><img src="${emp.avatar}" class="w-8 h-8 rounded-full mx-auto object-cover"/><div class="text-[11px] font-bold text-slate-800 truncate">${emp.name}</div><div class="text-[10px] text-slate-500 truncate">${emp.jobTitle||''}</div></div>`; svg.appendChild(g); });
+            document.getElementById('org-locate-me')?.addEventListener('click', () => { const me = (state.employees||[]).find(e => e.uid === state.currentUser.uid); if (!me || !pos[me.id]) return; const { x, y } = pos[me.id]; svg.setAttribute('viewBox', `${Math.max(0,x-200)} ${Math.max(0,y-120)} 400 240`); });
+            document.getElementById('org-search')?.addEventListener('input', (e) => { const q = (e.target.value||'').trim(); if (!q) { svg.setAttribute('viewBox', `0 0 ${W} ${H}`); return; } const found = (state.employees||[]).find(emp => (emp.name||'').includes(q)); if (found && pos[found.id]) { const { x, y } = pos[found.id]; svg.setAttribute('viewBox', `${Math.max(0,x-200)} ${Math.max(0,y-120)} 400 240`); } });
+        }
+        // ▲▲▲ END: Org Chart page setup ▲▲▲
 // فایل: js/main.js - این تابع جدید را اضافه کنید
 // ▼▼▼ START: [NEW FUNCTION - Phase 3] Add this new function for rendering the manager dashboard ▼▼▼
 const renderTeamDashboardPage = (manager) => {
@@ -7886,12 +7978,20 @@ const setupSettingsPageListeners = () => {
             const user = state.users.find(u => u.firestoreId === editUserBtn.dataset.uid);
             if (user) showEditUserForm(user);
         }
-        if (deleteUserBtn) { /* ... کد حذف کاربر ... */ }
+        if (deleteUserBtn) {
+            const uid = deleteUserBtn.dataset.uid;
+            showConfirmationModal('حذف کاربر', 'آیا از حذف این کاربر مطمئن هستید؟', async () => {
+                try {
+                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/users`, uid));
+                    showToast('کاربر حذف شد.');
+                } catch (err) { showToast('خطا در حذف کاربر.', 'error'); }
+            });
+        }
         if (deleteCompetencyBtn) {
             const compId = deleteCompetencyBtn.dataset.id;
             showConfirmationModal('حذف شایستگی', 'این شایستگی از لیست حذف خواهد شد. ادامه می‌دهید؟', async () => {
                 try {
-                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/competencies`, compId));
+                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/skillsAndCompetencies`, compId));
                     showToast('شایستگی حذف شد.');
                 } catch (err) {
                     showToast('خطا در حذف شایستگی.', 'error');
@@ -7916,7 +8016,15 @@ const setupSettingsPageListeners = () => {
 
         if (addRuleBtn) showAssignmentRuleForm();
         if (editRuleBtn) showAssignmentRuleForm(editRuleBtn.dataset.id);
-        if (deleteRuleBtn) { /* ... کد حذف قانون ... */ }
+        if (deleteRuleBtn) {
+            const ruleId = deleteRuleBtn.dataset.id;
+            showConfirmationModal('حذف قانون', 'آیا مطمئن هستید؟', async () => {
+                try {
+                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/assignmentRules`, ruleId));
+                    showToast('قانون حذف شد.');
+                } catch (err) { showToast('خطا در حذف قانون.', 'error'); }
+            });
+        }
         if (addPositionBtn) showJobPositionForm();
         if (editPositionBtn) showJobPositionForm(editPositionBtn.dataset.id);
         if (mapCompetenciesBtn) {
