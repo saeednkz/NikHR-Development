@@ -2522,41 +2522,36 @@ const activatePersianDatePicker = (elementId, initialValue = null) => {
     }, 0); // تاخیر صفر میلی‌ثانیه‌ای کافی است تا اجرا به تیک بعدی موکول شود
 };
         // --- تابع جدید برای ساخت دکمه‌های صفحه‌بندی ---
-    const renderPagination = (containerId, currentPage, totalItems, itemsPerPage) => {
-        const container = document.getElementById(containerId);
-        if (!container) return;
+// فایل: js/main.js
+// ▼▼▼ کل این تابع را با نسخه کامل و صحیح زیر جایگزین کنید ▼▼▼
 
-        const totalPages = Math.ceil(totalItems / itemsPerPage);
-        if (totalPages <= 1) {
-            container.innerHTML = '';
-            return;
-        }
-        // باز/بستن پاپاور واکنش
-        const reactToggle = e.target.closest('.moment-react-toggle');
-        if (reactToggle) {
-            const id = reactToggle.dataset.id;
-            const pop = document.getElementById(`moment-react-popover-${id}`);
-            if (pop) pop.classList.toggle('hidden');
-            return;
-        }
+const renderPagination = (containerId, currentPage, totalItems, itemsPerPage) => {
+    const container = document.getElementById(containerId);
+    if (!container) return;
 
-        let paginationHtml = '<div class="flex items-center justify-center space-x-1 space-x-reverse">';
-        
-        // دکمه قبلی
-        paginationHtml += `<button data-page="${currentPage - 1}" class="pagination-btn px-4 py-2 text-gray-500 bg-white rounded-md hover:bg-blue-500 hover:text-white" ${currentPage === 1 ? 'disabled' : ''}>قبلی</button>`;
-        
-        // دکمه‌های شماره صفحه
-        for (let i = 1; i <= totalPages; i++) {
-            const isActive = i === currentPage ? 'bg-blue-600 text-white' : 'bg-white text-gray-700';
-            paginationHtml += `<button data-page="${i}" class="pagination-btn px-4 py-2 rounded-md hover:bg-blue-500 hover:text-white ${isActive}">${i}</button>`;
-        }
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    if (totalPages <= 1) {
+        container.innerHTML = '';
+        return;
+    }
 
-        // دکمه بعدی
-        paginationHtml += `<button data-page="${currentPage + 1}" class="pagination-btn px-4 py-2 text-gray-500 bg-white rounded-md hover:bg-blue-500 hover:text-white" ${currentPage === totalPages ? 'disabled' : ''}>بعدی</button>`;
+    let paginationHtml = '<div class="flex items-center justify-center space-x-1 space-x-reverse">';
+    
+    // دکمه قبلی
+    paginationHtml += `<button data-page="${currentPage - 1}" class="pagination-btn px-4 py-2 text-gray-500 bg-white rounded-md hover:bg-blue-500 hover:text-white" ${currentPage === 1 ? 'disabled' : ''}>قبلی</button>`;
+    
+    // دکمه‌های شماره صفحه
+    for (let i = 1; i <= totalPages; i++) {
+        const isActive = i === currentPage ? 'bg-blue-600 text-white' : 'bg-white text-gray-700';
+        paginationHtml += `<button data-page="${i}" class="pagination-btn px-4 py-2 rounded-md hover:bg-blue-500 hover:text-white ${isActive}">${i}</button>`;
+    }
 
-        paginationHtml += '</div>';
-        container.innerHTML = paginationHtml;
-    };
+    // دکمه بعدی
+    paginationHtml += `<button data-page="${currentPage + 1}" class="pagination-btn px-4 py-2 text-gray-500 bg-white rounded-md hover:bg-blue-500 hover:text-white" ${currentPage === totalPages ? 'disabled' : ''}>بعدی</button>`;
+
+    paginationHtml += '</div>';
+    container.innerHTML = paginationHtml;
+};
         // --- تابع جدید برای تحلیل داده‌های نظرسنجی و اعمال نتایج ---
 const calculateAndApplyAnalytics = () => {
         if (!state.surveyResponses) return;
