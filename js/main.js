@@ -965,7 +965,7 @@ function renderEmployeePortalPage(pageName, employee) {
         </h3>
         <button id="suggest-skill-btn" class="secondary-btn text-xs">پیشنهاد مهارت جدید</button>
     </div>
-    <div class="space-y-2">
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
         ${renderIndividualSkills(employee, false)} 
     </div>
 </div>
@@ -5821,7 +5821,7 @@ const isManagerView = canEdit() || isDirectManager;
         <h4 class="font-semibold text-slate-700"><i data-lucide="sparkles" class="ml-2 w-5 h-5 text-amber-500"></i>مهارت‌ها و تخصص‌ها</h4>
         ${isManagerView ? `<button id="add-individual-skill-btn" class="primary-btn text-xs">افزودن مهارت</button>` : ''}
     </div>
-    <div class="space-y-2">
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
         ${renderIndividualSkills(emp, isManagerView)}
     </div>
 </div>
@@ -8907,28 +8907,27 @@ const renderIndividualSkills = (employee, isManagerView) => {
 
     return skills.map(skill => {
         const isSuggested = skill.status === 'suggested';
+        const tileBg = isSuggested ? 'bg-yellow-50 border-yellow-200' : 'bg-slate-50 border-slate-200';
+        const titleCls = isSuggested ? 'text-yellow-800' : 'text-slate-800';
         return `
-            <div class="p-3 rounded-lg flex items-center justify-between ${isSuggested ? 'bg-yellow-50 border border-yellow-200' : 'bg-slate-50 border'}">
-                <div>
-                    <p class="font-semibold text-sm ${isSuggested ? 'text-yellow-800' : 'text-slate-800'}">
-                        ${skill.skillName}
-                        ${isSuggested ? '<span class="text-xs font-normal">(در انتظار تایید)</span>' : ''}
-                    </p>
-                    <div class="w-24 bg-slate-200 rounded-full h-1.5 mt-1">
-                        <div class="bg-indigo-500 h-1.5 rounded-full" style="width: ${skill.level * 20}%"></div>
+            <div class="p-3 rounded-xl border ${tileBg} flex flex-col">
+                <div class="flex items-start justify-between gap-2">
+                    <div class="font-semibold text-xs ${titleCls} line-clamp-2">${skill.skillName}</div>
+                    <div class="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-indigo-50 text-indigo-700 border border-indigo-200">${skill.level}<span>/5</span></div>
+                </div>
+                ${isSuggested ? '<div class="text-[10px] text-amber-700 mt-1">در انتظار تایید</div>' : ''}
+                <div class="mt-2">
+                    <div class="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                        <div class="bg-indigo-500 h-1.5" style="width:${skill.level * 20}%"></div>
                     </div>
                 </div>
-                <div class="flex items-center gap-1">
-                    <span class="font-bold text-indigo-600 text-lg">${skill.level}</span><span class="text-xs text-slate-500">/5</span>
-                    
-                    ${isManagerView ? `
-                        <div class="flex items-center gap-1 ml-2">
-                            ${isSuggested ? `<button class="approve-skill-btn primary-btn text-xs py-1 px-2" data-skill-id="${skill.skillId}">تایید</button>` : ''}
-                            <button class="edit-skill-btn p-1 text-slate-400 hover:text-blue-600" data-skill-id="${skill.skillId}"><i data-lucide="edit" class="w-4 h-4"></i></button>
-                            <button class="delete-skill-btn p-1 text-slate-400 hover:text-red-600" data-skill-id="${skill.skillId}"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                        </div>
-                    ` : ''}
-                </div>
+                ${isManagerView ? `
+                    <div class="flex items-center justify-end gap-1 mt-2">
+                        ${isSuggested ? `<button class="approve-skill-btn text-[10px] px-2 py-1 rounded-md bg-emerald-600 text-white" data-skill-id="${skill.skillId}">تایید</button>` : ''}
+                        <button class="edit-skill-btn p-1 text-slate-400 hover:text-blue-600" data-skill-id="${skill.skillId}"><i data-lucide="edit" class="w-4 h-4"></i></button>
+                        <button class="delete-skill-btn p-1 text-slate-400 hover:text-red-600" data-skill-id="${skill.skillId}"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </div>
+                ` : ''}
             </div>
         `;
     }).join('');
