@@ -2240,7 +2240,7 @@ const managerNavlinks = isTeamManager(employee)
                ${managerNavlinks}
                 <a href="#evaluations" class="nav-item"><i data-lucide="clipboard-check"></i><span>ارزیابی‌های من</span></a>
                 <a href="#okrs-portal" class="nav-item"><i data-lucide="target"></i><span>OKRها</span></a>
-                <a href="#orgchart" class="nav-item"><i data-lucide="hierarchy"></i><span>چارت سازمانی</span></a>
+                <a href="#orgchart" class="nav-item"><i data-lucide="git-branch"></i><span>چارت سازمانی</span></a>
                 <a href="#requests" class="nav-item"><i data-lucide="send"></i><span>کارهای من</span></a>
                 <a href="#directory" class="nav-item"><i data-lucide="users"></i><span>تیم‌ها</span></a>
                 <a href="#documents" class="nav-item"><i data-lucide="folder-kanban"></i><span>دانش‌نامه</span></a>
