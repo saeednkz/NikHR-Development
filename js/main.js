@@ -7323,6 +7323,46 @@ function showTeamOKRReviewModal(teamOKRId) {
         } catch (e) { console.error(e); showToast('خطا در رد.', 'error'); }
     });
 }
+// Skill approval modal (independent from reminders)
+function showSkillApprovalModal(approvalId) {
+    const ap = (state.approvals||[]).find(a=> a.firestoreId===approvalId && a.type==='skill');
+    if (!ap) { showToast('درخواست مهارت یافت نشد.', 'error'); return; }
+    const emp = (state.employees||[]).find(e=> e.firestoreId===ap.employeeId);
+    modalTitle.innerText = `بررسی مهارت - ${emp?.name||''}`;
+    modalContent.innerHTML = `
+        <div class="space-y-3">
+            <div class="text-sm"><strong>مهارت:</strong> ${ap.skillName||'-'}</div>
+            <div><textarea id="skill-approval-note" class="w-full p-2 border rounded-md" rows="3" placeholder="بازخورد/توضیح (اختیاری)"></textarea></div>
+            <div class="flex justify-end gap-2">
+                <button id="skill-reject-btn" class="secondary-btn">رد</button>
+                <button id="skill-approve-btn" class="primary-btn">تایید</button>
+            </div>
+        </div>`;
+    openModal(mainModal, mainModalContainer);
+    document.getElementById('skill-approve-btn').addEventListener('click', async ()=> {
+        try {
+            await updateDoc(doc(db, `artifacts/${appId}/public/data/approvals`, ap.firestoreId), { status: 'approved', reviewedAt: serverTimestamp(), note: (document.getElementById('skill-approval-note')?.value||'').trim() });
+            // write to employee profile skill list
+            if (emp) {
+                const cur = Array.isArray(emp.individualSkills) ? emp.individualSkills.slice() : [];
+                const exists = cur.find(x=> x.name===ap.skillName || x.skillId===ap.skillId);
+                if (!exists) cur.push({ name: ap.skillName, skillId: ap.skillId, status: 'approved' });
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/employees`, emp.firestoreId), { individualSkills: cur });
+            }
+            showToast('مهارت تایید شد.');
+            closeModal(mainModal, mainModalContainer);
+            renderPage('tasks');
+        } catch (e) { console.error(e); showToast('خطا در تایید.', 'error'); }
+    });
+    document.getElementById('skill-reject-btn').addEventListener('click', async ()=> {
+        try {
+            await updateDoc(doc(db, `artifacts/${appId}/public/data/approvals`, ap.firestoreId), { status: 'rejected', reviewedAt: serverTimestamp(), note: (document.getElementById('skill-approval-note')?.value||'').trim() });
+            showToast('درخواست مهارت رد شد.');
+            closeModal(mainModal, mainModalContainer);
+            renderPage('tasks');
+        } catch (e) { console.error(e); showToast('خطا در رد.', 'error'); }
+    });
+}
 // فایل: js/main.js
 // این تابع را به طور کامل جایگزین نسخه فعلی کنید ▼
 
@@ -7364,7 +7404,9 @@ const setupTasksPageListeners = () => {
     if (!mainContentArea) return;
 
     // رندر کردن دکمه‌های صفحه‌بندی
-    const totalTasks = (state.reminders || []).filter(r => r.assignedTo === state.currentUser?.uid).length;
+    const totalTasks = ((state.reminders || []).filter(r => r.assignedTo === state.currentUser?.uid).length)
+        + ((state.teamOKRs||[]).filter(t=> t.status==='pending_senior' && (state.currentUser.role==='admin' || state.currentUser.role==='senior')).length)
+        + ((state.approvals||[]).filter(a=> a.type==='skill' && a.assignedTo===state.currentUser?.uid && a.status==='pending').length);
     renderPagination('pagination-container', state.currentPageTasks, totalTasks, 10);
 
     // مدیریت کلیک روی دکمه‌های صفحه‌بندی
@@ -7389,6 +7431,14 @@ const setupTasksPageListeners = () => {
             const processBtn = e.target.closest('.process-reminder-btn');
             if (processBtn) {
                 (window.showProcessReminderForm || (()=>{}))(processBtn.dataset.id);
+            }
+            const processTok = e.target.closest('.process-teamokr-btn');
+            if (processTok) {
+                showTeamOKRReviewModal(processTok.dataset.id);
+            }
+            const processSkill = e.target.closest('.process-skill-btn');
+            if (processSkill) {
+                showSkillApprovalModal(processSkill.dataset.id);
             }
         });
     }
