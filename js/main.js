@@ -7972,11 +7972,14 @@ const renderIndividualSkills = (employee, isManagerView) => {
  * @param {boolean} isManagerAdding - True if a manager is adding, false if an employee is suggesting.
  */
 // ▼▼▼ START: [REFACTOR - Phase 5 BUGFIX] Replace the entire showAddOrEditSkillForm function ▼▼▼
+// فایل: js/main.js
+// ▼▼▼ کل این تابع را با نسخه کامل و نهایی زیر جایگزین کنید ▼▼▼
+
 const showAddOrEditSkillForm = (employee, existingSkill = null, isManagerAdding = false) => {
     const isEditing = existingSkill !== null;
     modalTitle.innerText = isEditing ? `ویرایش مهارت: ${existingSkill.skillName}` : (isManagerAdding ? 'افزودن مهارت جدید' : 'پیشنهاد مهارت جدید');
 
-    const skillOptions = (state.skillsAndCompetencies || []).map(s => 
+    const skillOptions = (state.skillsAndCompetencies || []).map(s =>
         `<option value="${s.firestoreId}" data-name="${s.name}" ${isEditing && s.firestoreId === existingSkill.skillId ? 'selected' : ''}>${s.name}</option>`
     ).join('');
 
@@ -8012,12 +8015,12 @@ const showAddOrEditSkillForm = (employee, existingSkill = null, isManagerAdding 
             return;
         }
 
-        const newSkill = { 
-            skillId, 
-            skillName, 
-            level, 
-            status: isManagerAdding ? 'approved' : 'suggested', 
-            notes: isManagerAdding ? 'توسط مدیر اضافه شد' : 'توسط کارمند پیشنهاد شد' 
+        const newSkill = {
+            skillId,
+            skillName,
+            level,
+            status: isManagerAdding ? 'approved' : 'suggested',
+            notes: isManagerAdding ? 'توسط مدیر اضافه شد' : 'توسط کارمند پیشنهاد شد'
         };
         
         let currentSkills = employee.individualSkills || [];
@@ -8032,25 +8035,53 @@ const showAddOrEditSkillForm = (employee, existingSkill = null, isManagerAdding 
         }
 
         try {
+            // [FIX] Create a request for the manager to approve the skill
+            if (!isManagerAdding) {
+                // Find the direct manager to assign the request to
+                const primaryTeam = state.teams.find(t => t.firestoreId === employee.primaryTeamId);
+                const managerEmployeeId = primaryTeam?.leadership?.manager;
+                const managerEmployee = state.employees.find(e => e.id === managerEmployeeId);
+
+                if (managerEmployee && managerEmployee.uid) {
+                    await addDoc(collection(db, `artifacts/${appId}/public/data/requests`), {
+                        uid: employee.uid,
+                        employeeId: employee.id,
+                        employeeName: employee.name,
+                        requestType: 'تایید مهارت',
+                        details: `درخواست تایید مهارت '${skillName}' با سطح ${level}`,
+                        status: 'درحال بررسی',
+                        createdAt: serverTimestamp(),
+                        assignedTo: managerEmployee.uid, // Assign to the manager's user UID
+                        isReadByAssignee: false
+                    });
+                } else {
+                   console.warn("Manager not found for this employee to create an approval request.");
+                }
+            }
+            
+            // Update the employee document with the new skill
             await updateDoc(doc(db, `artifacts/${appId}/public/data/employees`, employee.firestoreId), {
                 individualSkills: currentSkills
             });
+            
             showToast('مهارت با موفقیت ذخیره شد.');
             closeModal(mainModal, mainModalContainer);
 
-            // [FIX] This is the new, intelligent refresh logic based on context
-            // It no longer relies on comparing UIDs.
-            if (isManagerAdding) {
-                // If a manager initiated this action, we always refresh the employee profile modal.
-                setTimeout(() => {
-                    viewEmployeeProfile(employee.firestoreId);
-                }, 300); // Timeout allows the close animation to finish
-            } else {
-                // If an employee initiated this, refresh their main profile page.
-                renderEmployeePortalPage('profile', employee);
+            // Refresh the view
+            if (isManagerAdding || state.currentUser.uid === employee.uid) {
+                // If a manager is adding OR the employee is editing their own profile
+                 setTimeout(() => {
+                    const portalVisible = !document.getElementById('employee-portal-container').classList.contains('hidden');
+                    if (portalVisible) {
+                        renderEmployeePortalPage('profile', employee);
+                    } else {
+                        viewEmployeeProfile(employee.firestoreId);
+                    }
+                }, 300);
             }
 
         } catch (error) {
+            console.error("Error saving skill or creating request:", error)
             showToast('خطا در ذخیره مهارت.', 'error');
         }
     });
