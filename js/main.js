@@ -771,7 +771,7 @@ function renderEmployeePortalPage(pageName, employee) {
                     <div class="space-y-1">${suggestList}</div>
                 </div>
             </div>
-            <div class="bg-white p-5 rounded-2xl border mt-6">
+            <div id="team-okr-panel" class="bg-white p-5 rounded-2xl border mt-6">
                 <h3 class="font-bold mb-2">OKR تیم</h3>
                 <div>${teamOkrsHtml}</div>
                 ${editor}
@@ -779,6 +779,35 @@ function renderEmployeePortalPage(pageName, employee) {
         `;
         document.getElementById('new-okr-suggestion-btn')?.addEventListener('click', ()=> showOkrSuggestionForm(employee, team, currentCycle));
         document.getElementById('open-team-okr-editor')?.addEventListener('click', ()=> showTeamOKREditor(employee, team, currentCycle, teamEntry));
+        // Append progress editor for approved team OKRs
+        if (isMgr && teamEntry?.status === 'approved') {
+            const panel = document.getElementById('team-okr-panel');
+            if (panel) {
+                const editorWrap = document.createElement('div');
+                editorWrap.className = 'mt-3 border-t pt-3';
+                editorWrap.innerHTML = `
+                    <h4 class="font-bold text-sm mb-2">به‌روزرسانی پیشرفت (مدیر)</h4>
+                    <div id="okr-progress-list" class="space-y-2">
+                        ${(teamEntry.okrs||[]).map((o,oi)=> `<div class=\"border rounded p-2\"><div class=\"font-semibold text-xs mb-1\">${o.objective}</div>${(o.keyResults||[]).map((kr,ki)=> `<div class=\"grid grid-cols-12 items-center gap-2 text-[11px]\"><div class=\"col-span-7\">• ${kr.name}</div><div class=\"col-span-3\"><input type=\"number\" min=\"0\" max=\"100\" class=\"kr-progress-input w-full p-1 border rounded\" data-oi=\"${oi}\" data-ki=\"${ki}\" value=\"${kr.progress||0}\"></div><div class=\"col-span-2\">%</div></div>`).join('')}</div>`).join('')}
+                    </div>
+                    <div class="mt-2"><textarea id="okr-progress-note" class="w-full p-2 border rounded" rows="2" placeholder="توضیح به‌روزرسانی (هفتگی)"></textarea></div>
+                    <div class="flex justify-end"><button id="save-team-okr-progress" class="secondary-btn text-xs">ذخیره پیشرفت</button></div>
+                `;
+                panel.appendChild(editorWrap);
+                document.getElementById('save-team-okr-progress')?.addEventListener('click', async ()=> {
+                    try {
+                        const inputs = Array.from(document.querySelectorAll('.kr-progress-input'));
+                        const updated = JSON.parse(JSON.stringify(teamEntry.okrs || []));
+                        inputs.forEach(inp => { const oi = Number(inp.getAttribute('data-oi')); const ki = Number(inp.getAttribute('data-ki')); const val = Math.max(0, Math.min(100, Number(inp.value)||0)); if (updated[oi] && updated[oi].keyResults && updated[oi].keyResults[ki]) updated[oi].keyResults[ki].progress = val; });
+                        const note = (document.getElementById('okr-progress-note')?.value||'').trim();
+                        const tokRef = doc(db, `artifacts/${appId}/public/data/teamOKRs`, teamEntry.firestoreId);
+                        await updateDoc(tokRef, { okrs: updated, logs: arrayUnion({ at: serverTimestamp(), by: state.currentUser.uid, note }) });
+                        showToast('پیشرفت OKR تیم ذخیره شد.');
+                        renderEmployeePortalPage('team-okrs', employee);
+                    } catch (e) { console.error(e); showToast('خطا در ذخیره پیشرفت.', 'error'); }
+                });
+            }
+        }
         lucide.createIcons();
     }
     // پایان بلوک جدید
