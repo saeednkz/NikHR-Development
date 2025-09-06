@@ -6431,29 +6431,29 @@ const setupAnnouncementsPageListeners = () => {
 
     renderList();
 };
+// ▼▼▼ START: [FINAL BUGFIX] Replace the entire renderEmployeeTable function ▼▼▼
 const renderEmployeeTable = () => {
     const TALENT_PAGE_SIZE = 12;
     const searchInput = document.getElementById('searchInput')?.value.toLowerCase() || '';
-    const departmentFilter = document.getElementById('departmentFilter')?.value || '';
+    const teamFilter = document.getElementById('teamFilter')?.value || ''; // [CHANGED] Renamed from departmentFilter
     const skillFilter = document.getElementById('skillFilter')?.value || '';
     const statusFilter = document.getElementById('statusFilter')?.value || '';
     
-// ▼▼▼ START: [BUGFIX] Make filtering logic resilient to missing data ▼▼▼
-const filteredEmployees = state.employees.filter(emp => {
-    // First, check if the employee object itself is valid
-    if (!emp) return false;
+    const filteredEmployees = state.employees.filter(emp => {
+        if (!emp || !emp.name || !emp.id) return false; // Safeguard against incomplete data
 
-    // Safely check name and id fields before calling toLowerCase
-    const nameMatch = emp.name ? emp.name.toLowerCase().includes(searchInput) : false;
-    const idMatch = emp.id ? emp.id.toLowerCase().includes(searchInput) : false;
+        const nameMatch = emp.name.toLowerCase().includes(searchInput);
+        const idMatch = emp.id.toLowerCase().includes(searchInput);
 
-    const departmentMatch = !departmentFilter || emp.department === departmentFilter;
-    const statusMatch = !statusFilter || emp.status === statusFilter;
-    const skillMatch = !skillFilter || Object.keys(emp.skills || {}).includes(skillFilter);
+        // [CHANGED] Filter logic now uses primaryTeamId
+        const teamMatch = !teamFilter || emp.primaryTeamId === teamFilter;
+        
+        const statusMatch = !statusFilter || emp.status === statusFilter;
+        const skillMatch = !skillFilter || Object.keys(emp.skills || {}).includes(skillFilter);
 
-    return (nameMatch || idMatch) && departmentMatch && statusMatch && skillMatch;
-});
-// ▲▲▲ END: [BUGFIX] Make filtering logic resilient to missing data ▲▲▲
+        return (nameMatch || idMatch) && teamMatch && statusMatch && skillMatch;
+    });
+
     const startIndex = (state.currentPageTalent - 1) * TALENT_PAGE_SIZE;
     const endIndex = startIndex + TALENT_PAGE_SIZE;
     const paginatedEmployees = filteredEmployees.slice(startIndex, endIndex);
@@ -6470,27 +6470,28 @@ const filteredEmployees = state.employees.filter(emp => {
                 let riskColorClass = 'bg-green-500';
                 if (riskScore > 70) riskColorClass = 'bg-red-500';
                 else if (riskScore > 40) riskColorClass = 'bg-yellow-500';
+                
+                // [CHANGED] Display team name from primaryTeamId
+                const teamName = state.teams.find(t => t.firestoreId === emp.primaryTeamId)?.name || 'بدون تیم';
 
                 return `
-                    <div class=\"card bg-white p-4 flex flex-col text-center items-center rounded-2xl shadow-lg transform hover:-translate-y-1 transition-transform duration-300 relative overflow-hidden\">
-                        <div class=\"absolute top-3 right-3 w-3 h-3 rounded-full ${riskColorClass}\" title=\"ریسک خروج: ${riskScore}%\"></div>
-
-                        <img src=\"${emp.avatar}\" alt=\"${emp.name}\" class=\"w-24 h-24 rounded-full object-cover border-4 border-slate-100 mt-4 shadow-sm\">
+                    <div class="card bg-white p-4 flex flex-col text-center items-center rounded-2xl shadow-lg transform hover:-translate-y-1 transition-transform duration-300 relative overflow-hidden">
+                        <div class="absolute top-3 right-3 w-3 h-3 rounded-full ${riskColorClass}" title="ریسک خروج: ${riskScore}%"></div>
+                        <img src="${emp.avatar}" alt="${emp.name}" class="w-24 h-24 rounded-full object-cover border-4 border-slate-100 mt-4 shadow-sm">
+                        <h3 class="font-bold text-base mt-3 text-slate-800">${emp.name}</h3>
+                        <p class="text-xs text-slate-500">${emp.jobTitle || 'بدون عنوان شغلی'}</p>
+                        <div class="mt-1 text-[11px] text-slate-500">${teamName}</div>
                         
-                        <h3 class=\"font-bold text-base mt-3 text-slate-800\">${emp.name}</h3>
-                        <p class=\"text-xs text-slate-500\">${emp.jobTitle || 'بدون عنوان شغلی'}</p>
-                        <div class=\"mt-1 text-[11px] text-slate-500\">${(state.teams.find(t=>t.memberIds?.includes(emp.id))?.name) || 'بدون تیم'} ${(() => { const team = state.teams.find(t=>t.memberIds?.includes(emp.id)); const m = team ? state.employees.find(e => e.id === team.leadership?.manager) : null; return m ? `• مدیر: ${m.name}` : ''; })()}</div>
-                        
-                        <div class=\"mt-3 grid grid-cols-3 gap-2 text-[11px] w-full\">
-                            <div class=\"rounded-lg p-2 bg-slate-50 border\"><div class=\"text-slate-500\">وضعیت</div><div class=\"font-bold ${emp.status==='فعال'?'text-emerald-600':'text-rose-600'}\">${emp.status}</div></div>
-                            <div class=\"rounded-lg p-2 bg-slate-50 border\"><div class=\"text-slate-500\">ریسک</div><div class=\"font-bold\">${riskScore}%</div></div>
-                            <div class=\"rounded-lg p-2 bg-slate-50 border\"><div class=\"text-slate-500\">پروفایل</div><div class=\"font-bold ${isComplete?'text-indigo-600':'text-amber-600'}\">${isComplete?'کامل':'ناقص'}</div></div>
+                        <div class="mt-3 grid grid-cols-3 gap-2 text-[11px] w-full">
+                            <div class="rounded-lg p-2 bg-slate-50 border"><div class="text-slate-500">وضعیت</div><div class="font-bold ${emp.status==='فعال'?'text-emerald-600':'text-rose-600'}">${emp.status}</div></div>
+                            <div class="rounded-lg p-2 bg-slate-50 border"><div class="text-slate-500">ریسک</div><div class="font-bold">${riskScore}%</div></div>
+                            <div class="rounded-lg p-2 bg-slate-50 border"><div class="text-slate-500">پروفایل</div><div class="font-bold ${isComplete?'text-indigo-600':'text-amber-600'}">${isComplete?'کامل':'ناقص'}</div></div>
                         </div>
 
-                        <div class=\"mt-auto pt-4 w-full flex items-center justify-end gap-2 border-t border-slate-100\">
-                            <button class=\"view-employee-profile-btn flex-grow text-sm bg-slate-800 text-white py-2 px-4 rounded-lg hover:bg-slate-900 transition\" data-employee-id=\"${emp.firestoreId}\">مشاهده</button>
-                            ${canEdit() ? `<button class=\"edit-employee-btn p-2 text-slate-400 hover:text-blue-500 transition-colors\" data-employee-id=\"${emp.firestoreId}\" title=\"ویرایش\"><i data-lucide=\"edit\" class=\"w-5 h-5\"></i></button>` : ''}
-                            ${isAdmin() ? `<button class=\"delete-employee-btn p-2 text-slate-400 hover:text-rose-500 transition-colors\" data-employee-id=\"${emp.firestoreId}\" title=\"حذف\"><i data-lucide=\"trash-2\" class=\"w-5 h-5\"></i></button>` : ''}
+                        <div class="mt-auto pt-4 w-full flex items-center justify-end gap-2 border-t border-slate-100">
+                            <button class="view-employee-profile-btn flex-grow text-sm bg-slate-800 text-white py-2 px-4 rounded-lg hover:bg-slate-900 transition" data-employee-id="${emp.firestoreId}">مشاهده</button>
+                            ${canEdit() ? `<button class="edit-employee-btn p-2 text-slate-400 hover:text-blue-500 transition-colors" data-employee-id="${emp.firestoreId}" title="ویرایش"><i data-lucide="edit" class="w-5 h-5"></i></button>` : ''}
+                            ${isAdmin() ? `<button class="delete-employee-btn p-2 text-slate-400 hover:text-rose-500 transition-colors" data-employee-id="${emp.firestoreId}" title="حذف"><i data-lucide="trash-2" class="w-5 h-5"></i></button>` : ''}
                         </div>
                     </div>
                 `;
@@ -6499,6 +6500,7 @@ const filteredEmployees = state.employees.filter(emp => {
     }
     renderPagination('pagination-container', state.currentPageTalent, filteredEmployees.length, TALENT_PAGE_SIZE);
 };
+// ▲▲▲ END: [FINAL BUGFIX] Replace the entire renderEmployeeTable function ▲▲▲
         const exportToCSV = () => {
     // ۱. همان منطق فیلتر کردن را اجرا می‌کنیم تا لیست فعلی را بگیریم
     const searchInput = document.getElementById('searchInput')?.value.toLowerCase() || '';
