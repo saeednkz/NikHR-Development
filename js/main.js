@@ -6900,50 +6900,77 @@ const setupTasksPageListeners = () => {
     }
 };
 // Minimal processing modal for reminders (fallback)
+// فایل: js/main.js
+// ▼▼▼ کل این تابع را با نسخه کامل و نهایی زیر جایگزین کنید ▼▼▼
+
 if (typeof window.showProcessReminderForm !== 'function') {
     window.showProcessReminderForm = (reminderId) => {
         const reminder = (state.reminders || []).find(r => r.firestoreId === reminderId);
         if (!reminder) { showToast('یادآور یافت نشد.', 'error'); return; }
-        modalTitle.innerText = `پردازش یادآور: ${reminder.type || ''}`;
-        modalContent.innerHTML = `
-            <form id="process-reminder-form" class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium">وضعیت</label>
-                    <select id="reminder-status" class="w-full p-2 border rounded-md bg-white">
-                        <option ${reminder.status==='جدید'?'selected':''} value="جدید">جدید</option>
-                        <option ${reminder.status==='در حال انجام'?'selected':''} value="در حال انجام">در حال انجام</option>
-                        <option ${reminder.status==='انجام شده'?'selected':''} value="انجام شده">انجام شده</option>
-                    </select>
+
+        // [NEW LOGIC] Handle skill approval tasks
+        if (reminder.type === 'تایید مهارت') {
+            const targetEmployee = state.employees.find(e => e.firestoreId === reminder.context?.employeeId);
+            const skillName = reminder.text.match(/'(.*?)'/)?.[1] || 'ناشناخته';
+
+            modalTitle.innerText = `پردازش وظیفه: ${reminder.type}`;
+            modalContent.innerHTML = `
+                <div class="space-y-4">
+                    <div class="p-4 border rounded-lg bg-slate-50 text-sm">
+                        <p><strong>کارمند:</strong> ${targetEmployee?.name || 'ناشناس'}</p>
+                        <p class="mt-1"><strong>موضوع:</strong> ${reminder.text}</p>
+                    </div>
+                    <div class="pt-4 mt-4 border-t flex justify-end gap-2">
+                        <button id="reject-skill-btn" class="secondary-btn">رد درخواست</button>
+                        <button id="approve-skill-btn" class="primary-btn">تایید مهارت</button>
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium">یادداشت پردازش</label>
-                    <textarea id="reminder-notes" rows="4" class="w-full p-2 border rounded-md">${reminder.processingNotes || ''}</textarea>
-                </div>
-                <div class="flex justify-end gap-2">
-                    <button type="button" id="cancel-process-reminder" class="bg-slate-200 text-slate-800 py-2 px-4 rounded-md hover:bg-slate-300">انصراف</button>
-                    <button type="submit" class="primary-btn">ذخیره</button>
-                </div>
-            </form>`;
-        openModal(mainModal, mainModalContainer);
-        document.getElementById('cancel-process-reminder')?.addEventListener('click', () => closeModal(mainModal, mainModalContainer));
-        document.getElementById('process-reminder-form')?.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            try {
+            `;
+            openModal(mainModal, mainModalContainer);
+
+            document.getElementById('approve-skill-btn')?.addEventListener('click', async (e) => {
+                if (!targetEmployee || !reminder.context?.skillId) {
+                    showToast('خطا: اطلاعات کارمند یا مهارت ناقص است.', 'error'); return;
+                }
+                const updatedSkills = targetEmployee.individualSkills.map(s => 
+                    s.skillId === reminder.context.skillId ? { ...s, status: 'approved', notes: 'توسط مدیر تایید شد' } : s
+                );
+                try {
+                    const batch = writeBatch(db);
+                    batch.update(doc(db, `artifacts/${appId}/public/data/employees`, targetEmployee.firestoreId), { individualSkills: updatedSkills });
+                    batch.update(doc(db, `artifacts/${appId}/public/data/reminders`, reminderId), { status: 'انجام شده', processingNotes: `مهارت ${skillName} تایید شد.` });
+                    await batch.commit();
+                    showToast('مهارت تایید و وظیفه بسته شد.');
+                    closeModal(mainModal, mainModalContainer);
+                } catch (err) { console.error(err); showToast('خطا در تایید مهارت.', 'error'); }
+            });
+
+            document.getElementById('reject-skill-btn')?.addEventListener('click', async (e) => {
+                 await updateDoc(doc(db, `artifacts/${appId}/public/data/reminders`, reminderId), { status: 'رد شده', processingNotes: 'توسط مدیر رد شد.' });
+                 showToast('درخواست رد شد.');
+                 closeModal(mainModal, mainModalContainer);
+            });
+
+        } else {
+            // Original logic for all other reminder types
+            modalTitle.innerText = `پردازش یادآور: ${reminder.type || ''}`;
+            modalContent.innerHTML = `
+                <form id="process-reminder-form" class="space-y-4">
+                    <div><label class="block text-sm font-medium">وضعیت</label><select id="reminder-status" class="w-full p-2 border rounded-md bg-white"><option ${reminder.status==='جدید'?'selected':''} value="جدید">جدید</option><option ${reminder.status==='در حال انجام'?'selected':''} value="در حال انجام">در حال انجام</option><option ${reminder.status==='انجام شده'?'selected':''} value="انجام شده">انجام شده</option></select></div>
+                    <div><label class="block text-sm font-medium">یادداشت پردازش</label><textarea id="reminder-notes" rows="4" class="w-full p-2 border rounded-md">${reminder.processingNotes || ''}</textarea></div>
+                    <div class="flex justify-end gap-2"><button type="button" id="cancel-process-reminder" class="bg-slate-200 text-slate-800 py-2 px-4 rounded-md hover:bg-slate-300">انصراف</button><button type="submit" class="primary-btn">ذخیره</button></div>
+                </form>`;
+            openModal(mainModal, mainModalContainer);
+            document.getElementById('cancel-process-reminder')?.addEventListener('click', () => closeModal(mainModal, mainModalContainer));
+            document.getElementById('process-reminder-form')?.addEventListener('submit', async (e) => {
+                e.preventDefault();
                 const newStatus = document.getElementById('reminder-status').value;
                 const notes = document.getElementById('reminder-notes').value.trim();
-                await updateDoc(doc(db, `artifacts/${appId}/public/data/reminders`, reminderId), {
-                    status: newStatus,
-                    processingNotes: notes,
-                    lastUpdatedAt: serverTimestamp()
-                });
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/reminders`, reminderId), { status: newStatus, processingNotes: notes, lastUpdatedAt: serverTimestamp() });
                 showToast('یادآور به‌روزرسانی شد.');
                 closeModal(mainModal, mainModalContainer);
-                renderPage('tasks');
-            } catch (error) {
-                console.error('Error processing reminder:', error);
-                showToast('خطا در ذخیره یادآور.', 'error');
-            }
-        });
+            });
+        }
     };
 }
 // در فایل js/main.js
@@ -8075,6 +8102,9 @@ const renderIndividualSkills = (employee, isManagerView) => {
 // فایل: js/main.js
 // ▼▼▼ کل این تابع را با نسخه کامل و نهایی زیر جایگزین کنید ▼▼▼
 
+// فایل: js/main.js
+// ▼▼▼ کل این تابع را با نسخه کامل و نهایی زیر جایگزین کنید ▼▼▼
+
 const showAddOrEditSkillForm = (employee, existingSkill = null, isManagerAdding = false) => {
     const isEditing = existingSkill !== null;
     modalTitle.innerText = isEditing ? `ویرایش مهارت: ${existingSkill.skillName}` : (isManagerAdding ? 'افزودن مهارت جدید' : 'پیشنهاد مهارت جدید');
@@ -8126,26 +8156,32 @@ const showAddOrEditSkillForm = (employee, existingSkill = null, isManagerAdding 
             currentSkills = currentSkills.map(s => s.skillId === existingSkill.skillId ? { ...s, level: level, status: 'approved' } : s);
         } else {
             if (currentSkills.some(s => s.skillId === skillId)) {
-                showToast('این مهارت قبلاً اضافه شده است.', 'error');
-                return;
+                showToast('این مهارت قبلاً اضافه شده است.', 'error'); return;
             }
             currentSkills.push(newSkill);
         }
 
         try {
-            if (!isManagerAdding) {
-                const approverUid = findApproverUid(employee); // Using the new helper function
+            const batch = writeBatch(db);
+            const employeeRef = doc(db, `artifacts/${appId}/public/data/employees`, employee.firestoreId);
+            batch.update(employeeRef, { individualSkills: currentSkills });
 
+            if (!isManagerAdding) {
+                const approverUid = findApproverUid(employee);
                 if (approverUid) {
-                    await addDoc(collection(db, `artifacts/${appId}/public/data/requests`), {
-                        uid: employee.uid, employeeId: employee.id, employeeName: employee.name,
-                        requestType: 'تایید مهارت',
-                        details: `درخواست تایید مهارت '${skillName}' با سطح ${level}`,
-                        context: { employeeId: employee.firestoreId, skillId: skillId }, // For easier processing
-                        status: 'درحال بررسی',
-                        createdAt: serverTimestamp(),
+                    const reminderRef = doc(collection(db, `artifacts/${appId}/public/data/reminders`));
+                    batch.set(reminderRef, {
+                        type: 'تایید مهارت',
+                        text: `تایید مهارت '${skillName}' برای ${employee.name}`,
+                        date: new Date(),
+                        icon: 'user-check',
+                        status: 'جدید',
                         assignedTo: approverUid,
-                        isReadByAssignee: false
+                        context: { 
+                            employeeId: employee.firestoreId, // Store firestoreId
+                            skillId: skillId 
+                        },
+                        createdAt: serverTimestamp()
                     });
                 } else {
                     showToast('خطا: مدیر یا تاییدکننده شما در سیستم به درستی تعریف نشده است.', 'error');
@@ -8153,14 +8189,10 @@ const showAddOrEditSkillForm = (employee, existingSkill = null, isManagerAdding 
                 }
             }
             
-            await updateDoc(doc(db, `artifacts/${appId}/public/data/employees`, employee.firestoreId), {
-                individualSkills: currentSkills
-            });
-            
-            showToast('مهارت با موفقیت ذخیره شد.');
+            await batch.commit();
+            showToast('مهارت با موفقیت ذخیره شد. درخواست تایید ارسال گردید.');
             closeModal(mainModal, mainModalContainer);
 
-            // Refresh view
             setTimeout(() => {
                 const onPortal = !document.getElementById('employee-portal-container').classList.contains('hidden');
                 if (onPortal) renderEmployeePortalPage('profile', employee);
@@ -8168,7 +8200,7 @@ const showAddOrEditSkillForm = (employee, existingSkill = null, isManagerAdding 
             }, 300);
 
         } catch (error) {
-            console.error("Error saving skill or creating request:", error);
+            console.error("Error saving skill:", error);
             showToast('خطا در ذخیره مهارت.', 'error');
         }
     });
