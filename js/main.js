@@ -2151,7 +2151,7 @@ const managerNavlinks = isTeamManager(employee)
                 <a href="#profile" class="nav-item"><i data-lucide="user"></i><span>مسیر من</span></a>
                ${managerNavlinks}
                 <a href="#evaluations" class="nav-item"><i data-lucide="clipboard-check"></i><span>ارزیابی‌های من</span></a>
-                <a href="#requests" class="nav-item"><i data-lucide="send"></i><span>کارهای من</span></a>
+                <a href="#requests" class="nav-item"><i data-lucide="send"></i><span>درخواست های من</span></a>
                 <a href="#directory" class="nav-item"><i data-lucide="users"></i><span>تیم‌ها</span></a>
                 <a href="#documents" class="nav-item"><i data-lucide="folder-kanban"></i><span>دانش‌نامه</span></a>
                 <a href="#inbox" class="nav-item"><i data-lucide="inbox"></i><span>پیام‌ها</span></a>
