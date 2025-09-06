@@ -7540,7 +7540,7 @@ function showOkrProposalForm(emp) {
             if (assignedTo) {
                 try {
                     const r = doc(collection(db, `artifacts/${appId}/public/data/reminders`));
-                    await setDoc(r, { text: `بررسی پیشنهاد OKR تیم ${team.name}`, type: 'پیشنهاد OKR', date: new Date(), assignedTo, status: 'جدید', isReadByAssignee: false, createdAt: serverTimestamp() });
+                    await setDoc(r, { text: `بررسی پیشنهاد OKR تیم ${team.name}`, type: 'پیشنهاد OKR', date: new Date(), assignedTo, status: 'جدید', isReadByAssignee: false, createdAt: serverTimestamp(), context: { proposalId: ref.id } });
                 } catch {}
             }
             closeModal(mainModal, mainModalContainer);
