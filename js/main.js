@@ -668,7 +668,71 @@ function renderEmployeePortalPage(pageName, employee) {
         } else {
             contentContainer.innerHTML = `<div class="card p-6 text-center"><p>شما دسترسی به این صفحه را ندارید.</p></div>`;
         }
-    } else if (pageName === 'profile') { // [FIX]: Added 'else' here
+    }
+    else if (pageName === 'tasks') {
+    if (!isTeamManager(employee)) {
+        contentContainer.innerHTML = `<div class="card p-6 text-center"><p>شما دسترسی به این صفحه را ندارید.</p></div>`;
+        return;
+    }
+
+    const myTasks = (state.reminders || [])
+        .filter(r => r.assignedTo === employee.uid)
+        .sort((a, b) => new Date(a.date?.toDate ? a.date.toDate() : a.date) - new Date(b.date?.toDate ? b.date.toDate()));
+
+    const tasksHtml = myTasks.length > 0 ? myTasks.map(task => {
+        const statusColors = {'جدید':'bg-yellow-100 text-yellow-800','در حال انجام':'bg-blue-100 text-blue-800','انجام شده':'bg-green-100 text-green-800', 'رد شده': 'bg-red-100 text-red-800'};
+        const status = statusColors[task.status] || 'bg-slate-100';
+        return `
+            <tr class="border-b">
+                <td class="p-3">${task.type}</td>
+                <td class="p-3 text-sm">${task.text}</td>
+                <td class="p-3 text-xs">${toPersianDate(task.date)}</td>
+                <td class="p-3"><span class="px-2 py-1 text-xs font-medium rounded-full ${status}">${task.status}</span></td>
+                <td class="p-3 text-left">
+                    ${task.status !== 'انجام شده' && task.status !== 'رد شده' ?
+                        `<button class="process-reminder-btn primary-btn text-xs py-1.5 px-3" data-id="${task.firestoreId}">پردازش</button>` :
+                        `<span class="text-xs text-slate-400">پایان یافته</span>`
+                    }
+                </td>
+            </tr>
+        `;
+    }).join('') : '<tr><td colspan="5" class="text-center p-6 text-slate-500">هیچ وظیفه‌ای به شما واگذار نشده است.</td></tr>';
+
+    contentContainer.innerHTML = `
+        <section class="rounded-2xl overflow-hidden border mb-6" style="background:linear-gradient(90deg,#6B69D6,#FF6A3D)">
+            <div class="p-6 sm:p-8">
+                <h1 class="text-2xl sm:text-3xl font-extrabold text-white">وظایف من</h1>
+                <p class="text-white/90 text-xs mt-1">درخواست‌ها و وظایفی که برای پردازش به شما ارجاع داده شده‌اند.</p>
+            </div>
+        </section>
+        <div class="card p-0">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-slate-50">
+                        <tr>
+                            <th class="p-3 text-right">نوع وظیفه</th>
+                            <th class="p-3 text-right">شرح</th>
+                            <th class="p-3 text-right">تاریخ</th>
+                            <th class="p-3 text-right">وضعیت</th>
+                            <th class="p-3 text-right"></th>
+                        </tr>
+                    </thead>
+                    <tbody>${tasksHtml}</tbody>
+                </table>
+            </div>
+        </div>
+    `;
+    
+    // Listener for the process button
+    contentContainer.querySelectorAll('.process-reminder-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            showProcessReminderForm(btn.dataset.id);
+        });
+    });
+    
+    lucide.createIcons();
+}
+    else if (pageName === 'profile') { // [FIX]: Added 'else' here
         const team = state.teams.find(t => t.memberIds?.includes(employee.id));
         const manager = team ? state.employees.find(e => e.id === team.leadership?.manager) : null;
         
