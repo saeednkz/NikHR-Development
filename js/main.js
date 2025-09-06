@@ -737,13 +737,16 @@ function renderEmployeePortalPage(pageName, employee) {
         lucide.createIcons();
     }
     else if (pageName === 'team-okrs') {
-        if (!isTeamManager(employee)) {
-            contentContainer.innerHTML = `<div class="card p-6 text-center"><p>شما دسترسی به این صفحه را ندارید.</p></div>`;
+        const isMgr = isTeamManager(employee);
+        const team = isMgr
+            ? (state.teams||[]).find(t => t.leadership?.manager === employee.id)
+            : (state.teams||[]).find(t => t.firestoreId === employee.primaryTeamId) || (state.teams||[]).find(t => (t.memberIds||[]).includes(employee.id));
+        if (!team) {
+            contentContainer.innerHTML = `<div class="card p-6 text-center"><p>تیم شما شناسایی نشد.</p></div>`;
             return;
         }
-        const managedTeam = (state.teams||[]).find(t => t.leadership?.manager === employee.id);
         const currentCycle = (state.okrCycles||[]).find(c=> c.status==='open');
-        const proposals = (state.okrProposals||[]).filter(p=> p.teamId === managedTeam?.firestoreId && p.cycleId === (currentCycle?.firestoreId || currentCycle?.id)).sort((a,b)=> new Date(b.createdAt?.toDate?.()||0)-new Date(a.createdAt?.toDate?.()||0));
+        const proposals = (state.okrProposals||[]).filter(p=> p.teamId === team?.firestoreId && p.cycleId === (currentCycle?.firestoreId || currentCycle?.id)).sort((a,b)=> new Date(b.createdAt?.toDate?.()||0)-new Date(a.createdAt?.toDate?.()||0));
         const corporate = (currentCycle?.corporateOKRs||[]).map(o=> `<li class="text-sm"><strong>${o.objective}</strong>${(o.keyResults||[]).length?'<ul class="list-disc pr-5 text-slate-600 text-xs mt-1">'+o.keyResults.map(kr=>`<li>${kr.name}${kr.target?` (هدف: ${kr.target})`:''}</li>`).join('')+'</ul>':''}</li>`).join('') || '<li class="text-sm text-slate-500">ثبت نشده</li>';
         const proposalsHtml = proposals.map(p=> `<div class="border rounded-xl p-3"><div class="text-xs text-slate-500 mb-1">وضعیت: ${p.status||'pending'}</div>${(p.proposedOKRs||[]).map(o=> `<div class="mb-2"><div class="font-semibold text-sm">${o.objective}</div>${(o.keyResults||[]).map(kr=> `<div class="text-xs text-slate-600">- ${kr.name}${kr.target?` (${kr.target})`:''}</div>`).join('')}</div>`).join('') || '<div class="text-xs text-slate-500">خالی</div>'}</div>`).join('') || '<div class="text-sm text-slate-500">پیشنهادی ثبت نشده است.</div>';
         contentContainer.innerHTML = `
@@ -4539,7 +4542,7 @@ requests: () => {
         employeeName: p.teamName || 'تیم',
         requestType: 'پیشنهاد OKR',
         status: p.status || 'pending',
-        assignedTo: (state.users.find(u=>u.role==='admin')||{}).firestoreId
+        assignedTo: p.assignedTo || (state.users.find(u=>u.role==='admin')||{}).firestoreId
     }));
     let filteredRequests = (state.requests || []).concat(okrItems);
     if (state.requestFilter === 'mine' && state.currentUser) {
@@ -7172,9 +7175,43 @@ function showOkrProposalReviewModal(proposalId) {
     document.getElementById('okr-approve-btn').addEventListener('click', async ()=> {
         try {
             const feedback = (document.getElementById('okr-manager-feedback').value||'').trim();
-            await updateDoc(doc(db, `artifacts/${appId}/public/data/okrProposals`, prop.firestoreId), { status: 'approved', managerFeedback: feedback, reviewedAt: serverTimestamp() });
-            const teamRef = doc(db, `artifacts/${appId}/public/data/teams`, prop.teamId);
-            await updateDoc(teamRef, { activeOKRs: prop.proposedOKRs });
+            // تعیین مرحله بعدی:
+            // اگر وضعیت «در انتظار مدیر» بود → ارسال به «مدیر ارشد»
+            // اگر «در انتظار مدیر ارشد» بود → ارسال به «ادمین»
+            // اگر «در انتظار ادمین» بود → تایید نهایی و اعمال در تیم
+            const currentStatus = prop.status || '';
+            let nextAssignedTo = null;
+            let nextStatus = '';
+            if (currentStatus.includes('مدیر ')) {
+                // بعد از مدیر مستقیم
+                const team = (state.teams||[]).find(t => t.firestoreId === prop.teamId);
+                // تیم مدیریت: همان الگوی ارزیابی عملکرد (مدیر اجرایی مدیر آن تیم است)
+                const membershipTeam = (state.teams||[]).find(t => (t.memberIds||[]).includes(team?.leadership?.manager));
+                const seniorId = membershipTeam?.leadership?.manager;
+                const seniorEmp = (state.employees||[]).find(e => e.id === seniorId);
+                nextAssignedTo = seniorEmp?.uid || null;
+                nextStatus = 'در انتظار مدیر ارشد';
+            } else if (currentStatus.includes('مدیر ارشد')) {
+                const admin = (state.users||[]).find(u=> u.role==='admin');
+                nextAssignedTo = admin?.firestoreId || null;
+                nextStatus = 'در انتظار ادمین';
+            } else if (currentStatus.includes('ادمین')) {
+                // نهایی
+                nextStatus = 'تایید شده';
+            }
+
+            if (nextStatus === 'تایید شده') {
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/okrProposals`, prop.firestoreId), { status: nextStatus, managerFeedback: feedback, reviewedAt: serverTimestamp(), assignedTo: null });
+                const teamRef = doc(db, `artifacts/${appId}/public/data/teams`, prop.teamId);
+                await updateDoc(teamRef, { activeOKRs: prop.proposedOKRs });
+            } else {
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/okrProposals`, prop.firestoreId), { status: nextStatus, managerFeedback: feedback, reviewedAt: serverTimestamp(), assignedTo: nextAssignedTo });
+                // یادآور برای مرحله بعد
+                if (nextAssignedTo) {
+                    const r = doc(collection(db, `artifacts/${appId}/public/data/reminders`));
+                    await setDoc(r, { text: `بررسی پیشنهاد OKR تیم ${prop.teamName}`, type: 'پیشنهاد OKR', date: new Date(), assignedTo: nextAssignedTo, status: 'جدید', isReadByAssignee: false, createdAt: serverTimestamp() });
+                }
+            }
             closeModal(mainModal, mainModalContainer);
             showToast('پیشنهاد OKR تایید شد.');
             renderPage('requests');
@@ -7183,7 +7220,7 @@ function showOkrProposalReviewModal(proposalId) {
     document.getElementById('okr-reject-btn').addEventListener('click', async ()=> {
         try {
             const feedback = (document.getElementById('okr-manager-feedback').value||'').trim();
-            await updateDoc(doc(db, `artifacts/${appId}/public/data/okrProposals`, prop.firestoreId), { status: 'rejected', managerFeedback: feedback, reviewedAt: serverTimestamp() });
+            await updateDoc(doc(db, `artifacts/${appId}/public/data/okrProposals`, prop.firestoreId), { status: 'رد شده', managerFeedback: feedback, reviewedAt: serverTimestamp(), assignedTo: null });
             closeModal(mainModal, mainModalContainer);
             showToast('پیشنهاد OKR رد شد.');
             renderPage('requests');
@@ -7335,11 +7372,14 @@ if (typeof window.showProcessReminderForm !== 'function') {
     };
 }
 // Team OKR proposal form (manager portal)
-function showOkrProposalForm(managerEmp) {
-    const managedTeam = (state.teams||[]).find(t => t.leadership?.manager === managerEmp.id);
+function showOkrProposalForm(emp) {
+    const isMgr = isTeamManager(emp);
+    const team = isMgr
+        ? (state.teams||[]).find(t => t.leadership?.manager === emp.id)
+        : (state.teams||[]).find(t => t.firestoreId === emp.primaryTeamId) || (state.teams||[]).find(t => (t.memberIds||[]).includes(emp.id));
     const currentCycle = (state.okrCycles||[]).find(c=> c.status==='open');
-    if (!managedTeam || !currentCycle) { showToast('تیم یا چرخه فعال یافت نشد.', 'error'); return; }
-    modalTitle.innerText = `ارسال پیشنهاد OKR برای ${managedTeam.name}`;
+    if (!team || !currentCycle) { showToast('تیم یا چرخه فعال یافت نشد.', 'error'); return; }
+    modalTitle.innerText = `ارسال پیشنهاد OKR برای ${team.name}`;
     modalContent.innerHTML = `
         <form id="okr-proposal-form" class="space-y-3">
             <div class="p-2 bg-indigo-50 text-[12px] rounded">چرخه جاری: ${currentCycle.title}</div>
@@ -7380,18 +7420,45 @@ function showOkrProposalForm(managerEmp) {
                 if (objective) proposedOKRs.push({ objective, keyResults: krs });
             });
             if (!proposedOKRs.length) { showToast('حداقل یک Objective وارد کنید.', 'error'); return; }
+            // تعیین تاییدکننده اولیه
+            let assignedTo = null;
+            let statusFa = '';
+            if (isMgr) {
+                // مدیر: ارسال برای مدیرِ مدیران (تیم مدیریت که مدیر اجرایی مدیر آن است)
+                const membershipTeam = (state.teams||[]).find(t => (t.memberIds||[]).includes(emp.id));
+                const seniorManagerId = membershipTeam?.leadership?.manager;
+                const seniorManagerEmp = (state.employees||[]).find(e => e.id === seniorManagerId);
+                assignedTo = seniorManagerEmp?.uid || null;
+                statusFa = 'در انتظار مدیر ارشد';
+            } else {
+                // کارمند: ارسال برای مدیر مستقیم
+                const primaryTeam = (state.teams||[]).find(t => t.firestoreId === emp.primaryTeamId) || (state.teams||[]).find(t => (t.memberIds||[]).includes(emp.id));
+                const directManagerId = primaryTeam?.leadership?.manager;
+                const directManagerEmp = (state.employees||[]).find(e => e.id === directManagerId);
+                assignedTo = directManagerEmp?.uid || null;
+                statusFa = 'در انتظار مدیر';
+            }
             const ref = doc(collection(db, `artifacts/${appId}/public/data/okrProposals`));
             await setDoc(ref, {
                 cycleId: currentCycle.firestoreId || currentCycle.id,
-                teamId: managedTeam.firestoreId,
-                teamName: managedTeam.name,
+                teamId: team.firestoreId,
+                teamName: team.name,
+                createdBy: emp.uid,
                 proposedOKRs,
-                status: 'pending',
+                assignedTo,
+                status: statusFa,
                 createdAt: serverTimestamp()
             });
+            // یادآور برای تاییدکننده
+            if (assignedTo) {
+                try {
+                    const r = doc(collection(db, `artifacts/${appId}/public/data/reminders`));
+                    await setDoc(r, { text: `بررسی پیشنهاد OKR تیم ${team.name}`, type: 'پیشنهاد OKR', date: new Date(), assignedTo, status: 'جدید', isReadByAssignee: false, createdAt: serverTimestamp() });
+                } catch {}
+            }
             closeModal(mainModal, mainModalContainer);
             showToast('پیشنهاد OKR ارسال شد.');
-            renderEmployeePortalPage('team-okrs', managerEmp);
+            renderEmployeePortalPage('team-okrs', emp);
         } catch (err) { console.error(err); showToast('خطا در ارسال پیشنهاد.', 'error'); }
     });
 }
