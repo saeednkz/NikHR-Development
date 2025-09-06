@@ -309,7 +309,14 @@ function listenToData() {
             updateNotificationsForCurrentUser(); 
             
             if (state.currentUser.role === 'employee') {
-                renderEmployeePortal();
+                // Onboarding gate for employees
+                const me = (state.employees || []).find(e => e.uid === state.currentUser.uid);
+                const isComplete = me?.onboardingStatus?.isComplete === true;
+                if (!isComplete) {
+                    renderOnboardingFlow(me);
+                } else {
+                    renderEmployeePortal();
+                }
             } else {
                 showDashboard(state.currentUser, state);
                 router();
@@ -6467,6 +6474,87 @@ const renderPage = (pageName) => {
             });
         }
         const destroyCharts = () => { Object.values(charts).forEach(chart => chart?.destroy()); charts = {}; };
+        // Onboarding flow renderer
+        function renderOnboardingFlow(employee) {
+            const container = document.getElementById('employee-portal-container');
+            document.getElementById('login-container').classList.add('hidden');
+            document.getElementById('dashboard-container').classList.add('hidden');
+            container.classList.remove('hidden');
+            const status = employee?.onboardingStatus || { isComplete:false, currentStep:'welcome' };
+            const steps = ['welcome','personalInfo','mbti','documents','complete'];
+            const stepIndex = Math.max(0, steps.indexOf(status.currentStep));
+            const progress = Math.round((stepIndex/ (steps.length-1)) * 100);
+            let body = '';
+            if (status.currentStep === 'welcome') {
+                body = `<div class=\"text-center p-6\"><h2 class=\"text-xl font-bold mb-2\">خوش آمدید!</h2><p class=\"text-sm text-slate-600 mb-4\">چند گام کوتاه تا تکمیل حساب کاربری</p><button id=\"ob-start\" class=\"primary-btn\">شروع</button></div>`;
+            } else if (status.currentStep === 'personalInfo') {
+                const pi = employee?.profile?.personalInfo || {};
+                body = `<form id=\"ob-personal\" class=\"space-y-3\"><div><label class=\"block text-xs\">شماره موبایل</label><input id=\"pi-phone\" class=\"w-full p-2 border rounded\" value=\"${pi.phone||''}\"></div><div><label class=\"block text-xs\">ایمیل شخصی</label><input id=\"pi-email\" class=\"w-full p-2 border rounded\" value=\"${pi.personalEmail||''}\"></div><div class=\"flex justify-end gap-2\"><button type=\"submit\" class=\"primary-btn\">بعدی</button></div></form>`;
+            } else if (status.currentStep === 'mbti') {
+                body = `<form id=\"ob-mbti\" class=\"space-y-3\"><p class=\"text-sm text-slate-600\">به هر پرسش یکی از گزینه‌ها را انتخاب کنید.</p><div><label class=\"block text-xs\">کار تیمی vs کار فردی</label><select id=\"q1\" class=\"p-2 border rounded bg-white w-full\"><option value=\"E\">تیمی</option><option value=\"I\">فردی</option></select></div><div><label class=\"block text-xs\">تصمیم‌گیری: منطق vs احساس</label><select id=\"q2\" class=\"p-2 border rounded bg-white w-full\"><option value=\"T\">منطق</option><option value=\"F\">احساس</option></select></div><div class=\"flex justify-end\"><button type=\"submit\" class=\"primary-btn\">بعدی</button></div></form>`;
+            } else if (status.currentStep === 'documents') {
+                body = `<div class=\"space-y-3\"><p class=\"text-sm\">لطفاً اسناد فرهنگ و قوانین سازمان را مطالعه کنید.</p><ul class=\"list-disc pr-5 text-sm text-slate-600\"><li><a href=\"#documents\" class=\"text-indigo-600 hover:underline\">فرهنگ سازمان</a></li><li><a href=\"#documents\" class=\"text-indigo-600 hover:underline\">قوانین و مقررات</a></li></ul><label class=\"inline-flex items-center gap-2\"><input id=\"docs-ack\" type=\"checkbox\"><span class=\"text-sm\">تایید می‌کنم مطالعه کردم</span></label><div class=\"flex justify-end\"><button id=\"ob-complete\" class=\"primary-btn\" disabled>اتمام</button></div></div>`;
+            } else if (status.currentStep === 'complete') {
+                body = `<div class=\"text-center p-6\"><h2 class=\"text-xl font-bold mb-2\">تبریک!</h2><p class=\"text-sm text-slate-600 mb-4\">آنبوردینگ شما تکمیل شد.</p><button id=\"ob-go-dashboard\" class=\"primary-btn\">رفتن به داشبورد</button></div>`;
+            }
+            container.innerHTML = `
+                <div class=\"min-h-screen p-4\">
+                    <div class=\"max-w-3xl mx-auto\">
+                        <div class=\"bg-white rounded-2xl border p-4 mb-4\">
+                            <div class=\"text-xs text-slate-600 mb-2\">پیشرفت</div>
+                            <div class=\"w-full h-2 bg-slate-200 rounded-full overflow-hidden\">
+                                <div style=\"width:${progress}%\" class=\"h-2 bg-indigo-500\"></div>
+                            </div>
+                        </div>
+                        <div class=\"bg-white rounded-2xl border p-6\">${body}</div>
+                    </div>
+                </div>`;
+            document.getElementById('ob-start')?.addEventListener('click', async () => {
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/employees`, employee.firestoreId), { onboardingStatus: { isComplete:false, currentStep:'personalInfo' } });
+                renderOnboardingFlow({ ...employee, onboardingStatus: { isComplete:false, currentStep:'personalInfo' } });
+            });
+            const personalForm = document.getElementById('ob-personal');
+            if (personalForm) {
+                personalForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const phone = document.getElementById('pi-phone').value.trim();
+                    const personalEmail = document.getElementById('pi-email').value.trim();
+                    const ref = doc(db, `artifacts/${appId}/public/data/employees`, employee.firestoreId);
+                    await updateDoc(ref, { profile: { ...(employee.profile||{}), personalInfo: { ...(employee.profile?.personalInfo||{}), phone, personalEmail } }, onboardingStatus: { isComplete:false, currentStep:'mbti' } });
+                    const updated = { ...employee, profile: { ...(employee.profile||{}), personalInfo: { ...(employee.profile?.personalInfo||{}), phone, personalEmail } }, onboardingStatus:{ isComplete:false, currentStep:'mbti' } };
+                    renderOnboardingFlow(updated);
+                });
+            }
+            const mbtiForm = document.getElementById('ob-mbti');
+            if (mbtiForm) {
+                mbtiForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const a = document.getElementById('q1').value; const b = document.getElementById('q2').value;
+                    const result = `${a}${b}`;
+                    const ref = doc(db, `artifacts/${appId}/public/data/employees`, employee.firestoreId);
+                    await updateDoc(ref, { profile: { ...(employee.profile||{}), mbtiResult: result }, onboardingStatus: { isComplete:false, currentStep:'documents' } });
+                    const updated = { ...employee, profile: { ...(employee.profile||{}), mbtiResult: result }, onboardingStatus:{ isComplete:false, currentStep:'documents' } };
+                    renderOnboardingFlow(updated);
+                });
+            }
+            const ack = document.getElementById('docs-ack');
+            if (ack) {
+                ack.addEventListener('change', () => {
+                    const btn = document.getElementById('ob-complete');
+                    if (btn) btn.disabled = !ack.checked;
+                });
+            }
+            document.getElementById('ob-complete')?.addEventListener('click', async () => {
+                await completeOnboarding(employee);
+            });
+            document.getElementById('ob-go-dashboard')?.addEventListener('click', () => { renderEmployeePortal(); });
+        }
+        async function completeOnboarding(employee) {
+            const ref = doc(db, `artifacts/${appId}/public/data/employees`, employee.firestoreId);
+            await updateDoc(ref, { onboardingStatus: { isComplete:true, currentStep:'complete' } });
+            showToast('آنبوردینگ تکمیل شد.');
+            renderEmployeePortal();
+        }
         // ▼▼▼ START: Org Chart page setup ▼▼▼
         function setupOrgChartPage() {
             const container = document.getElementById('orgchart-container');
