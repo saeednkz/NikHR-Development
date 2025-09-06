@@ -68,7 +68,7 @@ const documentCategories = [
     { id: 'مزایا و حقوق',     key: 'benefits', icon: 'coins',          desc: 'حقوق، مزایا، بیمه و سیاست‌های مالی.' },
     { id: 'مستندات پروژه‌ها', key: 'projects', icon: 'folder-kanban',  desc: 'مستندات فنی و اجرایی پروژه‌ها.' }
 ];
-        export const state = { employees: [], teams: [], reminders: [], surveyResponses: [], users: [], competencies: [], expenses: [], pettyCashCards: [], chargeHistory: [], okrCycles: [], okrSuggestions: [], teamOKRs: [], dashboardMetrics: {}, orgAnalytics: {}, currentPage: 'dashboard', currentPageTalent: 1, currentUser: null,currentPageRequests: 1,currentPageTasks: 1,currentPageAnnouncements: 1, anniversaryWishes: [], companyWishes: [] };
+        export const state = { employees: [], teams: [], reminders: [], surveyResponses: [], users: [], competencies: [], expenses: [], pettyCashCards: [], chargeHistory: [], okrCycles: [], okrSuggestions: [], teamOKRs: [], approvals: [], dashboardMetrics: {}, orgAnalytics: {}, currentPage: 'dashboard', currentPageTalent: 1, currentUser: null,currentPageRequests: 1,currentPageTasks: 1,currentPageAnnouncements: 1, anniversaryWishes: [], companyWishes: [] };
 window.state = state; // این خط را برای دیباگ اضافه کنید
         let charts = {};
 let activeListeners = []; // [!code ++] این خط را اضافه کنید
@@ -298,7 +298,7 @@ function listenToData() {
         'skillsAndCompetencies', 'requests', 'assignmentRules', 'companyDocuments', 
         'announcements', 'birthdayWishes', 'anniversaryWishes', 'companyWishes', 
         'moments','jobPositions','evaluationCycles','jobFamilies','employeeEvaluations',
-        'okrCycles','okrSuggestions','teamOKRs'
+        'okrCycles','okrSuggestions','teamOKRs','approvals'
     ];
     let initialLoads = collectionsToListen.length;
 
@@ -4577,8 +4577,19 @@ tasks: () => {
     const statusParam = params.get('status') || 'all';
     const sortParam = params.get('sort') || 'date_asc';
     const qParam = params.get('q') || '';
-    const myTasksAll = (state.reminders || [])
-        .filter(r => r.assignedTo === state.currentUser.uid)
+    const myTasksAll = []
+        // legacy reminders (kept for backwards)
+        .concat(((state.reminders||[]).filter(r=> r.assignedTo===state.currentUser.uid).map(r=> ({
+            id: r.firestoreId, type: 'reminder', date: r.date, kind: r.type, text: r.text, status: r.status
+        }))))
+        // approvals: OKR team pending for this user
+        .concat(((state.teamOKRs||[]).filter(t=> t.status==='pending_senior' && (state.currentUser.role==='admin' || state.currentUser.role==='senior')).map(t=> ({
+            id: t.firestoreId, type: 'teamokr', date: t.createdAt, kind: 'تایید OKR تیم', text: (state.teams.find(x=>x.firestoreId===t.teamId)?.name)||'', status: 'جدید'
+        }))))
+        // approvals: skill approvals assigned to this user (placeholder if exists in state.approvals)
+        .concat(((state.approvals||[]).filter(a=> a.type==='skill' && a.assignedTo===state.currentUser.uid && a.status==='pending').map(a=> ({
+            id: a.firestoreId, type: 'skill', date: a.createdAt, kind: 'تایید مهارت', text: a.subject||'', status: 'جدید'
+        })))))
         .sort((a, b) => {
             const ad = new Date(a.date?.toDate ? a.date.toDate() : a.date);
             const bd = new Date(b.date?.toDate ? b.date.toDate() : b.date);
@@ -4600,11 +4611,12 @@ tasks: () => {
     const endIndex = startIndex + TASKS_PAGE_SIZE;
     const paginatedTasks = allMyTasks.slice(startIndex, endIndex);
 
-    const admins = state.users.filter(u => u.role === 'admin');
     const tasksHtml = paginatedTasks.map(task => {
         const statusColors = {'جدید':'bg-yellow-100 text-yellow-800','در حال انجام':'bg-blue-100 text-blue-800','انجام شده':'bg-green-100 text-green-800'};
-        const adminOptions = admins.map(admin => `<option value="${admin.firestoreId}" ${task.assignedTo === admin.firestoreId ? 'selected' : ''}>${admin.name || admin.email}</option>`).join('');
-        return `<tr class="border-b"><td class="px-4 py-3 whitespace-nowrap">${toPersianDate(task.date)}</td><td class="px-4 py-3">${task.type}</td><td class="px-4 py-3 text-sm min-w-[200px]">${task.text}</td><td class="px-4 py-3"><span class="px-2 py-1 text-xs font-medium rounded-full ${statusColors[task.status] || 'bg-slate-100'}">${task.status}</span></td><td class="px-4 py-3 min-w-[150px]"><select data-id="${task.firestoreId}" class="assign-reminder-select w-full p-1.5 border border-slate-300 rounded-lg bg-white text-xs">${adminOptions}</select></td><td class="px-4 py-3"><button class="process-reminder-btn text-sm bg-slate-700 text-white py-1 px-3 rounded-md hover:bg-slate-800" data-id="${task.firestoreId}">پردازش</button></td></tr>`;
+        const action = task.type==='teamokr' ? `<button class="process-teamokr-btn text-sm bg-slate-700 text-white py-1 px-3 rounded-md hover:bg-slate-800" data-id="${task.id}">بررسی OKR</button>`
+                      : (task.type==='skill' ? `<button class="process-skill-btn text-sm bg-slate-700 text-white py-1 px-3 rounded-md hover:bg-slate-800" data-id="${task.id}">بررسی مهارت</button>`
+                      : `<button class="process-reminder-btn text-sm bg-slate-700 text-white py-1 px-3 rounded-md hover:bg-slate-800" data-id="${task.id}">پردازش</button>`);
+        return `<tr class="border-b"><td class="px-4 py-3 whitespace-nowrap">${toPersianDate(task.date)}</td><td class="px-4 py-3">${task.kind}</td><td class="px-4 py-3 text-sm min-w-[200px]">${task.text}</td><td class="px-4 py-3"><span class="px-2 py-1 text-xs font-medium rounded-full ${statusColors[task.status] || 'bg-slate-100'}">${task.status}</span></td><td class="px-4 py-3">-</td><td class="px-4 py-3">${action}</td></tr>`;
     }).join('');
 
     return `
