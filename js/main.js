@@ -7886,12 +7886,20 @@ const setupSettingsPageListeners = () => {
             const user = state.users.find(u => u.firestoreId === editUserBtn.dataset.uid);
             if (user) showEditUserForm(user);
         }
-        if (deleteUserBtn) { /* ... کد حذف کاربر ... */ }
+        if (deleteUserBtn) {
+            const uid = deleteUserBtn.dataset.uid;
+            showConfirmationModal('حذف کاربر', 'آیا از حذف این کاربر مطمئن هستید؟', async () => {
+                try {
+                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/users`, uid));
+                    showToast('کاربر حذف شد.');
+                } catch (err) { showToast('خطا در حذف کاربر.', 'error'); }
+            });
+        }
         if (deleteCompetencyBtn) {
             const compId = deleteCompetencyBtn.dataset.id;
             showConfirmationModal('حذف شایستگی', 'این شایستگی از لیست حذف خواهد شد. ادامه می‌دهید؟', async () => {
                 try {
-                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/competencies`, compId));
+                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/skillsAndCompetencies`, compId));
                     showToast('شایستگی حذف شد.');
                 } catch (err) {
                     showToast('خطا در حذف شایستگی.', 'error');
@@ -7916,7 +7924,15 @@ const setupSettingsPageListeners = () => {
 
         if (addRuleBtn) showAssignmentRuleForm();
         if (editRuleBtn) showAssignmentRuleForm(editRuleBtn.dataset.id);
-        if (deleteRuleBtn) { /* ... کد حذف قانون ... */ }
+        if (deleteRuleBtn) {
+            const ruleId = deleteRuleBtn.dataset.id;
+            showConfirmationModal('حذف قانون', 'آیا مطمئن هستید؟', async () => {
+                try {
+                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/assignmentRules`, ruleId));
+                    showToast('قانون حذف شد.');
+                } catch (err) { showToast('خطا در حذف قانون.', 'error'); }
+            });
+        }
         if (addPositionBtn) showJobPositionForm();
         if (editPositionBtn) showJobPositionForm(editPositionBtn.dataset.id);
         if (mapCompetenciesBtn) {
