@@ -677,8 +677,11 @@ function renderEmployeePortalPage(pageName, employee) {
 
         const myTasks = (state.reminders || [])
             .filter(r => r.assignedTo === employee.uid)
-            .sort((a, b) => new Date(a.date?.toDate ? a.date.toDate() : a.date) - new Date(b.date?.toDate ? b.date.toDate()));
-
+          .sort((a, b) => {
+    const dateA = a.date?.toDate ? a.date.toDate() : a.date;
+    const dateB = b.date?.toDate ? b.date.toDate() : b.date;
+    return new Date(dateA) - new Date(dateB);
+});
         const tasksHtml = myTasks.length > 0 ? myTasks.map(task => {
             const statusColors = {'جدید':'bg-yellow-100 text-yellow-800','در حال انجام':'bg-blue-100 text-blue-800','انجام شده':'bg-green-100 text-green-800', 'رد شده': 'bg-red-100 text-red-800'};
             const status = statusColors[task.status] || 'bg-slate-100';
