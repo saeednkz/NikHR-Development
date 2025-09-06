@@ -810,6 +810,37 @@ function renderEmployeePortalPage(pageName, employee) {
         }
         lucide.createIcons();
     }
+    else if (pageName === 'okrs-portal') {
+        const contentContainer = document.getElementById('employee-main-content');
+        const cycles = (state.okrCycles||[]).slice().sort((a,b)=> new Date(b.startDate||0)-new Date(a.startDate||0));
+        const open = cycles.find(c=> c.status==='open');
+        const selected = open || cycles[0];
+        const corpHtml = (selected?.corporateOKRs||[]).map(o=> `<div class=\"mb-2\"><div class=\"font-semibold text-sm\">${o.objective}</div>${(o.keyResults||[]).map(kr=> `<div class=\"text-[11px] text-slate-600\">• ${kr.name}${kr.target?` (هدف: ${kr.target})`:''}</div>`).join('')}</div>`).join('') || '<div class="text-xs text-slate-500">ثبت نشده</div>';
+        const teamsApproved = (state.teamOKRs||[]).filter(t=> t.cycleId===(selected?.firestoreId||selected?.id) && t.status==='approved');
+        const teamCards = teamsApproved.map(t=> {
+            const team = (state.teams||[]).find(x=> x.firestoreId===t.teamId);
+            const objHtml = (t.okrs||[]).map(o=> `<div class=\"mb-1\"><div class=\"font-semibold text-xs\">${o.objective}</div>${(o.keyResults||[]).map(kr=> `<div class=\"text-[11px] text-slate-600\">• ${kr.name} — ${kr.progress||0}%</div>`).join('')}</div>`).join('');
+            return `<div class=\"border rounded-2xl p-3\"><div class=\"font-bold mb-1\">${team?.name||'تیم'}</div>${objHtml||'<div class=\\"text-xs text-slate-500\\">بدون Objective</div>'}</div>`;
+        }).join('') || '<div class="text-xs text-slate-500">OKR تاییدشده‌ای برای تیم‌ها نیست.</div>';
+        contentContainer.innerHTML = `
+            <section class="rounded-2xl overflow-hidden border mb-6" style="background:linear-gradient(90deg,#6B69D6,#10B981)">
+                <div class="p-6 sm:p-8">
+                    <h1 class="text-2xl sm:text-3xl font-extrabold text-white">OKRهای سازمان</h1>
+                    <p class="text-white/90 text-xs mt-1">مشاهده OKRهای سازمان و تیم‌ها</p>
+                </div>
+            </section>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white p-5 rounded-2xl border">
+                    <h3 class="font-bold mb-2">OKRهای سازمان</h3>
+                    ${corpHtml}
+                </div>
+                <div class="bg-white p-5 rounded-2xl border">
+                    <h3 class="font-bold mb-2">OKR تیم‌ها</h3>
+                    <div class="space-y-3">${teamCards}</div>
+                </div>
+            </div>`;
+        lucide.createIcons();
+    }
     // پایان بلوک جدید
     else if (pageName === 'profile') { // [FIX]: Added 'else' here
         const team = state.teams.find(t => t.memberIds?.includes(employee.id));
@@ -2180,6 +2211,7 @@ const managerNavlinks = isTeamManager(employee)
                 <a href="#profile" class="nav-item"><i data-lucide="user"></i><span>مسیر من</span></a>
                ${managerNavlinks}
                 <a href="#evaluations" class="nav-item"><i data-lucide="clipboard-check"></i><span>ارزیابی‌های من</span></a>
+                <a href="#okrs-portal" class="nav-item"><i data-lucide="target"></i><span>OKRها</span></a>
                 <a href="#requests" class="nav-item"><i data-lucide="send"></i><span>کارهای من</span></a>
                 <a href="#directory" class="nav-item"><i data-lucide="users"></i><span>تیم‌ها</span></a>
                 <a href="#documents" class="nav-item"><i data-lucide="folder-kanban"></i><span>دانش‌نامه</span></a>
